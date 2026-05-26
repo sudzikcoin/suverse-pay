@@ -17,6 +17,7 @@
     "dev": "turbo run dev",
     "db:migrate": "pnpm --filter @suverse-pay/db run migrate",
     "db:bootstrap": "pnpm --filter @suverse-pay/db run bootstrap",
+    "test:integration": "pnpm --filter @suverse-pay/api run test:integration",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

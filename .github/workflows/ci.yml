@@ -11,9 +11,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  unit:
+    name: build + unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Unit tests
+        run: pnpm test
+
+  integration:
+    name: integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: suverse
+          POSTGRES_PASSWORD: suverse
+          POSTGRES_DB: suverse_pay
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U suverse -d suverse_pay"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://suverse:suverse@localhost:5433/suverse_pay
+      REDIS_URL: redis://localhost:6380
+      ADMIN_API_KEY: ci-integration-admin-key
+      TEST_DATABASE_URL: postgres://suverse:suverse@localhost:5433/suverse_pay
+      TEST_REDIS_URL: redis://localhost:6380
 
     steps:
       - uses: actions/checkout@v4
@@ -35,5 +93,11 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Test
-        run: pnpm test
+      - name: Apply migrations
+        run: pnpm db:migrate
+
+      - name: Bootstrap admin api_key
+        run: pnpm db:bootstrap
+
+      - name: Integration tests
+        run: pnpm test:integration

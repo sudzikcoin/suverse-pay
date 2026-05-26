@@ -142,6 +142,66 @@ this project adheres to [Semantic Versioning](https://semver.org/).
     out-of-tree migration was rolled back fully — both the
     `schema_migrations` row AND the partially-created table, which
     is the real-Postgres behaviour that pg-mem cannot model.
+- `apps/api/tests/integration/` — full end-to-end integration suite
+  driven against the live `docker compose` Postgres 15 + Redis 7 stack.
+  Adapter HTTP traffic is intercepted by `nock` so the real cosmos-pay
+  / Coinbase CDP wire shape (JWT signing, error mapping, retry path)
+  is exercised without any external network. 25 tests across 8 files:
+  - `setup.ts` builds the full Fastify app against the real Pool /
+    Redis / Ledger / Registry, registers cosmos-pay + a Coinbase CDP
+    adapter pointed at nock-able mock hosts, and exposes a
+    `cleanState(stack)` helper that TRUNCATEs every non-fixture table,
+    `FLUSHDB`s Redis, and re-bootstraps the admin api_key — so every
+    test starts from a known-clean state.
+  - Every required scenario from TASK.md §"Required for Phase 1 done"
+    item 4 is covered:
+    1. `GET /health` → 200 (no auth).
+    2. `GET /providers` → both adapters listed with their static caps.
+    3. `POST /quote` → synthetic quotes returned, both adapters
+       considered.
+    4. `POST /quote` with `optimize=cost` → quotes ordered ascending
+       by `estimatedFeeUsd`.
+    5. `POST /settle` against the cosmos-pay mock → `payments`,
+       `payment_attempts`, and `routing_decisions` rows all populated;
+       response carries the mock tx hash.
+    6. Same `POST /settle` with the same `Idempotency-Key` → same
+       paymentId, no second adapter HTTP call (verified by
+       `nock.isDone()`), exactly one row in `payments`.
+    7. `POST /settle` simulating provider failure → retryable path
+       exercised end-to-end through `httpJson`'s retry logic
+       (cross-provider fallback itself remains covered by the unit
+       suite in `apps/api/src/__tests__/settle.test.ts`, since the
+       integration fixture only registers one provider per route).
+    8. `POST /settle` with an unsupported scheme → fails immediately
+       with `route_unsupported`, zero adapter calls, attempts list
+       empty.
+    9. `GET /payments/:id` → returns the payment with its attempts
+       array after a `/settle`.
+    10. `GET /metrics/summary` → aggregate totals + per-provider
+        breakdown.
+  - Auth coverage: missing header → 401, wrong key → 401, valid key
+    → 200, `db:bootstrap --force` rotation does NOT invalidate the
+    running server's in-memory hash (documented behaviour — rotation
+    requires a server restart in v0.1).
+  - Idempotency: `POST /settle` without `Idempotency-Key` → 400 with
+    `invalid_request` and no payment row created.
+  - **Real `Promise.all` race**: two concurrent `POST /settle` with
+    the same key return the same `paymentId`, exactly one outbound
+    adapter call (nock `isDone()`), exactly one `payments` row. The
+    final state is `settled` with the mock tx hash, verified via a
+    follow-up `GET /payments/:id`. A v0.1 race-replay limitation is
+    surfaced and documented in-test: the replay request may observe
+    the row while still `pending`; v0.2 will hold the lock until
+    finalization.
+- `apps/api` test split: `pnpm test` now drives the in-memory unit
+  suite via `vitest.config.ts`; `pnpm test:integration` drives the
+  Docker-backed suite via `vitest.integration.config.ts`. Root
+  `pnpm test` runs unit only (so it stays green without Postgres);
+  `pnpm test:integration` is a separate workspace script.
+- `.github/workflows/ci.yml` split into two jobs: `unit` (build +
+  unit tests, no services) and `integration` (Postgres 15 + Redis 7
+  as GitHub Actions services, `db:migrate`, `db:bootstrap`,
+  `test:integration`).
 - `pnpm db:bootstrap` — CLI that seeds the single
   `apikey_admin_default` row in `api_keys` from the `ADMIN_API_KEY`
   env var. Sha256 hash only — never the plaintext. Idempotent by
