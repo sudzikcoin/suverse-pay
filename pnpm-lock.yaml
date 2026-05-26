@@ -67,6 +67,25 @@ importers:
         specifier: ^4.19.2
         version: 4.22.3
 
+  db:
+    dependencies:
+      pg:
+        specifier: ^8.13.1
+        version: 8.21.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.41
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.20.0
+      pg-mem:
+        specifier: ^3.0.5
+        version: 3.0.14
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.3
+
   packages/adapters/coinbase-cdp:
     dependencies:
       '@suverse-pay/core-types':

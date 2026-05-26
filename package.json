@@ -15,6 +15,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "dev": "turbo run dev",
+    "db:migrate": "pnpm --filter @suverse-pay/db run migrate",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

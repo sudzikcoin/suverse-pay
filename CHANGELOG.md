@@ -89,6 +89,47 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   - Tests use `pg-mem` + `ioredis-mock` for IO-bound modules; pure
     logic has no DB dependency. 83 new tests, 239 total across the
     workspace.
+- `@suverse-pay/db` — SQL migrations and a ~100-line raw-SQL runner.
+  No `node-pg-migrate` / Knex / Prisma dep — `pnpm db:migrate` is a
+  single `tsx src/migrate.ts` invocation that reads every `.sql` file
+  in `db/migrations/` in lexicographic order, applies the ones not
+  yet recorded in `schema_migrations`, and wraps each one in its own
+  transaction so partial application is impossible. Bootstraps
+  `schema_migrations` itself outside any transaction with
+  `IF NOT EXISTS`, so the runner is safe against an empty DB or one
+  that has been partially migrated.
+  - `001_initial.sql` creates the Phase 1 schema verbatim from
+    TASK.md §"Database schema (Postgres)": `api_keys`,
+    `merchant_policies`, `providers`, `provider_capabilities`
+    (with `is_static` / `is_discovered` / `superseded_at`),
+    `provider_health_checks`, `payments` (with the partial unique
+    index on `(api_key_id, idempotency_key) WHERE idempotency_key
+    IS NOT NULL` that the orchestrator's two-layer idempotency
+    relies on), `payment_attempts`, and `routing_decisions`. Every
+    statement uses `IF NOT EXISTS` so a re-run on an already-
+    migrated DB is a no-op.
+  - `db/schema.sql` — consolidated reference snapshot of the full
+    schema. NOT executed; the migrations are the source of truth.
+    Useful for IDE schema tooling and drift diffs against a live DB.
+    A vitest assertion compares `CREATE TABLE` statements in the
+    migrations against the snapshot, so an out-of-date snapshot
+    fails CI before review.
+  - `docker-compose.yml` host port defaults moved from 5432 / 6379 to
+    5433 / 6380, and the `.env.example` `DATABASE_URL` / `REDIS_URL`
+    were rewritten in lockstep — the gateway intentionally avoids
+    the canonical Postgres / Redis ports so it can run alongside an
+    existing host-level Postgres (e.g. the govhub deployment on the
+    same VM) without a manual override.
+  - 5 vitest cases against `pg-mem`: applies-on-first-run,
+    creates-canonical-tables, idempotent-second-run, rolls-back-on-
+    failure (with an explicit comment on a `pg-mem` gotcha — it does
+    not roll back DDL inside a transaction, so the assertion is the
+    data-level `schema_migrations` row absence, not the DDL absence;
+    real Postgres rollback verified at Step 10), and the schema.sql-
+    matches-migrations sentinel.
+  - pg-mem gotcha #2: pg-mem does not implement `to_regclass()`. The
+    test for "table exists" uses `information_schema.tables`, which
+    works in both pg-mem and real Postgres.
 - `@suverse-pay/api` — Fastify HTTP entrypoint for the gateway. One
   endpoint per TASK.md §"REST API specification": `GET /health`
   (liveness, unauthenticated), `GET /providers`, `POST /quote`,

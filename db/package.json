@@ -1,0 +1,30 @@
+{
+  "name": "@suverse-pay/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "SQL migrations + raw-SQL migration runner for suverse-pay.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/migrate.js",
+  "files": [
+    "dist",
+    "migrations",
+    "schema.sql"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "migrate": "tsx src/migrate.ts",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.10",
+    "pg-mem": "^3.0.5",
+    "tsx": "^4.19.2"
+  }
+}
