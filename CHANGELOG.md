@@ -17,5 +17,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   (`PaymentRequirements`, `PaymentPayload`), gateway-internal
   `Payment` and `PaymentAttempt` types, `MerchantPolicy` schema,
   and Zod schemas for every adapter and gateway boundary type.
-- vitest test runner (workspace devDep). 33 unit tests covering
-  CAIP-2 parsing, error classification, and schema parsing.
+  `SettleOptions` carries an optional `idempotencyKey` that the
+  orchestrator plumbs through to adapters for downstream replay
+  protection.
+- `@suverse-pay/provider-sdk` package — `BaseAdapter` abstract class,
+  `httpJson` fetch wrapper, `withRetry` (retryable codes only),
+  `withTimeout`. `httpJson` propagates the caller's `Idempotency-Key`
+  on every retry attempt, satisfying the two-layer idempotency
+  invariant end-to-end.
+- vitest test runner (workspace devDep). 71 unit tests across both
+  packages (CAIP-2, error classification, schema parsing, retry
+  semantics, timeout semantics, full HTTP-error → ErrorCode mapping,
+  and Idempotency-Key propagation under retry).

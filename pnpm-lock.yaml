@@ -28,6 +28,16 @@ importers:
         specifier: ^20.11.0
         version: 20.19.41
 
+  packages/provider-sdk:
+    dependencies:
+      '@suverse-pay/core-types':
+        specifier: workspace:*
+        version: link:../core-types
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.41
+
 packages:
 
   '@emnapi/core@1.10.0':

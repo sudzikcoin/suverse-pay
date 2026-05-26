@@ -61,6 +61,11 @@ export const SettleRequestSchema = z.object({
 });
 export type SettleRequest = z.infer<typeof SettleRequestSchema>;
 
+export const SettleOptionsSchema = z.object({
+  idempotencyKey: z.string().min(1).optional(),
+});
+export type SettleOptions = z.infer<typeof SettleOptionsSchema>;
+
 export const SettleResponseSchema = z.object({
   settled: z.boolean(),
   providerId: z.string().min(1),
@@ -114,7 +119,7 @@ export interface ProviderAdapter {
   supports(req: SupportQuery): Promise<SupportResult>;
   quote(req: QuoteRequest): Promise<QuoteResponse>;
   verify(req: VerifyRequest): Promise<VerifyResponse>;
-  settle(req: SettleRequest): Promise<SettleResponse>;
+  settle(req: SettleRequest, opts?: SettleOptions): Promise<SettleResponse>;
   getStatus(providerPaymentId: string): Promise<StatusResponse>;
   healthCheck(): Promise<HealthStatus>;
   discoverCapabilities?(): Promise<DiscoveredCapability[]>;
