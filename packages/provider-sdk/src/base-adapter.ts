@@ -1,6 +1,7 @@
 import type {
   Caip2,
   DiscoveredCapability,
+  GetStatusHints,
   HealthStatus,
   ProviderAdapter,
   QuoteRequest,
@@ -69,7 +70,10 @@ export abstract class BaseAdapter implements ProviderAdapter {
    */
   abstract settle(req: SettleRequest, opts?: SettleOptions): Promise<SettleResponse>;
 
-  abstract getStatus(providerPaymentId: string): Promise<StatusResponse>;
+  abstract getStatus(
+    providerPaymentId: string,
+    hints?: GetStatusHints,
+  ): Promise<StatusResponse>;
 
   abstract healthCheck(): Promise<HealthStatus>;
 

@@ -25,7 +25,18 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   `withTimeout`. `httpJson` propagates the caller's `Idempotency-Key`
   on every retry attempt, satisfying the two-layer idempotency
   invariant end-to-end.
-- vitest test runner (workspace devDep). 71 unit tests across both
-  packages (CAIP-2, error classification, schema parsing, retry
-  semantics, timeout semantics, full HTTP-error → ErrorCode mapping,
-  and Idempotency-Key propagation under retry).
+- `ProviderAdapter.getStatus()` now accepts an optional `hints`
+  argument (`{ txHash?, errorCode? }`). Adapters for providers with
+  no native status endpoint (cosmos-pay) reconstruct status from the
+  orchestrator-supplied hints rather than taking a DB dependency.
+- `@suverse-pay/adapter-cosmos-pay` package — first concrete adapter.
+  Wraps `sudzikcoin/cosmos-pay`'s HTTP facilitator (`/verify`,
+  `/settle`, `/supported`, `/healthz`). Wire schemas pinned to the
+  real Go code (`facilitator/types.go` and `cmd/main.go`). Internal
+  retry on `/settle` is enabled ONLY when the caller supplies an
+  `idempotencyKey`. cosmos-pay's `invalidReason` / `errorReason`
+  strings are normalized through a dictionary-style map with a
+  warning-logged `provider_internal_error` fallback for unknown
+  codes. `/healthz` uses raw `fetch` (empty body, no JSON parse).
+- vitest test runner (workspace devDep). 105 unit tests across all
+  three packages.

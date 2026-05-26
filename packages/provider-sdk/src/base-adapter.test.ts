@@ -1,4 +1,5 @@
 import type {
+  GetStatusHints,
   HealthStatus,
   QuoteRequest,
   QuoteResponse,
@@ -54,12 +55,15 @@ class TestAdapter extends BaseAdapter {
     };
   }
 
-  override async getStatus(providerPaymentId: string): Promise<StatusResponse> {
+  override async getStatus(
+    providerPaymentId: string,
+    hints?: GetStatusHints,
+  ): Promise<StatusResponse> {
     return {
       providerId: this.id,
       providerPaymentId,
-      status: "settled",
-      txHash: "0xdeadbeef",
+      status: hints?.txHash !== undefined ? "settled" : "pending",
+      ...(hints?.txHash !== undefined ? { txHash: hints.txHash } : {}),
     };
   }
 

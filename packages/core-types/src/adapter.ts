@@ -94,6 +94,18 @@ export const StatusResponseSchema = z.object({
 });
 export type StatusResponse = z.infer<typeof StatusResponseSchema>;
 
+/**
+ * Optional context the orchestrator can pass to `getStatus()`. Some
+ * providers (cosmos-pay) settle synchronously and have no status
+ * endpoint — adapters use these hints to reconstruct status from
+ * gateway-side state without taking a DB dependency.
+ */
+export const GetStatusHintsSchema = z.object({
+  txHash: z.string().optional(),
+  errorCode: ErrorCodeSchema.optional(),
+});
+export type GetStatusHints = z.infer<typeof GetStatusHintsSchema>;
+
 export const HealthStateSchema = z.enum(["healthy", "degraded", "down"]);
 export type HealthState = z.infer<typeof HealthStateSchema>;
 
@@ -120,7 +132,7 @@ export interface ProviderAdapter {
   quote(req: QuoteRequest): Promise<QuoteResponse>;
   verify(req: VerifyRequest): Promise<VerifyResponse>;
   settle(req: SettleRequest, opts?: SettleOptions): Promise<SettleResponse>;
-  getStatus(providerPaymentId: string): Promise<StatusResponse>;
+  getStatus(providerPaymentId: string, hints?: GetStatusHints): Promise<StatusResponse>;
   healthCheck(): Promise<HealthStatus>;
   discoverCapabilities?(): Promise<DiscoveredCapability[]>;
 }
