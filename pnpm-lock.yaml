@@ -32,6 +32,9 @@ importers:
       '@suverse-pay/core-types':
         specifier: workspace:*
         version: link:../../packages/core-types
+      '@suverse-pay/db':
+        specifier: workspace:*
+        version: link:../../db
       '@suverse-pay/orchestrator':
         specifier: workspace:*
         version: link:../../services/orchestrator

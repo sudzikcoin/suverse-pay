@@ -5,7 +5,14 @@
   "description": "SQL migrations + raw-SQL migration runner for suverse-pay.",
   "license": "Apache-2.0",
   "type": "module",
-  "main": "./dist/migrate.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist",
     "migrations",
@@ -15,7 +22,8 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "migrate": "tsx src/migrate.ts",
+    "migrate": "tsx src/migrate-cli.ts",
+    "bootstrap": "tsx src/bootstrap-cli.ts",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {

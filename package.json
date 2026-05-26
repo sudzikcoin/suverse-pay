@@ -16,6 +16,7 @@
     "typecheck": "turbo run typecheck",
     "dev": "turbo run dev",
     "db:migrate": "pnpm --filter @suverse-pay/db run migrate",
+    "db:bootstrap": "pnpm --filter @suverse-pay/db run bootstrap",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

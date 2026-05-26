@@ -61,19 +61,38 @@ pnpm install
 
 # Configure environment
 cp .env.example .env
-# edit .env — set ADMIN_API_KEY, COSMOS_PAY_BASE_URL, etc.
+# edit .env — set ADMIN_API_KEY (long random string), COSMOS_PAY_BASE_URL,
+#                COINBASE_CDP_API_KEY_NAME/SECRET if you have them.
 
-# Start Postgres + Redis (skip if you already run them)
+# Start Postgres + Redis (skip if you already run them). The default
+# host ports are 5433 / 6380 so we don't fight a host-level Postgres
+# already on 5432.
 docker compose up -d
+
+# Apply the schema (idempotent — safe to re-run).
+pnpm db:migrate
+
+# Seed the admin api_key row from your ADMIN_API_KEY env. Required
+# before the API server will accept any request. Idempotent: a
+# second run with the same key is a no-op. To ROTATE the key after
+# changing ADMIN_API_KEY in your env, re-run with `--force`.
+pnpm db:bootstrap
+# To rotate: ADMIN_API_KEY=<new-key> pnpm db:bootstrap --force
 
 # Build + test everything
 pnpm build
 pnpm test
 ```
 
-The bootstrap script for the admin api_key and the API server itself
-are introduced in later Phase 1 steps — see `TASK.md` §Implementation
-order.
+### About the admin api_key
+
+v0.1 ships single-tenant. Bootstrap inserts one row in `api_keys`
+with `id='apikey_admin_default'` and
+`key_hash = sha256(ADMIN_API_KEY)`. The API server holds the same
+hash in memory at boot and compares every incoming
+`Authorization: Bearer <key>` against it. The plaintext key never
+touches the DB, the logs, or any error message. Phase 4 will keep
+the same row shape and add tenant-minted rows alongside it.
 
 ## Layout
 

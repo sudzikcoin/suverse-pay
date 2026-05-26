@@ -10,7 +10,8 @@
     { "path": "../../packages/provider-sdk" },
     { "path": "../../packages/adapters/coinbase-cdp" },
     { "path": "../../packages/adapters/cosmos-pay" },
-    { "path": "../../services/orchestrator" }
+    { "path": "../../services/orchestrator" },
+    { "path": "../../db" }
   ],
   "include": ["src/**/*"],
   "exclude": [

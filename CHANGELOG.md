@@ -142,6 +142,34 @@ this project adheres to [Semantic Versioning](https://semver.org/).
     out-of-tree migration was rolled back fully — both the
     `schema_migrations` row AND the partially-created table, which
     is the real-Postgres behaviour that pg-mem cannot model.
+- `pnpm db:bootstrap` — CLI that seeds the single
+  `apikey_admin_default` row in `api_keys` from the `ADMIN_API_KEY`
+  env var. Sha256 hash only — never the plaintext. Idempotent by
+  default; a mismatched existing row refuses to overwrite unless
+  `--force` (or `ADMIN_API_KEY_FORCE=1`) is supplied, so an
+  accidental env-var typo cannot lock everyone out of the gateway.
+  - The hash function (`sha256ApiKeyHash`) and the row id
+    (`ADMIN_API_KEY_ID = 'apikey_admin_default'`) now live in
+    `@suverse-pay/db` and are re-exported by
+    `apps/api/src/plugins/auth.ts`. The write side (bootstrap CLI)
+    and the read side (Fastify auth plugin) therefore share one
+    source of truth — they cannot drift apart.
+  - The `db` package was reorganised: `migrate.ts` now exports only
+    the pure runner; CLI shells live in `migrate-cli.ts` and
+    `bootstrap-cli.ts`; a new `index.ts` re-exports the public API.
+  - 8 vitest cases against `pg-mem` cover the matrix: fresh insert,
+    same-key replay (skipped), mismatched-key (rejected with a
+    typed `AdminKeyRotationRequiredError`), rotation under
+    `force=true`, empty-key rejection, plus three sha256 sanity
+    checks including an `openssl dgst -sha256` cross-check against
+    a known vector. README now documents the bootstrap step + the
+    rotation flow.
+  - Verified end-to-end against the live Docker Postgres on port
+    5433: created → skipped → refused → rotated → missing-env all
+    return the expected exit codes, and a direct
+    `psql ... key_hash` query matches the `sha256sum` of the
+    plaintext bit-for-bit (proving the server will accept the same
+    key the bootstrap wrote).
 - `@suverse-pay/api` — Fastify HTTP entrypoint for the gateway. One
   endpoint per TASK.md §"REST API specification": `GET /health`
   (liveness, unauthenticated), `GET /providers`, `POST /quote`,

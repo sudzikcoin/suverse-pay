@@ -1,12 +1,15 @@
-import { createHash } from "node:crypto";
 import { GatewayError } from "@suverse-pay/core-types";
+import {
+  ADMIN_API_KEY_ID as DB_ADMIN_API_KEY_ID,
+  sha256ApiKeyHash,
+} from "@suverse-pay/db";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Config } from "../config.js";
 
 /**
  * v0.1 single-key auth.
  *
- * Bootstrap (Step 9) inserts one row in `api_keys` with
+ * `pnpm db:bootstrap` inserts one row in `api_keys` with
  * `id='apikey_admin_default'` and `key_hash = sha256(ADMIN_API_KEY)`.
  * The server holds the same hash in memory and rejects any request
  * whose `Authorization: Bearer <key>` does not hash to the stored
@@ -16,6 +19,10 @@ import type { Config } from "../config.js";
  * Phase 4 will keep the same `request.apiKeyId` shape, just pulled
  * from a DB lookup. Routes touch `request.apiKeyId` only; they never
  * see the raw header.
+ *
+ * The hash function + id constant are imported from `@suverse-pay/db`
+ * so the write side (bootstrap CLI) and the read side (this plugin)
+ * can never drift apart.
  */
 declare module "fastify" {
   interface FastifyRequest {
@@ -23,13 +30,12 @@ declare module "fastify" {
   }
 }
 
-export const ADMIN_API_KEY_ID = "apikey_admin_default";
+export const ADMIN_API_KEY_ID = DB_ADMIN_API_KEY_ID;
 
 const BEARER_PREFIX = "Bearer ";
 
-export function sha256Hex(input: string): string {
-  return createHash("sha256").update(input, "utf8").digest("hex");
-}
+/** Re-export so existing call sites keep working. */
+export const sha256Hex = sha256ApiKeyHash;
 
 /**
  * Constant-time string comparison. The pair of inputs is hex so all

@@ -24,6 +24,7 @@
     "@suverse-pay/adapter-coinbase-cdp": "workspace:*",
     "@suverse-pay/adapter-cosmos-pay": "workspace:*",
     "@suverse-pay/core-types": "workspace:*",
+    "@suverse-pay/db": "workspace:*",
     "@suverse-pay/orchestrator": "workspace:*",
     "@suverse-pay/provider-sdk": "workspace:*",
     "fastify": "^5.2.0",

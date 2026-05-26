@@ -100,30 +100,10 @@ export async function runMigrations(
   return applied;
 }
 
-async function main(): Promise<void> {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url.length === 0) {
-    throw new Error("DATABASE_URL is required");
-  }
-  const pool = new PgPool({ connectionString: url });
-  try {
-    const applied = await runMigrations({ client: pool });
-    process.stdout.write(`migrations: ${applied.length} applied\n`);
-  } finally {
-    await pool.end();
-  }
-}
-
-const invokedDirectly =
-  import.meta.url === `file://${process.argv[1]}` ||
-  process.argv[1]?.endsWith("/migrate.ts") === true ||
-  process.argv[1]?.endsWith("/migrate.js") === true;
-
-if (invokedDirectly) {
-  main().catch((err: unknown) => {
-    process.stderr.write(
-      `migrate failed: ${err instanceof Error ? err.message : String(err)}\n`,
-    );
-    process.exit(1);
-  });
-}
+/**
+ * CLI entry point lives in `migrate-cli.ts`. This module exports
+ * only the pure runner so callers (tests, the bootstrap script, the
+ * api server's own pre-flight check) can drive it against any
+ * `ClientBase | Pool`.
+ */
+export { PgPool };
