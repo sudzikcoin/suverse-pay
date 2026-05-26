@@ -55,3 +55,37 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   terminology. Optional `COINBASE_CDP_BASE_URL` added.
 - vitest test runner (workspace devDep). 156 unit tests across all
   four packages.
+- `@suverse-pay/orchestrator` service — the brain of the gateway.
+  Pure-logic modules (`router`, `policy`, `quote-aggregator`,
+  `fallback`) and IO-bound modules (`PaymentLedger`, `ProviderRegistry`,
+  `CapabilityDiscoveryCron`, `HealthCheckCron`, `RedisUsageTracker`)
+  are split so the bulk of routing semantics is testable without a
+  database.
+  - Router implements TASK.md §"Routing logic v0.1" exactly:
+    supports-filter → live-traffic-health-rule (>=10 attempts &
+    >=30% failures => unhealthy) → quiet-period fallback to
+    `provider_health_checks` (5min window) → score by
+    cost/latency/success_rate → optional provider-hint promotion
+    (silently ignored if the hint fails support or health filters).
+  - PaymentLedger enforces two-layer idempotency: Postgres unique
+    partial index on `(api_key_id, idempotency_key)` is authoritative;
+    Redis SETNX lock is the fast-path that avoids racing duplicate
+    `/settle` calls into the unique-violation path. Verified by a
+    `Promise.all` race test that fires 10 concurrent requests with
+    the same key and asserts exactly one INSERT.
+  - FallbackManager writes a `payment_attempts` row BEFORE every
+    network call (CLAUDE.md invariant 4); cross-provider retry runs
+    only on retryable error codes and only against candidates that
+    still pass `supports()` at attempt time.
+  - CapabilityDiscoveryCron + HealthCheckCron use `setInterval` for
+    v0.1 (no BullMQ until we need real durability). Discovery
+    reconciles static vs. discovered rows, marking superseded
+    capabilities; an empty discovery result is treated as transient
+    and does NOT supersede any static rows.
+  - RedisUsageTracker implements the `UsageTracker` interface that
+    `@suverse-pay/adapter-coinbase-cdp` defined in Step 5. Buckets
+    per UTC month, auto-expires the key 35 days out (no monthly cron
+    needed).
+  - Tests use `pg-mem` + `ioredis-mock` for IO-bound modules; pure
+    logic has no DB dependency. 83 new tests, 239 total across the
+    workspace.

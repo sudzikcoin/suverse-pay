@@ -1,0 +1,40 @@
+{
+  "name": "@suverse-pay/orchestrator",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Routing, fallback, ledger, and capability/health crons for the suverse-pay gateway.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@suverse-pay/adapter-coinbase-cdp": "workspace:*",
+    "@suverse-pay/core-types": "workspace:*",
+    "@suverse-pay/provider-sdk": "workspace:*",
+    "ioredis": "^5.4.1",
+    "pg": "^8.13.1",
+    "ulidx": "^2.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.10",
+    "ioredis-mock": "^8.9.0",
+    "pg-mem": "^3.0.5"
+  }
+}

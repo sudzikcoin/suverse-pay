@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true
+  },
+  "references": [
+    { "path": "../../packages/core-types" },
+    { "path": "../../packages/provider-sdk" },
+    { "path": "../../packages/adapters/coinbase-cdp" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/_test-helpers.ts",
+    "dist",
+    "node_modules"
+  ]
+}
