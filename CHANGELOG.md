@@ -142,6 +142,31 @@ this project adheres to [Semantic Versioning](https://semver.org/).
     out-of-tree migration was rolled back fully — both the
     `schema_migrations` row AND the partially-created table, which
     is the real-Postgres behaviour that pg-mem cannot model.
+- `scripts/smoke/mocked/` — curl-based mocked smoke suite, one shell
+  script per endpoint. Drives the live Postgres + Redis but registers
+  in-memory `ProviderAdapter` fakes via a separate Fastify entrypoint
+  (`apps/api/src/server-mock.ts`) so the production codepath has zero
+  conditional "test mode" branches.
+  - 10 numbered steps mapped to every TASK.md §"Required for Phase 1
+    done" item 4 scenario plus a `POST /verify` bonus. `run-all.sh`
+    orchestrates the whole sequence and always tears down the
+    background server even on failure.
+  - `_lib.sh` provides shared coloured PASS/FAIL output, an
+    `expect_status` curl helper, and a `stop_smoke_server` routine
+    that cascades SIGTERM → port-free wait → SIGKILL through the
+    pnpm→tsx→node parent chain (since a naive `kill <pnpm pid>`
+    leaves the listening Node child running and the port busy).
+  - `SMOKE_COSMOS_PAY_FAIL_MODE` env knob restarts the mock server
+    with cosmos-pay always returning a chosen `ErrorCode`. Step 07
+    uses it to exercise the failure + retryable path end-to-end, then
+    re-starts the server in default mode for downstream steps.
+  - Default port is 3333 (not 3000 to stay clear of `pnpm dev`; not
+    3001 because a host LaunchLoop instance was bound there). Every
+    knob — `API_PORT`, `ADMIN_API_KEY`, `DATABASE_URL`, `REDIS_URL`,
+    latency injection — is overridable via env.
+  - Verified twice in a row that `run-all.sh` is idempotent — second
+    run from a non-clean DB still PASSes 10/10 because step 00
+    TRUNCATEs and re-bootstraps.
 - `apps/api/tests/integration/` — full end-to-end integration suite
   driven against the live `docker compose` Postgres 15 + Redis 7 stack.
   Adapter HTTP traffic is intercepted by `nock` so the real cosmos-pay

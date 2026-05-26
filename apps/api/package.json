@@ -17,6 +17,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch src/index.ts",
+    "dev:mock": "tsx watch src/server-mock.ts",
+    "start:mock": "tsx src/server-mock.ts",
     "start": "node dist/index.js",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
