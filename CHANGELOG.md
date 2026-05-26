@@ -4,6 +4,49 @@ All notable changes to `suverse-pay` are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.1.0-rc.1] — 2026-05-26
+
+Phase 1 release candidate. All mocked Phase-1-done acceptance
+criteria from TASK.md §"Required for Phase 1 done" are green:
+
+- `pnpm install && pnpm build` exits 0 (7 packages).
+- `pnpm test` exits 0 (284 unit tests, 1 documented skip).
+- `pnpm test:integration` exits 0 (25 end-to-end tests against the
+  live Docker Postgres + Redis with nock-intercepted provider HTTP).
+- `docker compose up -d && pnpm db:migrate && pnpm db:bootstrap`
+  applies the schema and seeds the admin api_key end-to-end against
+  Postgres 15.
+- `bash scripts/smoke/mocked/run-all.sh` PASSes all 10 endpoint
+  scenarios from TASK.md §"Required for Phase 1 done" item 4, plus a
+  bonus `/verify` step.
+- README has a copy-paste runnable quick start (clone → docker compose
+  → migrate → bootstrap → smoke).
+
+### Known limitations carried into Phase 2
+
+- Race-replay of `/settle` may surface a payment in `pending` state.
+  Exactly one row and one adapter HTTP call still happen (verified by
+  the integration `Promise.all` test); clients should `GET
+  /payments/:id` to see the terminal state. Phase 2 will hold the
+  Redis lock through finalization.
+- `pnpm db:bootstrap --force` rotation updates the on-disk hash; the
+  running server keeps the prior hash in memory until restart.
+  Documented in README; Phase 2 will add SIGHUP-style rotation.
+- One vitest case (`services/orchestrator/src/health-check.test.ts:177`)
+  is `it.skip`ped because the 175ms wait + 50ms tick assertion is
+  flaky under parallel test load. Phase 2 will rewrite with
+  `vi.useFakeTimers()`.
+
+### Release gate (NOT in this RC)
+
+- Real-network smoke against a deployed `cosmos-pay` Cosmos testnet
+  facilitator.
+- Real-network smoke against Coinbase CDP x402 with a real API key.
+
+Both are documented in TASK.md §"Required for v0.1.0 release tag".
+The full `v0.1.0` tag depends on at least item #7 (cosmos-pay
+testnet) passing.
+
 ## [Unreleased]
 
 ### Added
