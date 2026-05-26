@@ -130,6 +130,18 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   - pg-mem gotcha #2: pg-mem does not implement `to_regclass()`. The
     test for "table exists" uses `information_schema.tables`, which
     works in both pg-mem and real Postgres.
+  - Verified against the real Docker stack (Postgres 15-alpine on
+    port 5433, Redis 7-alpine on port 6380). `pnpm db:migrate` on
+    a fresh DB applied `001_initial.sql` and produced exactly the
+    9 expected tables (8 project + `schema_migrations`). A second
+    invocation was a no-op (`= 001_initial.sql (already applied)`).
+    `payments_idempotency_idx` is a unique btree with the
+    `WHERE (idempotency_key IS NOT NULL)` predicate; the
+    `provider_capabilities` CHECK constraint
+    `(is_static OR is_discovered)` is present. A failing
+    out-of-tree migration was rolled back fully — both the
+    `schema_migrations` row AND the partially-created table, which
+    is the real-Postgres behaviour that pg-mem cannot model.
 - `@suverse-pay/api` — Fastify HTTP entrypoint for the gateway. One
   endpoint per TASK.md §"REST API specification": `GET /health`
   (liveness, unauthenticated), `GET /providers`, `POST /quote`,
