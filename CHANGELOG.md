@@ -89,3 +89,42 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   - Tests use `pg-mem` + `ioredis-mock` for IO-bound modules; pure
     logic has no DB dependency. 83 new tests, 239 total across the
     workspace.
+- `@suverse-pay/api` — Fastify HTTP entrypoint for the gateway. One
+  endpoint per TASK.md §"REST API specification": `GET /health`
+  (liveness, unauthenticated), `GET /providers`, `POST /quote`,
+  `POST /verify`, `POST /settle`, `GET /payments/:id`,
+  `GET /metrics/summary`. Plugins: sha256 admin-key bearer auth (Phase
+  4 will keep `request.apiKeyId` shape but resolve it from DB),
+  Idempotency-Key extraction, Redis-backed `@fastify/rate-limit`
+  (in-memory fallback when no Redis), pino structured logging, and a
+  global error handler that normalizes Zod / GatewayError /
+  ProviderError / Fastify errors into a single `{ error: { code,
+  message } }` envelope.
+  - Architectural split: `buildServer(ctx)` takes a `ServerContext`
+    with `registry`, `ledger`, `loadHealthSummaries`, `loadMetrics`,
+    so every route is testable with in-memory fakes. The real Pool /
+    Redis / cron / adapter wiring is confined to `index.ts`. Tests
+    never touch real Postgres.
+  - `/settle` is the hot path: it asserts the Idempotency-Key header
+    (400 otherwise), calls `PaymentLedger.createOrFetchPayment` (two-
+    layer idempotency — Postgres unique index + Redis SETNX lock),
+    runs the router, persists the decision to `routing_decisions`,
+    drives `runFallback` across the candidate list, finalizes the
+    `payments` row, and always releases the Redis lock in a
+    `finally` block.
+  - `/payments/:id` returns 404 (not 403) for cross-tenant lookups,
+    so an api key cannot probe for the existence of another tenant's
+    payment.
+  - Graceful shutdown on SIGTERM / SIGINT stops both crons, closes
+    the Fastify server, ends the pg pool, and disconnects Redis.
+  - `loadHealthSummariesFromDb` rolls up `payment_attempts` (last
+    60s + 7d) and the most recent `provider_health_checks` row per
+    provider for the router's health-rule input. `loadMetricsFromDb`
+    powers `/metrics/summary` with payment status counts + per-
+    provider attempt/success/failure rolls over the last 24h.
+  - 33 integration tests using `app.inject()` — auth (5), `/health`
+    (2), `/providers` (3), `/quote` (5), `/verify` (5), `/settle` (8
+    incl. idempotency replay, fallback chain, non-retryable stop,
+    route_unsupported, and Redis-lock release on exception),
+    `/payments/:id` (3), `/metrics/summary` (2). Total workspace
+    coverage now 272 tests across 30 files.

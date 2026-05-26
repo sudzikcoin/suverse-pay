@@ -1,0 +1,41 @@
+{
+  "name": "@suverse-pay/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fastify HTTP entrypoint for the suverse-pay gateway.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "^10.2.1",
+    "@suverse-pay/adapter-coinbase-cdp": "workspace:*",
+    "@suverse-pay/adapter-cosmos-pay": "workspace:*",
+    "@suverse-pay/core-types": "workspace:*",
+    "@suverse-pay/orchestrator": "workspace:*",
+    "@suverse-pay/provider-sdk": "workspace:*",
+    "fastify": "^5.2.0",
+    "ioredis": "^5.4.1",
+    "pg": "^8.13.1",
+    "pino": "^9.5.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.10",
+    "pino-pretty": "^11.3.0",
+    "tsx": "^4.19.2"
+  }
+}
