@@ -1,0 +1,35 @@
+{
+  "name": "@suverse-pay/adapter-coinbase-cdp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Adapter wrapping Coinbase Developer Platform's hosted x402 facilitator (EVM + Solana, scheme=exact / upto).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@suverse-pay/core-types": "workspace:*",
+    "@suverse-pay/provider-sdk": "workspace:*",
+    "jose": "^6.2.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0"
+  }
+}

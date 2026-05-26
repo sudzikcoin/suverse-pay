@@ -38,5 +38,20 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   strings are normalized through a dictionary-style map with a
   warning-logged `provider_internal_error` fallback for unknown
   codes. `/healthz` uses raw `fetch` (empty body, no JSON parse).
-- vitest test runner (workspace devDep). 105 unit tests across all
-  three packages.
+- `@suverse-pay/adapter-coinbase-cdp` package — second concrete
+  adapter. Wraps Coinbase Developer Platform's hosted x402 facilitator
+  at `https://api.cdp.coinbase.com/platform/v2/x402` (EVM + Solana,
+  `exact` / `upto` schemes). Wire shapes pinned to the canonical
+  x402 v2 reference types in `coinbase/x402` on GitHub.
+  Authentication is a short-lived EdDSA JWT (`jose` + Ed25519) built
+  per the CDP spec (sub/iss=cdp/aud=[cdp_service]/nbf/exp/uri, header
+  with random nonce). `UsageTracker` interface + `InMemoryUsageTracker`
+  enforce the configurable monthly hard cap from `supports()` so
+  routing skips this provider once the free tier is exhausted — a
+  Redis-backed tracker will plug in during Step 6.
+- `.env.example` updated: `COINBASE_CDP_API_KEY` /
+  `COINBASE_CDP_API_SECRET` renamed to `COINBASE_CDP_API_KEY_NAME` /
+  `COINBASE_CDP_API_KEY_SECRET` to match the CDP portal's exported
+  terminology. Optional `COINBASE_CDP_BASE_URL` added.
+- vitest test runner (workspace devDep). 156 unit tests across all
+  four packages.
