@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: suverse-pay-postgres
+    environment:
+      POSTGRES_USER: suverse
+      POSTGRES_PASSWORD: suverse
+      POSTGRES_DB: suverse_pay
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - suverse_pay_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U suverse -d suverse_pay"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: suverse-pay-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - suverse_pay_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  suverse_pay_pg:
+  suverse_pay_redis:
