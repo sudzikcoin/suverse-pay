@@ -4,6 +4,43 @@ All notable changes to `suverse-pay` are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.1.0] — 2026-05-27
+
+Phase 1 stable. Real-network smoke gate is green.
+
+### Added
+
+- `scripts/smoke/real/` — 9-step end-to-end suite that exercises the
+  gateway against a live `cosmos-pay` facilitator on Cosmos testnet
+  `grand-1`. Each `05-settle.sh` run broadcasts a real
+  `MsgExec(MsgSend)` and asserts the on-chain `txHash` round-trips
+  through `/settle` and `/payments/:id`.
+- Fixture generator at `x402-cosmos/tools/fixture/` produces a fresh
+  ADR-036-signed `PaymentPayload` + matching `PaymentRequirements`
+  per invocation. Cross-repo, referenced over HTTP; no vendored Go
+  code lands in this TypeScript monorepo.
+
+### Verified
+
+- Idempotency invariant under real on-chain conditions: a duplicate
+  `/settle` with the same `Idempotency-Key` returns the same
+  `paymentId` and the same on-chain `txHash`, and `/payments/:id`
+  reports exactly one attempt (no second broadcast).
+- `cosmos-pay` HTTP integration via real `/verify` and `/settle`.
+  `/providers` reports `cosmos-pay` healthy when the facilitator is
+  reachable, and runtime capability discovery correctly supersedes
+  the adapter's static mainnet capability with the testnet one
+  the facilitator actually offers.
+
+### Deferred to v0.2+
+
+- Coinbase CDP real-network smoke (requires CDP API key).
+- Cross-provider fallback under real conditions (requires a second
+  reachable facilitator).
+- Race-replay terminal state polish (see "Known limitations" in
+  README — duplicate `/settle` may transiently surface as `pending`).
+- SIGHUP-style admin api_key rotation without server restart.
+
 ## [v0.1.0-rc.1] — 2026-05-26
 
 Phase 1 release candidate. All mocked Phase-1-done acceptance
