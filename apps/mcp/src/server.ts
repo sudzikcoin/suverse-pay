@@ -4,8 +4,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import {
+  BazaarSource,
+  CosmosCatalogSource,
+  type DiscoverySource,
+} from "@suverse-pay/discovery";
 
 import { loadConfig, type Config } from "./config.js";
+import { GatewayClient } from "./gateway-client.js";
 import { SessionStore } from "./session.js";
 import { SUPPORTED_NETWORKS } from "./networks.js";
 
@@ -14,16 +20,29 @@ import {
   type InitSessionInput,
   handleInitSession,
 } from "./tools/init-session.js";
-import { ListProvidersInputShape, handleListProviders } from "./tools/list-providers.js";
+import {
+  ListProvidersInputShape,
+  type ListProvidersInput,
+  handleListProviders,
+} from "./tools/list-providers.js";
 import {
   DiscoverEndpointsInputShape,
   type DiscoverEndpointsInput,
   handleDiscoverEndpoints,
 } from "./tools/discover-endpoints.js";
-import { GetQuoteInputShape, handleGetQuote } from "./tools/get-quote.js";
-import { PayAndCallInputShape, handlePayAndCall } from "./tools/pay-and-call.js";
+import {
+  GetQuoteInputShape,
+  type GetQuoteInput,
+  handleGetQuote,
+} from "./tools/get-quote.js";
+import {
+  PayAndCallInputShape,
+  type PayAndCallInput,
+  handlePayAndCall,
+} from "./tools/pay-and-call.js";
 import {
   GetPaymentStatusInputShape,
+  type GetPaymentStatusInput,
   handleGetPaymentStatus,
 } from "./tools/get-payment-status.js";
 import {
@@ -36,8 +55,17 @@ export interface BuiltServer {
   mcp: McpServer;
   transport: StreamableHTTPServerTransport;
   store: SessionStore;
+  gateway: GatewayClient;
+  discoverySources: readonly DiscoverySource[];
   config: Config;
   logger: Logger;
+}
+
+export interface BuildServerOptions {
+  /** Override the GatewayClient (tests pass a fake against a mock server). */
+  gateway?: GatewayClient;
+  /** Override discovery sources (tests inject deterministic sources). */
+  discoverySources?: readonly DiscoverySource[];
 }
 
 function ok(value: unknown): CallToolResult {
@@ -53,7 +81,10 @@ function err(code: string, message: string): CallToolResult {
   };
 }
 
-export async function buildServer(config: Config = loadConfig()): Promise<BuiltServer> {
+export async function buildServer(
+  config: Config = loadConfig(),
+  options: BuildServerOptions = {},
+): Promise<BuiltServer> {
   // pino with bindings that REDACT secret-bearing paths. Defense in depth:
   // tool handlers also never log secrets, but the redact list catches
   // accidental log.info({input}) calls that would otherwise leak.
@@ -75,6 +106,16 @@ export async function buildServer(config: Config = loadConfig()): Promise<BuiltS
   const store = new SessionStore();
   store.startSweepLoop();
 
+  const gateway =
+    options.gateway ??
+    new GatewayClient({
+      baseUrl: config.gatewayUrl,
+      adminKey: config.adminApiKey,
+    });
+
+  const discoverySources: readonly DiscoverySource[] =
+    options.discoverySources ?? [new BazaarSource(), new CosmosCatalogSource()];
+
   const mcp = new McpServer(
     { name: "suverse-pay-mcp", version: "0.0.0" },
     {
@@ -82,7 +123,8 @@ export async function buildServer(config: Config = loadConfig()): Promise<BuiltS
       instructions:
         "MCP server for the suverse-pay x402 gateway. " +
         `Supported networks: ${SUPPORTED_NETWORKS.join(", ")}. ` +
-        "Phase 2 Sub-task 1: only init_session and end_session are implemented; other tools return stub placeholders.",
+        "Tools: init_session, list_providers, discover_endpoints, get_quote, " +
+        "pay_and_call, get_payment_status, end_session.",
     },
   );
 
@@ -109,10 +151,15 @@ export async function buildServer(config: Config = loadConfig()): Promise<BuiltS
     {
       title: "List available payment providers",
       description:
-        "Returns the configured gateway providers and their capabilities. STUB in Sub-task 1.",
+        "Returns the configured gateway providers, their merged capabilities, and " +
+        "their current health summary. Sourced from GET /providers on the gateway.",
       inputSchema: ListProvidersInputShape,
     },
-    async (): Promise<CallToolResult> => ok(handleListProviders()),
+    async (input: ListProvidersInput): Promise<CallToolResult> => {
+      const result = await handleListProviders(input, { store, gateway });
+      if (!result.ok) return err(result.error.code, result.error.message);
+      return ok(result.result);
+    },
   );
 
   mcp.registerTool(
@@ -120,10 +167,16 @@ export async function buildServer(config: Config = loadConfig()): Promise<BuiltS
     {
       title: "Discover paid x402 endpoints",
       description:
-        "Search across Coinbase Bazaar and Cosmos catalogs for paid x402 endpoints matching the criteria. STUB in Sub-task 1.",
+        "Search Coinbase Bazaar (and other catalogs) for paid x402 endpoints. " +
+        "Returns normalized DiscoveredEndpoint entries — same resource URL may " +
+        "appear multiple times for different (network, asset) payment options.",
       inputSchema: DiscoverEndpointsInputShape,
     },
-    async (input: DiscoverEndpointsInput): Promise<CallToolResult> => ok(handleDiscoverEndpoints(input)),
+    async (input: DiscoverEndpointsInput): Promise<CallToolResult> => {
+      const result = await handleDiscoverEndpoints(input, { store, sources: discoverySources });
+      if (!result.ok) return err(result.error.code, result.error.message);
+      return ok(result.result);
+    },
   );
 
   mcp.registerTool(
@@ -131,10 +184,16 @@ export async function buildServer(config: Config = loadConfig()): Promise<BuiltS
     {
       title: "Get a payment quote",
       description:
-        "Ask the gateway to quote a payment across providers, optionally optimizing for cost, latency, or success rate. STUB in Sub-task 1.",
+        "Ask the gateway to quote a payment across providers, optionally optimizing for " +
+        "cost, latency, or success rate. Requested networks must be in the session's " +
+        "capability set or the call is rejected before reaching the gateway.",
       inputSchema: GetQuoteInputShape,
     },
-    async (): Promise<CallToolResult> => ok(handleGetQuote()),
+    async (input: GetQuoteInput): Promise<CallToolResult> => {
+      const result = await handleGetQuote(input, { store, gateway });
+      if (!result.ok) return err(result.error.code, result.error.message);
+      return ok(result.result);
+    },
   );
 
   mcp.registerTool(
@@ -142,20 +201,32 @@ export async function buildServer(config: Config = loadConfig()): Promise<BuiltS
     {
       title: "Pay and call a paid x402 endpoint",
       description:
-        "Calls the given URL, handles a 402 Payment Required by signing locally and settling through the gateway, then re-calls with payment proof and returns the response. STUB in Sub-task 1.",
+        "Calls the given URL. On HTTP 402 Payment Required, picks a compatible " +
+        "accepts[] entry from the session's networks, signs locally with the in-memory " +
+        "secret, POSTs to the gateway /settle endpoint with a derived Idempotency-Key, " +
+        "then retries the original request with the X-PAYMENT header and returns the " +
+        "endpoint's response. Non-402 initial responses are returned as-is.",
       inputSchema: PayAndCallInputShape,
     },
-    async (): Promise<CallToolResult> => ok(handlePayAndCall()),
+    async (input: PayAndCallInput): Promise<CallToolResult> => {
+      const result = await handlePayAndCall(input, { store, gateway, config });
+      if (!result.ok) return err(result.error.code, result.error.message);
+      return ok(result.result);
+    },
   );
 
   mcp.registerTool(
     "get_payment_status",
     {
       title: "Get the status of a settled payment",
-      description: "Wraps GET /payments/:id. STUB in Sub-task 1.",
+      description: "Wraps GET /payments/:id. Returns the gateway's payment record including attempts.",
       inputSchema: GetPaymentStatusInputShape,
     },
-    async (): Promise<CallToolResult> => ok(handleGetPaymentStatus()),
+    async (input: GetPaymentStatusInput): Promise<CallToolResult> => {
+      const result = await handleGetPaymentStatus(input, { store, gateway });
+      if (!result.ok) return err(result.error.code, result.error.message);
+      return ok(result.result);
+    },
   );
 
   mcp.registerTool(
@@ -175,7 +246,7 @@ export async function buildServer(config: Config = loadConfig()): Promise<BuiltS
   });
   await mcp.connect(transport);
 
-  return { mcp, transport, store, config, logger };
+  return { mcp, transport, store, gateway, discoverySources, config, logger };
 }
 
 export async function main(): Promise<void> {

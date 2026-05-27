@@ -81,6 +81,15 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ~1.29.0
         version: 1.29.0(zod@4.4.3)
+      '@suverse-pay/discovery':
+        specifier: workspace:*
+        version: link:../../packages/discovery
+      '@suverse-pay/signer-cosmos':
+        specifier: workspace:*
+        version: link:../../packages/signers/cosmos
+      '@suverse-pay/signer-evm':
+        specifier: workspace:*
+        version: link:../../packages/signers/evm
       express:
         specifier: ^5.2.1
         version: 5.2.1

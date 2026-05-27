@@ -14,8 +14,9 @@ const config: Config = {
   port: 3100,
   host: "127.0.0.1",
   gatewayUrl: "http://localhost:3000",
-  adminApiKey: undefined,
+  adminApiKey: "test-admin-key",
   sessionTimeoutMs: 60_000,
+  externalCallTimeoutMs: 15_000,
 };
 
 describe("init_session", () => {
