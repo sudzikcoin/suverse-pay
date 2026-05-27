@@ -15,16 +15,18 @@ same `(network, asset, scheme)` triple.
 
 ## Status
 
-**v0.1.0-rc.1** — Phase 1 complete. All mocked acceptance criteria
-green. Real-network release gate (a live cosmos-pay deployment and a
-Coinbase CDP API key) is the only thing standing between this and the
-`v0.1.0` tag.
+**v0.2.0** — Phase 2 complete. MCP server with multi-network signing,
+Bazaar discovery, and verified real on-chain payment via the MCP
+flow on Noble testnet `grand-1`.
 
-- Build: green across 7 packages
-- Tests: 309 across 8 packages (284 unit + 25 integration), 1 skipped
-  (documented flaky timing test deferred to Phase 2)
-- Smoke: 10/10 mocked endpoint scenarios passing
-- DB: schema applied + verified against the real Docker Postgres 15
+- Build: green across 11 packages
+- Tests: green across 20 workspace test tasks (~400 tests total —
+  signers, discovery aggregator, MCP integration, gateway routes,
+  orchestrator, adapters)
+- Smoke: 4 suites green — `mocked` (10 steps), `real` (9 steps),
+  `mcp-mocked` (7 steps), `mcp-real` (4 steps)
+- MCP: real `MsgExec(MsgSend)` broadcast on Noble grand-1, idempotent
+  replay returns the same `txHash` without re-broadcasting
 
 ## Quick start
 
@@ -58,9 +60,18 @@ the smoke mocks: set `COINBASE_CDP_API_KEY_NAME` / `*_SECRET` (see
 
 ```
 ┌────────────────────────────────────────────────────┐
-│  AI agents, dev tools, applications                │
+│  AI agents                                         │
 └─────────────────────┬──────────────────────────────┘
-                      │ REST (Phase 1) / MCP (Phase 2)
+                      │ MCP streamable HTTP
+                      ▼
+┌────────────────────────────────────────────────────┐
+│  apps/mcp            init_session, pay_and_call,   │
+│                      discover_endpoints, ...       │
+│   ├─ signers (cosmos / evm) — in-memory only       │
+│   ├─ discovery aggregator (Bazaar + catalogs)      │
+│   └─ idempotency cache (payerAddress + hourBucket) │
+└─────────────────────┬──────────────────────────────┘
+                      │ REST + Bearer auth
                       ▼
 ┌────────────────────────────────────────────────────┐
 │  apps/api            Fastify HTTP, auth, idempotency
@@ -76,10 +87,14 @@ the smoke mocks: set `COINBASE_CDP_API_KEY_NAME` / `*_SECRET` (see
 ┌──────────┐ ┌──────────┐  ┌──────────────┐
 │ Coinbase │ │ cosmos-  │  │ Future:      │
 │   CDP    │ │   pay    │  │ PayAI,       │
-│ (EVM +   │ │ (Cosmos  │  │ Questflow,   │
-│  Solana) │ │  chains) │  │ thirdweb     │
+│ (EVM +   │ │ (Cosmos  │  │ Solana, ...  │
+│  Solana) │ │  chains) │  │              │
 └──────────┘ └──────────┘  └──────────────┘
 ```
+
+The MCP server is the agent-facing entry point added in v0.2.0. See
+[`apps/mcp/README.md`](./apps/mcp/README.md) for tool reference,
+configuration, and the agent-side x402 flow.
 
 Four binding layers (see `CLAUDE.md` for the full rationale):
 
@@ -189,12 +204,16 @@ See `TASK.md` §"Provider adapter contract" and CLAUDE.md
 ## Roadmap
 
 - **Phase 1** — REST gateway, two adapters, smart routing,
-  idempotency, mocked smoke. **(this release, v0.1.0-rc.1)**
-- **Phase 2** — MCP server (`apps/mcp`), race-replay polishing,
-  rotation without restart.
-- **Phase 3** — Multi-tenancy + billing.
-- **Phase 4+** — Native facilitator settlement (isolated service
-  with its own credentials), webhooks, AI-assisted routing.
+  idempotency, mocked + real-network smoke. **(v0.1.0)**
+- **Phase 2** — MCP server (`apps/mcp`), Cosmos + EVM signers,
+  discovery aggregator (Bazaar + cosmos catalog), real on-chain MCP
+  smoke on Noble testnet. **(this release, v0.2.0)**
+- **Phase 3** — Solana signer + adapter, Coinbase CDP real smoke
+  (requires API key), additional discovery sources (PayAI,
+  Solana Foundation gateway).
+- **Phase 4** — Multi-tenancy + billing, webhooks.
+- **Phase 5+** — Native facilitator settlement (isolated service
+  with its own credentials), AI-assisted routing.
 
 ## License
 

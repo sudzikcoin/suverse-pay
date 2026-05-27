@@ -4,6 +4,99 @@ All notable changes to `suverse-pay` are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.2.0] — 2026-05-27
+
+Phase 2 stable. MCP server with multi-network signing and verified
+real on-chain payment through the agent flow.
+
+### Added
+
+- **MCP server** at `apps/mcp` exposing the suverse-pay x402 gateway
+  to AI agents over the Model Context Protocol streamable-HTTP
+  transport. Seven tools: `init_session`, `list_providers`,
+  `discover_endpoints`, `get_quote`, `pay_and_call`,
+  `get_payment_status`, `end_session`.
+- **Zero-custody session management**: signing secrets held in
+  per-process `Buffer` only, zeroed on `Session.destroy()`, never
+  logged (pino `redact` list), never persisted, never transmitted.
+  Idle sessions are swept every 60s.
+- **TypeScript signing packages**:
+  - `@suverse-pay/signer-cosmos` — ADR-036 `PaymentPayload` signing
+    for the `exact_cosmos_authz` scheme on `cosmos:grand-1`.
+    Byte-compatible with the cosmos-pay Go reference fixture.
+  - `@suverse-pay/signer-evm` — EIP-3009 `transferWithAuthorization`
+    signing for the `exact` scheme on Base, Polygon, and Arbitrum
+    (USDC + Base EURC). Round-trip self-consistency verified via
+    `recoverTypedDataAddress` for every `(network, token)` pair.
+- **Discovery aggregator** `@suverse-pay/discovery` combining
+  Coinbase Bazaar (live `GET /v2/x402/discovery/search`) and a
+  cosmos catalog placeholder. Dedup by `(resource, network, asset)`
+  tuple so the same URL with multiple payment options is preserved
+  as separate entries.
+- **MCP-side idempotency cache** keyed by
+  `sha256(payerAddress | network | url | sha256(body) | hourBucket)`.
+  A replay of the same call within the same wall-clock hour returns
+  the cached result without re-signing or re-submitting; the cache
+  key explicitly excludes `sessionId` so a fresh MCP session for the
+  same wallet still dedupes.
+- **Smoke suites**:
+  - `scripts/smoke/mcp-mocked/` (7 steps) drives the MCP HTTP
+    transport against a mock x402 endpoint + mock gateway with the
+    real signers in the loop.
+  - `scripts/smoke/mcp-real/` (4 steps) reuses
+    `/home/govhub/x402-cosmos/examples/server` as the paid endpoint
+    and broadcasts a real `MsgExec(MsgSend)` on Noble testnet
+    `grand-1` through the MCP `pay_and_call` flow.
+- Comprehensive `apps/mcp/README.md` with tool reference, env vars,
+  Claude Desktop / Cursor config, and architecture diagram.
+
+### Verified
+
+- **End-to-end MCP pay-and-call on a live chain**: agent → MCP →
+  402 → ADR-036 sign → POST `PAYMENT-SIGNATURE` → cosmos-pay
+  facilitator → on-chain `MsgExec(MsgSend)` on Noble `grand-1` →
+  retry response. Real `txHash` returned to the agent in the same
+  tool result.
+- **Idempotency on-chain proof**: two `pay_and_call` invocations
+  with the same `(sessionId, url, body)` within an hour return the
+  same `paymentId` and `txHash` with `idempotentReplay: true`; the
+  mock x402 server's call counter shows exactly one paid request
+  (no second on-chain broadcast).
+- **Cosmos signer byte-compatible** with the cosmos-pay Go fixture:
+  direct `/verify` against the live facilitator returns
+  `isValid: true` for the TS-signed payload.
+- **EVM signing** self-consistent via `recoverTypedDataAddress`
+  round-trip for every trusted `(network, token)` pair.
+- **Zero-custody assertion**: the canonical BIP-39 test mnemonic
+  word "abandon" never appears in any surfaced error message
+  across the 40-test MCP suite.
+- **x402 wire-format dual-mode**: `pay_and_call` parses 402
+  responses from both the v2 spec `PAYMENT-REQUIRED` header
+  (base64 `{accepts: [...]}` envelope) AND the cosmos-pay
+  middleware flat shape (`{scheme, network, asset, ...}` directly).
+  Outbound `PAYMENT-SIGNATURE` is written in the cosmos-pay /
+  x402-py compatible flat shape with `scheme` and `network` at the
+  top level.
+- All four smoke suites green: `mocked` (10/10), `real` (9/9),
+  `mcp-mocked` (7/7), `mcp-real` (4/4).
+
+### Deferred to v0.3+
+
+- **EVM real-network smoke** (requires a Coinbase CDP API key).
+  EVM signing math is verified offline today.
+- **Solana signing and adapter** — leading Phase 3 candidate given
+  Solana's share of live x402 volume. See `IDEAS.md` item 4.
+- **PayAI adapter** as a third facilitator across cosmos-pay /
+  Coinbase CDP. See `IDEAS.md` item 5.
+- **Permit2 fallback** for ERC-20s that don't implement EIP-3009
+  (e.g., USDT, DAI).
+- **Cosmos mainnet** (`cosmos:noble-1`) — requires a funded
+  mainnet facilitator.
+- **Stdio MCP transport** — only streamable HTTP is wired up.
+- **Resource-server facilitator mode** — let an x402 middleware
+  configure suverse-pay as its facilitator URL. See `IDEAS.md`
+  item 6 for the architectural sketch.
+
 ## [v0.1.0] — 2026-05-27
 
 Phase 1 stable. Real-network smoke gate is green.

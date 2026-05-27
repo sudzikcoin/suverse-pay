@@ -26,6 +26,13 @@ export interface MockRoute {
   paymentRequired: PaymentRequiredBody;
   /** Body returned once the client retries with payment proof. */
   successBody: unknown;
+  /**
+   * If set, even the retry-with-payment call returns 402 with a
+   * PAYMENT-RESPONSE failure header (errorReason from this object).
+   * Models facilitator-side rejection (insufficient_funds, expired
+   * authorization, etc.).
+   */
+  alwaysFail?: { errorReason: string };
 }
 
 export interface PaymentRequiredBody {
@@ -76,6 +83,24 @@ export async function startMockX402Server(
       }
       counts[path]!.paid += 1;
       proofs.push(proof);
+      if (route.alwaysFail) {
+        // Facilitator-rejection mock: respond 402 with a failure
+        // SettlementResponse envelope in PAYMENT-RESPONSE.
+        res.statusCode = 402;
+        res.setHeader("content-type", "application/json");
+        const settlement = {
+          success: false,
+          errorReason: route.alwaysFail.errorReason,
+          transaction: "",
+          network: extractFirstNetwork(route.paymentRequired),
+        };
+        res.setHeader(
+          "payment-response",
+          Buffer.from(JSON.stringify(settlement), "utf8").toString("base64"),
+        );
+        res.end(JSON.stringify({}));
+        return;
+      }
       res.statusCode = 200;
       res.setHeader("content-type", "application/json");
       // Mirror the spec's PAYMENT-RESPONSE convention so the client
@@ -115,7 +140,13 @@ export async function startMockX402Server(
 }
 
 function extractFirstNetwork(pr: PaymentRequiredBody): string {
-  const first = pr.accepts[0];
-  if (first && typeof first.network === "string") return first.network;
+  // accepts[]-shaped body
+  if (Array.isArray(pr.accepts) && pr.accepts[0]) {
+    const first = pr.accepts[0];
+    if (typeof first.network === "string") return first.network;
+  }
+  // Flat-PaymentRequirements shape (cosmos-pay middleware): top-level network.
+  const flat = pr as unknown as { network?: unknown };
+  if (typeof flat.network === "string") return flat.network;
   return "unknown";
 }

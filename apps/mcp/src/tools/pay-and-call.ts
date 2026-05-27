@@ -7,10 +7,25 @@ import {
 import { signPaymentPayload as signEvmPaymentPayload } from "@suverse-pay/signer-evm";
 import type { Config } from "../config.js";
 import type { GatewayClient } from "../gateway-client.js";
-import { GatewayError } from "../gateway-client.js";
 import { isCosmosNetwork, isEvmNetwork } from "../networks.js";
 import type { Session, SessionStore } from "../session.js";
 import { loadSession, safeErrorMessage, type ToolResult } from "./session-helper.js";
+
+// Module-scoped in-memory idempotency cache, keyed by
+// deriveIdempotencyKey(...). Stores the final tool result so a replay
+// of the same call within the same hour bucket returns the same
+// txHash WITHOUT re-signing or re-submitting (which would mint a
+// second on-chain tx since neither x402 v2 nor cosmos-pay tracks
+// nonces server-side).
+//
+// Scope: per-process. Lost on MCP restart — which is acceptable
+// because a new process boots a fresh session anyway.
+const idempotencyCache = new Map<string, PayAndCallResult>();
+
+/** Test-only — clear the cache between tests. */
+export function _resetIdempotencyCacheForTests(): void {
+  idempotencyCache.clear();
+}
 
 export const PayAndCallInputShape = {
   sessionId: z.string().uuid(),
@@ -41,16 +56,28 @@ interface PaidEndpointResponse {
 export interface PayAndCallResult {
   /** "no_payment_required" when initial response wasn't 402. */
   status: "no_payment_required" | "settled";
-  /** Gateway payment id, only when status === "settled". */
+  /**
+   * Synthetic MCP-side payment id (`mcp_<first16hex>`), derived from
+   * the same key as the idempotency cache. Stable across replays of
+   * the same (payerAddress, network, url, body, hourBucket).
+   */
   paymentId?: string;
-  /** On-chain tx hash, only when status === "settled". */
+  /**
+   * On-chain tx hash from the resource server's PAYMENT-RESPONSE
+   * header (the resource server's middleware obtains it from
+   * whichever facilitator it's configured against).
+   */
   txHash?: string | null;
-  /** Provider that ultimately settled, only when status === "settled". */
-  providerId?: string | null;
   /** The resource server's response (initial OR post-payment retry). */
   response: PaidEndpointResponse;
   /** Echo the network we paid on, only when status === "settled". */
   network?: string;
+  /**
+   * True on a cache hit — meaning the agent already paid this (url,
+   * body) within the same hour and we returned the cached result
+   * without re-signing or re-submitting. No second on-chain tx.
+   */
+  idempotentReplay?: boolean;
 }
 
 // ---- x402 spec types (wire format, mirrored locally to keep this
@@ -176,11 +203,8 @@ function parsePaymentRequired(
 function normalizePaymentRequired(raw: unknown): NormalizedPaymentRequired | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
-  const acceptsRaw = obj.accepts;
-  if (!Array.isArray(acceptsRaw)) return null;
   const x402Version =
     typeof obj.x402Version === "number" ? obj.x402Version : 2;
-  const accepts: NormalizedAccepts[] = [];
   let topLevelResource: string | undefined;
   if (typeof obj.resource === "string") {
     topLevelResource = obj.resource;
@@ -188,6 +212,21 @@ function normalizePaymentRequired(raw: unknown): NormalizedPaymentRequired | nul
     const r = obj.resource as Record<string, unknown>;
     if (typeof r.url === "string") topLevelResource = r.url;
   }
+
+  // Three shapes seen in the wild:
+  //   1. v2 spec wrapper:   { x402Version, accepts: [PaymentRequirements, ...] }
+  //   2. v1 body wrapper:   { accepts: [...] }  (no x402Version)
+  //   3. Flat single requirements (cosmos-pay middleware):
+  //        { scheme, network, asset, payTo, maxAmountRequired, extra, ... }
+  // Treat shape 3 as a single-element accepts list.
+  const acceptsRaw = Array.isArray(obj.accepts)
+    ? (obj.accepts as unknown[])
+    : looksLikeSingleRequirements(obj)
+      ? [obj]
+      : null;
+  if (acceptsRaw === null) return null;
+
+  const accepts: NormalizedAccepts[] = [];
   for (const entry of acceptsRaw) {
     if (!entry || typeof entry !== "object") continue;
     const e = entry as Record<string, unknown>;
@@ -217,6 +256,16 @@ function normalizePaymentRequired(raw: unknown): NormalizedPaymentRequired | nul
   const out: NormalizedPaymentRequired = { x402Version, accepts };
   if (topLevelResource !== undefined) out.resource = topLevelResource;
   return out;
+}
+
+function looksLikeSingleRequirements(obj: Record<string, unknown>): boolean {
+  return (
+    typeof obj.scheme === "string" &&
+    typeof obj.network === "string" &&
+    typeof obj.asset === "string" &&
+    typeof obj.payTo === "string" &&
+    (typeof obj.amount === "string" || typeof obj.maxAmountRequired === "string")
+  );
 }
 
 interface ChosenAccept {
@@ -286,19 +335,21 @@ export function deriveIdempotencyKey(args: {
 
 function buildPaymentPayloadEnvelope(
   signed: { paymentPayload: unknown; paymentRequirements: unknown },
-  accept: NormalizedAccepts,
-  resourceUrl: string,
+  _accept: NormalizedAccepts,
+  _resourceUrl: string,
 ): string {
-  // x402 v2 PaymentPayload envelope: { x402Version, resource, accepted, payload }
-  const requirements = signed.paymentRequirements as Record<string, unknown>;
-  const payload = signed.paymentPayload as Record<string, unknown>;
-  const envelope = {
-    x402Version: typeof payload.x402Version === "number" ? payload.x402Version : 2,
-    resource: { url: resourceUrl },
-    accepted: requirements ?? accept,
-    payload: payload.payload,
-  };
-  return Buffer.from(JSON.stringify(envelope), "utf8").toString("base64");
+  // Both signer-cosmos and signer-evm return a PaymentPayload shaped
+  // like the cosmos-pay middleware / facilitator expect:
+  //   { x402Version, scheme, network, payload: <scheme-specific> }
+  // This is also what real-world x402 servers (cosmos-pay-derived
+  // middleware, Coinbase x402-py reference) decode.
+  //
+  // Note: the v2 spec docs describe a longer envelope with `accepted`
+  // and `resource` siblings, but the live cosmos-pay code requires
+  // the flat shape — Go json.Unmarshal would treat unknown fields as
+  // benign but missing scheme/network would fail. We emit the flat
+  // shape verbatim.
+  return Buffer.from(JSON.stringify(signed.paymentPayload), "utf8").toString("base64");
 }
 
 function decodePaymentResponseHeader(headers: Record<string, string>): unknown {
@@ -335,6 +386,35 @@ export async function handlePayAndCall(
   const now = deps.now ?? Date.now;
   const method = (input.method ?? "GET").toUpperCase();
   const extHeaders: Record<string, string> = { ...(input.headers ?? {}) };
+
+  // Idempotency cache lookup BEFORE the network call. If we already
+  // paid this (url, body, payerAddress) within the same hour, return
+  // the cached result without touching the resource server or the
+  // signer — no second on-chain tx, no second signature.
+  const sessionAddresses = session.addresses;
+  // Use the FIRST cosmos / evm address we know about as the cache key
+  // input. If multiple networks are advertised by the endpoint, the
+  // signing path picks a specific one — but the cache key is computed
+  // before parsing 402, so we use a stable session-level address.
+  // Concretely: a session with one network has one address; sessions
+  // with mixed networks use the first.
+  const firstAddress = Object.values(sessionAddresses)[0] ?? "";
+  const firstNetwork = session.networks[0] ?? "";
+  const cacheKey = deriveIdempotencyKey({
+    payerAddress: firstAddress,
+    network: firstNetwork,
+    url: input.url,
+    body: input.body,
+    now: now(),
+  });
+  const cached = idempotencyCache.get(cacheKey);
+  if (cached !== undefined && cached.status === "settled") {
+    session.touch();
+    return {
+      ok: true,
+      result: { ...cached, idempotentReplay: true },
+    };
+  }
 
   // Step 2: initial call.
   let initial: PaidEndpointResponse;
@@ -457,58 +537,18 @@ export async function handlePayAndCall(
     };
   }
 
-  // Step 4d: idempotency key (REDESIGNED per review item 3).
-  const idempotencyKey = deriveIdempotencyKey({
-    payerAddress,
-    network: chosen.accept.network,
-    url: input.url,
-    body: input.body,
-    now: now(),
-  });
-
-  // Step 4e: POST /settle.
-  let settleResp: unknown;
-  try {
-    settleResp = await deps.gateway.settle(
-      {
-        paymentPayload: signed.paymentPayload,
-        paymentRequirements: signed.paymentRequirements,
-      },
-      idempotencyKey,
-    );
-  } catch (err) {
-    if (err instanceof GatewayError) {
-      return {
-        ok: false,
-        error: {
-          code: err.code ?? "settle_failed",
-          message: err.message,
-        },
-      };
-    }
-    return {
-      ok: false,
-      error: { code: "settle_failed", message: safeErrorMessage(err) },
-    };
-  }
-
-  // Step 4f: parse gateway response.
-  const settled = parseSettleResponse(settleResp);
-  if (!settled.ok) {
-    return {
-      ok: false,
-      error: settled.error,
-    };
-  }
-
-  // Step 4h: build the X-PAYMENT-style header for the resource retry.
+  // Step 4d: build PAYMENT-SIGNATURE envelope and submit DIRECTLY to
+  // the resource server. The resource server's middleware will forward
+  // the payment to whatever facilitator it's configured with
+  // (cosmos-pay in our smoke). We deliberately do NOT pre-call the
+  // suverse-pay gateway's /settle — that's a facilitator-side endpoint
+  // for resource-server integrations, not for agent-side payment.
+  // See apps/mcp/README.md "Architecture" for the full rationale.
   const paymentHeader = buildPaymentPayloadEnvelope(signed, chosen.accept, input.url);
-
-  // Step 4i: retry the original call with payment proof.
   const retryHeaders: Record<string, string> = {
     ...extHeaders,
     [PAYMENT_SIGNATURE_HEADER]: paymentHeader,
-    // Also include the legacy x-payment header — many v1-era servers
+    // Also set the legacy x-payment alias — older / pragmatic servers
     // only check this name. Cheap dual-write.
     [LEGACY_X_PAYMENT]: paymentHeader,
   };
@@ -528,46 +568,55 @@ export async function handlePayAndCall(
       ok: false,
       error: {
         code: "resource_retry_failed",
-        message: `retry call after settlement failed: ${safeErrorMessage(err)}`,
+        message: `retry call to ${input.url} with payment failed: ${safeErrorMessage(err)}`,
       },
     };
   }
 
-  // If the resource server still returns 402 after a settled payment,
-  // surface that clearly — settlement took effect on-chain but the
-  // resource server didn't recognize the proof.
+  // 402 on retry means the resource server's middleware rejected the
+  // payment. Decode any PAYMENT-RESPONSE failure reason for the agent.
   if (retry.status === 402) {
+    const settle = decodePaymentResponseHeader(retry.headers);
+    let reason = "no PAYMENT-RESPONSE header";
+    if (settle && typeof settle === "object") {
+      const s = settle as Record<string, unknown>;
+      if (typeof s.errorReason === "string") reason = s.errorReason;
+    }
     return {
       ok: false,
       error: {
-        code: "payment_not_recognized_after_settle",
+        code: "payment_rejected",
         message:
-          `payment settled (txHash=${settled.txHash ?? "n/a"}, paymentId=${settled.paymentId}) ` +
-          `but ${input.url} still returned 402 on retry. ` +
-          `The settlement is final on-chain; the resource server may need to refresh its index.`,
+          `${input.url} rejected the payment on retry — facilitator settlement failed. ` +
+          `reason: ${reason}`,
       },
     };
   }
 
-  // Decode any PAYMENT-RESPONSE header for callers who want it.
+  // Decode the PAYMENT-RESPONSE header — that's where the resource
+  // server (via its facilitator) reports the on-chain txHash and the
+  // payer address. Attach the decoded value as a synthetic header for
+  // agent visibility without touching the actual response body.
   const paymentResponseDecoded = decodePaymentResponseHeader(retry.headers);
-  if (paymentResponseDecoded !== null && retry.body !== null) {
-    // Attach for visibility without overwriting the actual response body.
+  let txHash: string | null = null;
+  if (paymentResponseDecoded && typeof paymentResponseDecoded === "object") {
+    const pr = paymentResponseDecoded as Record<string, unknown>;
+    if (typeof pr.transaction === "string" && pr.transaction.length > 0) {
+      txHash = pr.transaction;
+    }
     retry.headers["payment-response-decoded"] = JSON.stringify(paymentResponseDecoded);
   }
 
-  session.touch();
-  return {
-    ok: true,
-    result: {
-      status: "settled",
-      paymentId: settled.paymentId,
-      txHash: settled.txHash ?? null,
-      providerId: settled.providerId ?? null,
-      network: chosen.accept.network,
-      response: retry,
-    },
+  const result: PayAndCallResult = {
+    status: "settled",
+    paymentId: `mcp_${cacheKey}`,
+    txHash,
+    network: chosen.accept.network,
+    response: retry,
   };
+  idempotencyCache.set(cacheKey, result);
+  session.touch();
+  return { ok: true, result };
 }
 
 function buildCosmosRequirements(
@@ -646,47 +695,3 @@ function buildEvmRequirements(
   return out;
 }
 
-function parseSettleResponse(
-  raw: unknown,
-):
-  | { ok: true; paymentId: string; txHash?: string | null; providerId?: string | null }
-  | { ok: false; error: { code: string; message: string } } {
-  if (!raw || typeof raw !== "object") {
-    return {
-      ok: false,
-      error: {
-        code: "unexpected_gateway_response",
-        message: "gateway /settle returned a non-object response",
-      },
-    };
-  }
-  const obj = raw as Record<string, unknown>;
-  const status = obj.status;
-  const paymentId = obj.paymentId;
-  if (typeof paymentId !== "string") {
-    return {
-      ok: false,
-      error: {
-        code: "unexpected_gateway_response",
-        message: "gateway /settle response missing paymentId",
-      },
-    };
-  }
-  if (status !== "settled") {
-    return {
-      ok: false,
-      error: {
-        code: typeof obj.errorCode === "string" ? obj.errorCode : "settle_not_settled",
-        message:
-          (typeof obj.errorMessage === "string" ? obj.errorMessage : `status=${String(status)}`) +
-          ` (paymentId=${paymentId})`,
-      },
-    };
-  }
-  return {
-    ok: true,
-    paymentId,
-    txHash: typeof obj.txHash === "string" ? obj.txHash : null,
-    providerId: typeof obj.providerId === "string" ? obj.providerId : null,
-  };
-}

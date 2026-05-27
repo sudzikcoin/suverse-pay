@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SessionStore } from "../src/session.js";
 import { handleInitSession } from "../src/tools/init-session.js";
-import { handlePayAndCall } from "../src/tools/pay-and-call.js";
+import {
+  handlePayAndCall,
+  _resetIdempotencyCacheForTests,
+} from "../src/tools/pay-and-call.js";
 import type { Config } from "../src/config.js";
 import { GatewayClient } from "../src/gateway-client.js";
 import { startMockX402Server, type MockX402Server } from "./mock-x402-server.js";
@@ -95,12 +98,80 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+describe("pay_and_call — flat PaymentRequirements shape (cosmos-pay middleware convention)", () => {
+  let store: SessionStore;
+  let mock: MockX402Server;
+
+  beforeEach(async () => {
+    store = new SessionStore();
+    // This mock emits a FLAT PaymentRequirements object (no
+    // accepts[] wrapper), which is what x402-cosmos middleware does:
+    //   { scheme, network, maxAmountRequired, asset, payTo, extra }
+    mock = await startMockX402Server({
+      routes: {
+        "/premium": {
+          paymentRequired: {
+            // Cast through any because the mock type expects an
+            // accepts[] wrapper; the test exercises the wider parser.
+            ...({
+              scheme: "exact_cosmos_authz",
+              network: "cosmos:grand-1",
+              maxAmountRequired: "10000",
+              asset: "uusdc",
+              payTo: "noble1t74j8lz7hwf0c3y7cpklc8agkpemagrjl672w0",
+              resource: "http://placeholder/premium",
+              description: "One call to the premium endpoint",
+              maxTimeoutSeconds: 60,
+              extra: { facilitator: TEST_FACILITATOR, chainId: "grand-1", decimals: 6, symbol: "USDC" },
+            } as unknown as { x402Version: number; accepts: never[] }),
+          },
+          successBody: { data: "the secret of life is 42" },
+        },
+      },
+    });
+  });
+
+  afterEach(async () => {
+    store.destroyAll();
+    await mock.close();
+  });
+
+  it("parses a flat PaymentRequirements body (no accepts[] wrapper) and signs successfully", async () => {
+    const init = await handleInitSession(
+      { secret: TEST_MNEMONIC, networks: ["cosmos:grand-1"] },
+      { store, config: baseConfig },
+    );
+    if (!init.ok) throw new Error(init.error.message);
+    const sessionId = init.result.sessionId;
+
+    const gw = makeMockGateway({
+      settleHandler: () => ({
+        paymentId: "pay_flat_001",
+        status: "settled",
+        txHash: "FLATTX",
+        providerId: "cosmos-pay",
+        network: "cosmos:grand-1",
+      }),
+    });
+
+    const result = await handlePayAndCall(
+      { sessionId, url: `${mock.baseUrl}/premium` },
+      { store, gateway: gw.client, config: baseConfig },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.result.status).toBe("settled");
+    expect(result.result.response.body).toEqual({ data: "the secret of life is 42" });
+  });
+});
+
 describe("pay_and_call — Cosmos integration (real signer, mocked gateway, mock x402 server)", () => {
   let store: SessionStore;
   let mock: MockX402Server;
 
   beforeEach(async () => {
     store = new SessionStore();
+    _resetIdempotencyCacheForTests();
     mock = await startMockX402Server({
       routes: {
         "/weather": {
@@ -142,19 +213,9 @@ describe("pay_and_call — Cosmos integration (real signer, mocked gateway, mock
     return init.result.sessionId;
   }
 
-  it("returns weather data after a full 402 → sign → settle → retry cycle", async () => {
+  it("returns weather data after a full 402 → sign → POST PAYMENT-SIGNATURE → 200 cycle", async () => {
     const sessionId = await bootSession();
-    const gw = makeMockGateway({
-      settleHandler: () => ({
-        paymentId: "pay_test_001",
-        status: "settled",
-        txHash: "ABCDEF1234",
-        providerId: "cosmos-pay",
-        network: "cosmos:grand-1",
-        amount: "10000",
-        asset: "uusdc",
-      }),
-    });
+    const gw = makeMockGateway({ settleHandler: () => ({}) });
 
     const result = await handlePayAndCall(
       { sessionId, url: `${mock.baseUrl}/weather`, method: "GET" },
@@ -163,8 +224,11 @@ describe("pay_and_call — Cosmos integration (real signer, mocked gateway, mock
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.result.status).toBe("settled");
-    expect(result.result.paymentId).toBe("pay_test_001");
-    expect(result.result.txHash).toBe("ABCDEF1234");
+    // paymentId is now MCP-synthesized, stable across replays.
+    expect(result.result.paymentId).toMatch(/^mcp_[0-9a-f]{32}$/);
+    // txHash comes from the resource server's PAYMENT-RESPONSE header
+    // (mock x402 sets transaction="0xmocktxhash").
+    expect(result.result.txHash).toBe("0xmocktxhash");
     expect(result.result.network).toBe("cosmos:grand-1");
     expect(result.result.response.status).toBe(200);
     expect(result.result.response.body).toEqual({ weather: "sunny", tempF: 72 });
@@ -173,22 +237,13 @@ describe("pay_and_call — Cosmos integration (real signer, mocked gateway, mock
     const counts = mock.callCounts();
     expect(counts["/weather"]).toEqual({ unpaid: 1, paid: 1 });
     expect(mock.receivedPaymentProofs()).toHaveLength(1);
+    // pay_and_call no longer talks to the gateway directly.
+    expect(gw.calls.find((c) => c.path === "/settle")).toBeUndefined();
   });
 
-  it("is idempotent: two pay_and_call invocations for the same (url, body, payer) within the same hour use the same Idempotency-Key", async () => {
+  it("replays from cache without re-signing or re-submitting (no second on-chain tx)", async () => {
     const sessionId = await bootSession();
-    const gw = makeMockGateway({
-      settleHandler: () => ({
-        paymentId: "pay_idem_001",
-        status: "settled",
-        txHash: "DEADBEEF",
-        providerId: "cosmos-pay",
-        network: "cosmos:grand-1",
-        amount: "10000",
-        asset: "uusdc",
-      }),
-    });
-    // Pin time so the hour bucket is deterministic.
+    const gw = makeMockGateway({ settleHandler: () => ({}) });
     const nowSpy = vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
     try {
       const first = await handlePayAndCall(
@@ -200,12 +255,19 @@ describe("pay_and_call — Cosmos integration (real signer, mocked gateway, mock
         { store, gateway: gw.client, config: baseConfig },
       );
       expect(first.ok && second.ok).toBe(true);
-      expect(gw.uniqueIdempotencyKeys()).toHaveLength(1);
-      // Both /settle calls return the same paymentId because the mock
-      // gateway replays by key.
-      if (first.ok && second.ok) {
-        expect(first.result.paymentId).toBe(second.result.paymentId);
-      }
+      if (!first.ok || !second.ok) return;
+      // Same paymentId proves cache hit. Same txHash proves the cached
+      // result was returned (no fresh submission).
+      expect(first.result.paymentId).toBe(second.result.paymentId);
+      expect(first.result.txHash).toBe(second.result.txHash);
+      // Second invocation reports as a replay.
+      expect(first.result.idempotentReplay).toBeFalsy();
+      expect(second.result.idempotentReplay).toBe(true);
+      // STRONGEST INVARIANT: mock x402 saw only ONE paid call total.
+      // The second pay_and_call short-circuited via cache and never
+      // hit the resource server (would have minted a second tx).
+      expect(mock.callCounts()["/weather"]).toEqual({ unpaid: 1, paid: 1 });
+      expect(mock.receivedPaymentProofs()).toHaveLength(1);
     } finally {
       nowSpy.mockRestore();
     }
@@ -269,23 +331,42 @@ describe("pay_and_call — Cosmos integration (real signer, mocked gateway, mock
     expect(gw.calls.find((c) => c.path === "/settle")).toBeUndefined();
   });
 
-  it("surfaces a sanitized error when the settle response is non-settled", async () => {
-    const sessionId = await bootSession();
-    const gw = makeMockGateway({
-      settleHandler: () => ({
-        paymentId: "pay_failed_001",
-        status: "failed",
-        errorCode: "insufficient_funds",
-        errorMessage: "payer does not have enough USDC",
-      }),
+  it("surfaces payment_rejected when the resource server returns 402 on retry (facilitator settle failure)", async () => {
+    // Swap the mock to one that NEVER accepts payment (always returns
+    // 402 with a PAYMENT-RESPONSE failure reason).
+    await mock.close();
+    mock = await startMockX402Server({
+      routes: {
+        "/weather": {
+          paymentRequired: {
+            x402Version: 2,
+            accepts: [
+              {
+                scheme: "exact_cosmos_authz",
+                network: "cosmos:grand-1",
+                amount: "10000",
+                asset: "uusdc",
+                payTo: "noble1recipient00000000000000000000000merchant",
+                maxTimeoutSeconds: 60,
+                extra: { facilitator: TEST_FACILITATOR, chainId: "grand-1" },
+              },
+            ],
+          },
+          successBody: { weather: "sunny" },
+          alwaysFail: { errorReason: "insufficient_funds" },
+        },
+      },
     });
+    const sessionId = await bootSession();
+    const gw = makeMockGateway({ settleHandler: () => ({}) });
     const result = await handlePayAndCall(
       { sessionId, url: `${mock.baseUrl}/weather` },
       { store, gateway: gw.client, config: baseConfig },
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error.code).toBe("insufficient_funds");
+    expect(result.error.code).toBe("payment_rejected");
+    expect(result.error.message).toContain("insufficient_funds");
     // The mnemonic must NEVER appear in the surfaced error.
     expect(result.error.message).not.toContain("abandon");
   });
@@ -348,15 +429,7 @@ describe("pay_and_call — EVM integration (real signer, mocked gateway, mock x4
     if (!init.ok) throw new Error(init.error.message);
     const sessionId = init.result.sessionId;
 
-    const gw = makeMockGateway({
-      settleHandler: () => ({
-        paymentId: "pay_evm_001",
-        status: "settled",
-        txHash: "0xabc123",
-        providerId: "coinbase-cdp",
-        network: "eip155:8453",
-      }),
-    });
+    const gw = makeMockGateway({ settleHandler: () => ({}) });
 
     const result = await handlePayAndCall(
       { sessionId, url: `${mock.baseUrl}/data` },
@@ -366,7 +439,8 @@ describe("pay_and_call — EVM integration (real signer, mocked gateway, mock x4
     if (!result.ok) return;
     expect(result.result.status).toBe("settled");
     expect(result.result.network).toBe("eip155:8453");
-    expect(result.result.txHash).toBe("0xabc123");
+    // txHash sourced from the mock x402's PAYMENT-RESPONSE header.
+    expect(result.result.txHash).toBe("0xmocktxhash");
     expect(result.result.response.body).toEqual({ ok: true, payload: "premium-data" });
     expect(mock.callCounts()["/data"]).toEqual({ unpaid: 1, paid: 1 });
   });

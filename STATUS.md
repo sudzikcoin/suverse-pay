@@ -1,55 +1,53 @@
 # STATUS
 
 Last session: 2026-05-27
-Last tag: v0.1.0
+Last tag: v0.2.0
 
 ## Current state
-Phase 1 complete. v0.1.0 released. Real-network smoke verified
-end-to-end against cosmos-pay on Noble testnet `grand-1` — including
-a real on-chain `MsgExec(MsgSend)` broadcast through the gateway and
-the idempotency invariant holding under real conditions. Repo public
-at sudzikcoin/suverse-pay.
+**Phase 2 complete. v0.2.0 released.** MCP server at `apps/mcp` with
+real on-chain verification:
+
+- Real `MsgExec(MsgSend)` broadcast on Noble testnet `grand-1`
+  through the MCP `pay_and_call` flow, signed by the in-process
+  Cosmos signer, settled via cosmos-pay, response returned to the
+  agent
+- Idempotency proven on-chain: replay returns the same `paymentId`
+  and `txHash` with `idempotentReplay: true` and DOES NOT broadcast
+  a second transaction
+- 40 MCP tests + 32 discovery tests + 18 signer tests, all green
+- All 4 smoke suites pass: `mocked` (10 steps), `real` (9 steps),
+  `mcp-mocked` (7 steps), `mcp-real` (4 steps)
 
 ## Infrastructure
 - Postgres on :5433, Redis on :6380 (Docker)
-- To restart: cd /home/govhub/suverse-pay && docker compose up -d && pnpm db:migrate && pnpm db:bootstrap
+- To restart: `cd /home/govhub/suverse-pay && docker compose up -d && pnpm db:migrate && pnpm db:bootstrap`
 
-## Running processes (from current session)
-- cosmos-pay facilitator: PID 683857, listening on :8402, log `/tmp/cosmos-pay.log`
-- suverse-pay API server: PID 684697, listening on :3000, log `/tmp/suverse-pay.log`
+## Running services
+- cosmos-pay facilitator at :8402 (Go, separate repo)
+- suverse-pay API at :3000 (this repo, `apps/api`)
+- MCP server at :3100 (this repo, `apps/mcp`) — only when needed
 
-These were left running after the v0.1.0 smoke for follow-up runs.
-Kill when convenient: `kill 683857 684697`. PIDs are stale after the
-next reboot or session — remove this section then.
+The cosmos-pay and suverse-pay processes survive across sessions;
+restart per their respective READMEs if dead. The MCP server is
+spawned on-demand by the mcp-real / mcp-mocked smoke suites and
+isn't normally running idle.
 
-## Phase 2 — in progress
-Sub-task 1: scaffolding apps/mcp (MCP server with session management
-and init_session tool). Six sub-tasks total; one per session.
-
-## Tech debt (small, not urgent)
-- CI badge in README after first green CI run on main
-
-## v0.2+ release gate
+## Phase 3 (when ready, do not start without explicit decision)
+- Solana signer + adapter (largest live x402 volume — see IDEAS.md
+  item 4)
 - Coinbase CDP real-network smoke (needs CDP API key)
-- Cross-provider fallback under real conditions (needs second
-  reachable facilitator)
-- Race-replay terminal state polish — duplicate /settle may transiently
-  surface as `pending`. Phase 2 will hold the Redis lock through
-  finalization.
+- PayAI adapter as third facilitator (Solana, IDEAS.md item 5)
+- Race-replay terminal state polish (Phase 1 known gap)
 - SIGHUP-style admin api_key rotation without server restart
 
-## Phase 2 (when ready, do not start without explicit decision)
-- MCP server at apps/mcp
-- Race-replay terminal state fix
-- Webhooks for settlement notifications
-
 ## How to resume work next session
-1. cd /home/govhub/suverse-pay
-2. claude
-3. First prompt: "Read STATUS.md and CLAUDE.md, summarize current state, ask what to work on next"
+1. `cd /home/govhub/suverse-pay`
+2. `claude`
+3. First prompt: "Read STATUS.md and CLAUDE.md, summarize current
+   state, ask what to work on next"
 
 ## Out of scope (do not pursue without explicit decision from user)
 - Outreach to x402 Foundation / Coinbase / Posthuman
 - Production deploy
 - Multi-tenancy with billing
-- Native facilitator
+- Native facilitator settlement (Phase 5+)

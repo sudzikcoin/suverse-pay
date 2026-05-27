@@ -96,6 +96,82 @@ activates, this stack (cosmos-pay + suverse-pay) is uniquely
 positioned: native facilitator plus unified routing on a chain
 ecosystem where no aggregator exists.
 
+## 4. Solana signer + adapter (Phase 3 first up)
+
+### Concept
+Add a `@suverse-pay/signer-solana` package and a Solana adapter so
+agents can pay endpoints on Solana through MCP. Real-world Bazaar
+data captured during Phase 2 sampling shows Solana dominating live
+volume — of 31 accept entries in a 20-resource Bazaar window:
+
+- `eip155:8453` (Base) — 22
+- `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` — 5
+- `eip155:137` (Polygon) — 4
+
+But by activity (settlements / volume) Solana is much larger; Base is
+dominant by *count of advertised resources* (low-volume catalog
+entries). Per public ecosystem maps roughly ~70% of recent x402
+payment volume is on Solana. Skipping it leaves the largest live
+market uncovered.
+
+### Implementation sketch
+- New CAIP-2 network: `solana:5eykt4...` (mainnet) and
+  `solana:<devnet-id>` (devnet)
+- Solana x402 schemes: `exact` over SPL Token transfer + signed
+  partial transaction
+- Signer uses `@solana/web3.js` + the Bazaar-advertised facilitator
+  (`feePayer` model)
+- Adapter wraps whichever Solana facilitator we settle on (PayAI is
+  one candidate)
+
+### Prerequisites
+- v0.2.0 stable
+- Pick a Solana facilitator to wrap (PayAI, Solana Foundation's
+  reference gateway, or run our own — Solana facilitator
+  implementations are publicly available)
+
+## 5. PayAI adapter as third facilitator
+
+### Concept
+PayAI runs a Solana x402 facilitator. Wrap it as another
+`@suverse-pay/adapter-payai` so the gateway can route between
+cosmos-pay, Coinbase CDP, and PayAI based on `(network, asset,
+scheme)`.
+
+### Why
+Solana network share + diversifying the facilitator pool. Currently
+the gateway has two adapters (cosmos-pay, coinbase-cdp). The whole
+"smart routing across providers" value-add is more credible with
+three+ facilitators across two+ network families.
+
+### Prerequisites
+- Solana signer (item 4) — facilitator without a signer can be
+  registered for discovery / quote but `pay_and_call` needs the
+  signing path
+- PayAI API access (likely no-auth read endpoints, signed
+  facilitator-side settle)
+
+## 6. Resource-server facilitator mode
+
+### Concept
+Let a resource server configure suverse-pay as its facilitator
+(`X402_FACILITATOR_URL=http://suverse-pay-gateway:3000`). Today the
+gateway's `/settle` requires `Idempotency-Key` and Bearer auth,
+which the cosmos-pay middleware doesn't supply. This forces the
+"agent path" we ended up with in Phase 2 (skip the gateway, sign and
+submit direct).
+
+If we add an optional facilitator-mode endpoint that's compatible
+with x402 middleware's expected facilitator wire format, resource
+servers can adopt suverse-pay as their cross-chain facilitator and
+get smart routing for free.
+
+### Open question
+Is this a separate endpoint (`POST /facilitator/settle`) or a flag
+on `/settle` that disables auth + auto-generates Idempotency-Key?
+The latter is simpler; the former is cleaner for billing /
+multi-tenancy.
+
 ## Discarded ideas
 
 ### Build our own Bazaar competitor
@@ -108,3 +184,15 @@ Deferred. External facilitators currently cover the verify/settle
 surface. Native settlement is a separate security boundary
 (isolated service, own credentials, possibly different runtime) and
 significant work. Re-evaluate in Phase 4+ if signals emerge.
+
+### Gateway-mediated settle in `pay_and_call`
+Reconsidered in Phase 2 and dropped. We initially wired
+`pay_and_call` to POST `/settle` on the gateway before retrying the
+resource. In practice the resource server's middleware ALSO calls
+its facilitator on retry, which results in a double-settle attempt
+that fails. The standard x402 flow is "agent signs, resource server
+settles" — that's what `pay_and_call` does today, with an in-memory
+idempotency cache to prevent double broadcasts on replay.
+
+The gateway's `/settle` is still useful — for resource servers that
+configure suverse-pay as their facilitator (see idea 6).
