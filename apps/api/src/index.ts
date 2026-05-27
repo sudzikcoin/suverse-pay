@@ -59,11 +59,21 @@ async function main(): Promise<void> {
     ],
   });
 
+  // Static capability declarations. `asset` is the on-chain identifier
+  // CDP expects to see in `PaymentRequirements.asset`:
+  //   - EVM: the ERC-20 contract address (Circle's native USDC deployments).
+  //   - Solana: the SPL token mint (Circle's native USDC mint).
+  // The Solana network identifier is the canonical CAIP-2 mainnet
+  // genesis-hash form per x402 spec — matches what signer-solana
+  // produces and what Bazaar advertises. NOT `solana:mainnet`.
   const cdpCaps = [
-    { network: "eip155:8453", asset: "0xUSDC", scheme: "exact" },
-    { network: "eip155:137", asset: "0xUSDC", scheme: "exact" },
-    { network: "eip155:42161", asset: "0xUSDC", scheme: "exact" },
-    { network: "solana:mainnet", asset: "USDC", scheme: "exact" },
+    // EVM — Circle native USDC contracts
+    { network: "eip155:8453", asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", scheme: "exact" },
+    { network: "eip155:137", asset: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359", scheme: "exact" },
+    { network: "eip155:42161", asset: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", scheme: "exact" },
+    // Solana mainnet — Circle native USDC mint + EURC mint
+    { network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", scheme: "exact" },
+    { network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr", scheme: "exact" },
   ] as const;
 
   if (

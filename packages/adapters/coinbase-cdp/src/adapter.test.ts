@@ -57,10 +57,18 @@ const FAKE_SIGNER: CdpJwtSigner = {
   },
 };
 
+// Real on-chain USDC identifiers for the test capability set. Test
+// fixtures use these directly so the adapter behaviour exercised here
+// matches what the production wiring in apps/api/src/index.ts declares.
+const BASE_USDC_EVM = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const POLYGON_USDC_EVM = "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359";
+const SOLANA_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const SOLANA_MAINNET = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+
 const BASE_CAPS: CdpCapabilityConfig[] = [
-  { network: "eip155:8453", asset: "0xUSDC", scheme: "exact" },
-  { network: "eip155:137", asset: "0xUSDC_POLY", scheme: "exact" },
-  { network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "EPjFW", scheme: "exact" },
+  { network: "eip155:8453", asset: BASE_USDC_EVM, scheme: "exact" },
+  { network: "eip155:137", asset: POLYGON_USDC_EVM, scheme: "exact" },
+  { network: SOLANA_MAINNET, asset: SOLANA_USDC_MINT, scheme: "exact" },
 ];
 
 interface AdapterOverrides {
@@ -107,7 +115,7 @@ const verifyReq: VerifyRequest = {
     scheme: "exact",
     network: "eip155:8453",
     maxAmountRequired: "10000",
-    asset: "0xUSDC",
+    asset: BASE_USDC_EVM,
     payTo: "0xrecipient",
     resource: "https://api.example.test/x",
     maxTimeoutSeconds: 60,
@@ -129,7 +137,7 @@ describe("CoinbaseCdpAdapter basics", () => {
     const { fetch } = makeFetch([]);
     const a = makeAdapter({ fetch });
     expect(
-      await a.supports({ network: "eip155:8453", asset: "0xUSDC", scheme: "exact" }),
+      await a.supports({ network: "eip155:8453", asset: BASE_USDC_EVM, scheme: "exact" }),
     ).toEqual({ supported: true });
   });
 
@@ -140,7 +148,7 @@ describe("CoinbaseCdpAdapter basics", () => {
       (
         await a.supports({
           network: "eip155:8453",
-          asset: "0xUSDC",
+          asset: BASE_USDC_EVM,
           scheme: "exact_cosmos_authz",
         })
       ).supported,
@@ -158,7 +166,7 @@ describe("CoinbaseCdpAdapter basics", () => {
       (
         await a.supports({
           network: "eip155:999",
-          asset: "0xUSDC",
+          asset: BASE_USDC_EVM,
           scheme: "exact",
         })
       ).supported,
@@ -171,7 +179,7 @@ describe("CoinbaseCdpAdapter basics", () => {
     const a = makeAdapter({ fetch, monthlyHardCap: 5, usageTracker: tracker });
     const result = await a.supports({
       network: "eip155:8453",
-      asset: "0xUSDC",
+      asset: BASE_USDC_EVM,
       scheme: "exact",
     });
     expect(result).toEqual({ supported: false, reason: "quota_exceeded" });
@@ -196,7 +204,7 @@ describe("CoinbaseCdpAdapter basics", () => {
     const a = makeAdapter({ fetch });
     const q = await a.quote({
       network: "eip155:8453",
-      asset: "0xUSDC",
+      asset: BASE_USDC_EVM,
       amount: "10000",
       scheme: "exact",
     });
@@ -458,8 +466,8 @@ describe("CoinbaseCdpAdapter discoverCapabilities", () => {
     const a = makeAdapter({ fetch });
     const caps = await a.discoverCapabilities();
     expect(caps).toEqual([
-      { network: "eip155:8453", asset: "0xUSDC", scheme: "exact" },
-      { network: "eip155:137", asset: "0xUSDC_POLY", scheme: "exact" },
+      { network: "eip155:8453", asset: BASE_USDC_EVM, scheme: "exact" },
+      { network: "eip155:137", asset: POLYGON_USDC_EVM, scheme: "exact" },
     ]);
   });
 
@@ -477,7 +485,7 @@ describe("CoinbaseCdpAdapter discoverCapabilities", () => {
     const a = makeAdapter({ fetch, logger: { warn } });
     const caps = await a.discoverCapabilities();
     expect(caps).toEqual([
-      { network: "eip155:8453", asset: "0xUSDC", scheme: "exact" },
+      { network: "eip155:8453", asset: BASE_USDC_EVM, scheme: "exact" },
     ]);
     expect(warn).toHaveBeenCalledTimes(2);
   });
@@ -488,6 +496,150 @@ describe("CoinbaseCdpAdapter discoverCapabilities", () => {
     await expect(a.discoverCapabilities()).rejects.toMatchObject({
       code: "provider_internal_error",
       providerId: "coinbase-cdp",
+    });
+  });
+});
+
+describe("CoinbaseCdpAdapter Solana support", () => {
+  // SVM exact payload: scheme-specific data is `{ transaction: <base64> }`
+  // (NOT the EVM signature + authorization tuple). The adapter is fully
+  // network-agnostic — it forwards paymentPayload + paymentRequirements
+  // to CDP verbatim — so the Solana wire shape Just Works as long as the
+  // capability set advertises it.
+  const svmVerifyReq: VerifyRequest = {
+    paymentPayload: {
+      x402Version: 2,
+      scheme: "exact",
+      network: SOLANA_MAINNET,
+      payload: {
+        // base64 sentinel — the real transaction comes from signer-solana.
+        transaction: "AAAA",
+      },
+    },
+    paymentRequirements: {
+      scheme: "exact",
+      network: SOLANA_MAINNET,
+      maxAmountRequired: "1000",
+      asset: SOLANA_USDC_MINT,
+      payTo: "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4",
+      resource: "https://api.example.test/svm",
+      maxTimeoutSeconds: 60,
+      extra: {
+        feePayer: "EwWqGE4ZFKLofuestmU4LDdK7XM1N4ALgdZccwYugwGd",
+        decimals: 6,
+        symbol: "USDC",
+      },
+    },
+  };
+  const svmSettleReq: SettleRequest = svmVerifyReq;
+
+  it("supports(): true for configured Solana USDC", async () => {
+    const { fetch } = makeFetch([]);
+    const a = makeAdapter({ fetch });
+    expect(
+      await a.supports({
+        network: SOLANA_MAINNET,
+        asset: SOLANA_USDC_MINT,
+        scheme: "exact",
+      }),
+    ).toEqual({ supported: true });
+  });
+
+  it("supports(): false for the wrong (legacy) Solana CAIP-2 form", async () => {
+    const { fetch } = makeFetch([]);
+    const a = makeAdapter({ fetch });
+    // `solana:mainnet` is NOT the canonical form per x402 spec; the
+    // adapter must reject it so we don't silently route Solana traffic
+    // under the wrong identifier.
+    expect(
+      (
+        await a.supports({
+          network: "solana:mainnet",
+          asset: SOLANA_USDC_MINT,
+          scheme: "exact",
+        })
+      ).supported,
+    ).toBe(false);
+  });
+
+  it("verify(): forwards an SVM payload verbatim to CDP and parses isValid", async () => {
+    const { fetch, calls } = makeFetch([
+      jsonResponse({ isValid: true, payer: "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk" }),
+    ]);
+    const a = makeAdapter({ fetch });
+    const r = await a.verify(svmVerifyReq);
+    expect(r.valid).toBe(true);
+    expect(r.payer).toBe("HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk");
+
+    // The body sent to CDP must preserve the SVM payload shape — in
+    // particular, payload.transaction (base64) survives the forward.
+    const body = calls[0]!.body as Record<string, unknown>;
+    const pp = body.paymentPayload as Record<string, unknown>;
+    expect(pp.network).toBe(SOLANA_MAINNET);
+    expect(pp.scheme).toBe("exact");
+    expect((pp.payload as Record<string, unknown>).transaction).toBe("AAAA");
+    // ... and so does paymentRequirements.extra.feePayer (which CDP
+    // needs to verify the fee-payer safety rules against the proposed
+    // transaction).
+    const pr = body.paymentRequirements as Record<string, unknown>;
+    expect((pr.extra as Record<string, unknown>).feePayer).toBe(
+      "EwWqGE4ZFKLofuestmU4LDdK7XM1N4ALgdZccwYugwGd",
+    );
+  });
+
+  it("settle(): returns the base58 transaction signature CDP reports for Solana", async () => {
+    // Solana settlement responses return a base58 transaction
+    // signature (not 0x-prefixed hex like EVM); the adapter passes it
+    // through as-is to the orchestrator.
+    const svmTxSig =
+      "5KQwrPbwdL6PhXujxW37FSSbT5HG4d6V8c5jYrqWwG6QrBmbX2RhPZ8M9LrgDmBnYpZHVz9KvxWsyABcdEfGhij1";
+    const { fetch } = makeFetch([
+      jsonResponse({
+        success: true,
+        transaction: svmTxSig,
+        network: SOLANA_MAINNET,
+        amount: "1000",
+        payer: "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
+      }),
+    ]);
+    const a = makeAdapter({ fetch });
+    const r = await a.settle(svmSettleReq);
+    expect(r.settled).toBe(true);
+    expect(r.txHash).toBe(svmTxSig);
+    expect(r.network).toBe(SOLANA_MAINNET);
+    expect(r.amount).toBe("1000");
+  });
+
+  it("settle(): propagates Solana-specific failure reasons", async () => {
+    const { fetch } = makeFetch([
+      jsonResponse({
+        success: false,
+        errorReason: "broadcast_failed",
+        errorMessage: "blockhash not found",
+      }),
+    ]);
+    const a = makeAdapter({ fetch });
+    const r = await a.settle(svmSettleReq);
+    expect(r.settled).toBe(false);
+    expect(r.errorCode).toBe("broadcast_failed");
+    expect(r.errorMessage).toBe("blockhash not found");
+  });
+
+  it("discoverCapabilities(): joins Solana entries from /supported with the configured mint", async () => {
+    const { fetch } = makeFetch([
+      jsonResponse({
+        kinds: [
+          { scheme: "exact", network: "eip155:8453" },
+          { scheme: "exact", network: SOLANA_MAINNET },
+        ],
+      }),
+    ]);
+    const a = makeAdapter({ fetch });
+    const caps = await a.discoverCapabilities();
+    expect(caps).toContainEqual({
+      network: SOLANA_MAINNET,
+      asset: SOLANA_USDC_MINT,
+      scheme: "exact",
     });
   });
 });
