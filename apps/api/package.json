@@ -26,6 +26,7 @@
     "@fastify/rate-limit": "^10.2.1",
     "@suverse-pay/adapter-coinbase-cdp": "workspace:*",
     "@suverse-pay/adapter-cosmos-pay": "workspace:*",
+    "@suverse-pay/adapter-payai": "workspace:*",
     "@suverse-pay/core-types": "workspace:*",
     "@suverse-pay/db": "workspace:*",
     "@suverse-pay/orchestrator": "workspace:*",

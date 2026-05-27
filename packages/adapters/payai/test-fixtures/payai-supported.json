@@ -1,0 +1,387 @@
+{
+  "kinds": [
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "base-sepolia"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "base"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "avalanche-fuji"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "avalanche"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "iotex"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "sei"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "sei-testnet"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "polygon"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "polygon-amoy"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "peaq"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "xlayer"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "xlayer-testnet"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "skale-base"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "skale-base-sepolia"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "kiteai"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "kiteai-testnet"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "arbitrum"
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "arbitrum-sepolia"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:8453"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:8453",
+      "extra": {
+        "facilitatorAddress": "0xB2Bd29925CBbCEA7628279c91945Ca5B98bf371B"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:84532"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:84532",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:43114"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:43114",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:43113"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:43113",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:4689"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:4689",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:1329"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:1329",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:713715"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:713715",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:137"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:137",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:80002"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:80002",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:3338"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:3338",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:196"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:196",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:1952"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:1952",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:1187947933"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:1187947933",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:324705682"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:324705682",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:2366"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:2366",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:2368"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:2368",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:42161"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:42161",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:421614"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:421614",
+      "extra": {
+        "facilitatorAddress": "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63"
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "solana",
+      "extra": {
+        "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4"
+      }
+    },
+    {
+      "x402Version": 1,
+      "scheme": "exact",
+      "network": "solana-devnet",
+      "extra": {
+        "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "extra": {
+        "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4"
+      }
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+      "extra": {
+        "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4"
+      }
+    }
+  ],
+  "extensions": [
+    "bazaar",
+    "eip2612GasSponsoring",
+    "erc20ApprovalGasSponsoring"
+  ],
+  "signers": {
+    "eip155:*": [
+      "0xc6699d2aadA6c36Dfea5C248DD70f9CB0235cB63",
+      "0xB2Bd29925CBbCEA7628279c91945Ca5B98bf371B",
+      "0x25659315106580ce2A787CeeC5efB2d347B539C9",
+      "0xB8F41cB13b1f213da1E94E1b742ec1323235C48F",
+      "0xe575fA51af90957d66FaB6d63355F1eD021b887b",
+      "0x03a3F7CE8e21E6F8D9fa14C67d8876b2470Dc2F1",
+      "0x675707bc7D03089f820c1B7D49F7480083e8F4Df",
+      "0xF46833D4ac4f0f1405CC05c30EdFd86770f721C9",
+      "0x2dAAEF6F941De214Bf7d6daf322BC6BC7406Accb",
+      "0x2Fae4026a31F19183947f0A6045ef975EBFA9cA8",
+      "0xe299C486066739c4a31609e1268d93229632DD47",
+      "0x6CCf245C883F9f3c6cAEe0687aa61DAF7bc96e32",
+      "0xAf990eEf9846B63d896056050FDc0b28BCA9c24b",
+      "0x489C40fC3c2a19AD8cB275B7DD6AA194E9219C4F",
+      "0x9Df61A719ddaE27C20a63A417271CC2c704654bD"
+    ],
+    "solana:*": [
+      "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4"
+    ]
+  }
+}

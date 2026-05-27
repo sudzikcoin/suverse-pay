@@ -1,5 +1,6 @@
 import { CoinbaseCdpAdapter } from "@suverse-pay/adapter-coinbase-cdp";
 import { CosmosPayAdapter } from "@suverse-pay/adapter-cosmos-pay";
+import { PayAiAdapter } from "@suverse-pay/adapter-payai";
 import {
   CapabilityDiscoveryCron,
   HealthCheckCron,
@@ -116,6 +117,59 @@ async function main(): Promise<void> {
     logger.warn(
       "COINBASE_CDP_API_KEY_NAME / COINBASE_CDP_API_KEY_SECRET not set — skipping Coinbase CDP registration",
     );
+  }
+
+  // ---- PayAI (Solana mainnet via facilitator.payai.network) -----------
+  // Free tier needs no credentials; we register the adapter by default
+  // and gate registration on `payAiEnabled` so an operator can disable
+  // PayAI without touching code.
+  if (config.payAiEnabled) {
+    // Same Circle native mainnet mints as the CDP Solana entries — the
+    // gateway can fail over between CDP and PayAI for any (network,
+    // asset, scheme) pair that both list. Drift between the two adapter
+    // configurations would break that, so keep them in sync.
+    const payAiCaps = [
+      {
+        network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+        asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        scheme: "exact",
+      },
+      {
+        network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+        asset: "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr",
+        scheme: "exact",
+      },
+    ] as const;
+    const payAi = new PayAiAdapter({
+      capabilities: payAiCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+      estimatedFeeUsd: "0.001",
+      ...(config.payAiBaseUrl !== undefined && config.payAiBaseUrl.length > 0
+        ? { baseUrl: config.payAiBaseUrl }
+        : {}),
+      ...(config.payAiApiKeyId !== undefined &&
+      config.payAiApiKeyId.length > 0 &&
+      config.payAiApiKeySecret !== undefined &&
+      config.payAiApiKeySecret.length > 0
+        ? { apiKeyId: config.payAiApiKeyId, apiKeySecret: config.payAiApiKeySecret }
+        : {}),
+    });
+    await registry.register(payAi, {
+      config: {
+        baseUrl: config.payAiBaseUrl ?? "https://facilitator.payai.network",
+        estimatedFeeUsd: "0.001",
+      },
+      staticCapabilities: payAiCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+    });
+  } else {
+    logger.warn("PAYAI_ENABLED=false — skipping PayAI registration");
   }
 
   // ---- Background crons ------------------------------------------------

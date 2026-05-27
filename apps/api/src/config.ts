@@ -30,6 +30,19 @@ export const ConfigSchema = z.object({
   coinbaseCdpMonthlyHardCap: z.coerce.number().int().positive().default(5000),
   coinbaseCdpBaseUrl: z.string().optional(),
 
+  // PayAI x402 facilitator (https://facilitator.payai.network).
+  // Free tier accepts unauthenticated requests up to 10 000 settles/mo;
+  // paid tier uses Basic auth with key id + secret. Both optional —
+  // unset means PayAI is registered with the free-tier path (no auth
+  // header sent). Set `payAiEnabled=false` to skip registration
+  // entirely.
+  payAiEnabled: z
+    .union([z.boolean(), z.string().transform((v) => v === "true" || v === "1")])
+    .default(true),
+  payAiBaseUrl: z.string().optional(),
+  payAiApiKeyId: z.string().optional(),
+  payAiApiKeySecret: z.string().optional(),
+
   capabilityDiscoveryIntervalMs: z.coerce
     .number()
     .int()
@@ -55,6 +68,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     coinbaseCdpApiKeySecret: env.COINBASE_CDP_API_KEY_SECRET,
     coinbaseCdpMonthlyHardCap: env.COINBASE_CDP_MONTHLY_HARD_CAP,
     coinbaseCdpBaseUrl: env.COINBASE_CDP_BASE_URL,
+    payAiEnabled: env.PAYAI_ENABLED,
+    payAiBaseUrl: env.PAYAI_BASE_URL,
+    payAiApiKeyId: env.PAYAI_API_KEY_ID,
+    payAiApiKeySecret: env.PAYAI_API_KEY_SECRET,
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
   });
