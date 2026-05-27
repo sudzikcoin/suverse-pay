@@ -3,4 +3,5 @@ packages:
   - "services/*"
   - "packages/*"
   - "packages/adapters/*"
+  - "packages/signers/*"
   - "db"

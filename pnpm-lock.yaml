@@ -79,7 +79,7 @@ importers:
         specifier: ^0.39.0
         version: 0.39.0
       '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
+        specifier: ~1.29.0
         version: 1.29.0(zod@4.4.3)
       express:
         specifier: ^5.2.1
@@ -186,6 +186,28 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.41
+
+  packages/signers/cosmos:
+    dependencies:
+      '@cosmjs/amino':
+        specifier: ^0.39.0
+        version: 0.39.0
+      '@cosmjs/crypto':
+        specifier: ^0.39.0
+        version: 0.39.0
+      '@cosmjs/encoding':
+        specifier: ^0.39.0
+        version: 0.39.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.41
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.7
+        version: 4.1.7(@types/node@20.19.41)(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(tsx@4.22.3))
 
   services/orchestrator:
     dependencies:
