@@ -22,6 +22,10 @@ These were left running after the v0.1.0 smoke for follow-up runs.
 Kill when convenient: `kill 683857 684697`. PIDs are stale after the
 next reboot or session — remove this section then.
 
+## Phase 2 — in progress
+Sub-task 1: scaffolding apps/mcp (MCP server with session management
+and init_session tool). Six sub-tasks total; one per session.
+
 ## Tech debt (small, not urgent)
 - CI badge in README after first green CI run on main
 
