@@ -1,0 +1,1020 @@
+{
+  "partialResults": true,
+  "resources": [
+    {
+      "accepts": [
+        {
+          "amount": "100000",
+          "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "extra": {
+            "feePayer": "BFK9TLC3edb13K6v4YyH3DwPb5DSUpkWvb7XnqCL9b4F"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          "payTo": "AbbuSAH5Ur4a47KSVEzy4dP4wvLY8DSvdQDbJuJjiWfW",
+          "scheme": "exact"
+        },
+        {
+          "amount": "100000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "extra": {
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:8453",
+          "payTo": "0x5d6dF6b10C54617dac4Bf9993ad9fA384b7B36d3",
+          "scheme": "exact"
+        }
+      ],
+      "description": "OATP · tx_explainer — Fetch a Solana transaction by signature and return a human-readable explanation: programs invoked, token balance changes, fee (SOL + USD), and a one-line summary.",
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "body": {
+                "signature": "<solana tx signature base58>"
+              },
+              "bodyType": "json",
+              "method": "POST",
+              "type": "http"
+            },
+            "output": {
+              "example": {
+                "blockTime": 1710000000,
+                "fee": 5000,
+                "feeUsd": 0.00075,
+                "instructions": [
+                  {
+                    "action": "setComputeUnitLimit",
+                    "programId": "ComputeBudget111111111111111111111111111111",
+                    "programName": "ComputeBudget"
+                  },
+                  {
+                    "action": null,
+                    "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+                    "programName": "Jupiter v6"
+                  }
+                ],
+                "payer": "9xQeWvG816bUx9EPjHmaT23t3iWtVaLU4UY32x6yvLk1",
+                "queriedAt": "2026-04-26T10:00:00.000Z",
+                "signature": "5KQwrPbwdL6PhXujxW37FSSbT5HG4d6V8c5jYrqWwG6QrBmbX2RhPZ8M9LrgDmBnYpZHVz9KvxWsyABcdEfGhij1",
+                "slot": 250123456,
+                "sources": [
+                  "synapse:rpc",
+                  "jupiter:price"
+                ],
+                "success": true,
+                "summary": "Swap on Jupiter by 9xQe…vLk1 (2 token balance changes)",
+                "tokenChanges": [
+                  {
+                    "amountChange": "-100000000",
+                    "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                    "owner": "9xQeWvG816bUx9EPjHmaT23t3iWtVaLU4UY32x6yvLk1",
+                    "uiAmountChange": -100
+                  },
+                  {
+                    "amountChange": "500000000",
+                    "mint": "So11111111111111111111111111111111111111112",
+                    "owner": "9xQeWvG816bUx9EPjHmaT23t3iWtVaLU4UY32x6yvLk1",
+                    "uiAmountChange": 0.5
+                  }
+                ]
+              },
+              "type": "json"
+            }
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "properties": {
+              "input": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "signature": {
+                        "description": "Solana transaction signature (base58, 64-88 chars)",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "signature"
+                    ],
+                    "type": "object"
+                  },
+                  "bodyType": {
+                    "enum": [
+                      "json",
+                      "form-data",
+                      "text"
+                    ],
+                    "type": "string"
+                  },
+                  "method": {
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH"
+                    ],
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "http",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "method",
+                  "bodyType",
+                  "body"
+                ],
+                "type": "object"
+              },
+              "output": {
+                "properties": {
+                  "example": {
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "input"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "lastUpdated": "2026-05-14T14:26:42.878Z",
+      "quality": {
+        "l30DaysTotalCalls": 18604,
+        "l30DaysUniquePayers": 2598,
+        "lastCalledAt": "2026-05-14T14:26:42.685Z"
+      },
+      "resource": "https://api.oatp.cc/tools/tx_explainer",
+      "type": "http",
+      "x402Version": 2
+    },
+    {
+      "accepts": [
+        {
+          "amount": "200000",
+          "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "extra": {
+            "feePayer": "BFK9TLC3edb13K6v4YyH3DwPb5DSUpkWvb7XnqCL9b4F"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          "payTo": "AbbuSAH5Ur4a47KSVEzy4dP4wvLY8DSvdQDbJuJjiWfW",
+          "scheme": "exact"
+        },
+        {
+          "amount": "200000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "extra": {
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:8453",
+          "payTo": "0x5d6dF6b10C54617dac4Bf9993ad9fA384b7B36d3",
+          "scheme": "exact"
+        }
+      ],
+      "description": "OATP · tx_simulator — Simulate a base64-encoded Solana transaction without broadcasting it. Returns success/err, logs, compute units consumed, and any accounts the simulator surfaces.",
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "body": {
+                "transaction": "<base64 serialized solana transaction>"
+              },
+              "bodyType": "json",
+              "method": "POST",
+              "type": "http"
+            },
+            "output": {
+              "example": {
+                "accountsTouched": null,
+                "err": null,
+                "logs": [
+                  "Program ComputeBudget111111111111111111111111111111 invoke [1]",
+                  "Program ComputeBudget111111111111111111111111111111 success",
+                  "Program 11111111111111111111111111111111 invoke [1]",
+                  "Program 11111111111111111111111111111111 success"
+                ],
+                "queriedAt": "2026-04-26T10:00:00.000Z",
+                "sources": [
+                  "synapse:rpc"
+                ],
+                "success": true,
+                "unitsConsumed": 450
+              },
+              "type": "json"
+            }
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "properties": {
+              "input": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "transaction": {
+                        "description": "Base64-encoded serialized Solana transaction (signed or unsigned).",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "transaction"
+                    ],
+                    "type": "object"
+                  },
+                  "bodyType": {
+                    "enum": [
+                      "json",
+                      "form-data",
+                      "text"
+                    ],
+                    "type": "string"
+                  },
+                  "method": {
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH"
+                    ],
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "http",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "method",
+                  "bodyType",
+                  "body"
+                ],
+                "type": "object"
+              },
+              "output": {
+                "properties": {
+                  "example": {
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "input"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "lastUpdated": "2026-05-14T00:23:58.62Z",
+      "quality": {
+        "l30DaysTotalCalls": 12760,
+        "l30DaysUniquePayers": 2555,
+        "lastCalledAt": "2026-05-14T00:23:58.512Z"
+      },
+      "resource": "https://api.oatp.cc/tools/tx_simulator",
+      "type": "http",
+      "x402Version": 2
+    },
+    {
+      "accepts": [
+        {
+          "amount": "500000",
+          "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "extra": {
+            "feePayer": "BFK9TLC3edb13K6v4YyH3DwPb5DSUpkWvb7XnqCL9b4F"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          "payTo": "AbbuSAH5Ur4a47KSVEzy4dP4wvLY8DSvdQDbJuJjiWfW",
+          "scheme": "exact"
+        },
+        {
+          "amount": "500000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "extra": {
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:8453",
+          "payTo": "0x5d6dF6b10C54617dac4Bf9993ad9fA384b7B36d3",
+          "scheme": "exact"
+        }
+      ],
+      "description": "OATP · token_risk_scan — Analyze a Solana SPL token for rug/risk factors: mint & freeze authorities, top-holder concentration, liquidity, age, and a composite 0-100 risk score.",
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "body": {
+                "mint": "<solana mint base58>"
+              },
+              "bodyType": "json",
+              "method": "POST",
+              "type": "http"
+            },
+            "output": {
+              "example": {
+                "age": {
+                  "ageDays": 686,
+                  "createdAt": "2024-06-07T10:26:40.709Z"
+                },
+                "authorities": {
+                  "freezeRenounced": true,
+                  "mintRenounced": true
+                },
+                "distribution": {
+                  "available": true,
+                  "holderCountApprox": 20,
+                  "top10HolderPct": 40.52
+                },
+                "liquidity": {
+                  "liquidityUsd": 3260230,
+                  "marketCapUsd": 562000000,
+                  "priceUsd": 0.00000639
+                },
+                "metadata": {
+                  "decimals": 5,
+                  "name": "Bonk",
+                  "symbol": "Bonk"
+                },
+                "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+                "risk": {
+                  "flags": [],
+                  "greenFlags": [
+                    "mint-renounced",
+                    "deep-liquidity"
+                  ],
+                  "level": "safe",
+                  "score": 93
+                }
+              },
+              "type": "json"
+            }
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "properties": {
+              "input": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mint": {
+                        "description": "Solana token mint address (base58, 32-44 chars)",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "mint"
+                    ],
+                    "type": "object"
+                  },
+                  "bodyType": {
+                    "enum": [
+                      "json",
+                      "form-data",
+                      "text"
+                    ],
+                    "type": "string"
+                  },
+                  "method": {
+                    "enum": [
+                      "POST",
+                      "PUT",
+                      "PATCH"
+                    ],
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "http",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "method",
+                  "bodyType",
+                  "body"
+                ],
+                "type": "object"
+              },
+              "output": {
+                "properties": {
+                  "example": {
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "input"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "lastUpdated": "2026-05-14T00:23:58.835Z",
+      "quality": {
+        "l30DaysTotalCalls": 11150,
+        "l30DaysUniquePayers": 2236,
+        "lastCalledAt": "2026-05-14T00:23:58.699Z"
+      },
+      "resource": "https://api.oatp.cc/tools/token_risk_scan",
+      "type": "http",
+      "x402Version": 2
+    },
+    {
+      "accepts": [
+        {
+          "amount": "1000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "extra": {
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 300,
+          "network": "eip155:8453",
+          "payTo": "0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808",
+          "scheme": "exact"
+        },
+        {
+          "amount": "1000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "extra": {
+            "assetTransferMethod": "permit2",
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 300,
+          "network": "eip155:8453",
+          "payTo": "0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808",
+          "scheme": "exact"
+        },
+        {
+          "amount": "1000",
+          "asset": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+          "extra": {},
+          "maxTimeoutSeconds": 300,
+          "network": "eip155:137",
+          "payTo": "0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808",
+          "scheme": "exact"
+        },
+        {
+          "amount": "1000",
+          "asset": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+          "extra": {
+            "assetTransferMethod": "permit2"
+          },
+          "maxTimeoutSeconds": 300,
+          "network": "eip155:137",
+          "payTo": "0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808",
+          "scheme": "exact"
+        },
+        {
+          "amount": "1000",
+          "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "extra": {
+            "feePayer": "Hc3sdEAsCGQcpgfivywog9uwtk8gUBUZgsxdME1EJy88"
+          },
+          "maxTimeoutSeconds": 300,
+          "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          "payTo": "6XcSfqJHr9vNW2vbiRaMqUYVm7shDgLepca54wUTDPN5",
+          "scheme": "exact"
+        }
+      ],
+      "description": "Real-time crypto market news with sentiment analysis and top headlines ranked by importance.",
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "method": "GET",
+              "queryParams": {},
+              "type": "http"
+            },
+            "output": {
+              "example": {
+                "data": {
+                  "report": "Latest crypto news..."
+                },
+                "status": "success"
+              },
+              "type": "json"
+            }
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "properties": {
+              "input": {
+                "additionalProperties": false,
+                "properties": {
+                  "method": {
+                    "enum": [
+                      "GET"
+                    ],
+                    "type": "string"
+                  },
+                  "queryParams": {
+                    "properties": {},
+                    "type": "object"
+                  },
+                  "type": {
+                    "const": "http",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "method"
+                ],
+                "type": "object"
+              },
+              "output": {
+                "properties": {
+                  "example": {
+                    "properties": {
+                      "data": {
+                        "description": "News report object on success, error string on failure"
+                      },
+                      "status": {
+                        "enum": [
+                          "success",
+                          "failed"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "status",
+                      "data"
+                    ],
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "input"
+            ],
+            "type": "object"
+          }
+        },
+        "offer-receipt": {
+          "info": {
+            "offers": [
+              {
+                "acceptIndex": 0,
+                "format": "eip712",
+                "payload": {
+                  "amount": "1000",
+                  "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  "network": "eip155:8453",
+                  "payTo": "0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808",
+                  "resourceUrl": "https://x402.ottoai.services/crypto-news",
+                  "scheme": "exact",
+                  "validUntil": 1779914110,
+                  "version": 1
+                },
+                "signature": "0x955c143ee64ad09b4fa23551a27d177266aa49a430cf4fd2282dd8e36cfa164539f8d7c04af9a48437d15866c9aedf736452d4abbdeb58356d0d6016ac6c89811b"
+              },
+              {
+                "acceptIndex": 1,
+                "format": "eip712",
+                "payload": {
+                  "amount": "1000",
+                  "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  "network": "eip155:8453",
+                  "payTo": "0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808",
+                  "resourceUrl": "https://x402.ottoai.services/crypto-news",
+                  "scheme": "exact",
+                  "validUntil": 1779914110,
+                  "version": 1
+                },
+                "signature": "0x955c143ee64ad09b4fa23551a27d177266aa49a430cf4fd2282dd8e36cfa164539f8d7c04af9a48437d15866c9aedf736452d4abbdeb58356d0d6016ac6c89811b"
+              },
+              {
+                "acceptIndex": 2,
+                "format": "eip712",
+                "payload": {
+                  "amount": "1000",
+                  "asset": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+                  "network": "eip155:137",
+                  "payTo": "0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808",
+                  "resourceUrl": "https://x402.ottoai.services/crypto-news",
+                  "scheme": "exact",
+                  "validUntil": 1779914110,
+                  "version": 1
+                },
+                "signature": "0xc185932222885ff3c0868d83ac05bfbe00d33162ecd22e5498bc9ca97de2f14a54d8c37b480cb28705458534cb5570f6a574113c4b4d5e8a5c1c5db751d3f0341c"
+              },
+              {
+                "acceptIndex": 3,
+                "format": "eip712",
+                "payload": {
+                  "amount": "1000",
+                  "asset": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+                  "network": "eip155:137",
+                  "payTo": "0x0E84dDEdAaE6A779c462C22a59F301EC31B6b808",
+                  "resourceUrl": "https://x402.ottoai.services/crypto-news",
+                  "scheme": "exact",
+                  "validUntil": 1779914110,
+                  "version": 1
+                },
+                "signature": "0xc185932222885ff3c0868d83ac05bfbe00d33162ecd22e5498bc9ca97de2f14a54d8c37b480cb28705458534cb5570f6a574113c4b4d5e8a5c1c5db751d3f0341c"
+              },
+              {
+                "acceptIndex": 4,
+                "format": "eip712",
+                "payload": {
+                  "amount": "1000",
+                  "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+                  "payTo": "6XcSfqJHr9vNW2vbiRaMqUYVm7shDgLepca54wUTDPN5",
+                  "resourceUrl": "https://x402.ottoai.services/crypto-news",
+                  "scheme": "exact",
+                  "validUntil": 1779914110,
+                  "version": 1
+                },
+                "signature": "0x3cba43838748addfba263accb54be016bd1d1843f345213f19707b7fc30354ee38e3f7f7a92de3ff15d36abc9fc2e867cb89e84d9b1dfabfa89bac6a0dcd0e3e1b"
+              }
+            ]
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "properties": {
+              "offers": {
+                "items": {
+                  "properties": {
+                    "acceptIndex": {
+                      "type": "integer"
+                    },
+                    "format": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "properties": {
+                        "amount": {
+                          "type": "string"
+                        },
+                        "asset": {
+                          "type": "string"
+                        },
+                        "network": {
+                          "type": "string"
+                        },
+                        "payTo": {
+                          "type": "string"
+                        },
+                        "resourceUrl": {
+                          "type": "string"
+                        },
+                        "scheme": {
+                          "type": "string"
+                        },
+                        "validUntil": {
+                          "type": "integer"
+                        },
+                        "version": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "resourceUrl",
+                        "scheme",
+                        "network",
+                        "asset",
+                        "payTo",
+                        "amount"
+                      ],
+                      "type": "object"
+                    },
+                    "signature": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "format",
+                    "signature"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "offers"
+            ],
+            "type": "object"
+          }
+        },
+        "sign-in-with-x": {
+          "info": {
+            "domain": "x402.ottoai.services",
+            "issuedAt": "2026-05-27T20:30:10.909Z",
+            "nonce": "22d686ff1b117da31cb9d70dab8d3f9f",
+            "resources": [
+              "https://x402.ottoai.services/crypto-news"
+            ],
+            "statement": "Sign in to access Otto AI market intelligence",
+            "uri": "https://x402.ottoai.services/crypto-news",
+            "version": "1"
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "chainId": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string"
+              },
+              "expirationTime": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "issuedAt": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "nonce": {
+                "type": "string"
+              },
+              "notBefore": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "resources": {
+                "items": {
+                  "format": "uri",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "signature": {
+                "type": "string"
+              },
+              "statement": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "uri": {
+                "format": "uri",
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "domain",
+              "address",
+              "uri",
+              "version",
+              "chainId",
+              "type",
+              "nonce",
+              "issuedAt",
+              "signature"
+            ],
+            "type": "object"
+          },
+          "supportedChains": [
+            {
+              "chainId": "eip155:8453",
+              "type": "eip191"
+            },
+            {
+              "chainId": "eip155:137",
+              "type": "eip191"
+            },
+            {
+              "chainId": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+              "type": "ed25519"
+            }
+          ]
+        }
+      },
+      "lastUpdated": "2026-05-27T20:30:10.962Z",
+      "quality": {
+        "l30DaysTotalCalls": 2963,
+        "l30DaysUniquePayers": 170,
+        "lastCalledAt": "2026-05-27T17:42:29.214Z"
+      },
+      "resource": "https://x402.ottoai.services/crypto-news",
+      "type": "http",
+      "x402Version": 2
+    },
+    {
+      "accepts": [
+        {
+          "amount": "1000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "extra": {
+            "credentialTypes": [
+              "authorization"
+            ],
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 3600,
+          "network": "eip155:8453",
+          "payTo": "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+          "recipient": "0x52E29e0d2Aa49bfBfC548C0A9F2196F4aa51f3ea",
+          "scheme": "exact"
+        }
+      ],
+      "description": "Latest Ethereum block height - current chain tip via eth_blockNumber",
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "body": {
+                "network": "ethereum"
+              },
+              "method": "GET",
+              "queryParams": {
+                "network": "ethereum"
+              },
+              "type": "http"
+            },
+            "output": {
+              "example": {
+                "block_number": "0x133da1e",
+                "network": "ethereum"
+              },
+              "type": "json"
+            }
+          },
+          "schema": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "properties": {
+              "input": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "properties": {
+                      "network": {
+                        "default": "ethereum",
+                        "enum": [
+                          "ethereum",
+                          "sepolia",
+                          "avax",
+                          "megaeth",
+                          "megaeth-testnet",
+                          "base"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "method": {
+                    "enum": [
+                      "GET",
+                      "HEAD",
+                      "DELETE"
+                    ],
+                    "type": "string"
+                  },
+                  "queryParams": {
+                    "properties": {
+                      "network": {
+                        "default": "ethereum",
+                        "enum": [
+                          "ethereum",
+                          "sepolia",
+                          "avax",
+                          "megaeth",
+                          "megaeth-testnet",
+                          "base"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": {
+                    "const": "http",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "method"
+                ],
+                "type": "object"
+              },
+              "output": {
+                "properties": {
+                  "example": {
+                    "properties": {
+                      "data": {
+                        "description": "Response payload",
+                        "type": "object"
+                      },
+                      "error": {
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "meta": {
+                        "properties": {
+                          "cost_usdc": {
+                            "type": "string"
+                          },
+                          "endpoint": {
+                            "type": "string"
+                          },
+                          "network": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "input"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "lastUpdated": "2026-05-27T05:33:47.497Z",
+      "quality": {
+        "l30DaysTotalCalls": 329,
+        "l30DaysUniquePayers": 174,
+        "lastCalledAt": "2026-05-27T05:33:47.386Z"
+      },
+      "resource": "https://skills.onesource.io/api/chain/block-number",
+      "type": "http",
+      "x402Version": 2
+    }
+  ],
+  "searchMethod": "text",
+  "x402Version": 2
+}
