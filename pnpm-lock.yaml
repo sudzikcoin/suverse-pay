@@ -209,6 +209,22 @@ importers:
         specifier: ^4.1.7
         version: 4.1.7(@types/node@20.19.41)(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(tsx@4.22.3))
 
+  packages/signers/evm:
+    dependencies:
+      viem:
+        specifier: ^2.51.2
+        version: 2.51.2(typescript@5.9.3)(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.41
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.7
+        version: 4.1.7(@types/node@20.19.41)(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(tsx@4.22.3))
+
   services/orchestrator:
     dependencies:
       '@suverse-pay/adapter-coinbase-cdp':
