@@ -4,13 +4,23 @@ Last session: 2026-05-27
 Last tag: v0.1.0
 
 ## Current state
-Phase 1 stable, v0.1.0 cut. Real-network smoke green end-to-end
-against cosmos-pay on Noble testnet `grand-1`. Repo public at
-sudzikcoin/suverse-pay.
+Phase 1 complete. v0.1.0 released. Real-network smoke verified
+end-to-end against cosmos-pay on Noble testnet `grand-1` — including
+a real on-chain `MsgExec(MsgSend)` broadcast through the gateway and
+the idempotency invariant holding under real conditions. Repo public
+at sudzikcoin/suverse-pay.
 
 ## Infrastructure
 - Postgres on :5433, Redis on :6380 (Docker)
 - To restart: cd /home/govhub/suverse-pay && docker compose up -d && pnpm db:migrate && pnpm db:bootstrap
+
+## Running processes (from current session)
+- cosmos-pay facilitator: PID 683857, listening on :8402, log `/tmp/cosmos-pay.log`
+- suverse-pay API server: PID 684697, listening on :3000, log `/tmp/suverse-pay.log`
+
+These were left running after the v0.1.0 smoke for follow-up runs.
+Kill when convenient: `kill 683857 684697`. PIDs are stale after the
+next reboot or session — remove this section then.
 
 ## Tech debt (small, not urgent)
 - CI badge in README after first green CI run on main
