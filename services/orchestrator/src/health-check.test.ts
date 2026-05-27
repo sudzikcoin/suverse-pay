@@ -156,39 +156,38 @@ describe("HealthCheckCron", () => {
     expect(rows.rows).toHaveLength(0);
   });
 
-  // TODO(phase-1-review): flaky under parallel load — when the rest of
-  // the workspace's vitest runners are competing for the event loop,
-  // a 175ms wait does not reliably observe two 50ms ticks. Rewrite
-  // using vi.useFakeTimers() + vi.advanceTimersByTimeAsync() so the
-  // assertion is deterministic regardless of system load. Skipped in
-  // the meantime; cron start/stop behavior is otherwise exercised by
-  // the surrounding describe-block tests that read provider_health_checks
-  // rows directly.
-  it.skip("start() ticks on the configured interval; stop() halts further ticks", async () => {
-    const reg = new ProviderRegistry(stack.pool);
-    await reg.register(
-      makeAdapter("p1", {
-        status: "healthy",
-        checkedAt: new Date().toISOString(),
-      }),
-      { staticCapabilities: [] },
-    );
-    const cron = new HealthCheckCron(reg, stack.pool, 50);
-    cron.start();
-    await new Promise((r) => setTimeout(r, 175));
-    cron.stop();
-    const count1 = (
-      await stack.pool.query(
-        `SELECT COUNT(*)::int AS c FROM provider_health_checks WHERE provider_id = 'p1'`,
-      )
-    ).rows[0]!.c;
-    expect(count1).toBeGreaterThanOrEqual(2);
-    await new Promise((r) => setTimeout(r, 100));
-    const count2 = (
-      await stack.pool.query(
-        `SELECT COUNT(*)::int AS c FROM provider_health_checks WHERE provider_id = 'p1'`,
-      )
-    ).rows[0]!.c;
-    expect(count2).toBe(count1); // no new rows after stop
+  // Per-tick behavior is covered by the runOnce() tests above. Here
+  // we only verify the start/stop wiring against the configured
+  // intervalMs — no real time needed, no DB rows asserted, so it's
+  // deterministic under any parallel load.
+  it("start() schedules a setInterval at the configured interval; stop() clears it", () => {
+    const setIntervalSpy = vi.spyOn(globalThis, "setInterval");
+    const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
+
+    try {
+      const reg = new ProviderRegistry(stack.pool);
+      const cron = new HealthCheckCron(reg, stack.pool, 50);
+
+      cron.start();
+      expect(setIntervalSpy).toHaveBeenCalledTimes(1);
+      const [, intervalArg] = setIntervalSpy.mock.calls[0]!;
+      expect(intervalArg).toBe(50);
+
+      // start() is idempotent — a second call must not double-schedule.
+      cron.start();
+      expect(setIntervalSpy).toHaveBeenCalledTimes(1);
+
+      cron.stop();
+      expect(clearIntervalSpy).toHaveBeenCalledTimes(1);
+
+      // After stop(), start() may schedule a fresh interval.
+      cron.start();
+      expect(setIntervalSpy).toHaveBeenCalledTimes(2);
+      cron.stop();
+      expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      setIntervalSpy.mockRestore();
+      clearIntervalSpy.mockRestore();
+    }
   });
 });
