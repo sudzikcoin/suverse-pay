@@ -37,3 +37,6 @@ Thumbs.db
 
 # PID files
 *.pid
+
+# Real-smoke fixtures (regenerated per run, single-use signed payloads)
+scripts/smoke/real/fixtures/signed-*.json
