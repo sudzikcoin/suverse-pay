@@ -20,8 +20,13 @@
  * Phase 4 (v0.3.2) added World Chain mainnet (480) + World Sepolia
  * (4801) — bridged Circle USDC, both with EIP-712 domain
  * `name="USDC"` / `version="2"` (also verified via `eth_call`).
- * Ethereum mainnet (1), Optimism (10), Avalanche (43114), and other
- * networks are deferred — CDP does not advertise them today.
+ * Phase 4 Block 1 Sub-task 2 added Avalanche C-Chain mainnet
+ * (43114), Avalanche Fuji (43113), and Arbitrum Sepolia (421614)
+ * — all native Circle USDC with EIP-712 domain `name="USD Coin"` /
+ * `version="2"` (also `eth_call`-verified). These are routed
+ * through the PayAI facilitator adapter (CDP doesn't advertise
+ * them). Optimism (10), BNB (56), and other EVM networks await a
+ * Thirdweb x402 adapter — see docs/design/non-cdp-evm-adapter.md.
  */
 
 export interface EvmTokenDomain {
@@ -112,6 +117,38 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
       verifyingContract: "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88",
       decimals: 6,
     },
+    // Native Circle USDC on Avalanche C-Chain mainnet — domain is
+    // "USD Coin" (mainnet, not the "USDC" test-deployment variant),
+    // verified via eth_call name(). Routed through PayAI (CDP does
+    // not advertise eip155:43114 on x402).
+    {
+      symbol: "USDC",
+      name: "USD Coin",
+      version: "2",
+      chainId: 43114,
+      verifyingContract: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+      decimals: 6,
+    },
+    // Native Circle USDC on Avalanche Fuji (testnet) — verified
+    // on-chain. Same domain shape as mainnet ("USD Coin", v2).
+    {
+      symbol: "USDC",
+      name: "USD Coin",
+      version: "2",
+      chainId: 43113,
+      verifyingContract: "0x5425890298aed601595a70AB815c96711a31Bc65",
+      decimals: 6,
+    },
+    // Native Circle USDC on Arbitrum Sepolia (testnet) — verified
+    // on-chain. Domain `name="USD Coin"` like Arbitrum mainnet.
+    {
+      symbol: "USDC",
+      name: "USD Coin",
+      version: "2",
+      chainId: 421614,
+      verifyingContract: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+      decimals: 6,
+    },
 
     // EURC — Circle's euro stablecoin. Currently deployed on Base; on
     // Polygon/Arbitrum it is not yet available, so we list only Base
@@ -132,7 +169,17 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
   return map;
 })();
 
-export const SUPPORTED_CHAIN_IDS = [8453, 137, 42161, 84532, 480, 4801] as const;
+export const SUPPORTED_CHAIN_IDS = [
+  8453,    // Base mainnet
+  137,     // Polygon
+  42161,   // Arbitrum mainnet
+  84532,   // Base Sepolia
+  480,     // World Chain mainnet
+  4801,    // World Sepolia
+  43114,   // Avalanche C-Chain mainnet
+  43113,   // Avalanche Fuji
+  421614,  // Arbitrum Sepolia
+] as const;
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
 
 export function isSupportedChainId(n: number): n is SupportedChainId {

@@ -129,16 +129,23 @@ async function main(): Promise<void> {
     );
   }
 
-  // ---- PayAI (Solana mainnet via facilitator.payai.network) -----------
+  // ---- PayAI (Solana + multi-EVM via facilitator.payai.network) -------
   // Free tier needs no credentials; we register the adapter by default
   // and gate registration on `payAiEnabled` so an operator can disable
   // PayAI without touching code.
   if (config.payAiEnabled) {
-    // Same Circle native mainnet mints as the CDP Solana entries — the
-    // gateway can fail over between CDP and PayAI for any (network,
-    // asset, scheme) pair that both list. Drift between the two adapter
-    // configurations would break that, so keep them in sync.
+    // For (network, asset, scheme) pairs BOTH CDP and PayAI cover, the
+    // gateway can fail over between them. Drift between the two adapter
+    // configurations would break that, so keep the overlap entries
+    // (Base / Polygon / Arbitrum / Base Sepolia, Solana mainnet mints)
+    // bit-for-bit identical to the `cdpCaps` block above.
+    //
+    // PayAI-exclusive entries (Avalanche mainnet/Fuji, Arbitrum
+    // Sepolia) are added in Phase 4 Block 1 Sub-task 2 — CDP's
+    // /supported does not list them, so these routes go straight to
+    // PayAI with no failover (see routing-config).
     const payAiCaps = [
+      // ---- Solana mainnet (overlap with CDP) ---------------------------
       {
         network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
         asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
@@ -149,6 +156,15 @@ async function main(): Promise<void> {
         asset: "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr",
         scheme: "exact",
       },
+      // ---- EVM overlap (CDP primary, PayAI failover) -------------------
+      { network: "eip155:8453",  asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", scheme: "exact" }, // Base mainnet USDC
+      { network: "eip155:137",   asset: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359", scheme: "exact" }, // Polygon USDC
+      { network: "eip155:42161", asset: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", scheme: "exact" }, // Arbitrum USDC
+      { network: "eip155:84532", asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", scheme: "exact" }, // Base Sepolia USDC
+      // ---- EVM PayAI-exclusive (CDP does not advertise these) ----------
+      { network: "eip155:43114",  asset: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", scheme: "exact" }, // Avalanche C-Chain USDC
+      { network: "eip155:43113",  asset: "0x5425890298aed601595a70AB815c96711a31Bc65", scheme: "exact" }, // Avalanche Fuji USDC
+      { network: "eip155:421614", asset: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", scheme: "exact" }, // Arbitrum Sepolia USDC
     ] as const;
     const payAi = new PayAiAdapter({
       capabilities: payAiCaps.map((c) => ({

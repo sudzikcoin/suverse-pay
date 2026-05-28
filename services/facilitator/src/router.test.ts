@@ -47,6 +47,43 @@ function fakeRegistry(providers: ReadonlyArray<RegisteredProvider>) {
 }
 
 const SOLANA_MAINNET = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+const BASE_MAINNET = "eip155:8453";
+const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
+// EIP-3009 EVM SettleRequest. Used by the EVM failover test below
+// — proves the multi-adapter routing works on EVM payloads, not just
+// Solana. Sub-task 7 of Phase 3 already proved Cosmos via cosmos-pay;
+// Sub-task 2 of Phase 4 Block 1 adds the EVM half.
+function evmSettleReq(): SettleRequest {
+  return {
+    paymentPayload: {
+      x402Version: 2,
+      scheme: "exact",
+      network: BASE_MAINNET,
+      payload: {
+        signature: "0x" + "ab".repeat(65),
+        authorization: {
+          from: "0xA2F8a871AfDC463aaEf5FAe8284d900f4d02538E",
+          to:   "0x000000000000000000000000000000000000bEEF",
+          value: "1000",
+          validAfter:  "0",
+          validBefore: "9999999999",
+          nonce: "0x" + "11".repeat(32),
+        },
+      },
+    },
+    paymentRequirements: {
+      scheme: "exact",
+      network: BASE_MAINNET,
+      maxAmountRequired: "1000",
+      asset: BASE_USDC,
+      payTo: "0x000000000000000000000000000000000000bEEF",
+      resource: "https://example.com/x",
+      maxTimeoutSeconds: 60,
+      extra: { name: "USD Coin", version: "2", decimals: 6, symbol: "USDC" },
+    },
+  } as never;
+}
 
 function svmSettleReq(): SettleRequest {
   return {
@@ -70,25 +107,69 @@ function svmSettleReq(): SettleRequest {
 }
 
 describe("ROUTING_CONFIG static entries", () => {
-  // Lock in CDP-routable EVM networks so a config refactor can't
-  // silently drop them. Mirrors the (network, scheme) pairs CDP
-  // /supported advertises for x402 v2.
-  const expectedEvmRoutes = [
-    "eip155:8453:exact",      // Base mainnet
-    "eip155:137:exact",       // Polygon
-    "eip155:42161:exact",     // Arbitrum
-    "eip155:84532:exact",     // Base Sepolia (v0.3.1)
-    "eip155:480:exact",       // World Chain mainnet (v0.3.2)
-    "eip155:4801:exact",      // World Sepolia (v0.3.2)
+  // Lock in EVM routes so a config refactor can't silently drop them.
+
+  // (a) CDP-primary EVM networks. For overlap networks PayAI is the
+  // expected failover (index 1) — also asserted below.
+  const cdpPrimaryRoutes = [
+    "eip155:8453:exact",   // Base mainnet
+    "eip155:137:exact",    // Polygon
+    "eip155:42161:exact",  // Arbitrum
+    "eip155:84532:exact",  // Base Sepolia (v0.3.1)
+    "eip155:480:exact",    // World Chain mainnet (v0.3.2)
+    "eip155:4801:exact",   // World Sepolia (v0.3.2)
   ];
-  for (const key of expectedEvmRoutes) {
-    it(`routes ${key} to coinbase-cdp`, async () => {
-      // Dynamic import — the routing-config module owns the static
-      // table and is the source of truth.
+  for (const key of cdpPrimaryRoutes) {
+    it(`routes ${key} primary to coinbase-cdp`, async () => {
       const { getRoutingPriority } = await import("./routing-config.js");
-      const [network, scheme] = key.split(":exact").map((s, i) => i === 0 ? s : "exact");
-      const priority = getRoutingPriority(network!, "exact");
+      const network = key.replace(":exact", "");
+      const priority = getRoutingPriority(network, "exact");
       expect(priority?.[0]).toBe("coinbase-cdp");
+    });
+  }
+
+  // (b) Networks where PayAI is registered as failover. Added in
+  // Phase 4 Block 1 Sub-task 2.
+  const cdpPlusPayaiRoutes = [
+    "eip155:8453:exact",
+    "eip155:137:exact",
+    "eip155:42161:exact",
+    "eip155:84532:exact",
+  ];
+  for (const key of cdpPlusPayaiRoutes) {
+    it(`routes ${key} with payai as failover`, async () => {
+      const { getRoutingPriority } = await import("./routing-config.js");
+      const network = key.replace(":exact", "");
+      const priority = getRoutingPriority(network, "exact");
+      expect(priority).toEqual(["coinbase-cdp", "payai"]);
+    });
+  }
+
+  // (c) World Chain routes must NOT advertise PayAI failover (PayAI
+  // /supported doesn't list eip155:480 / 4801) — would otherwise
+  // surface as 500s when PayAI rejects with route_unsupported.
+  for (const key of ["eip155:480:exact", "eip155:4801:exact"]) {
+    it(`route ${key} does NOT failover to payai (PayAI lacks the network)`, async () => {
+      const { getRoutingPriority } = await import("./routing-config.js");
+      const network = key.replace(":exact", "");
+      const priority = getRoutingPriority(network, "exact");
+      expect(priority).toEqual(["coinbase-cdp"]);
+    });
+  }
+
+  // (d) PayAI-exclusive EVM routes (Phase 4 Block 1 Sub-task 2).
+  // Networks CDP doesn't advertise — PayAI-only.
+  const payaiOnlyEvmRoutes = [
+    "eip155:43114:exact",  // Avalanche C-Chain mainnet
+    "eip155:43113:exact",  // Avalanche Fuji
+    "eip155:421614:exact", // Arbitrum Sepolia
+  ];
+  for (const key of payaiOnlyEvmRoutes) {
+    it(`routes ${key} payai-only (CDP doesn't advertise)`, async () => {
+      const { getRoutingPriority } = await import("./routing-config.js");
+      const network = key.replace(":exact", "");
+      const priority = getRoutingPriority(network, "exact");
+      expect(priority).toEqual(["payai"]);
     });
   }
 });
@@ -288,6 +369,57 @@ describe("routeSettleWithFailover", () => {
     });
     expect(result.response.settled).toBe(false);
     expect(result.response.errorCode).toBe("invalid_authorization");
+  });
+
+  it("EVM: falls over from coinbase-cdp to payai on a retryable error AND reuses the idempotency key", async () => {
+    // Phase 4 Block 1 Sub-task 2 — proves multi-adapter EVM routing
+    // works end-to-end. CDP returns a retryable failure on a Base
+    // mainnet EVM settle; the router transparently retries against
+    // PayAI with the SAME idempotency key.
+    const cdpSettle = vi.fn(async (): Promise<SettleResponse> => ({
+      settled: false,
+      providerId: "coinbase-cdp",
+      network: BASE_MAINNET,
+      amount: "1000",
+      asset: BASE_USDC,
+      errorCode: "temporary_unavailable",
+      errorMessage: "CDP 503 rate-limited",
+    } as never));
+    const payaiSettle = vi.fn(async (): Promise<SettleResponse> => ({
+      settled: true,
+      providerId: "payai",
+      txHash: "0xpayai-evm-tx-hash",
+      network: BASE_MAINNET,
+      amount: "1000",
+      asset: BASE_USDC,
+    } as never));
+    const cdp = fakeRegisteredProvider("coinbase-cdp", cdpSettle);
+    const payai = fakeRegisteredProvider("payai", payaiSettle);
+    const registry = fakeRegistry([cdp, payai]);
+
+    const result = await routeSettleWithFailover(evmSettleReq(), {
+      registry,
+      idempotencyKey: "evm-failover-key",
+    });
+    expect(result.adapterUsed).toBe("payai");
+    expect(result.failoverFrom).toEqual([
+      {
+        adapterId: "coinbase-cdp",
+        errorCode: "temporary_unavailable",
+        errorMessage: "CDP 503 rate-limited",
+      },
+    ]);
+    expect(result.response.settled).toBe(true);
+    // Same idempotency key on both attempts so adapters that respect
+    // it don't double-broadcast.
+    expect(cdpSettle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ idempotencyKey: "evm-failover-key" }),
+    );
+    expect(payaiSettle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ idempotencyKey: "evm-failover-key" }),
+    );
   });
 
   it("throws route_unsupported when the routing config has no entry for this route", async () => {
