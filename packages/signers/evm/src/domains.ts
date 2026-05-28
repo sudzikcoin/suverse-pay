@@ -17,8 +17,11 @@
  * USDC deployment, used by `scripts/smoke/real-evm/` for the real
  * Coinbase CDP smoke. Note: the test contract's EIP-712 domain name
  * is `"USDC"`, NOT `"USD Coin"` — different from the mainnet entry.
- * Ethereum mainnet (1), Optimism (10), and other networks are
- * deferred to v0.4+.
+ * Phase 4 (v0.3.2) added World Chain mainnet (480) + World Sepolia
+ * (4801) — bridged Circle USDC, both with EIP-712 domain
+ * `name="USDC"` / `version="2"` (also verified via `eth_call`).
+ * Ethereum mainnet (1), Optimism (10), Avalanche (43114), and other
+ * networks are deferred — CDP does not advertise them today.
  */
 
 export interface EvmTokenDomain {
@@ -85,6 +88,30 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
       verifyingContract: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
       decimals: 6,
     },
+    // USDC on World Chain mainnet (bridged Circle USDC). Domain name
+    // is "USDC" — verified on-chain via name() at
+    // 0x79A02482A880bCE3F13e09Da970dC34db4CD24d1. CDP /supported
+    // advertises eip155:480 with all three schemes.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 480,
+      verifyingContract: "0x79A02482A880bCE3F13e09Da970dC34db4CD24d1",
+      decimals: 6,
+    },
+    // USDC on World Sepolia (testnet). Domain name is "USDC" —
+    // verified on-chain via name() at
+    // 0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88. CDP /supported
+    // advertises eip155:4801 with all three schemes.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 4801,
+      verifyingContract: "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88",
+      decimals: 6,
+    },
 
     // EURC — Circle's euro stablecoin. Currently deployed on Base; on
     // Polygon/Arbitrum it is not yet available, so we list only Base
@@ -105,7 +132,7 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
   return map;
 })();
 
-export const SUPPORTED_CHAIN_IDS = [8453, 137, 42161, 84532] as const;
+export const SUPPORTED_CHAIN_IDS = [8453, 137, 42161, 84532, 480, 4801] as const;
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
 
 export function isSupportedChainId(n: number): n is SupportedChainId {

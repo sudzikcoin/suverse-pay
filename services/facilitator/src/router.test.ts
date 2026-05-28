@@ -69,6 +69,30 @@ function svmSettleReq(): SettleRequest {
   } as never;
 }
 
+describe("ROUTING_CONFIG static entries", () => {
+  // Lock in CDP-routable EVM networks so a config refactor can't
+  // silently drop them. Mirrors the (network, scheme) pairs CDP
+  // /supported advertises for x402 v2.
+  const expectedEvmRoutes = [
+    "eip155:8453:exact",      // Base mainnet
+    "eip155:137:exact",       // Polygon
+    "eip155:42161:exact",     // Arbitrum
+    "eip155:84532:exact",     // Base Sepolia (v0.3.1)
+    "eip155:480:exact",       // World Chain mainnet (v0.3.2)
+    "eip155:4801:exact",      // World Sepolia (v0.3.2)
+  ];
+  for (const key of expectedEvmRoutes) {
+    it(`routes ${key} to coinbase-cdp`, async () => {
+      // Dynamic import — the routing-config module owns the static
+      // table and is the source of truth.
+      const { getRoutingPriority } = await import("./routing-config.js");
+      const [network, scheme] = key.split(":exact").map((s, i) => i === 0 ? s : "exact");
+      const priority = getRoutingPriority(network!, "exact");
+      expect(priority?.[0]).toBe("coinbase-cdp");
+    });
+  }
+});
+
 describe("pickAdaptersForRoute", () => {
   it("returns adapters in routing-config priority order, primary first", () => {
     const cdp = fakeRegisteredProvider("coinbase-cdp", async () => ({}) as never);

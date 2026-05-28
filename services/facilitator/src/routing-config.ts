@@ -32,6 +32,11 @@ export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   // changes. CDP's `/supported` advertises eip155:84532 alongside the
   // mainnet entries.
   "eip155:84532:exact": ["coinbase-cdp"],
+  // World Chain (mainnet + Sepolia) — CDP-confirmed via /supported.
+  // Phase 4 block 1; no real-network smoke yet (testnet wallet on
+  // World Sepolia would need separate funding).
+  "eip155:480:exact": ["coinbase-cdp"],
+  "eip155:4801:exact": ["coinbase-cdp"],
 
   // ---- Solana mainnet (CDP primary, PayAI failover) -----------------
   "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:exact": ["coinbase-cdp", "payai"],

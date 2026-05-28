@@ -77,6 +77,11 @@ async function main(): Promise<void> {
     // scripts/smoke/real-evm/; CDP's /supported advertises this kind
     // alongside the mainnet EVM entries.
     { network: "eip155:84532", asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", scheme: "exact" },
+    // World Chain mainnet + Sepolia — CDP-confirmed via /supported.
+    // Bridged Circle USDC; same EIP-712 domain shape ("USDC" / "2")
+    // as Base Sepolia. Phase 4 block 1.
+    { network: "eip155:480", asset: "0x79A02482A880bCE3F13e09Da970dC34db4CD24d1", scheme: "exact" },
+    { network: "eip155:4801", asset: "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88", scheme: "exact" },
     // Solana mainnet — Circle native USDC mint + EURC mint
     { network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", scheme: "exact" },
     { network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr", scheme: "exact" },

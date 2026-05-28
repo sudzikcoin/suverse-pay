@@ -98,6 +98,34 @@ drops of ETH-Sepolia. 00-setup enforces this and fails fast otherwise.
 ## Cost knobs (env overrides)
 
 - `SMOKE_REVM_AMOUNT_ATOMIC` (default `1000`): atomic USDC per settle (CDP min on Base Sepolia is 1000)
+
+### Running on a different CDP-supported network
+
+Override the network + asset + RPC + explorer together. Example —
+World Sepolia (eip155:4801, added in v0.3.2):
+
+    export SMOKE_REVM_NETWORK=eip155:4801
+    export SMOKE_REVM_USDC=0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88
+    export SMOKE_REVM_RPC=https://worldchain-sepolia.g.alchemy.com/public
+    export SMOKE_REVM_EXPLORER=https://sepolia.worldscan.org
+
+    set -a && source .env && set +a
+    bash scripts/smoke/real-evm/run-all.sh
+
+The test wallet at `.env.evm-sepolia` must be funded on the chosen
+chain (a few drops of native gas + at least `SMOKE_REVM_AMOUNT_ATOMIC
+× 3` atomic USDC). 00-setup will check on-chain balances and fail
+fast if either is missing.
+
+| Network | RPC suggestion | Explorer | USDC contract |
+|---|---|---|---|
+| Base Sepolia (84532) | `https://sepolia.base.org` | `https://sepolia.basescan.org` | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+| World Sepolia (4801) | `https://worldchain-sepolia.g.alchemy.com/public` | `https://sepolia.worldscan.org` | `0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88` |
+
+Mainnet networks (Base 8453, Polygon 137, Arbitrum 42161, World
+Chain 480) can be parametrized the same way but each settle moves
+real money — fund a wallet you control, and budget for at least
+`SMOKE_REVM_AMOUNT_ATOMIC × 3` atomic units of mainnet USDC.
 - `SMOKE_REVM_PAY_TO` (default `0x000000000000000000000000000000000000bEEF`): recipient address (any non-zero EVM address)
 - `SMOKE_REVM_NETWORK` (default `eip155:84532`): CAIP-2 (set to `eip155:8453` for mainnet — DO NOT do this casually)
 - `SMOKE_REVM_USDC` (default `0x036CbD53842c5426634e7929541eC2318f3dCF7e`): USDC contract on the chosen network
