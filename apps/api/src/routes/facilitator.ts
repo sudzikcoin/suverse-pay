@@ -111,6 +111,7 @@ export function registerFacilitatorRoutes(
           "rate_limited",
           429,
           `rate limit ${rl.used}/${rl.limit} requests-per-minute exceeded for resource key ${resourceKey.id}; retry after ${rl.retryAfterSeconds}s`,
+          { retryAfterSeconds: rl.retryAfterSeconds },
         );
       }
       const body = FacilitatorRequestSchema.parse(req.body);

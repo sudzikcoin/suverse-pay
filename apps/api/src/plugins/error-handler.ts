@@ -36,6 +36,9 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
 
     if (err instanceof GatewayError) {
+      if (err.retryAfterSeconds !== undefined) {
+        reply.header("Retry-After", String(err.retryAfterSeconds));
+      }
       reply
         .code(err.httpStatus)
         .send({ error: { code: err.code, message: err.message } });

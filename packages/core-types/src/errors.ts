@@ -66,16 +66,26 @@ export class ProviderError extends Error {
 export class GatewayError extends Error {
   public readonly code: ErrorCode;
   public readonly httpStatus: number;
+  /**
+   * When set, the global error handler emits a `Retry-After: <n>`
+   * response header. Used by rate-limited / temporarily-unavailable
+   * branches so callers receive an actionable retry hint without
+   * parsing the message body.
+   */
+  public readonly retryAfterSeconds?: number;
 
   constructor(
     code: ErrorCode,
     httpStatus: number,
     message: string,
-    options?: { cause?: unknown },
+    options?: { cause?: unknown; retryAfterSeconds?: number },
   ) {
     super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
     this.name = "GatewayError";
     this.code = code;
     this.httpStatus = httpStatus;
+    if (options?.retryAfterSeconds !== undefined) {
+      this.retryAfterSeconds = options.retryAfterSeconds;
+    }
   }
 }

@@ -4,6 +4,96 @@ All notable changes to `suverse-pay` are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.3.0] — 2026-05-28
+
+Phase 3 stable. Solana support across signer, PayAI adapter, MCP,
+and a public x402 facilitator surface. Verified real on-chain on
+both Noble grand-1 (Cosmos) and Solana devnet.
+
+### Added
+
+- **`@suverse-pay/signer-solana`** — SPL `transferChecked` payload
+  signing for the `exact` scheme on Solana mainnet (`solana:5eykt4...`)
+  and devnet (`solana:EtWTRABZ...`). Builds a v0 `VersionedTransaction`
+  with the required instruction layout (ComputeBudget × 2, then
+  `transferChecked`, then Memo for uniqueness), partial-signs as the
+  payer, and emits the canonical v2 `{paymentPayload,
+  paymentRequirements}` envelope. Round-trip ed25519 verification
+  asserted by the signer test suite.
+- **`@suverse-pay/adapter-payai`** — PayAI facilitator adapter at
+  `https://facilitator.payai.network`, registered alongside
+  cosmos-pay and coinbase-cdp. Supports Solana mainnet
+  (`solana:5eykt4...`) and devnet (`solana:EtWTRABZ...`) via the
+  v2 schema (PayAI's wire format puts `accepted` and `resource`
+  inside `paymentPayload`, distinct from the v1 envelope; the
+  adapter handles the translation).
+- **Coinbase CDP Solana support** in the existing `coinbase-cdp`
+  adapter — declarative addition only, the wire format is
+  identical to the EVM path. `(network, asset, scheme) =
+  (solana:5eykt4..., USDC, exact)` is the primary route on Solana
+  mainnet with PayAI as failover.
+- **Public x402 facilitator surface** at `/facilitator/*` on
+  `apps/api`:
+  - `GET /facilitator/health` — liveness, no auth
+  - `GET /facilitator/supported` — x402 spec §7.3 SupportedResponse
+  - `POST /facilitator/verify` — x402 spec §7.1, no auth
+  - `POST /facilitator/settle` — x402 spec §7.2, Bearer
+    `<resource-key>` auth, rate-limited per key, idempotency-key
+    derived from `(payer, payload-hash, hourBucket)`. Routes across
+    cosmos-pay, Coinbase CDP, and PayAI based on `(network, scheme)`
+    with per-route failover.
+- **MCP Solana support**: `init_session` accepts a BIP-39 mnemonic
+  and derives the Solana base58 address alongside the existing
+  Cosmos bech32 and EVM 0x-hex addresses; `pay_and_call` selects
+  the signer-solana for `solana:*` networks via the
+  `selectSigner(network)` dispatch and fetches a fresh devnet /
+  mainnet blockhash at sign time (the signer doesn't cache them —
+  Solana drops them after ~150 slots).
+- **`scripts/smoke/mcp-solana/`** — 5-step smoke that broadcasts a
+  real SPL `transferChecked` on Solana devnet via PayAI. Includes a
+  Node-only `mock-x402-devnet` resource server (no external deps —
+  built on `node:http`) that emits 402 with v2 Solana
+  `PaymentRequirements` and forwards `PAYMENT-SIGNATURE` to PayAI
+  using the correct v2 envelope. Asserts a real devnet
+  `txSignature` and idempotent replay.
+- **`scripts/smoke/facilitator-mocked/`** — 10-step smoke for the
+  public `/facilitator/*` surface against a mocked gateway. Covers
+  supported / health / verify (Cosmos + EVM) / settle (Cosmos) /
+  settle without auth / settle with bad auth / rate limit /
+  idempotency.
+
+### Verified
+
+- **Real Solana devnet settlement through MCP**: agent → MCP →
+  402 → MCP signs SPL `transferChecked` with CU limit 20_000 (the
+  cap PayAI enforces; the previous default of 200_000 was rejected)
+  → mock x402 forwards `PAYMENT-SIGNATURE` to PayAI `/settle` →
+  PayAI co-signs and broadcasts to Solana devnet → real
+  `txSignature` returned to the agent. Tx queryable on
+  `https://explorer.solana.com/tx/<sig>?cluster=devnet`.
+- **Real Cosmos settlement** (regression — unchanged from v0.2.0):
+  `MsgExec(MsgSend)` on Noble grand-1 still passes the `mcp-real`
+  suite end-to-end.
+- **Idempotent replay on Solana**: a second `pay_and_call` with the
+  same `(payer, network, url, body, hourBucket)` returns
+  `idempotentReplay: true` with the same `paymentId` and
+  `txSignature` — no second on-chain transaction.
+- **All 6 smoke suites green**: `mocked` (10), `real` (9),
+  `mcp-mocked` (7), `mcp-real` (4), `facilitator-mocked` (10),
+  `mcp-solana` (5).
+
+### Deferred
+
+- **Coinbase CDP real-network smoke** remains gated on a CDP API
+  key. Static config + adapter unit tests cover the wire format;
+  real settle awaits credentials.
+- **PayAI mainnet smoke** — devnet is the only on-chain smoke that
+  runs by default. Mainnet costs real money and is captured as
+  IDEAS.md entry 8 for future scheduled runs.
+- **Self-serve resource-key issuance** for the public
+  `/facilitator/*` surface — keys are admin-bootstrapped today
+  (IDEAS.md entries 9, 10).
+
 ## [v0.2.0] — 2026-05-27
 
 Phase 2 stable. MCP server with multi-network signing and verified

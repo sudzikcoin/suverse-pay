@@ -1,22 +1,31 @@
 # STATUS
 
-Last session: 2026-05-27
-Last tag: v0.2.0
+Last session: 2026-05-28
+Last tag: v0.3.0
 
 ## Current state
-**Phase 2 complete. v0.2.0 released.** MCP server at `apps/mcp` with
-real on-chain verification:
+**Phase 3 complete. v0.3.0 released.** Solana support across signer,
+PayAI adapter, MCP, and a public x402 facilitator surface — all
+proven end-to-end on real testnet:
 
-- Real `MsgExec(MsgSend)` broadcast on Noble testnet `grand-1`
-  through the MCP `pay_and_call` flow, signed by the in-process
-  Cosmos signer, settled via cosmos-pay, response returned to the
-  agent
-- Idempotency proven on-chain: replay returns the same `paymentId`
-  and `txHash` with `idempotentReplay: true` and DOES NOT broadcast
-  a second transaction
-- 40 MCP tests + 32 discovery tests + 18 signer tests, all green
-- All 4 smoke suites pass: `mocked` (10 steps), `real` (9 steps),
-  `mcp-mocked` (7 steps), `mcp-real` (4 steps)
+- **Solana devnet end-to-end via MCP → PayAI.** Real
+  `transferChecked` broadcast on Solana devnet, no Coinbase CDP API
+  key required. Idempotent replay returns the cached `txSignature`
+  without re-submitting on-chain.
+- **Public x402 facilitator endpoints** at `/facilitator/{supported,
+  verify,settle}` route across cosmos-pay, Coinbase CDP, and PayAI
+  with per-route failover. Resource servers can adopt suverse-pay
+  as their facilitator URL and get multi-chain routing for free.
+- **PayAI adapter** wraps `https://facilitator.payai.network`
+  (Solana mainnet + devnet) as a third provider behind the
+  orchestrator and the public facilitator surface.
+- All 6 smoke suites pass:
+  - `mocked` (10 steps)
+  - `real` (9 steps)
+  - `mcp-mocked` (7 steps)
+  - `mcp-real` (4 steps — real Cosmos broadcast on Noble grand-1)
+  - `facilitator-mocked` (10 steps — gateway as facilitator)
+  - `mcp-solana` (5 steps — real Solana devnet broadcast via PayAI)
 
 ## Infrastructure
 - Postgres on :5433, Redis on :6380 (Docker)
@@ -24,21 +33,27 @@ real on-chain verification:
 
 ## Running services
 - cosmos-pay facilitator at :8402 (Go, separate repo)
-- suverse-pay API at :3000 (this repo, `apps/api`)
-- MCP server at :3100 (this repo, `apps/mcp`) — only when needed
+- suverse-pay API at :3000 (this repo, `apps/api`) — serves both the
+  admin REST surface AND the public `/facilitator/*` x402 routes
+- MCP server at :3100 (this repo, `apps/mcp`) — spawned on-demand by
+  the mcp-* smoke suites
 
 The cosmos-pay and suverse-pay processes survive across sessions;
-restart per their respective READMEs if dead. The MCP server is
-spawned on-demand by the mcp-real / mcp-mocked smoke suites and
-isn't normally running idle.
+restart per their respective READMEs if dead. Setting
+`SUVERSE_PAY_ADMIN_KEY` (= `ADMIN_API_KEY`) is required to boot the
+MCP server.
 
-## Phase 3 (when ready, do not start without explicit decision)
-- Solana signer + adapter (largest live x402 volume — see IDEAS.md
-  item 4)
-- Coinbase CDP real-network smoke (needs CDP API key)
-- PayAI adapter as third facilitator (Solana, IDEAS.md item 5)
-- Race-replay terminal state polish (Phase 1 known gap)
-- SIGHUP-style admin api_key rotation without server restart
+## Phase 4 markers (when ready, do not start without explicit decision)
+- Multi-tenancy + billing: per-resource API keys with quota, monthly
+  invoicing, Stripe Connect or similar
+- Webhooks for terminal payment states
+- Coinbase CDP real-network smoke (still gated on CDP API key)
+- PayAI mainnet smoke (gated on a small mainnet USDC allowance — see
+  IDEAS.md entry 8)
+- Signup automation for the public facilitator surface (resource API
+  key issuance + dashboard — see IDEAS.md entries 9, 10)
+- AI-assisted routing once we have enough payment_attempts data to
+  train on
 
 ## How to resume work next session
 1. `cd /home/govhub/suverse-pay`
@@ -47,7 +62,6 @@ isn't normally running idle.
    state, ask what to work on next"
 
 ## Out of scope (do not pursue without explicit decision from user)
-- Outreach to x402 Foundation / Coinbase / Posthuman
+- Outreach to x402 Foundation / Coinbase / Posthuman / PayAI
 - Production deploy
-- Multi-tenancy with billing
 - Native facilitator settlement (Phase 5+)

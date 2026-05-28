@@ -15,18 +15,24 @@ same `(network, asset, scheme)` triple.
 
 ## Status
 
-**v0.2.0** — Phase 2 complete. MCP server with multi-network signing,
-Bazaar discovery, and verified real on-chain payment via the MCP
-flow on Noble testnet `grand-1`.
+**v0.3.0** — Phase 3 complete. Solana support across signer, PayAI
+adapter, MCP, and a public x402 facilitator surface. Verified real
+on-chain on both Cosmos (Noble grand-1) and Solana devnet.
 
-- Build: green across 11 packages
-- Tests: green across 20 workspace test tasks (~400 tests total —
-  signers, discovery aggregator, MCP integration, gateway routes,
-  orchestrator, adapters)
-- Smoke: 4 suites green — `mocked` (10 steps), `real` (9 steps),
-  `mcp-mocked` (7 steps), `mcp-real` (4 steps)
-- MCP: real `MsgExec(MsgSend)` broadcast on Noble grand-1, idempotent
-  replay returns the same `txHash` without re-broadcasting
+- Build: green across 14 packages
+- Tests: green across the workspace test suite (signers, discovery,
+  MCP, gateway routes, orchestrator, three adapters, facilitator
+  service)
+- Smoke: **6 suites** green:
+  - `mocked` (10) — full gateway end-to-end against mock adapters
+  - `real` (9) — admin REST surface against real cosmos-pay
+  - `mcp-mocked` (7) — MCP against a mock x402 + mock gateway
+  - `mcp-real` (4) — real `MsgExec(MsgSend)` on Noble grand-1
+  - `facilitator-mocked` (10) — public `/facilitator/*` surface
+  - `mcp-solana` (5) — real Solana devnet `transferChecked` via PayAI
+- Two real-network test transactions per release cut: Noble grand-1
+  `MsgExec(MsgSend)` and Solana devnet SPL `transferChecked`, both
+  idempotent on replay
 
 ## Quick start
 
@@ -207,13 +213,16 @@ See `TASK.md` §"Provider adapter contract" and CLAUDE.md
   idempotency, mocked + real-network smoke. **(v0.1.0)**
 - **Phase 2** — MCP server (`apps/mcp`), Cosmos + EVM signers,
   discovery aggregator (Bazaar + cosmos catalog), real on-chain MCP
-  smoke on Noble testnet. **(this release, v0.2.0)**
-- **Phase 3** — Solana signer + adapter, Coinbase CDP real smoke
-  (requires API key), additional discovery sources (PayAI,
-  Solana Foundation gateway).
-- **Phase 4** — Multi-tenancy + billing, webhooks.
+  smoke on Noble testnet. **(v0.2.0)**
+- **Phase 3** — Solana signer + adapter (`@suverse-pay/signer-solana`
+  with SPL `transferChecked`), PayAI adapter as a third facilitator,
+  public x402 facilitator surface at `/facilitator/*`, real Solana
+  devnet smoke through MCP → PayAI. **(this release, v0.3.0)**
+- **Phase 4** — Multi-tenancy + billing, webhooks, signup automation
+  for the public facilitator surface, AI-assisted routing once
+  payment_attempts volume justifies it.
 - **Phase 5+** — Native facilitator settlement (isolated service
-  with its own credentials), AI-assisted routing.
+  with its own credentials).
 
 ## License
 

@@ -172,6 +172,109 @@ on `/settle` that disables auth + auto-generates Idempotency-Key?
 The latter is simpler; the former is cleaner for billing /
 multi-tenancy.
 
+## 7. Pay.sh / pay-skills catalog listing
+
+### Concept
+Submit suverse-pay (gateway + MCP) to the
+[pay-skills](https://github.com/payskills/skills) public catalog so
+agents discovering paid x402 endpoints find us alongside the rest of
+the ecosystem. We already track 122 gov-API skills in pay-skills via
+the separate GovHub project; this would be a sister listing for the
+gateway itself.
+
+### Why
+Free discovery channel that doesn't require Bazaar indexing. Worth
+revisiting once the public `/facilitator/*` surface has a stable
+signup flow (entries 9 / 10 below).
+
+### Open question
+Whether the catalog entry advertises the gateway URL, the MCP URL, or
+both — they're different developer audiences (resource servers vs
+agent runtimes).
+
+## 8. PayAI mainnet smoke
+
+### Concept
+Today the only real-on-chain Solana smoke runs on devnet (free PayAI
+co-signing, USDC-Dev from `faucet.circle.com`). Add a mainnet variant
+that:
+
+1. Funds a fresh wallet with ~$1 USDC on Solana mainnet.
+2. Runs the same flow against `solana:5eykt4...` and PayAI mainnet.
+3. Asserts a real mainnet `txSignature` in
+   `https://explorer.solana.com/tx/<sig>` (no `?cluster=devnet`).
+
+### Why
+PayAI mainnet behaves differently from devnet in subtle ways (higher
+priority fees, stricter compute-unit caps, real co-sign latency).
+Catching divergence before a resource server depends on us avoids a
+production incident.
+
+### Cost
+Per-run cost is the SPL transfer fee + amount paid (we self-transfer
+so amount returns, but the network fee is real). Estimated ~$0.001
+per run. Capped by a `MAINNET_SMOKE_DAILY_CAP` env var.
+
+### Prerequisites
+- Phase 3 v0.3.0 stable
+- Decision on which wallet funds the mainnet smoke (separate from
+  any user-facing treasury)
+
+## 9. Signup automation for public facilitator surface
+
+### Concept
+Today `/facilitator/settle` requires `Bearer <resource-key>` and
+those keys are bootstrapped by hand (one row per resource server,
+seeded via the same admin path as `apikey_admin_default`). For the
+public surface to be useful at scale we need:
+
+1. Self-serve resource API key issuance (one short signup form, no
+   email verification yet).
+2. Per-key spending limit (USD/day), enforced by the orchestrator
+   from `payment_attempts` aggregates.
+3. Per-key rate limit (settles/minute), enforced by Redis token bucket.
+4. CLI for the operator to revoke a key on a single Redis command,
+   instantly cutting off settles without a Postgres update.
+
+### Why
+The public facilitator surface only matters if resource servers can
+adopt it without contacting us. Today they can't.
+
+### Prerequisites
+- Phase 3 v0.3.0 stable
+- Dashboard (entry 10) — operator needs visibility into who's signed
+  up and what they're settling
+- Phase 4 multi-tenancy schema additions
+
+## 10. Public dashboard
+
+### Concept
+A read-only web UI at `https://dashboard.suverse.pay` (or a path on
+the gateway) showing:
+
+- Public facilitator health: per-network success rate, p95 latency,
+  recent failover events
+- Live payment volume per network (last hour, last day, last week)
+- For logged-in resource server operators: their own key's settle
+  history, balance vs daily cap, recent errors
+
+### Why
+Public health visibility builds trust — resource servers can verify
+the gateway is healthy before adopting it as their facilitator.
+Operator-side visibility makes entry 9 (self-serve signup) usable.
+
+### Tech
+- Next.js + Tailwind, served from the same domain as the gateway
+- Reads from the gateway's existing observability primitives
+  (`/metrics/summary` for public; per-key `/dashboard/*` endpoints
+  Phase 4 will add for operators)
+
+### Prerequisites
+- Phase 4 multi-tenancy + per-key auth (so the operator side has a
+  real user model)
+- Signup automation (entry 9) — without it, the operator dashboard
+  has no users
+
 ## Discarded ideas
 
 ### Build our own Bazaar competitor

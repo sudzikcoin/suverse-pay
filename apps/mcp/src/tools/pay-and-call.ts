@@ -594,6 +594,7 @@ export async function handlePayAndCall(
           requirements: buildSolanaRequirements(chosen.accept, input.url),
           amount: chosen.accept.amount,
           recentBlockhash,
+          computeUnitLimit: 20_000,
         });
       });
     }

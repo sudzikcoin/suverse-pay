@@ -353,3 +353,15 @@ Plus the smoke suites:
   `MsgExec(MsgSend)` on Noble testnet `grand-1` via the
   `x402-cosmos/examples/server` demo. Requires a fresh 24-hour
   `x/authz` grant. Run: `bash scripts/smoke/mcp-real/run-all.sh`.
+- `scripts/smoke/mcp-solana/` — 5 steps that broadcast a real SPL
+  `transferChecked` on Solana devnet via PayAI. Requires a funded
+  devnet wallet in `.env.solana-devnet` (USDC-Dev + SOL-Dev — see
+  the suite's README for faucet links). Run:
+  `bash scripts/smoke/mcp-solana/run-all.sh`.
+
+The `mcp-solana` suite is the headline Phase 3 deliverable. It proves
+the full chain: agent → MCP → 402 from mock x402 → MCP signs SPL
+`transferChecked` (compute-unit limit 20_000 to satisfy PayAI's cap)
+→ mock forwards to PayAI `/settle` → PayAI co-signs and broadcasts →
+real `txSignature` returned. Idempotent replay confirms MCP's
+in-process cache short-circuits a second on-chain broadcast.

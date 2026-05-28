@@ -223,3 +223,23 @@ resource servers is not exposed in v0.3.0.
 - **Webhooks not implemented.** Settlement notifications are
   request-response only — your middleware learns about the settle
   status from the `/facilitator/settle` response body.
+
+## Smoke testing
+
+Two suites exercise the public facilitator surface end-to-end:
+
+- `scripts/smoke/facilitator-mocked/run-all.sh` — 10 steps against a
+  mocked gateway. Covers `/supported`, `/health`, `/verify` for
+  Cosmos and EVM payloads, `/settle` with admin and resource-key
+  auth, missing-auth and bad-auth rejection, rate limit, and
+  idempotency. No real network. Useful for verifying a change to the
+  routing surface before deployment.
+- `scripts/smoke/real/run-all.sh` — 9 steps against a real
+  cosmos-pay facilitator on Noble grand-1. Covers the
+  admin-authenticated `/settle` path that resource-key auth
+  delegates to. Produces a real `MsgSend` tx hash queryable on
+  [Mintscan](https://www.mintscan.io/noble-testnet) — set the
+  `EXPLORER` link returned in the step output.
+
+Run them in that order after touching anything in
+`services/facilitator/` or `services/orchestrator/`.
