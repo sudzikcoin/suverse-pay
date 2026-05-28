@@ -8,6 +8,18 @@ export const SCHEME = "exact";
 export const SOLANA_MAINNET = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 
 /**
+ * Solana devnet CAIP-2 identifier (genesis-hash form). Used for
+ * end-to-end testing against PayAI devnet (no API key, no real money).
+ */
+export const SOLANA_DEVNET = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1";
+
+/** Both Solana networks the signer accepts. */
+export const SUPPORTED_SOLANA_NETWORKS: readonly string[] = [
+  SOLANA_MAINNET,
+  SOLANA_DEVNET,
+];
+
+/**
  * Scheme-specific payload inside a PaymentPayload — for SVM exact, just
  * the base64-encoded partially-signed versioned transaction.
  */

@@ -25,6 +25,7 @@
     "@suverse-pay/discovery": "workspace:*",
     "@suverse-pay/signer-cosmos": "workspace:*",
     "@suverse-pay/signer-evm": "workspace:*",
+    "@suverse-pay/signer-solana": "workspace:*",
     "express": "^5.2.1",
     "pino": "^9.14.0",
     "uuid": "^14.0.0",

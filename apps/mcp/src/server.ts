@@ -135,6 +135,9 @@ export async function buildServer(
       description:
         "Hold a mnemonic or private key in memory for the duration of this MCP session, " +
         "derive addresses for the requested networks, and return a session ID. " +
+        "Supports Cosmos (Noble testnet grand-1), EVM (Base, Polygon, Arbitrum, Ethereum), " +
+        "and Solana (mainnet + devnet) — the same BIP-39 mnemonic produces a Cosmos bech32, " +
+        "an EVM 0x-hex address, and a Solana base58 pubkey in one call. " +
         "The secret is NEVER logged, persisted, or transmitted. Session times out after " +
         `${Math.round(config.sessionTimeoutMs / 60000)} minutes of inactivity.`,
       inputSchema: InitSessionInputShape,
@@ -202,10 +205,13 @@ export async function buildServer(
       title: "Pay and call a paid x402 endpoint",
       description:
         "Calls the given URL. On HTTP 402 Payment Required, picks a compatible " +
-        "accepts[] entry from the session's networks, signs locally with the in-memory " +
-        "secret, POSTs to the gateway /settle endpoint with a derived Idempotency-Key, " +
-        "then retries the original request with the X-PAYMENT header and returns the " +
-        "endpoint's response. Non-402 initial responses are returned as-is.",
+        "accepts[] entry from the session's networks, signs LOCALLY with the in-memory " +
+        "secret (Cosmos authz / EVM EIP-3009 / Solana SPL transferChecked, dispatched by " +
+        "CAIP-2 prefix), then retries the original request with the X-PAYMENT header and " +
+        "returns the endpoint's response. The signing secret never leaves this process. " +
+        "Solana payments fetch a fresh `recentBlockhash` at sign time from " +
+        "`SUVERSE_PAY_SOLANA_RPC_URL_{MAINNET,DEVNET}`. Non-402 initial responses are " +
+        "returned as-is.",
       inputSchema: PayAndCallInputShape,
     },
     async (input: PayAndCallInput): Promise<CallToolResult> => {

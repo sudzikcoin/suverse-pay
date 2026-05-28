@@ -5,9 +5,14 @@ import {
   type PaymentRequirements as CosmosPaymentRequirements,
 } from "@suverse-pay/signer-cosmos";
 import { signPaymentPayload as signEvmPaymentPayload } from "@suverse-pay/signer-evm";
+import {
+  signPaymentPayload as signSolanaPaymentPayload,
+  SOLANA_MAINNET,
+  type PaymentRequirements as SolanaPaymentRequirements,
+} from "@suverse-pay/signer-solana";
 import type { Config } from "../config.js";
 import type { GatewayClient } from "../gateway-client.js";
-import { isCosmosNetwork, isEvmNetwork } from "../networks.js";
+import { selectSigner, type SignerFamily } from "../networks.js";
 import type { Session, SessionStore } from "../session.js";
 import { loadSession, safeErrorMessage, type ToolResult } from "./session-helper.js";
 
@@ -37,6 +42,14 @@ export const PayAndCallInputShape = {
 export const PayAndCallInput = z.object(PayAndCallInputShape);
 export type PayAndCallInput = z.infer<typeof PayAndCallInput>;
 
+/**
+ * Strategy for obtaining a Solana `recentBlockhash` at sign time.
+ * Production uses `defaultBlockhashFetcher` (RPC POST against
+ * mainnet/devnet); tests inject a deterministic fixture so they don't
+ * need network access.
+ */
+export type BlockhashFetcher = (network: string) => Promise<string>;
+
 export interface PayAndCallDeps {
   store: SessionStore;
   gateway: GatewayClient;
@@ -45,6 +58,8 @@ export interface PayAndCallDeps {
   fetchImpl?: typeof fetch;
   /** Override Date.now (tests, deterministic idempotency keys). */
   now?: () => number;
+  /** Override the Solana blockhash fetcher (tests). */
+  blockhashFetcher?: BlockhashFetcher;
 }
 
 interface PaidEndpointResponse {
@@ -270,14 +285,18 @@ function looksLikeSingleRequirements(obj: Record<string, unknown>): boolean {
 
 interface ChosenAccept {
   accept: NormalizedAccepts;
-  family: "cosmos" | "evm";
+  family: SignerFamily;
 }
 
 /**
  * Pick the first accepts[] entry that this session can sign:
  *   - cosmos:* + scheme name contains "cosmos" → signer-cosmos
- *   - eip155:* + scheme === "exact" → signer-evm
- * Sessions only sign for the networks they declared at init.
+ *   - eip155:* + scheme === "exact"            → signer-evm
+ *   - solana:* + scheme === "exact"            → signer-solana
+ *
+ * Sessions only sign for the networks they declared at init. Dispatch
+ * is keyed off `selectSigner(network)` so adding a new family (Aptos,
+ * Sui, TON) is one branch.
  */
 function selectCompatibleAccept(
   session: Session,
@@ -286,11 +305,20 @@ function selectCompatibleAccept(
   const sessionNets = new Set(session.networks);
   for (const a of pr.accepts) {
     if (!sessionNets.has(a.network)) continue;
-    if (isCosmosNetwork(a.network) && a.scheme.includes("cosmos")) {
-      return { accept: a, family: "cosmos" };
+    let family: SignerFamily;
+    try {
+      family = selectSigner(a.network);
+    } catch {
+      continue;
     }
-    if (isEvmNetwork(a.network) && a.scheme === "exact") {
-      return { accept: a, family: "evm" };
+    if (family === "cosmos" && a.scheme.includes("cosmos")) {
+      return { accept: a, family };
+    }
+    if (family === "evm" && a.scheme === "exact") {
+      return { accept: a, family };
+    }
+    if (family === "solana" && a.scheme === "exact") {
+      return { accept: a, family };
     }
   }
   return null;
@@ -496,6 +524,9 @@ export async function handlePayAndCall(
   // Step 4c: sign. session.useSecret(...) is the only mechanism that
   // can read the secret — it also touches the session. We thread the
   // signer call inside so the secret is never copied outside.
+  //
+  // Dispatch by chosen.family. selectCompatibleAccept already filtered
+  // to a known family, so the else-branch is unreachable.
   let signed: { paymentPayload: unknown; paymentRequirements: unknown };
   try {
     if (chosen.family === "cosmos") {
@@ -511,7 +542,7 @@ export async function handlePayAndCall(
             : {}),
         });
       });
-    } else {
+    } else if (chosen.family === "evm") {
       signed = await session.useSecret(async (secretBuf) => {
         const secret = secretBuf.toString("utf8");
         return signEvmPaymentPayload({
@@ -522,6 +553,47 @@ export async function handlePayAndCall(
           ...(chosen.accept.maxTimeoutSeconds !== undefined
             ? { validitySeconds: Math.min(chosen.accept.maxTimeoutSeconds - 1, 50) }
             : {}),
+        });
+      });
+    } else {
+      // Solana: feePayer is mandatory in PaymentRequirements.extra.
+      // Surface a structured error BEFORE trying to fetch a blockhash
+      // so callers get an actionable message.
+      const extra = (chosen.accept.extra ?? {}) as Record<string, unknown>;
+      const feePayer = typeof extra.feePayer === "string" ? extra.feePayer : "";
+      if (feePayer.length === 0) {
+        return {
+          ok: false,
+          error: {
+            code: "missing_solana_fee_payer",
+            message:
+              "Solana accepts entry is missing extra.feePayer (the facilitator's base58 " +
+              "pubkey — the spec requires it so the facilitator can co-sign and submit). " +
+              "Resource server should advertise extra.feePayer in its 402 response.",
+          },
+        };
+      }
+      let recentBlockhash: string;
+      try {
+        const fetcher = deps.blockhashFetcher ?? defaultBlockhashFetcher(deps.config, fetchImpl);
+        recentBlockhash = await fetcher(chosen.accept.network);
+      } catch (err) {
+        return {
+          ok: false,
+          error: {
+            code: "solana_blockhash_fetch_failed",
+            message: `failed to fetch Solana recent blockhash: ${safeErrorMessage(err)}`,
+          },
+        };
+      }
+      signed = await session.useSecret(async (secretBuf) => {
+        const secret = secretBuf.toString("utf8");
+        return signSolanaPaymentPayload({
+          secret,
+          network: chosen.accept.network,
+          requirements: buildSolanaRequirements(chosen.accept, input.url),
+          amount: chosen.accept.amount,
+          recentBlockhash,
         });
       });
     }
@@ -651,6 +723,84 @@ function buildCosmosRequirements(
       ...(decimals !== undefined ? { decimals } : {}),
       ...(symbol !== undefined ? { symbol } : {}),
     },
+  };
+}
+
+function buildSolanaRequirements(
+  accept: NormalizedAccepts,
+  resource: string,
+): SolanaPaymentRequirements {
+  const extra = (accept.extra ?? {}) as Record<string, unknown>;
+  const feePayer = typeof extra.feePayer === "string" ? extra.feePayer : "";
+  // The caller (handlePayAndCall) already short-circuits with a
+  // structured error when feePayer is missing; this branch is a
+  // defensive net for direct callers.
+  if (feePayer.length === 0) {
+    throw new Error(
+      "Solana accepts entry is missing extra.feePayer (facilitator pubkey, base58)",
+    );
+  }
+  const decimals = typeof extra.decimals === "number" ? extra.decimals : undefined;
+  const symbol = typeof extra.symbol === "string" ? extra.symbol : undefined;
+  const memo = typeof extra.memo === "string" ? extra.memo : undefined;
+  return {
+    scheme: accept.scheme,
+    network: accept.network,
+    maxAmountRequired: accept.amount,
+    asset: accept.asset,
+    payTo: accept.payTo,
+    resource,
+    maxTimeoutSeconds: accept.maxTimeoutSeconds ?? 60,
+    extra: {
+      feePayer,
+      ...(decimals !== undefined ? { decimals } : {}),
+      ...(symbol !== undefined ? { symbol } : {}),
+      ...(memo !== undefined ? { memo } : {}),
+    },
+  };
+}
+
+/**
+ * Default Solana `recentBlockhash` fetcher — POSTs `getLatestBlockhash`
+ * to the network-appropriate RPC URL (mainnet vs devnet, configured
+ * via SUVERSE_PAY_SOLANA_RPC_URL_{MAINNET,DEVNET}). Returns the base58
+ * blockhash. The signer requires the caller to supply this fresh —
+ * Solana drops blockhashes after ~150 slots (~60 s), and the
+ * facilitator's `sendTransaction` would reject any stale one.
+ */
+function defaultBlockhashFetcher(
+  config: Config,
+  fetchImpl: typeof fetch,
+): BlockhashFetcher {
+  return async (network: string): Promise<string> => {
+    const rpcUrl =
+      network === SOLANA_MAINNET ? config.solanaRpcUrlMainnet : config.solanaRpcUrlDevnet;
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getLatestBlockhash",
+      params: [{ commitment: "finalized" }],
+    });
+    const resp = await fetchImpl(rpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    });
+    if (!resp.ok) {
+      throw new Error(`RPC ${rpcUrl} returned HTTP ${resp.status}`);
+    }
+    const json = (await resp.json()) as {
+      result?: { value?: { blockhash?: string } };
+      error?: { message?: string };
+    };
+    if (json.error) {
+      throw new Error(`RPC ${rpcUrl} returned error: ${json.error.message ?? "unknown"}`);
+    }
+    const blockhash = json.result?.value?.blockhash;
+    if (typeof blockhash !== "string" || blockhash.length === 0) {
+      throw new Error(`RPC ${rpcUrl} returned malformed getLatestBlockhash response`);
+    }
+    return blockhash;
   };
 }
 

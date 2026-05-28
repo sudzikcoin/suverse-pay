@@ -96,6 +96,9 @@ importers:
       '@suverse-pay/signer-evm':
         specifier: workspace:*
         version: link:../../packages/signers/evm
+      '@suverse-pay/signer-solana':
+        specifier: workspace:*
+        version: link:../../packages/signers/solana
       express:
         specifier: ^5.2.1
         version: 5.2.1

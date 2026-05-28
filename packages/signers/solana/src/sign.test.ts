@@ -20,6 +20,7 @@ import {
 import {
   SCHEME,
   SOLANA_MAINNET,
+  SOLANA_DEVNET,
   type PaymentRequirements,
 } from "./types.js";
 
@@ -234,7 +235,10 @@ describe("signPaymentPayload", () => {
     expect(tx.message.staticAccountKeys[0]?.toBase58()).toBe(TEST_FACILITATOR);
   });
 
-  it("rejects unsupported network", async () => {
+  it("rejects unsupported network (legacy `solana:devnet` short form)", async () => {
+    // The canonical CAIP-2 form for devnet is
+    // `solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1`. The legacy short form
+    // `solana:devnet` MUST stay rejected to keep registration unambiguous.
     await expect(
       signPaymentPayload({
         secret: TEST_MNEMONIC,
@@ -244,6 +248,20 @@ describe("signPaymentPayload", () => {
         recentBlockhash: TEST_BLOCKHASH,
       }),
     ).rejects.toThrow(/unsupported network/);
+  });
+
+  it("signs successfully on Solana devnet (canonical CAIP-2 form)", async () => {
+    const result = await signPaymentPayload({
+      secret: TEST_MNEMONIC,
+      network: SOLANA_DEVNET,
+      requirements: makeRequirements({ network: SOLANA_DEVNET }),
+      amount: "1000",
+      recentBlockhash: TEST_BLOCKHASH,
+    });
+    expect(result.paymentPayload.network).toBe(SOLANA_DEVNET);
+    expect(result.paymentPayload.scheme).toBe(SCHEME);
+    expect(typeof result.paymentPayload.payload.transaction).toBe("string");
+    expect(result.paymentPayload.payload.transaction.length).toBeGreaterThan(0);
   });
 
   it("rejects when amount disagrees with requirements.maxAmountRequired (exact scheme)", async () => {

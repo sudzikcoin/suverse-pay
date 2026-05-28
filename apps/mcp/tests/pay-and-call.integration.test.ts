@@ -16,6 +16,16 @@ const TEST_MNEMONIC =
 const TEST_FACILITATOR = "noble1xe8469hdzc7t65jlxwxhhp48tkk3w0uykewsuy";
 // Base USDC contract — for EVM tests.
 const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+// Solana fixtures — public test mints / facilitator pubkeys, no funds.
+const SOLANA_MAINNET = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+const SOLANA_DEVNET = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1";
+const SOLANA_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const SOLANA_RECIPIENT = "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4";
+const SOLANA_FEE_PAYER = "EwWqGE4ZFKLofuestmU4LDdK7XM1N4ALgdZccwYugwGd";
+// Deterministic blockhash for offline tests. Real blockhashes are
+// base58 of a recent block's hash; this is `Buffer.alloc(32, 7)` (the
+// 32-byte sentinel used by signer-solana's own tests) base58-encoded.
+const TEST_BLOCKHASH = "US517G5965aydkZ46HS38QLi7UQiSojurfbQfKCELFx";
 
 const baseConfig: Config = {
   port: 3100,
@@ -24,6 +34,8 @@ const baseConfig: Config = {
   adminApiKey: "test-admin-key",
   sessionTimeoutMs: 60_000,
   externalCallTimeoutMs: 5_000,
+  solanaRpcUrlMainnet: "https://api.mainnet-beta.solana.com",
+  solanaRpcUrlDevnet: "https://api.devnet.solana.com",
 };
 
 interface MockGatewayCall {
@@ -483,5 +495,167 @@ describe("pay_and_call — EVM integration (real signer, mocked gateway, mock x4
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.code).toBe("signing_failed");
+  });
+});
+
+describe("pay_and_call — Solana integration (real signer, mocked gateway, mock x402 server, injected blockhash)", () => {
+  let store: SessionStore;
+  let mock: MockX402Server;
+
+  beforeEach(async () => {
+    store = new SessionStore();
+    _resetIdempotencyCacheForTests();
+  });
+
+  afterEach(async () => {
+    store.destroyAll();
+    if (mock) await mock.close();
+  });
+
+  it("signs an SPL transferChecked on Solana devnet and completes the 402 → settle cycle", async () => {
+    mock = await startMockX402Server({
+      routes: {
+        "/svm-data": {
+          paymentRequired: {
+            x402Version: 2,
+            resource: { url: "http://placeholder/svm-data" },
+            accepts: [
+              {
+                scheme: "exact",
+                network: SOLANA_DEVNET,
+                amount: "1000",
+                asset: SOLANA_USDC_MINT,
+                payTo: SOLANA_RECIPIENT,
+                maxTimeoutSeconds: 60,
+                extra: { feePayer: SOLANA_FEE_PAYER, decimals: 6, symbol: "USDC" },
+              },
+            ],
+          },
+          successBody: { svmPayload: "premium-bytes" },
+        },
+      },
+    });
+    const init = await handleInitSession(
+      { secret: TEST_MNEMONIC, networks: [SOLANA_DEVNET] },
+      { store, config: baseConfig },
+    );
+    if (!init.ok) throw new Error(init.error.message);
+
+    // No outbound RPC: deps.blockhashFetcher short-circuits to a
+    // deterministic fixture so this test stays fully offline.
+    const blockhashFetcher = async (network: string): Promise<string> => {
+      expect(network).toBe(SOLANA_DEVNET);
+      return TEST_BLOCKHASH;
+    };
+
+    const gw = makeMockGateway({ settleHandler: () => ({}) });
+    const result = await handlePayAndCall(
+      { sessionId: init.result.sessionId, url: `${mock.baseUrl}/svm-data` },
+      { store, gateway: gw.client, config: baseConfig, blockhashFetcher },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.result.status).toBe("settled");
+    expect(result.result.network).toBe(SOLANA_DEVNET);
+    expect(result.result.response.body).toEqual({ svmPayload: "premium-bytes" });
+    expect(mock.callCounts()["/svm-data"]).toEqual({ unpaid: 1, paid: 1 });
+
+    // Decode the PAYMENT-SIGNATURE header that the mock server received;
+    // it must be a v2 PaymentPayload with scheme=exact, network=devnet,
+    // and a non-empty base64 transaction.
+    const proofs = mock.receivedPaymentProofs();
+    expect(proofs).toHaveLength(1);
+    const decoded = JSON.parse(Buffer.from(proofs[0]!, "base64").toString("utf8"));
+    expect(decoded.x402Version).toBe(2);
+    expect(decoded.scheme).toBe("exact");
+    expect(decoded.network).toBe(SOLANA_DEVNET);
+    expect(typeof decoded.payload.transaction).toBe("string");
+    expect(decoded.payload.transaction.length).toBeGreaterThan(0);
+  });
+
+  it("returns missing_solana_fee_payer when the 402 omits extra.feePayer", async () => {
+    mock = await startMockX402Server({
+      routes: {
+        "/svm-data": {
+          paymentRequired: {
+            x402Version: 2,
+            accepts: [
+              {
+                scheme: "exact",
+                network: SOLANA_MAINNET,
+                amount: "1000",
+                asset: SOLANA_USDC_MINT,
+                payTo: SOLANA_RECIPIENT,
+                maxTimeoutSeconds: 60,
+                // extra.feePayer intentionally absent
+                extra: { decimals: 6 },
+              },
+            ],
+          },
+          successBody: { ok: true },
+        },
+      },
+    });
+    const init = await handleInitSession(
+      { secret: TEST_MNEMONIC, networks: [SOLANA_MAINNET] },
+      { store, config: baseConfig },
+    );
+    if (!init.ok) throw new Error(init.error.message);
+
+    const blockhashFetcher = async () => TEST_BLOCKHASH;
+    const gw = makeMockGateway({ settleHandler: () => ({}) });
+    const result = await handlePayAndCall(
+      { sessionId: init.result.sessionId, url: `${mock.baseUrl}/svm-data` },
+      { store, gateway: gw.client, config: baseConfig, blockhashFetcher },
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("missing_solana_fee_payer");
+    // No paid call should have hit the mock server.
+    expect(mock.callCounts()["/svm-data"]).toEqual({ unpaid: 1, paid: 0 });
+  });
+
+  it("surfaces solana_blockhash_fetch_failed when the RPC fetcher throws", async () => {
+    mock = await startMockX402Server({
+      routes: {
+        "/svm-data": {
+          paymentRequired: {
+            x402Version: 2,
+            accepts: [
+              {
+                scheme: "exact",
+                network: SOLANA_DEVNET,
+                amount: "1000",
+                asset: SOLANA_USDC_MINT,
+                payTo: SOLANA_RECIPIENT,
+                maxTimeoutSeconds: 60,
+                extra: { feePayer: SOLANA_FEE_PAYER, decimals: 6 },
+              },
+            ],
+          },
+          successBody: { ok: true },
+        },
+      },
+    });
+    const init = await handleInitSession(
+      { secret: TEST_MNEMONIC, networks: [SOLANA_DEVNET] },
+      { store, config: baseConfig },
+    );
+    if (!init.ok) throw new Error(init.error.message);
+
+    const blockhashFetcher = async (): Promise<string> => {
+      throw new Error("simulated RPC outage");
+    };
+    const gw = makeMockGateway({ settleHandler: () => ({}) });
+    const result = await handlePayAndCall(
+      { sessionId: init.result.sessionId, url: `${mock.baseUrl}/svm-data` },
+      { store, gateway: gw.client, config: baseConfig, blockhashFetcher },
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("solana_blockhash_fetch_failed");
+    expect(result.error.message).toContain("simulated RPC outage");
+    // Mnemonic must NEVER leak into surfaced error messages.
+    expect(result.error.message).not.toContain("abandon");
   });
 });

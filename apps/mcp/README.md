@@ -36,6 +36,8 @@ The server listens on `http://127.0.0.1:3100/mcp` by default.
 | `SUVERSE_PAY_ADMIN_KEY` | — | **yes** | Admin key for authenticating to the gateway (`Authorization: Bearer ...`). Server-side only; never visible to MCP clients. |
 | `MCP_SESSION_TIMEOUT_MINUTES` | `30` | no | Inactivity timeout for in-memory sessions. |
 | `MCP_EXTERNAL_CALL_TIMEOUT_MS` | `15000` | no | Per-request timeout when calling resource endpoints from `pay_and_call`. |
+| `SUVERSE_PAY_SOLANA_RPC_URL_MAINNET` | `https://api.mainnet-beta.solana.com` | no | Solana mainnet RPC. `pay_and_call` fetches a fresh `recentBlockhash` here at sign time for `solana:5eykt...` payments. Override to point at a paid/private RPC (Helius, Triton, QuickNode) when rate limits matter. |
+| `SUVERSE_PAY_SOLANA_RPC_URL_DEVNET` | `https://api.devnet.solana.com` | no | Solana devnet RPC. Used for `solana:EtWTRABZ...` payments. |
 | `LOG_LEVEL` | `info` | no | Pino log level. Secrets are redacted regardless. |
 
 ## Connecting from an MCP client
@@ -74,12 +76,14 @@ requested CAIP-2 networks.
 
 ```json
 {
-  "secret": "twelve or twenty-four BIP-39 words OR 0x<64-hex-private-key>",
-  "networks": ["cosmos:grand-1", "eip155:8453"]
+  "secret": "twelve or twenty-four BIP-39 words OR 0x<64-hex-private-key> OR base58-<64-byte-solana-secret-key>",
+  "networks": ["cosmos:grand-1", "eip155:8453", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"]
 }
 ```
 
-Returns `{ sessionId, addresses, networks, expiresAt }`.
+Returns `{ sessionId, addresses, networks, expiresAt }`. For a single
+BIP-39 mnemonic, all three families (Cosmos bech32, EVM 0x-hex, Solana
+base58) are derived in one call.
 
 ### `list_providers`
 
@@ -194,7 +198,8 @@ agent (MCP client)
 @suverse-pay/mcp (this app)
    │
    ├─ Session store         in-memory only, Buffer zeroed on destroy
-   ├─ Signers               @suverse-pay/signer-{cosmos,evm}
+   ├─ Signers               @suverse-pay/signer-{cosmos,evm,solana}
+   │                        dispatched by selectSigner(network) on CAIP-2 prefix
    ├─ Discovery aggregator  @suverse-pay/discovery (Bazaar + catalogs)
    ├─ Gateway client        Bearer-authed wrapper around suverse-pay REST
    └─ Idempotency cache     in-memory, keyed by
@@ -208,19 +213,33 @@ The suverse-pay HTTP gateway (`apps/api`) is consumed by:
 
 - **Resource servers** — they POST to `/settle` (with `Idempotency-Key`)
   to settle a payment via the best available facilitator. The gateway
-  routes across cosmos-pay, Coinbase CDP, etc. and records the
+  routes across cosmos-pay, Coinbase CDP, PayAI, etc. and records the
   payment in Postgres. This is the Phase 1 use case.
+- **Other facilitators / x402 servers** — Phase 3 Sub-task 5 exposes
+  suverse-pay itself as a public x402 facilitator via the
+  `/facilitator/{supported,verify,settle}` routes on `apps/api`. These
+  are unauthenticated, x402-spec-shaped endpoints; the resource server
+  configures suverse-pay as its facilitator URL and we route under the
+  hood.
 - **The MCP server** — it queries `/providers`, `/quote`, and
-  `/payments/:id` for visibility, BUT does NOT call `/settle` for
-  `pay_and_call`. Agent-side payment follows the standard x402 flow:
-  sign locally, POST `PAYMENT-SIGNATURE` to the resource server, let
-  the resource server's middleware forward to its configured
-  facilitator (cosmos-pay, Coinbase CDP, PayAI, or — eventually —
+  `/payments/:id` for visibility, BUT does NOT call `/settle` (admin)
+  or `/facilitator/settle` (public) for `pay_and_call`. Agent-side
+  payment follows the standard x402 flow: sign locally, POST
+  `PAYMENT-SIGNATURE` to the resource server, let the resource
+  server's middleware forward to its configured facilitator
+  (cosmos-pay, Coinbase CDP, PayAI, or — via the new public surface —
   suverse-pay itself).
 
 This split matches x402 protocol semantics: the resource server picks
 its facilitator (and may pick suverse-pay), the client (agent) just
 signs.
+
+**v0.3.0 deliberately keeps MCP off the public `/facilitator/*` path.**
+The MCP server is the *client* side of x402; the public facilitator
+surface is the *server* side. Mixing them would conflate roles. If a
+future resource server wants to settle through suverse-pay, it points
+at `https://<gateway>/facilitator/*` directly — MCP isn't on that
+hot path.
 
 ### Idempotency
 
@@ -287,6 +306,8 @@ this server.
 | `eip155:137` (Polygon) | ⚠ signing verified, settle deferred | Same as Base. |
 | `eip155:42161` (Arbitrum) | ⚠ signing verified, settle deferred | Same as Base. |
 | `eip155:1` (Ethereum mainnet) | ❌ session-init only | Derivation supported; no signing table entry. |
+| `solana:5eykt...` (Solana mainnet) | ⚠ signing verified, settle requires facilitator | SPL `transferChecked` payload signed via `signer-solana`; round-trip ed25519 verification gates the signer suite. End-to-end settle needs either a Coinbase CDP API key (Phase 3 Sub-task 4, pending) **or** PayAI mainnet (live, costs real money). |
+| `solana:EtWTRABZ...` (Solana devnet) | ✅ end-to-end testable | Settles via PayAI devnet — no API key, no real money. Use this for live smoke tests. |
 | `cosmos:noble-1` (Cosmos mainnet) | ❌ intentionally absent | No funded mainnet facilitator yet. |
 
 ## Limitations / not yet supported
@@ -295,8 +316,6 @@ this server.
   Phase 1 already covers Coinbase CDP at the gateway adapter level
   in mocked mode (`scripts/smoke/mocked/`); MCP's EVM path is
   validated via the EIP-712 round-trip recovery test.
-- **Solana** — no signer in v0.2.0. Leading Phase 3 candidate given
-  Solana's share of public Bazaar volume.
 - **Permit2 fallback** for ERC-20s that don't implement EIP-3009.
   USDC and EURC are covered by EIP-3009; USDT and DAI would need
   Permit2.
@@ -312,15 +331,19 @@ this server.
 pnpm --filter @suverse-pay/mcp test
 ```
 
-40 tests across 4 files:
+48 tests across 4 files:
 
 - `src/session.test.ts` — 13 session-store lifecycle tests.
-- `src/tools/init-session.test.ts` — 8 tests for secret-shape
-  validation and address derivation.
+- `src/tools/init-session.test.ts` — 13 tests for secret-shape
+  validation and address derivation, including Solana mainnet/devnet
+  derivation and mixed-network sessions (Cosmos + EVM + Solana in one
+  init).
 - `src/tools/pay-and-call.test.ts` — 10 `deriveIdempotencyKey`
   property tests (incl. "does NOT include sessionId").
-- `tests/pay-and-call.integration.test.ts` — 9 end-to-end tests with
-  the real Cosmos / EVM signers and a `node:http` mock x402 server.
+- `tests/pay-and-call.integration.test.ts` — 12 end-to-end tests with
+  the real Cosmos / EVM / Solana signers and a `node:http` mock x402
+  server. Solana tests use an injected `blockhashFetcher` so they stay
+  fully offline.
 
 Plus the smoke suites:
 

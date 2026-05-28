@@ -16,12 +16,19 @@ import {
   type SignedRequest,
   SCHEME,
   SOLANA_MAINNET,
+  SOLANA_DEVNET,
+  SUPPORTED_SOLANA_NETWORKS,
 } from "./types.js";
 
 export interface SignParams {
   /** BIP-39 mnemonic OR base58-encoded 64-byte SPL secret key. */
   secret: string;
-  /** CAIP-2 network. Must be `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` (mainnet). */
+  /**
+   * CAIP-2 network. Must be one of `SUPPORTED_SOLANA_NETWORKS`:
+   *   - `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` (mainnet)
+   *   - `solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1` (devnet — used for
+   *     end-to-end testing via PayAI devnet without spending real money).
+   */
   network: string;
   /** PaymentRequirements as advertised by the resource server. */
   requirements: PaymentRequirements;
@@ -66,9 +73,9 @@ const PROTOCOL_VERSION = 2;
 export async function signPaymentPayload(
   params: SignParams,
 ): Promise<SignedRequest> {
-  if (params.network !== SOLANA_MAINNET) {
+  if (!SUPPORTED_SOLANA_NETWORKS.includes(params.network)) {
     throw new Error(
-      `unsupported network ${params.network}; signer-solana only supports ${SOLANA_MAINNET}`,
+      `unsupported network ${params.network}; signer-solana supports ${SUPPORTED_SOLANA_NETWORKS.join(", ")}`,
     );
   }
   if (params.requirements.network !== params.network) {
@@ -207,4 +214,4 @@ function resolveDecimals(req: PaymentRequirements): number {
   );
 }
 
-export { SCHEME, SOLANA_MAINNET };
+export { SCHEME, SOLANA_MAINNET, SOLANA_DEVNET, SUPPORTED_SOLANA_NETWORKS };

@@ -4,7 +4,12 @@ export type {
   SignedRequest,
   SvmPayload,
 } from "./types.js";
-export { SCHEME, SOLANA_MAINNET } from "./types.js";
+export {
+  SCHEME,
+  SOLANA_MAINNET,
+  SOLANA_DEVNET,
+  SUPPORTED_SOLANA_NETWORKS,
+} from "./types.js";
 export { signPaymentPayload, type SignParams } from "./sign.js";
 export {
   deriveKeypair,

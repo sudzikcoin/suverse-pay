@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { mnemonicToAccount, privateKeyToAccount } from "viem/accounts";
+import { deriveKeypair as deriveSolanaKeypair } from "@suverse-pay/signer-solana";
 import {
   cosmosPrefix,
-  isCosmosNetwork,
-  isEvmNetwork,
   isSupportedNetwork,
+  selectSigner,
   SUPPORTED_NETWORKS,
 } from "../networks.js";
 import { Session, type SessionStore } from "../session.js";
@@ -106,6 +106,22 @@ function deriveEvmAddress(secret: string): string {
   return account.address;
 }
 
+function deriveSolanaAddress(secret: string): string {
+  // signer-solana's deriveKeypair accepts either a BIP-39 mnemonic OR a
+  // base58 64-byte secret key. Raw 0x-hex EVM private keys are NOT a
+  // valid Solana secret shape (they aren't base58-decodable to 64
+  // bytes); reject them with a clear message before reaching the
+  // signer, mirroring deriveCosmosAddress's mnemonic-only rule.
+  if (detectSecretShape(secret) === "privateKey") {
+    throw new Error(
+      "solana networks require a BIP-39 mnemonic or a base58-encoded 64-byte secret key; " +
+        "raw 0x-hex private keys are not a valid Solana secret",
+    );
+  }
+  const keypair = deriveSolanaKeypair(secret);
+  return keypair.publicKey.toBase58();
+}
+
 /**
  * Implementation of the init_session MCP tool. Returns a structured result
  * on success or a structured error on validation failure. NEVER throws
@@ -146,17 +162,22 @@ export async function handleInitSession(
   const addresses: Record<string, string> = {};
   for (const network of input.networks) {
     try {
-      if (isCosmosNetwork(network)) {
+      const family = selectSigner(network);
+      if (family === "cosmos") {
         addresses[network] = await deriveCosmosAddress(input.secret, network);
-      } else if (isEvmNetwork(network)) {
+      } else if (family === "evm") {
         addresses[network] = deriveEvmAddress(input.secret);
+      } else if (family === "solana") {
+        addresses[network] = deriveSolanaAddress(input.secret);
       } else {
-        // Defensive: SUPPORTED_NETWORKS membership should have caught this.
+        // Exhaustiveness check — selectSigner throws on unknown
+        // families, so this branch is unreachable.
+        const _exhaustive: never = family;
         return {
           ok: false,
           error: {
             code: "unsupported_network",
-            message: `cannot derive address for ${network}`,
+            message: `cannot derive address for ${network} (no signer family: ${_exhaustive as string})`,
           },
         };
       }

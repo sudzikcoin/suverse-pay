@@ -10,6 +10,17 @@ const TEST_MNEMONIC_12 =
 const TEST_PRIVATE_KEY =
   "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318";
 
+// CAIP-2 network identifiers (mirrored locally to keep this test
+// independent of signer-solana's export surface, but pinned to the
+// exact values signer-solana accepts).
+const SOLANA_MAINNET = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+const SOLANA_DEVNET = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1";
+// Solana address derived from TEST_MNEMONIC_12 at m/44'/501'/0'/0' — pinned
+// from packages/signers/solana/src/sign.test.ts so any drift in the
+// HD-derivation chain (bip39/ed25519-hd-key/@solana/web3.js) surfaces
+// immediately. Base58, 32-44 chars.
+const TEST_SOLANA_ADDRESS = "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk";
+
 const config: Config = {
   port: 3100,
   host: "127.0.0.1",
@@ -17,6 +28,8 @@ const config: Config = {
   adminApiKey: "test-admin-key",
   sessionTimeoutMs: 60_000,
   externalCallTimeoutMs: 15_000,
+  solanaRpcUrlMainnet: "https://api.mainnet-beta.solana.com",
+  solanaRpcUrlDevnet: "https://api.devnet.solana.com",
 };
 
 describe("init_session", () => {
@@ -118,6 +131,68 @@ describe("init_session", () => {
       expect(a.result.addresses["eip155:8453"]).toBe(b.result.addresses["eip155:8453"]);
     }
     expect(store.size()).toBe(2);
+  });
+
+  it("derives a Solana address for solana:5eykt... (mainnet) from a 12-word mnemonic", async () => {
+    const result = await handleInitSession(
+      { secret: TEST_MNEMONIC_12, networks: [SOLANA_MAINNET] },
+      { store, config },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.result.addresses[SOLANA_MAINNET]).toBe(TEST_SOLANA_ADDRESS);
+    // Base58 sanity check: alphanumeric, no 0/O/I/l, length 32-44.
+    expect(result.result.addresses[SOLANA_MAINNET]).toMatch(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/);
+  });
+
+  it("derives the same Solana address for devnet (same keypair across networks)", async () => {
+    const result = await handleInitSession(
+      { secret: TEST_MNEMONIC_12, networks: [SOLANA_DEVNET] },
+      { store, config },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.result.addresses[SOLANA_DEVNET]).toBe(TEST_SOLANA_ADDRESS);
+  });
+
+  it("derives Cosmos + EVM + Solana addresses in a single mixed-network session", async () => {
+    const result = await handleInitSession(
+      {
+        secret: TEST_MNEMONIC_12,
+        networks: ["cosmos:grand-1", "eip155:8453", SOLANA_MAINNET],
+      },
+      { store, config },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.result.addresses["cosmos:grand-1"]).toMatch(/^noble1[a-z0-9]{38,58}$/);
+    expect(result.result.addresses["eip155:8453"]).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(result.result.addresses[SOLANA_MAINNET]).toBe(TEST_SOLANA_ADDRESS);
+  });
+
+  it("rejects an unsupported solana:<foo> network identifier", async () => {
+    const result = await handleInitSession(
+      { secret: TEST_MNEMONIC_12, networks: ["solana:foo"] },
+      { store, config },
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("unsupported_network");
+      expect(result.error.message).toContain("solana:foo");
+    }
+    expect(store.size()).toBe(0);
+  });
+
+  it("rejects a raw 0x-hex private key for a Solana network", async () => {
+    const result = await handleInitSession(
+      { secret: TEST_PRIVATE_KEY, networks: [SOLANA_MAINNET] },
+      { store, config },
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("derivation_failed");
+      expect(result.error.message).toMatch(/solana networks require/i);
+    }
   });
 
   it("error messages never echo back any portion of the secret", async () => {
