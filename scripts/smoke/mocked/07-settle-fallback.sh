@@ -29,7 +29,7 @@ info "spawn smoke server with SMOKE_COSMOS_PAY_FAIL_MODE=provider_internal_error
   DATABASE_URL="$DATABASE_URL" \
   REDIS_URL="$REDIS_URL" \
   ADMIN_API_KEY="$ADMIN_API_KEY" \
-  API_PORT="${API_PORT:-3333}" \
+  API_PORT=3333 \
   LOG_LEVEL=warn \
   SMOKE_COSMOS_PAY_FAIL_MODE=provider_internal_error \
   pnpm --filter @suverse-pay/api run start:mock >>"$SMOKE_LOG" 2>&1 &
@@ -116,7 +116,7 @@ stop_smoke_server
 (
   cd "$ROOT"
   DATABASE_URL="$DATABASE_URL" REDIS_URL="$REDIS_URL" \
-  ADMIN_API_KEY="$ADMIN_API_KEY" API_PORT="${API_PORT:-3333}" LOG_LEVEL=warn \
+  ADMIN_API_KEY="$ADMIN_API_KEY" API_PORT=3333 LOG_LEVEL=warn \
   pnpm --filter @suverse-pay/api run start:mock >>"$SMOKE_LOG" 2>&1 &
   echo $! >"$SMOKE_PID_FILE"
 )

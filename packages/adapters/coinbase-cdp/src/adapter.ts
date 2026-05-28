@@ -401,11 +401,31 @@ function toCdpRequest(req: VerifyRequest | SettleRequest): unknown {
   const payload = req.paymentPayload;
   const x402Version =
     typeof payload.x402Version === "number" ? payload.x402Version : 2;
+  // CDP's hosted facilitator implements x402V2PaymentRequirements with
+  // `amount` rather than the spec's `maxAmountRequired`, AND requires
+  // an `accepted` field embedded inside the paymentPayload (the
+  // requirements the payer committed to). The wider gateway uses the
+  // x402 spec field names; this adapter translates to/from CDP's
+  // internal shape so the rest of the codebase stays spec-aligned.
+  // Verified empirically against api.cdp.coinbase.com/platform/v2/x402
+  // on 2026-05-28 — sending the canonical spec shape returns HTTP 400
+  // with `must match one of [x402V2PaymentPayload, x402V1PaymentPayload].
+  // x402V2PaymentPayload requires 'accepted'`.
+  const cdpRequirements = toCdpRequirements(req.paymentRequirements);
   return {
     x402Version,
-    paymentPayload: payload,
-    paymentRequirements: req.paymentRequirements,
+    paymentPayload: { ...payload, accepted: cdpRequirements },
+    paymentRequirements: cdpRequirements,
   };
+}
+
+function toCdpRequirements(
+  req: VerifyRequest["paymentRequirements"],
+): Record<string, unknown> {
+  const { maxAmountRequired, ...rest } = req as Record<string, unknown> & {
+    maxAmountRequired: string;
+  };
+  return { ...rest, amount: maxAmountRequired };
 }
 
 function trimTrailingSlash(url: string): string {

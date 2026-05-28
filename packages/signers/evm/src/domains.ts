@@ -13,8 +13,12 @@
  * domain. Treat these as best-known until CDP smoke confirms.
  *
  * Phase 2 supports Base (8453), Polygon (137), Arbitrum (42161).
+ * Phase 3 patch (v0.3.1) added Base Sepolia (84532) — Circle's test
+ * USDC deployment, used by `scripts/smoke/real-evm/` for the real
+ * Coinbase CDP smoke. Note: the test contract's EIP-712 domain name
+ * is `"USDC"`, NOT `"USD Coin"` — different from the mainnet entry.
  * Ethereum mainnet (1), Optimism (10), and other networks are
- * deferred to v0.3+.
+ * deferred to v0.4+.
  */
 
 export interface EvmTokenDomain {
@@ -70,6 +74,17 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
       verifyingContract: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       decimals: 6,
     },
+    // USDC on Base Sepolia (Circle's testnet deployment). Domain name
+    // is "USDC" not "USD Coin" — verified on-chain via name() at
+    // 0x036CbD53842c5426634e7929541eC2318f3dCF7e.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 84532,
+      verifyingContract: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      decimals: 6,
+    },
 
     // EURC — Circle's euro stablecoin. Currently deployed on Base; on
     // Polygon/Arbitrum it is not yet available, so we list only Base
@@ -90,7 +105,7 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
   return map;
 })();
 
-export const SUPPORTED_CHAIN_IDS = [8453, 137, 42161] as const;
+export const SUPPORTED_CHAIN_IDS = [8453, 137, 42161, 84532] as const;
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
 
 export function isSupportedChainId(n: number): n is SupportedChainId {

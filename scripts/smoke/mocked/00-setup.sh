@@ -33,12 +33,16 @@ DATABASE_URL="$DATABASE_URL" ADMIN_API_KEY="$ADMIN_API_KEY" \
   pnpm --filter @suverse-pay/db run bootstrap --force >/dev/null
 
 info "spawn mock server"
+# Hard-pin API_PORT=3333: an upstream .env that sets API_PORT=3000
+# would otherwise collide with a long-running dev gateway and the
+# server-mock would fail with EADDRINUSE. The mocked smoke is a sandbox
+# and must NEVER use the prod port.
 (
   cd "$ROOT"
   DATABASE_URL="$DATABASE_URL" \
   REDIS_URL="$REDIS_URL" \
   ADMIN_API_KEY="$ADMIN_API_KEY" \
-  API_PORT="${API_PORT:-3333}" \
+  API_PORT=3333 \
   LOG_LEVEL="${LOG_LEVEL:-info}" \
   SMOKE_COSMOS_PAY_LATENCY_MS="${SMOKE_COSMOS_PAY_LATENCY_MS:-0}" \
   SMOKE_CDP_LATENCY_MS="${SMOKE_CDP_LATENCY_MS:-0}" \

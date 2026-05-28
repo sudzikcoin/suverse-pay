@@ -27,6 +27,11 @@ export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   "eip155:8453:exact": ["coinbase-cdp"],
   "eip155:137:exact": ["coinbase-cdp"],
   "eip155:42161:exact": ["coinbase-cdp"],
+  // Base Sepolia — added in v0.3.1 alongside scripts/smoke/real-evm/
+  // so the same gateway binary serves the real EVM smoke without code
+  // changes. CDP's `/supported` advertises eip155:84532 alongside the
+  // mainnet entries.
+  "eip155:84532:exact": ["coinbase-cdp"],
 
   // ---- Solana mainnet (CDP primary, PayAI failover) -----------------
   "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:exact": ["coinbase-cdp", "payai"],

@@ -73,6 +73,10 @@ async function main(): Promise<void> {
     { network: "eip155:8453", asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", scheme: "exact" },
     { network: "eip155:137", asset: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359", scheme: "exact" },
     { network: "eip155:42161", asset: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", scheme: "exact" },
+    // Base Sepolia — Circle's test USDC. Added in v0.3.1 to satisfy
+    // scripts/smoke/real-evm/; CDP's /supported advertises this kind
+    // alongside the mainnet EVM entries.
+    { network: "eip155:84532", asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", scheme: "exact" },
     // Solana mainnet — Circle native USDC mint + EURC mint
     { network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", scheme: "exact" },
     { network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr", scheme: "exact" },

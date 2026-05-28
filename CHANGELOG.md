@@ -4,6 +4,102 @@ All notable changes to `suverse-pay` are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.3.1] — 2026-05-28
+
+Phase 3 patch. Closes Sub-task 4 — Coinbase CDP real-network smoke
+on Base Sepolia, the last remaining deferred item from v0.3.0.
+
+### Added
+
+- **`scripts/smoke/real-evm/`** — 7-step real-network smoke suite
+  for Coinbase CDP settlement on Base Sepolia (`eip155:84532`). Each
+  `04-settle` / `06-facilitator-settle` run broadcasts a real
+  `transferWithAuthorization` to Base Sepolia via CDP and asserts
+  the on-chain receipt status (`eth_getTransactionReceipt`) is
+  `0x1` within ~60 seconds. Exercises both the internal `/settle`
+  admin surface AND the public `/facilitator/settle` surface, so
+  the multi-chain facilitator surface is now real-tested on both
+  Cosmos and EVM.
+- **Base Sepolia (`eip155:84532`) network support**:
+  - `@suverse-pay/signer-evm` — Circle's test USDC at
+    `0x036CbD53842c5426634e7929541eC2318f3dCF7e` added to the
+    trusted domain table. Note: the test contract's on-chain
+    EIP-712 domain `name()` is `"USDC"` (not `"USD Coin"` like
+    Base mainnet) — verified via `eth_call`.
+  - `@suverse-pay/adapter-coinbase-cdp` — Base Sepolia capability
+    registered alongside the mainnet EVM entries; CDP advertises
+    `eip155:84532` (exact / upto / batch-settlement) on
+    `/supported`.
+  - `apps/api` — Base Sepolia added to the production CDP
+    capability set.
+  - `services/facilitator` — `eip155:84532:exact` routes to
+    `coinbase-cdp` in the facilitator routing config.
+
+### Fixed
+
+- **CDP wire-format envelope translation** in the
+  `coinbase-cdp` adapter. CDP's hosted facilitator implements
+  `x402V2PaymentRequirements` with `amount` (not the spec's
+  `maxAmountRequired`) AND requires an `accepted` field embedded
+  inside the `paymentPayload` carrying the same requirements. The
+  rest of the codebase uses canonical spec field names; the
+  adapter's `toCdpRequest` now translates. Without this, the
+  adapter's `/verify` / `/settle` against the real CDP endpoint
+  always returned HTTP 400 with
+  `x402V2PaymentPayload requires 'accepted'`. Caught by Sub-task 4
+  on the first end-to-end attempt; covered by a new unit test
+  (`translates the spec wire format to CDP's internal x402V2 shape`)
+  to prevent silent regression.
+- **`scripts/smoke/mocked/`** — hard-pinned `API_PORT=3333` in
+  `00-setup.sh` and `07-settle-fallback.sh`. The previous
+  `API_PORT="${API_PORT:-3333}"` deferred to the caller's env; once
+  a long-running dev gateway started using `.env`'s `API_PORT=3000`,
+  the mocked smoke would collide with `EADDRINUSE 0.0.0.0:3000`.
+  Mocked smoke is a sandbox and must never use the prod port.
+- **`scripts/smoke/facilitator-mocked/04-verify-evm.sh`** — added
+  a fourth accepted outcome (HTTP 502 whose
+  `error.details.providerId == "coinbase-cdp"`). Once CDP is wired
+  with credentials, the synthetic test payload now reaches CDP,
+  which rejects it at HTTP 400 (`invalid signature: R is 0`);
+  `httpJson` throws on 4xx and the gateway surfaces this as 502
+  with CDP attribution. This still proves the routing layer
+  reached CDP — what the test was meant to check.
+
+### Verified
+
+- **Real Base Sepolia on-chain USDC settle via Coinbase CDP**.
+  Inaugural txs (txHashes recorded in the v0.3.1 GitHub release):
+  - internal `/settle` path:
+    [`0x618913...c74abfd`](https://sepolia.basescan.org/tx/0x618913f76b23878b2d0db3cba83c9073f45371ff790e972c240f5771bc74abfd)
+  - public `/facilitator/settle` path:
+    [`0xac4ca1...39e21`](https://sepolia.basescan.org/tx/0xac4ca10622443a1c1b1d201d1e7993d86f8e263493a9a5a301fbb60f59139e21)
+- **Idempotency on real CDP**: replaying `/settle` with the same
+  `Idempotency-Key` AND the same signed payload returns the same
+  `paymentId` + same `txHash`, with exactly one row in
+  `payment_attempts` — proven by an independent
+  `GET /payments/:id` lookup after the replay.
+- **Both `/verify` and `/settle` paths against real CDP** on Base
+  Sepolia. Verify returns `{isValid: true, payer}`; settle returns
+  a 32-byte txHash that subsequently lands on-chain.
+- **All 7 smoke suites green**: `mocked` (10), `real` (9),
+  `mcp-mocked` (7), `mcp-real` (4), `facilitator-mocked` (10),
+  `mcp-solana` (5), **`real-evm` (7 — new)**.
+- CDP minimum settle amount on Base Sepolia is **1000 atomic
+  USDC** (= `$0.001`). Below that CDP returns
+  `{invalidReason: "amount_too_low"}`; the smoke default is now
+  set there.
+
+### Deferred
+
+- **CDP 4xx-as-verify-result handling**. CDP returns
+  `{isValid: false, invalidReason, ...}` as HTTP 400 (not 200), so
+  the adapter's `verify` currently throws on every CDP rejection
+  instead of returning a normalized `{valid: false, errorCode}`
+  response. The CDP-attribution case is handled gracefully end to
+  end, but the adapter should parse CDP 4xx bodies. Not in v0.3.1
+  because the fix touches the common `httpJson` retry/throw path
+  and warrants its own test surface.
+
 ## [v0.3.0] — 2026-05-28
 
 Phase 3 stable. Solana support across signer, PayAI adapter, MCP,

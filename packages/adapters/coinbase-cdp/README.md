@@ -13,6 +13,7 @@ the orchestrator's contract from `@suverse-pay/core-types`.
 | `eip155:8453` (Base) | USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | `exact` |
 | `eip155:137` (Polygon) | USDC | `0x3c499c542cef5e3811e1192ce70d8cc03d5c3359` | `exact` |
 | `eip155:42161` (Arbitrum) | USDC | `0xaf88d065e77c8cc2239327c5edb3a432268e5831` | `exact` |
+| `eip155:84532` (Base Sepolia) | USDC | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | `exact` |
 | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` (Solana mainnet) | USDC | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | `exact` |
 | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` (Solana mainnet) | EURC | `HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr` | `exact` |
 
@@ -45,7 +46,7 @@ gateway boots without CDP coverage rather than crashing.
 
 ## Wire shapes per network
 
-The adapter does NOT inspect or transform the `paymentPayload`
+The adapter does NOT inspect or transform the `paymentPayload.payload`
 contents — that's CDP's job. The shapes the upstream signers produce:
 
 - **EVM (`exact`)**: `payload.signature` + `payload.authorization`
@@ -57,13 +58,27 @@ contents — that's CDP's job. The shapes the upstream signers produce:
 CDP's `/verify` and `/settle` accept both shapes against their
 respective `paymentRequirements.network`.
 
+### CDP-specific envelope translation
+
+CDP's hosted facilitator implements **`x402V2PaymentRequirements`
+with `amount`** (not the spec's `maxAmountRequired`) AND requires an
+**`accepted`** field embedded inside the `paymentPayload` carrying
+the same requirements. The rest of the codebase uses canonical x402
+spec field names; this adapter does the translation in
+`toCdpRequest`. Verified empirically on `api.cdp.coinbase.com`
+(2026-05-28): sending the spec shape returns HTTP 400 with
+`x402V2PaymentPayload requires 'accepted'` /
+`x402V2PaymentRequirements requires 'amount'`. The unit test
+`translates the spec wire format to CDP's internal x402V2 shape`
+guards against silent regression.
+
 ## Tests
 
 ```bash
 pnpm --filter @suverse-pay/adapter-coinbase-cdp test
 ```
 
-57 tests across four files. Includes a dedicated Solana suite
+58 tests across four files. Includes a dedicated Solana suite
 (`describe("CoinbaseCdpAdapter Solana support")`) that exercises:
 
 - `supports()` accepts the canonical Solana CAIP-2 and rejects the
@@ -79,15 +94,19 @@ pnpm --filter @suverse-pay/adapter-coinbase-cdp test
 
 ## Real-network smoke
 
-**Deferred to Phase 3 Sub-task 4** — requires a CDP API key (see
-`STATUS.md` for status). Today the adapter wiring is verified via
-mocked CDP responses; the EVM signing math is verified by
-`signer-evm`'s `recoverTypedDataAddress` round-trip; the Solana
-signing math is verified by `signer-solana`'s
-`nacl.sign.detached.verify` round-trip. None of those prove a
-particular `(name, version, contract)` triple lands on-chain — that's
-what real CDP smoke against Base Sepolia / Solana mainnet will
-establish in Sub-task 4.
+**Closed in v0.3.1** — see `scripts/smoke/real-evm/`. The 7-step
+suite signs an EIP-3009 `transferWithAuthorization` for Base Sepolia
+USDC via the test wallet at `.env.evm-sepolia` (mode 600, gitignored)
+and posts it to both the internal `/settle` path and the public
+`/facilitator/settle` path. Each step asserts the on-chain receipt
+status (`eth_getTransactionReceipt`) is `0x1`. Inaugural real Base
+Sepolia tx via this adapter:
+[`0x618913...c74abfd`](https://sepolia.basescan.org/tx/0x618913f76b23878b2d0db3cba83c9073f45371ff790e972c240f5771bc74abfd).
+
+Solana mainnet real-smoke remains deferred (would cost real money on
+each run); the EVM closure here is the harder of the two because the
+adapter does the EIP-712 domain join and now-validated CDP wire
+translation.
 
 ## CDP rate limits
 

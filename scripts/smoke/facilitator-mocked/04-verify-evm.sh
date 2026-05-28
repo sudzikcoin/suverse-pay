@@ -4,15 +4,24 @@
 # this test asserts the ROUTING / SHAPE layer only — NOT CDP itself.
 #
 # Without a Coinbase CDP API key configured, the underlying CDP adapter
-# returns an error (or simply rejects the verify). We accept three
+# returns an error (or simply rejects the verify). We accept four
 # outcomes as PASS:
 #   - HTTP 200 with isValid: false + invalidReason  (CDP rejected as
-#     expected)
-#   - HTTP 200 with isValid: true                   (CDP key is wired)
+#     expected — the cosmos-pay-style facilitator-shape response)
+#   - HTTP 200 with isValid: true                   (CDP key is wired
+#     AND the payload happens to pass signature validation — rare for
+#     this synthetic payload but legal)
 #   - HTTP 400 with route_unsupported               (CDP adapter not
 #     enabled at all)
+#   - HTTP 502 from the gateway whose error.details.providerId is
+#     "coinbase-cdp"                                (CDP IS wired AND
+#     rejected the synthetic payload at the HTTP layer — v0.3.1+
+#     reality, since CDP returns x402V2 signature-validation failures
+#     as HTTP 400 which our httpJson throws on. This still proves the
+#     routing layer reached CDP, which is what this test checks.)
 # The FAIL conditions are: 401/403 (auth model misconfigured — /verify
-# must be open), 5xx (server crash), or a malformed response body.
+# must be open), 5xx without a CDP attribution (server crash), or a
+# malformed response body.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HERE/_lib.sh"
@@ -67,7 +76,7 @@ case "$RESPONSE_STATUS" in
   400)
     code=$(echo "$RESPONSE_BODY" | jq -r '.error.code // .code // empty')
     if [[ "$code" == "route_unsupported" ]]; then
-      pass "EVM adapter not enabled in this build — routing reported route_unsupported (CDP key is the v0.3.1 deferred work)"
+      pass "EVM adapter not enabled in this build — routing reported route_unsupported"
       echo "$RESPONSE_BODY" | jq -C
     else
       fail "unexpected 400 (code='$code'). body: $RESPONSE_BODY"
@@ -75,6 +84,15 @@ case "$RESPONSE_STATUS" in
     ;;
   401|403)
     fail "/facilitator/verify is supposed to be OPEN — got auth-rejection status $RESPONSE_STATUS. body: $RESPONSE_BODY"
+    ;;
+  502)
+    cdp_attribution=$(echo "$RESPONSE_BODY" | jq -r '.error.details.providerId // ""')
+    if [[ "$cdp_attribution" == "coinbase-cdp" ]]; then
+      pass "/facilitator/verify routed to coinbase-cdp; CDP rejected the synthetic payload at HTTP layer (v0.3.1 wire-format reality)"
+      echo "$RESPONSE_BODY" | jq -C
+    else
+      fail "unexpected 502 with no CDP attribution. body: $RESPONSE_BODY"
+    fi
     ;;
   *)
     fail "unexpected HTTP $RESPONSE_STATUS. body: $RESPONSE_BODY"

@@ -240,6 +240,30 @@ describe("CoinbaseCdpAdapter /verify", () => {
     expect(body).toHaveProperty("paymentRequirements");
   });
 
+  it("translates the spec wire format to CDP's internal x402V2 shape", async () => {
+    // CDP's hosted facilitator uses `amount` instead of the spec's
+    // `maxAmountRequired`, AND requires an `accepted` field inside the
+    // paymentPayload. Verified empirically on 2026-05-28 — sending the
+    // canonical spec shape returns HTTP 400 with `x402V2PaymentPayload
+    // requires 'accepted'` / `x402V2PaymentRequirements requires
+    // 'amount'`. This test guards against silent regression: if a future
+    // refactor drops the translation, the suite trips here instead of
+    // surfacing in production as opaque CDP 400s.
+    const { fetch, calls } = makeFetch([jsonResponse({ isValid: true })]);
+    const a = makeAdapter({ fetch });
+    await a.verify(verifyReq);
+    const body = calls[0]!.body as Record<string, unknown>;
+    const sentRequirements = body.paymentRequirements as Record<string, unknown>;
+    expect(sentRequirements).toHaveProperty("amount", "10000");
+    expect(sentRequirements).not.toHaveProperty("maxAmountRequired");
+    const sentPayload = body.paymentPayload as Record<string, unknown>;
+    expect(sentPayload).toHaveProperty("accepted");
+    const accepted = sentPayload.accepted as Record<string, unknown>;
+    expect(accepted).toHaveProperty("amount", "10000");
+    expect(accepted).not.toHaveProperty("maxAmountRequired");
+    expect(accepted.asset).toBe(sentRequirements.asset);
+  });
+
   it("uses invalidMessage as errorMessage when both reason and message are present", async () => {
     const { fetch } = makeFetch([
       jsonResponse({

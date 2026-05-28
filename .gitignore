@@ -15,6 +15,7 @@ build/
 .env.*.local
 .env.solana-devnet
 .env.solana-mainnet
+.env.evm-sepolia
 
 # Logs
 *.log
@@ -42,3 +43,4 @@ Thumbs.db
 
 # Real-smoke fixtures (regenerated per run, single-use signed payloads)
 scripts/smoke/real/fixtures/signed-*.json
+scripts/smoke/real-evm/fixtures/signed-*.json
