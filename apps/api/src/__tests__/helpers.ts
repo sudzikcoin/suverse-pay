@@ -397,6 +397,12 @@ export async function makeTestServer(opts: {
       opts.metrics ?? {
         totals: { payments: 0, settled: 0, failed: 0, pending: 0, successRate: 0 },
         providers: [],
+        facilitator: {
+          paymentsByResourceKey: [],
+          paymentsByNetwork: [],
+          adapterSelections: [],
+          failoverEvents: 0,
+        },
         generatedAt: "2026-05-26T12:00:00Z",
       },
     now: () => new Date("2026-05-26T12:00:00Z"),

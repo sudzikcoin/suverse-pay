@@ -67,7 +67,12 @@ export function registerAuth(app: FastifyInstance, opts: AuthOptions): void {
   const exempt = opts.exempt ?? new Set(["/health"]);
 
   app.addHook("onRequest", async (req: FastifyRequest) => {
-    if (exempt.has(req.routeOptions.url ?? req.url)) return;
+    const routeUrl = req.routeOptions.url ?? req.url;
+    if (exempt.has(routeUrl)) return;
+    // /facilitator/* uses its own per-route auth tier
+    // (resource API keys, not the admin api key). The route handlers
+    // attach `requireResourceKey` as a preHandler where needed.
+    if (routeUrl.startsWith("/facilitator/") || routeUrl === "/facilitator") return;
 
     const header = req.headers.authorization;
     if (typeof header !== "string" || !header.startsWith(BEARER_PREFIX)) {

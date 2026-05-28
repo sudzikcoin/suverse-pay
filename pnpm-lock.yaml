@@ -38,6 +38,9 @@ importers:
       '@suverse-pay/db':
         specifier: workspace:*
         version: link:../../db
+      '@suverse-pay/facilitator':
+        specifier: workspace:*
+        version: link:../../services/facilitator
       '@suverse-pay/orchestrator':
         specifier: workspace:*
         version: link:../../services/orchestrator
@@ -296,6 +299,37 @@ importers:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
+      vitest:
+        specifier: ^4.1.7
+        version: 4.1.7(@types/node@20.19.41)(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(tsx@4.22.3))
+
+  services/facilitator:
+    dependencies:
+      '@suverse-pay/core-types':
+        specifier: workspace:*
+        version: link:../../packages/core-types
+      '@suverse-pay/db':
+        specifier: workspace:*
+        version: link:../../db
+      '@suverse-pay/orchestrator':
+        specifier: workspace:*
+        version: link:../orchestrator
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.10.1
+      pg:
+        specifier: ^8.13.1
+        version: 8.21.0
+      ulidx:
+        specifier: ^2.4.1
+        version: 2.4.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.41
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.20.0
       vitest:
         specifier: ^4.1.7
         version: 4.1.7(@types/node@20.19.41)(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(tsx@4.22.3))

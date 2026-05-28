@@ -1,8 +1,10 @@
+import type { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
 import type {
   PaymentLedger,
   ProviderHealthSummary,
   ProviderRegistry,
 } from "@suverse-pay/orchestrator";
+import type { Pool } from "pg";
 import type { Config } from "./config.js";
 
 /**
@@ -18,6 +20,19 @@ export interface ServerContext {
   config: Config;
   registry: ProviderRegistry;
   ledger: PaymentLedger;
+  /**
+   * Postgres pool — required when /facilitator/* routes are enabled,
+   * optional for tests that only exercise the v0.1 admin-key routes.
+   * Facilitator handlers need it for resource-key lookup + payments
+   * log writes.
+   */
+  pool?: Pool;
+  /**
+   * Per-resource-key sliding-window rate limiter. Required when
+   * /facilitator/settle is enabled. Tests that don't exercise that
+   * route can omit it.
+   */
+  facilitatorRateLimiter?: FacilitatorRateLimiter;
   /**
    * Loads ProviderHealthSummary rows for the given provider ids.
    * The orchestrator's router consumes these to decide which
@@ -52,5 +67,28 @@ export interface MetricsSummary {
     failures: number;
     avgLatencyMs: number | null;
   }>;
+  /**
+   * /facilitator/* usage rollups (last 24h). Empty arrays + zero
+   * counters when no facilitator activity has happened yet.
+   */
+  facilitator: {
+    paymentsByResourceKey: ReadonlyArray<{
+      resourceKeyId: string;
+      label: string;
+      settled: number;
+      failed: number;
+    }>;
+    paymentsByNetwork: ReadonlyArray<{
+      network: string;
+      settled: number;
+      failed: number;
+    }>;
+    adapterSelections: ReadonlyArray<{
+      adapter: string;
+      settled: number;
+      failed: number;
+    }>;
+    failoverEvents: number;
+  };
   generatedAt: string;
 }

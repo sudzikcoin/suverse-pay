@@ -5,6 +5,8 @@ import { registerAuth } from "./plugins/auth.js";
 import { registerErrorHandler } from "./plugins/error-handler.js";
 import { registerIdempotency } from "./plugins/idempotency.js";
 import { registerRateLimit } from "./plugins/rate-limit.js";
+import { registerResourceKeyAuth } from "./plugins/resource-key-auth.js";
+import { registerFacilitatorRoutes } from "./routes/facilitator.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerMetricsRoute } from "./routes/metrics.js";
 import { registerPaymentsRoute } from "./routes/payments.js";
@@ -49,6 +51,7 @@ export async function buildServer(
 
   registerErrorHandler(app);
   registerIdempotency(app);
+  registerResourceKeyAuth(app);
   registerAuth(app, { config: opts.ctx.config });
   await registerRateLimit(app, { config: opts.ctx.config, redis: opts.redis });
 
@@ -59,6 +62,7 @@ export async function buildServer(
   registerSettleRoute(app, opts.ctx);
   registerPaymentsRoute(app, opts.ctx);
   registerMetricsRoute(app, opts.ctx);
+  registerFacilitatorRoutes(app, opts.ctx);
 
   return app;
 }

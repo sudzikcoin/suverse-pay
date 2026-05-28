@@ -1,8 +1,8 @@
 {
-  "name": "@suverse-pay/db",
+  "name": "@suverse-pay/facilitator",
   "version": "0.0.0",
   "private": true,
-  "description": "SQL migrations + raw-SQL migration runner for suverse-pay.",
+  "description": "Public x402 facilitator surface — routing, failover, idempotency, rate limiting for resource-server-facing /facilitator/* endpoints.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,25 +15,25 @@
   },
   "files": [
     "dist",
-    "migrations",
-    "schema.sql"
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "migrate": "tsx src/migrate-cli.ts",
-    "bootstrap": "tsx src/bootstrap-cli.ts",
-    "bootstrap-resource-key": "tsx src/bootstrap-resource-key-cli.ts",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
-    "pg": "^8.13.1"
+    "@suverse-pay/core-types": "workspace:*",
+    "@suverse-pay/db": "workspace:*",
+    "@suverse-pay/orchestrator": "workspace:*",
+    "ioredis": "^5.4.1",
+    "pg": "^8.13.1",
+    "ulidx": "^2.4.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/pg": "^8.11.10",
-    "pg-mem": "^3.0.5",
-    "tsx": "^4.19.2"
+    "vitest": "^4.1.7"
   }
 }

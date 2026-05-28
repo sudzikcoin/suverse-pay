@@ -29,6 +29,7 @@
     "@suverse-pay/adapter-payai": "workspace:*",
     "@suverse-pay/core-types": "workspace:*",
     "@suverse-pay/db": "workspace:*",
+    "@suverse-pay/facilitator": "workspace:*",
     "@suverse-pay/orchestrator": "workspace:*",
     "@suverse-pay/provider-sdk": "workspace:*",
     "fastify": "^5.2.0",

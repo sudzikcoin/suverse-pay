@@ -16,3 +16,19 @@ export {
   type AppliedMigration,
   type RunMigrationsOptions,
 } from "./migrate.js";
+
+export {
+  createResourceKey,
+  findResourceKey,
+  revokeResourceKey,
+  touchResourceKey,
+  monthlySettleCount,
+  hashResourceKey,
+  type CreatedResourceKey,
+  type CreateResourceKeyOptions,
+  type FindResourceKeyOptions,
+  type ResourceKeyRow,
+  type RevokeResourceKeyOptions,
+  type TouchResourceKeyOptions,
+  type MonthlySettleCountOptions,
+} from "./resource-keys.js";

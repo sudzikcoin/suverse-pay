@@ -1,6 +1,7 @@
 import { CoinbaseCdpAdapter } from "@suverse-pay/adapter-coinbase-cdp";
 import { CosmosPayAdapter } from "@suverse-pay/adapter-cosmos-pay";
 import { PayAiAdapter } from "@suverse-pay/adapter-payai";
+import { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
 import {
   CapabilityDiscoveryCron,
   HealthCheckCron,
@@ -194,10 +195,13 @@ async function main(): Promise<void> {
   healthCron.start();
 
   // ---- ServerContext glue ---------------------------------------------
+  const facilitatorRateLimiter = new FacilitatorRateLimiter({ redis });
   const ctx: ServerContext = {
     config,
     registry,
     ledger,
+    pool,
+    facilitatorRateLimiter,
     loadHealthSummaries: (providerIds) =>
       loadHealthSummariesFromDb(pool, providerIds),
     loadMetrics: () => loadMetricsFromDb(pool),
@@ -335,27 +339,64 @@ async function loadHealthSummariesFromDb(
 }
 
 async function loadMetricsFromDb(pool: Pool): Promise<MetricsSummary> {
-  const [byStatus, byProvider] = await Promise.all([
-    pool.query<{ status: string; n: string }>(
-      `SELECT status, COUNT(*)::text AS n FROM payments GROUP BY status`,
-    ),
-    pool.query<{
-      provider_id: string;
-      attempts: string;
-      successes: string;
-      failures: string;
-      avg_latency_ms: string | null;
-    }>(
-      `SELECT provider_id,
-              COUNT(*)::text AS attempts,
-              SUM(CASE WHEN outcome = 'success' THEN 1 ELSE 0 END)::text AS successes,
-              SUM(CASE WHEN outcome <> 'success' AND outcome <> 'pending' THEN 1 ELSE 0 END)::text AS failures,
-              AVG(latency_ms)::text AS avg_latency_ms
-         FROM payment_attempts
-        WHERE started_at > NOW() - INTERVAL '24 hours'
-        GROUP BY provider_id`,
-    ),
-  ]);
+  const [byStatus, byProvider, facByKey, facByNetwork, facByAdapter, failoverCount] =
+    await Promise.all([
+      pool.query<{ status: string; n: string }>(
+        `SELECT status, COUNT(*)::text AS n FROM payments GROUP BY status`,
+      ),
+      pool.query<{
+        provider_id: string;
+        attempts: string;
+        successes: string;
+        failures: string;
+        avg_latency_ms: string | null;
+      }>(
+        `SELECT provider_id,
+                COUNT(*)::text AS attempts,
+                SUM(CASE WHEN outcome = 'success' THEN 1 ELSE 0 END)::text AS successes,
+                SUM(CASE WHEN outcome <> 'success' AND outcome <> 'pending' THEN 1 ELSE 0 END)::text AS failures,
+                AVG(latency_ms)::text AS avg_latency_ms
+           FROM payment_attempts
+          WHERE started_at > NOW() - INTERVAL '24 hours'
+          GROUP BY provider_id`,
+      ),
+      pool.query<{
+        resource_key_id: string;
+        label: string;
+        settled: string;
+        failed: string;
+      }>(
+        `SELECT fp.resource_key_id,
+                rak.label,
+                SUM(CASE WHEN fp.status = 'settled' THEN 1 ELSE 0 END)::text AS settled,
+                SUM(CASE WHEN fp.status = 'failed'  THEN 1 ELSE 0 END)::text AS failed
+           FROM facilitator_payments fp
+           JOIN resource_api_keys    rak ON rak.id = fp.resource_key_id
+          WHERE fp.created_at > NOW() - INTERVAL '24 hours'
+          GROUP BY fp.resource_key_id, rak.label`,
+      ),
+      pool.query<{ network: string; settled: string; failed: string }>(
+        `SELECT network,
+                SUM(CASE WHEN status = 'settled' THEN 1 ELSE 0 END)::text AS settled,
+                SUM(CASE WHEN status = 'failed'  THEN 1 ELSE 0 END)::text AS failed
+           FROM facilitator_payments
+          WHERE created_at > NOW() - INTERVAL '24 hours'
+          GROUP BY network`,
+      ),
+      pool.query<{ adapter_used: string; settled: string; failed: string }>(
+        `SELECT adapter_used,
+                SUM(CASE WHEN status = 'settled' THEN 1 ELSE 0 END)::text AS settled,
+                SUM(CASE WHEN status = 'failed'  THEN 1 ELSE 0 END)::text AS failed
+           FROM facilitator_payments
+          WHERE created_at > NOW() - INTERVAL '24 hours' AND adapter_used IS NOT NULL
+          GROUP BY adapter_used`,
+      ),
+      pool.query<{ n: string }>(
+        `SELECT COUNT(*)::text AS n
+           FROM facilitator_failover_events
+          WHERE created_at > NOW() - INTERVAL '24 hours'`,
+      ),
+    ]);
   const status: Record<string, number> = {};
   let total = 0;
   for (const row of byStatus.rows) {
@@ -381,6 +422,25 @@ async function loadMetricsFromDb(pool: Pool): Promise<MetricsSummary> {
       failures: Number(r.failures),
       avgLatencyMs: r.avg_latency_ms !== null ? Number(r.avg_latency_ms) : null,
     })),
+    facilitator: {
+      paymentsByResourceKey: facByKey.rows.map((r) => ({
+        resourceKeyId: r.resource_key_id,
+        label: r.label,
+        settled: Number(r.settled),
+        failed: Number(r.failed),
+      })),
+      paymentsByNetwork: facByNetwork.rows.map((r) => ({
+        network: r.network,
+        settled: Number(r.settled),
+        failed: Number(r.failed),
+      })),
+      adapterSelections: facByAdapter.rows.map((r) => ({
+        adapter: r.adapter_used,
+        settled: Number(r.settled),
+        failed: Number(r.failed),
+      })),
+      failoverEvents: Number(failoverCount.rows[0]?.n ?? "0"),
+    },
     generatedAt: new Date().toISOString(),
   };
 }

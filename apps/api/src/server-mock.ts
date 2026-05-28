@@ -317,6 +317,12 @@ async function loadMetricsFromDb(pool: Pool): Promise<MetricsSummary> {
       failures: Number(r.failures),
       avgLatencyMs: r.avg_latency_ms !== null ? Number(r.avg_latency_ms) : null,
     })),
+    facilitator: {
+      paymentsByResourceKey: [],
+      paymentsByNetwork: [],
+      adapterSelections: [],
+      failoverEvents: 0,
+    },
     generatedAt: new Date().toISOString(),
   };
 }
