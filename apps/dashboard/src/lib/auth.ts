@@ -90,6 +90,14 @@ async function upsertDashboardUser(args: {
 }
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
+  // Trust the Host / X-Forwarded-Host headers. The dashboard is
+  // always deployed behind a reverse proxy (nginx in self-host,
+  // Vercel's edge in Vercel) — without this Auth.js v5 throws
+  // UntrustedHost on every /api/auth/* request. Vercel sets this
+  // implicitly; self-host needs it explicit, and an env-var-only
+  // toggle (`AUTH_TRUST_HOST=true`) is a footgun the operator can
+  // forget. Pinning here removes it from the runbook.
+  trustHost: true,
   // Persist sessions as encrypted JWTs (default). 7-day expiry; the
   // server-side session lookup re-validates against the database
   // via the `session` callback so an orphaned token never grants
