@@ -4,6 +4,188 @@ All notable changes to `suverse-pay` are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.4.0] — 2026-05-29 — "Multi-protocol multi-chain"
+
+Phase 4 complete. The gateway grows from "x402 across 4 networks" to
+"three protocols across 11 blockchain namespaces" in a single release.
+Five new facilitator adapters, Permit2 signing for USDT, Tempo via
+Stripe MPP, Cosmos mainnet via t402-io, internal Grafana stack.
+
+Tests: **36 turbo tasks green** across **19 packages**.
+
+### Added — facilitator adapters
+
+- **`@suverse-pay/adapter-thirdweb-x402`** — Thirdweb's Nexus
+  facilitator. Opens at `https://nexus-api.thirdweb.com`, `/supported`
+  + `/health` are public; `/verify` + `/settle` gated on `x-nexus-key`.
+  Rolled out Ethereum + Optimism in Block 1 Sub-task 3 (`f536dc0`),
+  expanded to 9 more EVM mainnets — XDC, Monad, Sonic, Sei, Abstract,
+  IoTeX, Celo, Ink, Linea — in Block 2 Sub-task 5 (`92185d0`). USDC
+  contracts on-chain-verified via `eth_call name()/version()/decimals()`
+  per chain.
+
+- **`@suverse-pay/adapter-binance-x402`** — Binance x402 facilitator
+  on BNB Chain. Binance Pay product; auth is HMAC-SHA512 with the
+  five `BinancePay-*` headers per
+  `binance/binance-pay-signature-examples`. Wired against the
+  documented spec — Binance has not published a public x402 endpoint
+  as of 2026-05-29. Captures the canonical BSC stablecoin gotcha:
+  **18-decimal** USDC + USDT (not 6 like everywhere else), with an
+  explicit `$1.00 USDT = 1e18` test that prevents silent under-
+  charging by 12 orders of magnitude. (Block 2 Sub-task 7, `5c2f6ba`).
+
+- **`@suverse-pay/adapter-bofai-x402`** — BofAI's open x402
+  facilitator (Apache-2.0, v0.6.0 removed API-key requirement). First
+  **non-EVM, non-Solana, non-Cosmos** route in the gateway — opens
+  TRON (`tron:mainnet` + `tron:nile`) plus BSC mainnet + testnet.
+  TRON USDT is the single largest USDT deployment globally by volume.
+  Adapter is a pure HTTP forwarder; signer-tron deferred to Phase 5.
+  (Block 2 Sub-task 8, `1ba0136`).
+
+- **`@suverse-pay/adapter-mpp-stripe`** — **Second protocol family**
+  alongside x402. Wraps Stripe's Machine Payments Protocol (MPP) —
+  a 402-protocol with `WWW-Authenticate: Payment` header challenges +
+  `Authorization: Payment <token>` retries. Adds Tempo L1 (chainId
+  4217, EVM-compatible, EIP-155) as a settlement chain. Ships the new
+  `MppAdapter` interface plus wire-format primitives
+  (`challengeToHeaderLine`, `credentialFromHeaderLine`, base64url
+  codec) so any future MPP integration reuses them. (Block 2 Sub-task 9,
+  `dff8c64`).
+
+- **`@suverse-pay/adapter-t402-io`** — Universal USDT facilitator
+  ("t402" = x402 with `t402Version` field rename, otherwise identical
+  body shape). Hosted facilitator at `https://facilitator.t402.io`
+  advertises **77 `(network, scheme)` tuples** across **11
+  namespaces**. Cap-only registration for now (TON, NEAR, Aptos,
+  Tezos, Polkadot, Stacks, Stellar await native signers); routes
+  EVM USDT chains (1, 10, 137, 8453, 42161), Cosmos noble-1 mainnet
+  (first Cosmos mainnet in the gateway), and Solana mainnet USDT.
+  (Block 2 Sub-task 10, `200f022`).
+
+### Added — signing
+
+- **Permit2 PermitWitnessTransferFrom** signing path in `signer-evm`.
+  Unlocks USDT and other non-EIP-3009 ERC-20 spends on every EVM
+  chain we route. Canonical Permit2 contract (`0x0000…22D4…78BA3`)
+  and x402ExactPermit2Proxy (`0x4020…0001`) both verified on-chain
+  via `eth_getCode` on 17 EVM mainnets. EIP-712 quirk handled:
+  Permit2's domain has **no `version` field** (three fields, not
+  four — a synthetic version would diverge from the on-chain
+  `DOMAIN_SEPARATOR`). (Sub-task 6, `341b79a`).
+
+- **USDT token registry** (`@suverse-pay/signer-evm/usdt-tokens.ts`)
+  across **9 EVM chains** — Ethereum, Optimism, Polygon (now USDT0
+  via LayerZero v2), Base, Arbitrum, Celo, Avalanche, Sei, Linea —
+  all on-chain-verified via `eth_call name()/symbol()/decimals()`.
+  Plus BSC USDC + USDT (18 decimals) added in Sub-task 7.
+
+### Added — observability
+
+- **Internal Grafana stack** behind the `observability` Docker
+  Compose profile. Grafana on `:3030`, Prometheus on `:9090` (30d
+  retention). Prometheus-format `/metrics` endpoint on `apps/api`
+  via `prom-client`. 12-panel "Facilitator Observability" dashboard
+  auto-provisioned: adapter health, settles per hour by adapter,
+  settles by network, settles by status, failover events table,
+  top errors by adapter, rate-limit hits per resource key, top
+  resource keys by volume, per-key settle counts. (Block 1 Sub-task 4,
+  `b401cc8`).
+
+### Added — networks
+
+- **17 EVM mainnets** routed end-to-end (up from 4 entering Phase 4).
+  Mainnet additions over Phase 4:
+  - Block 1: World Chain mainnet + Sepolia (`62e66e3`); Avalanche +
+    Fuji + Arbitrum Sepolia via PayAI (`5dd4575`); Ethereum + Optimism
+    via Thirdweb (`f536dc0`).
+  - Block 2: XDC (50), Monad (143), Sonic (146), Sei (1329), Abstract
+    (2741), IoTeX (4689), Celo (42220), Ink (57073), Linea (59144)
+    via Thirdweb (`92185d0`). BNB Chain (56) via Binance (`5c2f6ba`).
+    Tempo (4217) via MPP signer entry (`dff8c64`).
+
+- **TRON mainnet + Nile testnet** via BofAI (`1ba0136`).
+
+- **Cosmos noble-1 MAINNET** via t402-io (`200f022`) — first Cosmos
+  mainnet route in the gateway. Block 1 Sub-task 5's funded-
+  facilitator approach is no longer required; cosmos-pay native USDT
+  remains a Phase 5 option for operators who want gateway-controlled
+  keys.
+
+### Added — new namespaces (capability-advertised, signer pending)
+
+`aptos:`, `near:`, `polkadot:`, `stacks:`, `stellar:`, `tezos:`,
+`ton:` — all advertised via t402-io. Phase 5 native signers unlock
+end-to-end settle on each.
+
+### Changed
+
+- **Routing config** supports multi-adapter resilience. Routing key
+  remains `(network, scheme)` — namespace prefix opaque to the
+  router, so adding new VM families (Sui, Aptos, TON) is a config-
+  only change once their signer ships. Examples:
+  - `eip155:8453:exact` → `["coinbase-cdp", "payai"]` (Sub-task 2)
+  - `eip155:43114:exact` → `["payai", "thirdweb-x402"]` (Sub-task 5)
+  - `eip155:56:exact` → `["binance-x402", "bofai-x402"]` (Sub-task 8)
+  - `cosmos:noble-1:exact-direct` → `["t402-io"]` (Sub-task 10)
+
+- **signer-evm dispatch** now supports both EIP-3009
+  (`TransferWithAuthorization` — USDC / EURC path) and Permit2
+  (`PermitWitnessTransferFrom` — USDT and any non-EIP-3009 ERC-20).
+  `signPermit2UsdtAuthorization` convenience helper looks up the USDT
+  registry entry per chain.
+
+- **Adapter authentication patterns** standardized: every new adapter
+  exposes env-var configurability (`{ADAPTER}_API_KEY`,
+  `{ADAPTER}_BASE_URL`, …), gracefully degrades to capability-only
+  mode without credentials, and surfaces a clear `unauthorized`
+  error on `/verify` + `/settle` when keys are missing. Operators
+  see a status line per adapter at boot.
+
+### Architecture
+
+- **`MppAdapter` interface** (new) lives alongside the existing
+  `FacilitatorAdapter` (for x402 + t402). Distinct because MPP's wire
+  format differs (header-based vs body-based) even though the verify/
+  settle semantics overlap. Both interfaces share the same orchestrator
+  hooks for capability advertising + health.
+
+- **Routing key opacity** to the namespace prefix is the architectural
+  bet that pays off when adding Sui / Aptos / TON in Phase 5 — only
+  config changes, no router refactor.
+
+- **`t402-io`** is wired as another `FacilitatorAdapter`
+  (Option B) rather than a third protocol interface — its wire format
+  is x402 with one field rename, so the adapter emits both
+  `t402Version` and `x402Version` on the wire (belt + suspenders) and
+  the orchestrator never knows the difference.
+
+### Maturity disclosure
+
+| Adapter | Real on-chain smoke | Notes |
+| --- | --- | --- |
+| coinbase-cdp | ✓ Base Sepolia v0.3.1 | EVM USDC battle-tested |
+| cosmos-pay | ✓ Noble grand-1 v0.2.0 | Cosmos testnet battle-tested |
+| payai | ✓ Solana devnet v0.3.0 | Solana battle-tested |
+| thirdweb-x402 | ✗ Phase 5 (needs Nexus key) | 11 EVM mainnets routed |
+| binance-x402 | ✗ Phase 5 (needs Binance Pay merchant) | Built against documented spec |
+| bofai-x402 | ✗ Phase 5 (needs signer-tron) | Hosted facilitator open access |
+| mpp-stripe | ✗ Phase 5 (Stripe REST surface pending) | Wire primitives ready |
+| t402-io | ✗ Phase 5 (needs t402-io key) | `version: "dev"` health flag — pre-production |
+
+### Carry-overs to Phase 5
+
+Phase 5 priority list (full breakdown in STATUS.md):
+- Native non-EVM signers — `signer-tron`, `signer-ton`, `signer-near`,
+  `signer-aptos`, `signer-stellar`, `signer-tezos`, `signer-polkadot`,
+  `signer-stacks`
+- EIP-2612 Permit signer for EVM
+- Real-network mainnet smoke per adapter
+- MPP HTTP `/mpp/*` routes (waiting on Stripe REST surface)
+- Multi-tenant customer dashboard + self-serve resource key signup
+- Per-settle fee mechanism for revenue
+- Native facilitator settlement (isolated service)
+- AP2 authorization layer
+
 ## [v0.3.1] — 2026-05-28
 
 Phase 3 patch. Closes Sub-task 4 — Coinbase CDP real-network smoke

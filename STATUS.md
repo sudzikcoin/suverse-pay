@@ -1,86 +1,116 @@
 # STATUS
 
-Last session: 2026-05-28
-Last tag: v0.3.1
+Last session: 2026-05-29
+Last tag: **v0.4.0**
 
 ## Current state
-**Phase 3 closed including Sub-task 4. v0.3.1 released.** The last
-remaining v0.3.0 deferred item — Coinbase CDP real-network smoke —
-is closed with two real Base Sepolia transactions broadcast via CDP
-through both the internal `/settle` and public `/facilitator/settle`
-paths:
 
-- internal `/settle`:        https://sepolia.basescan.org/tx/0x618913f76b23878b2d0db3cba83c9073f45371ff790e972c240f5771bc74abfd
-- public `/facilitator/settle`: https://sepolia.basescan.org/tx/0xac4ca10622443a1c1b1d201d1e7993d86f8e263493a9a5a301fbb60f59139e21
+**Phase 4 closed. v0.4.0 released — "Multi-protocol multi-chain".**
 
-Idempotency proven under real CDP conditions: a replay of `/settle`
-with the same `Idempotency-Key` + same signed payload returns the
-same `paymentId` + same `txHash` with exactly one row in
-`payment_attempts`.
+Gateway is now three protocols deep (x402, MPP, t402) across 11
+blockchain namespaces and 7 facilitator adapters. Cosmos mainnet
+reachable off-the-shelf via t402-io (Block 1 Sub-task 5's funded-
+facilitator approach no longer required).
 
-### Everything carried over from v0.3.0
+Build: **19/19 packages green**. Tests: **36/36 turbo tasks green**.
 
-- **Solana devnet end-to-end via MCP → PayAI.** Real
-  `transferChecked` broadcast on Solana devnet, no CDP API key
-  required. Idempotent replay returns the cached `txSignature`
-  without re-submitting on-chain.
-- **Public x402 facilitator endpoints** at `/facilitator/{supported,
-  verify,settle}` route across cosmos-pay, Coinbase CDP, and PayAI
-  with per-route failover. Multi-chain facilitator surface is now
-  real-tested on Cosmos (Noble grand-1), Solana devnet (PayAI), AND
-  EVM (Base Sepolia via CDP).
-- **PayAI adapter** wraps `https://facilitator.payai.network`
-  (Solana mainnet + devnet) as a third provider.
-- All 7 smoke suites pass:
-  - `mocked` (10 steps)
-  - `real` (9 steps — Cosmos grand-1)
-  - `mcp-mocked` (7 steps)
-  - `mcp-real` (4 steps — real Cosmos broadcast on Noble grand-1)
-  - `facilitator-mocked` (10 steps)
-  - `mcp-solana` (5 steps — real Solana devnet via PayAI)
-  - **`real-evm` (7 steps — real Base Sepolia via Coinbase CDP) — NEW in v0.3.1**
+## Phase 4 — CLOSED (2026-05-29)
+
+### What shipped
+
+- **7 facilitator adapters** (was 3 entering Phase 4):
+  cosmos-pay, coinbase-cdp, payai, thirdweb-x402, binance-x402,
+  bofai-x402, t402-io. Plus mpp-stripe (different protocol family).
+- **11 network namespaces** (was 4 entering Phase 4):
+  eip155, tron, solana, cosmos, aptos, near, polkadot, stacks,
+  stellar, tezos, ton.
+- **17 EVM mainnets** routed (was 4 entering Phase 4):
+  Base, Polygon, Arbitrum, World Chain, Avalanche, Ethereum, Optimism,
+  BNB Chain, XDC, Monad, Sonic, Sei, Abstract, IoTeX, Celo, Ink,
+  Linea + Tempo (18 with Tempo).
+- **Multi-protocol surface**: x402 + MPP + t402.
+- **First Cosmos mainnet route** (`cosmos:noble-1` via t402-io).
+- **First non-EVM, non-Solana, non-Cosmos namespace** (TRON via BofAI).
+- **Permit2 PermitWitnessTransferFrom signing** in `signer-evm` —
+  unlocks USDT path on every EVM chain we route.
+- **USDT registry** across 9 EVM chains + on-chain verification.
+- **Internal Grafana observability stack** — 12-panel dashboard,
+  prom-client metrics endpoint, 30d Prometheus retention.
+
+### Sub-task index
+
+| Block / Sub-task | Commit |
+| --- | --- |
+| Block 1 — Sub-task 1: World Chain + adapter design doc | `62e66e3` |
+| Block 1 — Sub-task 2: PayAI EVM failover + Avalanche routes | `5dd4575` |
+| Block 1 — Sub-task 3: Thirdweb x402 adapter (Ethereum + Optimism) | `f536dc0` |
+| Block 1 — Sub-task 4: Internal Grafana dashboard | `b401cc8` |
+| ~~Block 1 — Sub-task 5: Cosmos mainnet (funded facilitator)~~ | deferred → off-the-shelf via t402-io (Block 2 Sub-task 10) |
+| Block 2 — Sub-task 5: Thirdweb config expansion (+9 networks) | `92185d0` |
+| Block 2 — Sub-task 6: Permit2 in signer-evm + USDT registry | `341b79a` |
+| Block 2 — Sub-task 7: Binance x402 adapter (BNB Chain) | `5c2f6ba` |
+| Block 2 — Sub-task 8: BofAI / TRON adapter | `1ba0136` |
+| Block 2 — Sub-task 9: MPP protocol adapter (Stripe + Tempo) | `dff8c64` |
+| Block 2 — Sub-task 10: t402-io universal USDT adapter | `200f022` |
+| Block 3 — Final wrap + v0.4.0 tag | (this commit) |
+
+### Coverage summary
+
+| Tier | Networks |
+| --- | --- |
+| Battle-tested (real on-chain smoke) | Cosmos `noble-grand-1` testnet, Solana devnet, EVM `eip155:84532` Base Sepolia |
+| Wired against documented spec (mainnet smoke deferred to Phase 5) | EVM mainnets 1, 10, 50, 56, 137, 143, 146, 480, 1329, 2741, 4217, 4689, 8453, 42161, 42220, 43114, 57073, 59144; TRON mainnet + Nile testnet; `cosmos:noble-1` mainnet |
+| Capability-advertised (signer pending Phase 5) | TON, NEAR, Aptos, Tezos, Polkadot, Stacks, Stellar — all via t402-io |
+
+### Carry-overs to Phase 5
+
+**Native signers** (largest cluster, in priority order):
+1. `signer-tron` — unlocks BofAI's TRON `exact` / `exact_permit` /
+   `exact_gasfree` paths end-to-end
+2. EIP-2612 Permit signer for EVM — unlocks
+   `eip155:*:exact_permit` routes + Peaq + Berachain
+3. `signer-ton`, `signer-near`, `signer-aptos`, `signer-stellar`,
+   `signer-tezos`, `signer-polkadot`, `signer-stacks` — via t402-io's
+   advertised mechanisms
+
+**Real-network mainnet smokes** (gated on credentials + funding):
+- Thirdweb Nexus key — unlocks 11 EVM mainnets
+- Binance Pay merchant account — unlocks BNB Chain
+- BofAI public facilitator — open access, ready when signer-tron lands
+- Stripe MPP REST surface — unlocks Tempo USDC + SPT fiat
+- t402-io API key — unlocks Cosmos noble-1 mainnet + Solana mainnet
+  USDT + 5 EVM USDT chains
+
+**Protocol surfaces**:
+- MPP `/mpp/*` HTTP routes (waiting on Stripe REST surface)
+- Discovery layer multi-source aggregator (x402 + MPP + t402 catalogs)
+
+**Infrastructure**:
+- Multi-tenant customer dashboard
+- Self-serve resource API key signup
+- Per-settle fee mechanism for revenue
+- Native facilitator settlement (isolated service with its own keys)
+- AP2 authorization layer
+- AI-assisted routing once payment_attempts volume justifies it
 
 ## Infrastructure
 - Postgres on :5433, Redis on :6380 (Docker)
-- To restart: `cd /home/govhub/suverse-pay && docker compose up -d && pnpm db:migrate && pnpm db:bootstrap`
+- Grafana on :3030, Prometheus on :9090 (observability profile, opt-in)
+- To restart core: `cd /home/govhub/suverse-pay && docker compose up -d && pnpm db:migrate && pnpm db:bootstrap`
+- To bring up observability: `docker compose --profile observability up -d grafana prometheus`
 
 ## Running services
 - cosmos-pay facilitator at :8402 (Go, separate repo)
-- suverse-pay API at :3000 (this repo, `apps/api`) — serves both the
-  admin REST surface AND the public `/facilitator/*` x402 routes.
-  Must be started with `.env` sourced into the process so the CDP
-  env vars (`COINBASE_CDP_API_KEY_NAME` / `_SECRET`) are read at
-  boot — otherwise the gateway skips CDP registration and the
-  `real-evm` smoke fails at 00-setup with a clear message.
-- MCP server at :3100 (this repo, `apps/mcp`) — spawned on-demand by
-  the mcp-* smoke suites
-
-The cosmos-pay and suverse-pay processes survive across sessions;
-restart per their respective READMEs if dead. Setting
-`SUVERSE_PAY_ADMIN_KEY` (= `ADMIN_API_KEY`) is required to boot the
-MCP server.
+- suverse-pay API at :3000 — admin REST surface + public
+  `/facilitator/*` x402 routes. `.env` must be sourced into the
+  process so the adapter env vars are read at boot.
+- MCP server at :3100 (spawned on-demand by `mcp-*` smoke suites)
 
 ## EVM test wallet (for real-evm smoke)
 The smoke suite uses a dedicated Base Sepolia test wallet whose
-mnemonic lives at `.env.evm-sepolia` (mode 600, gitignored). At time
-of release the address is
-`0xA2F8a871AfDC463aaEf5FAe8284d900f4d02538E`. Refill via the
-Coinbase CDP faucet when:
-- USDC balance < `SMOKE_REVM_AMOUNT_ATOMIC × 3` atomic (default
-  3000 atomic = 0.003 USDC) — 00-setup will refuse to run otherwise.
-- ETH-Sepolia is depleted (rare — each settle uses a few drops).
-
-## Phase 4 markers (when ready, do not start without explicit decision)
-- Multi-tenancy + billing: per-resource API keys with quota, monthly
-  invoicing, Stripe Connect or similar
-- Webhooks for terminal payment states
-- CDP 4xx-as-verify-result handling (see v0.3.1 CHANGELOG Deferred)
-- PayAI mainnet smoke (gated on a small mainnet USDC allowance — see
-  IDEAS.md entry 8)
-- Signup automation for the public facilitator surface (resource API
-  key issuance + dashboard — see IDEAS.md entries 9, 10)
-- AI-assisted routing once we have enough payment_attempts data to
-  train on
+mnemonic lives at `.env.evm-sepolia` (mode 600, gitignored). Address:
+`0xA2F8a871AfDC463aaEf5FAe8284d900f4d02538E`. Refill via the Coinbase
+CDP faucet when USDC balance < `SMOKE_REVM_AMOUNT_ATOMIC × 3`.
 
 ## How to resume work next session
 1. `cd /home/govhub/suverse-pay`
@@ -89,6 +119,6 @@ Coinbase CDP faucet when:
    state, ask what to work on next"
 
 ## Out of scope (do not pursue without explicit decision from user)
-- Outreach to x402 Foundation / Coinbase / Posthuman / PayAI
+- Outreach to x402 Foundation / Coinbase / Stripe / t402-io / BofAI
 - Production deploy
 - Native facilitator settlement (Phase 5+)

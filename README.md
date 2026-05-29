@@ -1,38 +1,87 @@
 # suverse-pay
 
-Unified payment gateway for the [x402](https://github.com/x402-foundation/x402)
-protocol. A single REST API that abstracts multiple x402 facilitator
-providers (Coinbase CDP, our own [cosmos-pay](https://github.com/sudzikcoin/cosmos-pay),
-future PayAI / Questflow / thirdweb / etc.) behind smart routing,
-fallback, and idempotent settlement.
+Unified payment gateway for HTTP-native payments. A single REST API
+that abstracts multiple facilitator providers across multiple payment
+protocols, with smart routing, fallback, and idempotent settlement.
 
-**Positioning:** Stripe-like API for all x402 facilitators. A developer
-writes one integration against `suverse-pay`; the gateway picks the
-optimal chain and provider per payment based on cost, latency, success
-rate, and merchant policy. If the chosen provider returns a retryable
-error, the gateway falls back to another provider that supports the
-same `(network, asset, scheme)` triple.
+**Positioning:** Stripe-like API for the agentic payments ecosystem.
+A developer writes one integration against `suverse-pay`; the gateway
+picks the optimal chain and provider per payment based on cost,
+latency, success rate, and merchant policy. If the chosen provider
+returns a retryable error, the gateway falls back to another provider
+that supports the same `(network, asset, scheme)` triple.
 
 ## Status
 
-**v0.3.0** — Phase 3 complete. Solana support across signer, PayAI
-adapter, MCP, and a public x402 facilitator surface. Verified real
-on-chain on both Cosmos (Noble grand-1) and Solana devnet.
+**v0.4.0 — "Multi-protocol multi-chain"** (2026-05-29). Phase 4
+closed. Three payment protocols, eleven blockchain namespaces, seven
+facilitator adapters.
 
-- Build: green across 14 packages
-- Tests: green across the workspace test suite (signers, discovery,
-  MCP, gateway routes, orchestrator, three adapters, facilitator
-  service)
-- Smoke: **6 suites** green:
-  - `mocked` (10) — full gateway end-to-end against mock adapters
-  - `real` (9) — admin REST surface against real cosmos-pay
-  - `mcp-mocked` (7) — MCP against a mock x402 + mock gateway
-  - `mcp-real` (4) — real `MsgExec(MsgSend)` on Noble grand-1
-  - `facilitator-mocked` (10) — public `/facilitator/*` surface
-  - `mcp-solana` (5) — real Solana devnet `transferChecked` via PayAI
-- Two real-network test transactions per release cut: Noble grand-1
-  `MsgExec(MsgSend)` and Solana devnet SPL `transferChecked`, both
-  idempotent on replay
+- Build: green across **19 packages**
+- Tests: green across the workspace test suite — **36 turbo tasks**
+
+### Supported protocols
+
+| Protocol | Wire | Adapters |
+| --- | --- | --- |
+| **x402** (Coinbase) | HTTP 402 + `X-PAYMENT` body | cosmos-pay, coinbase-cdp, payai, thirdweb-x402, binance-x402, bofai-x402 |
+| **MPP** (Stripe + Tempo) | HTTP 402 + `WWW-Authenticate: Payment` headers | mpp-stripe |
+| **t402** (universal USDT) | x402 with `t402Version` field rename | t402-io |
+
+### Network coverage (11 namespaces)
+
+| Namespace | Networks (signer-backed end-to-end) | Capability-advertised only |
+| --- | --- | --- |
+| `eip155:` (EVM) | 17 mainnets — Base, Polygon, Arbitrum, World Chain, Avalanche, Ethereum, Optimism, BNB Chain, XDC, Monad, Sonic, Sei, Abstract, IoTeX, Celo, Ink, Linea, Tempo + 5 testnets | — |
+| `tron:` | mainnet, Nile testnet (via BofAI; native signer-tron in Phase 5) | — |
+| `solana:` | mainnet, devnet (signer-solana) | — |
+| `cosmos:` | **noble-1 mainnet** (via t402-io), grand-1 testnet (cosmos-pay) | — |
+| `aptos:` | — | mainnet + testnet (via t402-io) |
+| `near:` | — | mainnet + testnet (via t402-io) |
+| `polkadot:` | — | 2 parachains (via t402-io) |
+| `stacks:` | — | mainnet + testnet (via t402-io) |
+| `stellar:` | — | pubnet + testnet (via t402-io) |
+| `tezos:` | — | mainnet + testnet (via t402-io) |
+| `ton:` | — | mainnet + testnet (via t402-io) |
+
+### Maturity disclosure
+
+Battle-tested on real-network smoke:
+
+- **coinbase-cdp** — real EVM USDC settle on Base Sepolia (v0.3.1)
+- **cosmos-pay** — real Cosmos `MsgExec(MsgSend)` on Noble grand-1 (v0.2.0)
+- **payai** — real Solana devnet SPL `transferChecked` (v0.3.0)
+
+Wired against documented spec; real on-chain smoke deferred to Phase 5:
+
+- **thirdweb-x402** — 11 EVM mainnets routed; needs Thirdweb Nexus
+  API key for live `/verify`+`/settle` smoke
+- **binance-x402** — BNB Chain wiring against documented Binance Pay
+  HMAC-SHA512 + canonical x402 v2; needs Binance Pay merchant
+  onboarding
+- **bofai-x402** — TRON + BSC; open access on `/supported` + `/health`;
+  forwarder-only until native `signer-tron` lands
+- **mpp-stripe** — Tempo USDC + Stripe SPT capabilities advertised;
+  HTTP `/mpp/*` routes deferred until Stripe publishes the REST surface
+- **t402-io** — Capability advertising live (77 `(network, scheme)`
+  tuples); `/verify`+`/settle` gated on `X-API-Key` with no public
+  signup flow as of 2026-05-29. `/health` reports `version: "dev"` —
+  not production-versioned
+
+Capability-only (Phase 5 native signers required to settle):
+
+- TON, NEAR, Aptos, Tezos, Polkadot, Stacks, Stellar — all routable
+  via t402-io once corresponding signers ship
+
+### Smoke suites (still green from Phase 3)
+
+- `mocked` (10) — full gateway end-to-end against mock adapters
+- `real` (9) — admin REST surface against real cosmos-pay
+- `mcp-mocked` (7) — MCP against a mock x402 + mock gateway
+- `mcp-real` (4) — real `MsgExec(MsgSend)` on Noble grand-1
+- `facilitator-mocked` (10) — public `/facilitator/*` surface
+- `mcp-solana` (5) — real Solana devnet `transferChecked` via PayAI
+- `real-evm` (7) — real Base Sepolia via Coinbase CDP
 
 ## Quick start
 
@@ -59,8 +108,28 @@ bash scripts/smoke/mocked/run-all.sh
 ```
 
 To run the production server with real provider adapters instead of
-the smoke mocks: set `COINBASE_CDP_API_KEY_NAME` / `*_SECRET` (see
-`.env.example`) and `pnpm --filter @suverse-pay/api run dev`.
+the smoke mocks, set the adapter env vars and start the API:
+
+```bash
+# x402 facilitators (all optional — adapters fall back to capability-
+# only mode if their keys are missing)
+export COINBASE_CDP_API_KEY_NAME=... COINBASE_CDP_API_KEY_SECRET=...
+export THIRDWEB_X402_API_KEY=...      # Thirdweb Nexus
+export BINANCE_X402_API_KEY=... BINANCE_X402_API_SECRET=...  # BNB Chain
+export PAYAI_API_KEY_ID=... PAYAI_API_KEY_SECRET=...  # paid tier (optional)
+# BofAI is open access — no key required for facilitator.bankofai.io
+
+# Multi-protocol
+export STRIPE_MPP_SECRET_KEY=sk_test_... # MPP via Stripe + Tempo
+export T402_IO_API_KEY=...               # t402-io universal USDT
+
+pnpm --filter @suverse-pay/api run dev
+```
+
+Each adapter logs a status line at boot showing whether credentials are
+present. Adapters without credentials still register (capability
+advertising + health checks work) but their `/verify` and `/settle`
+return `unauthorized` until configured.
 
 ### Observability (Grafana + Prometheus)
 
@@ -230,15 +299,19 @@ See `TASK.md` §"Provider adapter contract" and CLAUDE.md
 - **Phase 2** — MCP server (`apps/mcp`), Cosmos + EVM signers,
   discovery aggregator (Bazaar + cosmos catalog), real on-chain MCP
   smoke on Noble testnet. **(v0.2.0)**
-- **Phase 3** — Solana signer + adapter (`@suverse-pay/signer-solana`
-  with SPL `transferChecked`), PayAI adapter as a third facilitator,
-  public x402 facilitator surface at `/facilitator/*`, real Solana
-  devnet smoke through MCP → PayAI. **(this release, v0.3.0)**
-- **Phase 4** — Multi-tenancy + billing, webhooks, signup automation
-  for the public facilitator surface, AI-assisted routing once
-  payment_attempts volume justifies it.
-- **Phase 5+** — Native facilitator settlement (isolated service
-  with its own credentials).
+- **Phase 3** — Solana signer + adapter, PayAI adapter as a third
+  facilitator, public x402 facilitator surface at `/facilitator/*`,
+  real Solana devnet smoke. **(v0.3.0 / v0.3.1)**
+- **Phase 4** — Multi-protocol multi-chain. Five new adapters
+  (Thirdweb, Binance, BofAI, Stripe MPP, t402-io), 11 namespaces,
+  17 EVM mainnets + TRON + Cosmos mainnet, Permit2 signing for USDT,
+  internal Grafana stack. **(this release, v0.4.0)**
+- **Phase 5+** — Native non-EVM signers (TON, NEAR, Aptos, Tezos,
+  Polkadot, Stacks, Stellar; EIP-2612 Permit for EVM). Real-network
+  mainnet smoke per adapter. MPP HTTP `/mpp/*` surface once Stripe
+  publishes REST paths. Multi-tenant customer dashboard + self-serve
+  resource key signup. Native facilitator settlement (isolated
+  service with its own credentials).
 
 ## License
 
