@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CreateKeyForm } from "@/components/panels/create-key-form";
+import { InvoiceDownload } from "@/components/panels/invoice-download";
 import { KeysList } from "@/components/panels/keys-list";
 import { NetworksTable } from "@/components/panels/networks-table";
 import { PeriodToggle, type Period } from "@/components/panels/period-toggle";
@@ -78,6 +79,8 @@ export function DashboardView({
       </div>
 
       <KeysList />
+
+      <InvoiceDownload />
     </div>
   );
 }

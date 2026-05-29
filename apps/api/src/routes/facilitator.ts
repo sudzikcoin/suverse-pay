@@ -136,6 +136,11 @@ export function registerFacilitatorRoutes(
         payloadNonce: extractPayloadNonce(body.paymentPayload),
         now: ctx.now?.().getTime() ?? Date.now(),
       });
+      // Resolve the effective platform fee in basis points. Per-key
+      // override (resource_api_keys.fee_bps) wins; otherwise fall
+      // back to the global default from config. See PRICING.md.
+      const effectiveFeeBps =
+        resourceKey.feeBps ?? ctx.config.platformFeeBps;
       // Insert-or-fetch the facilitator_payments row. On replay the
       // existing row is returned and we short-circuit.
       const { isNew, row } = await createOrFetchFacilitatorPayment({
@@ -147,6 +152,7 @@ export function registerFacilitatorRoutes(
         scheme,
         amount: body.paymentRequirements.maxAmountRequired,
         recipient: body.paymentRequirements.payTo,
+        feeBps: effectiveFeeBps,
       });
       if (!isNew) {
         return facilitatorSettleResponse(row);

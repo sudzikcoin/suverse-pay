@@ -46,3 +46,10 @@ export {
   type FacilitatorSupportedKind,
   type FacilitatorSupportedResponse,
 } from "./supported.js";
+
+export {
+  computeFee,
+  MIN_FEE_ATOMIC,
+  MAX_FEE_USDC_ATOMIC,
+  type FeeSplit,
+} from "./fees.js";

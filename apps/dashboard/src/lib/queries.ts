@@ -39,6 +39,10 @@ export interface DashboardStats {
   totalVolumeAtomic: string; // atomic units, 6-decimal USDC equivalent
   successRate: number;       // 0..1
   activeNetworks: number;    // distinct networks with >=1 settle in period
+  /** SUM(fee_amount) for settled rows in period — atomic units. */
+  totalFeeAtomic: string;
+  /** SUM(net_amount) for settled rows in period — atomic units. */
+  totalNetAtomic: string;
 }
 
 /**
@@ -57,6 +61,8 @@ export async function loadStats(args: {
       totalVolumeAtomic: "0",
       successRate: 0,
       activeNetworks: 0,
+      totalFeeAtomic: "0",
+      totalNetAtomic: "0",
     };
   }
   const rows = await dbQuery<{
@@ -65,14 +71,18 @@ export async function loadStats(args: {
     failed: string;
     volume: string;
     networks: string;
+    fee: string;
+    net: string;
   }>(
     `
     SELECT
-      COUNT(*)::text                                                 AS total,
-      COUNT(*) FILTER (WHERE status = 'settled')::text               AS settled,
-      COUNT(*) FILTER (WHERE status = 'failed')::text                AS failed,
-      COALESCE(SUM(amount::numeric) FILTER (WHERE status = 'settled'), 0)::text AS volume,
-      COUNT(DISTINCT network)::text                                  AS networks
+      COUNT(*)::text                                                       AS total,
+      COUNT(*) FILTER (WHERE status = 'settled')::text                     AS settled,
+      COUNT(*) FILTER (WHERE status = 'failed')::text                      AS failed,
+      COALESCE(SUM(gross_amount) FILTER (WHERE status = 'settled'), 0)::text AS volume,
+      COUNT(DISTINCT network)::text                                        AS networks,
+      COALESCE(SUM(fee_amount)   FILTER (WHERE status = 'settled'), 0)::text AS fee,
+      COALESCE(SUM(net_amount)   FILTER (WHERE status = 'settled'), 0)::text AS net
     FROM facilitator_payments
     WHERE resource_key_id = ANY($1::text[])
       AND created_at >= $2
@@ -88,6 +98,8 @@ export async function loadStats(args: {
     totalVolumeAtomic: r.volume,
     successRate,
     activeNetworks: Number(r.networks),
+    totalFeeAtomic: r.fee,
+    totalNetAtomic: r.net,
   };
 }
 
@@ -96,7 +108,8 @@ export interface SettleRow {
   createdAt: string;          // ISO
   network: string;            // CAIP-2
   asset: string;
-  amount: string;             // atomic
+  amount: string;             // atomic — equals gross for current accounting-only fee model
+  feeAmount: string;          // atomic — platform fee withheld at accounting level
   status: "settled" | "failed" | "pending";
   txHash: string | null;
   adapterUsed: string | null;
@@ -119,13 +132,14 @@ export async function loadRecentSettles(args: {
     network: string;
     asset: string;
     amount: string;
+    fee_amount: string;
     status: SettleRow["status"];
     tx_hash: string | null;
     adapter_used: string | null;
     error_code: string | null;
   }>(
     `
-    SELECT id, created_at, network, asset, amount, status, tx_hash,
+    SELECT id, created_at, network, asset, amount, fee_amount, status, tx_hash,
            adapter_used, error_code
     FROM facilitator_payments
     WHERE resource_key_id = ANY($1::text[]) ${statusClause}
@@ -140,11 +154,121 @@ export async function loadRecentSettles(args: {
     network: r.network,
     asset: r.asset,
     amount: r.amount,
+    feeAmount: r.fee_amount,
     status: r.status,
     txHash: r.tx_hash,
     adapterUsed: r.adapter_used,
     errorCode: r.error_code,
   }));
+}
+
+export interface InvoiceLineRow {
+  /** ISO timestamp of the settle. */
+  createdAt: string;
+  settleId: string;
+  network: string;
+  /** Atomic units of gross_amount. */
+  grossAmount: string;
+  /** Atomic units of fee_amount. */
+  feeAmount: string;
+  /** Atomic units of net_amount. */
+  netAmount: string;
+  /** On-chain tx hash if known; null on failed/pending settles. */
+  txHash: string | null;
+  /** Human label of the resource key used (resource_api_keys.label). */
+  keyLabel: string;
+}
+
+export interface InvoiceSummary {
+  from: Date;
+  until: Date;
+  totalSettles: number;
+  totalGrossAtomic: string;
+  totalFeeAtomic: string;
+  totalNetAtomic: string;
+}
+
+/**
+ * Load every settled row in [from, until) for the user's keys plus
+ * an aggregate summary. Caller turns this into the CSV body.
+ *
+ * Only `status='settled'` rows are billed — failed settles produced
+ * no on-chain transfer and therefore no platform fee owed.
+ */
+export async function loadInvoice(args: {
+  resourceKeyIds: ReadonlyArray<string>;
+  from: Date;
+  until: Date;
+}): Promise<{ lines: InvoiceLineRow[]; summary: InvoiceSummary }> {
+  if (args.resourceKeyIds.length === 0) {
+    return {
+      lines: [],
+      summary: {
+        from: args.from,
+        until: args.until,
+        totalSettles: 0,
+        totalGrossAtomic: "0",
+        totalFeeAtomic: "0",
+        totalNetAtomic: "0",
+      },
+    };
+  }
+  const rows = await dbQuery<{
+    created_at: Date;
+    id: string;
+    network: string;
+    gross_amount: string;
+    fee_amount: string;
+    net_amount: string;
+    tx_hash: string | null;
+    label: string;
+  }>(
+    `
+    SELECT fp.created_at, fp.id, fp.network,
+           fp.gross_amount::text AS gross_amount,
+           fp.fee_amount::text   AS fee_amount,
+           fp.net_amount::text   AS net_amount,
+           fp.tx_hash,
+           rak.label
+      FROM facilitator_payments fp
+      JOIN resource_api_keys    rak ON rak.id = fp.resource_key_id
+     WHERE fp.resource_key_id = ANY($1::text[])
+       AND fp.status = 'settled'
+       AND fp.created_at >= $2
+       AND fp.created_at <  $3
+     ORDER BY fp.created_at ASC
+    `,
+    [args.resourceKeyIds, args.from, args.until],
+  );
+  const lines: InvoiceLineRow[] = rows.map((r) => ({
+    createdAt: r.created_at.toISOString(),
+    settleId: r.id,
+    network: r.network,
+    grossAmount: r.gross_amount,
+    feeAmount: r.fee_amount,
+    netAmount: r.net_amount,
+    txHash: r.tx_hash,
+    keyLabel: r.label,
+  }));
+  let totalGross = 0n;
+  let totalFee = 0n;
+  let totalNet = 0n;
+  for (const l of lines) {
+    totalGross += BigInt(l.grossAmount);
+    totalFee += BigInt(l.feeAmount);
+    totalNet += BigInt(l.netAmount);
+  }
+  return {
+    lines,
+    summary: {
+      from: args.from,
+      until: args.until,
+      totalSettles: lines.length,
+      totalGrossAtomic: totalGross.toString(),
+      totalFeeAtomic: totalFee.toString(),
+      totalNetAtomic: totalNet.toString(),
+    },
+  };
 }
 
 export interface NetworkBreakdownRow {

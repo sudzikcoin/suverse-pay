@@ -1,5 +1,6 @@
 import type { ClientBase, Pool, PoolClient } from "pg";
 import { ulid } from "ulidx";
+import { computeFee } from "./fees.js";
 
 export type FacilitatorPaymentStatus = "settled" | "failed" | "pending";
 
@@ -12,6 +13,13 @@ export interface CreateFacilitatorPaymentOptions {
   scheme: string;
   amount: string;
   recipient: string;
+  /**
+   * Effective platform fee in basis points (0..1000). Caller resolves
+   * the per-key override (resource_api_keys.fee_bps) vs the global
+   * default (config.platformFeeBps) BEFORE invoking this writer, so
+   * the writer never has to know about config.
+   */
+  feeBps: number;
 }
 
 export interface FacilitatorPaymentRow {
@@ -21,7 +29,16 @@ export interface FacilitatorPaymentRow {
   network: string;
   asset: string;
   scheme: string;
+  /** What was settled on-chain. Equal to gross_amount in the current
+   *  accounting-only fee model. */
   amount: string;
+  /** Buyer-paid total (= amount above; kept as a distinct column so a
+   *  future on-chain fee withholding mechanism can diverge them). */
+  grossAmount: string;
+  /** Platform fee in atomic units of `asset`. */
+  feeAmount: string;
+  /** Merchant net (= grossAmount - feeAmount). */
+  netAmount: string;
   payer: string | null;
   recipient: string;
   adapterUsed: string | null;
@@ -49,14 +66,21 @@ export async function createOrFetchFacilitatorPayment(
   opts: CreateFacilitatorPaymentOptions,
 ): Promise<CreateResult> {
   const id = `fpay_${ulid()}`;
+  // Split the gross at insert time so the row carries the canonical
+  // (gross, fee, net) tuple from creation. The DB has a CHECK
+  // constraint asserting gross = fee + net (migration 004) — keep
+  // this code path the only writer.
+  const split = computeFee(BigInt(opts.amount), opts.feeBps);
   const insert = await opts.client.query(
     `INSERT INTO facilitator_payments
        (id, resource_key_id, idempotency_key, network, asset, scheme,
-        amount, recipient, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+        amount, gross_amount, fee_amount, net_amount,
+        recipient, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
      ON CONFLICT (resource_key_id, idempotency_key) DO NOTHING
      RETURNING id, resource_key_id, idempotency_key, network, asset, scheme,
-               amount, payer, recipient, adapter_used, tx_hash, status,
+               amount, gross_amount, fee_amount, net_amount,
+               payer, recipient, adapter_used, tx_hash, status,
                error_code, error_message, created_at, settled_at`,
     [
       id,
@@ -66,6 +90,9 @@ export async function createOrFetchFacilitatorPayment(
       opts.asset,
       opts.scheme,
       opts.amount,
+      split.gross.toString(),
+      split.fee.toString(),
+      split.net.toString(),
       opts.recipient,
     ],
   );
@@ -75,7 +102,8 @@ export async function createOrFetchFacilitatorPayment(
   // Conflict — fetch the existing row.
   const { rows } = await opts.client.query(
     `SELECT id, resource_key_id, idempotency_key, network, asset, scheme,
-            amount, payer, recipient, adapter_used, tx_hash, status,
+            amount, gross_amount, fee_amount, net_amount,
+            payer, recipient, adapter_used, tx_hash, status,
             error_code, error_message, created_at, settled_at
        FROM facilitator_payments
       WHERE resource_key_id = $1 AND idempotency_key = $2
@@ -115,7 +143,8 @@ export async function finalizeFacilitatorPayment(
             settled_at = CASE WHEN $2 = 'settled' THEN NOW() ELSE settled_at END
       WHERE id = $1
       RETURNING id, resource_key_id, idempotency_key, network, asset, scheme,
-                amount, payer, recipient, adapter_used, tx_hash, status,
+                amount, gross_amount, fee_amount, net_amount,
+                payer, recipient, adapter_used, tx_hash, status,
                 error_code, error_message, created_at, settled_at`,
     [
       opts.id,
@@ -167,6 +196,9 @@ function rowToFacilitatorPayment(r: {
   asset: string;
   scheme: string;
   amount: string;
+  gross_amount: string;
+  fee_amount: string;
+  net_amount: string;
   payer: string | null;
   recipient: string;
   adapter_used: string | null;
@@ -185,6 +217,9 @@ function rowToFacilitatorPayment(r: {
     asset: r.asset,
     scheme: r.scheme,
     amount: r.amount,
+    grossAmount: r.gross_amount,
+    feeAmount: r.fee_amount,
+    netAmount: r.net_amount,
     payer: r.payer,
     recipient: r.recipient,
     adapterUsed: r.adapter_used,

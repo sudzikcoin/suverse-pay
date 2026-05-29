@@ -20,6 +20,7 @@ interface SettleRow {
   network: string;
   asset: string;
   amount: string;
+  feeAmount: string;
   status: "settled" | "failed" | "pending";
   txHash: string | null;
   adapterUsed: string | null;
@@ -79,6 +80,7 @@ export function SettlesTable(): React.JSX.Element {
                 <th className="px-6 py-3 text-left font-medium">When</th>
                 <th className="px-6 py-3 text-left font-medium">Network</th>
                 <th className="px-6 py-3 text-right font-medium">Amount</th>
+                <th className="px-6 py-3 text-right font-medium">Fee</th>
                 <th className="px-6 py-3 text-left font-medium">Status</th>
                 <th className="px-6 py-3 text-left font-medium">Tx</th>
               </tr>
@@ -109,6 +111,12 @@ function SettleTr({ row }: { row: SettleRow }): React.JSX.Element {
       <td className="px-6 py-3">{networkLabel(row.network)}</td>
       <td className="px-6 py-3 text-right font-mono text-foreground">
         {formatUsd(row.amount, 6)}
+      </td>
+      <td
+        className="px-6 py-3 text-right font-mono text-xs text-muted-foreground"
+        title="Platform fee withheld at accounting level (out-of-band collection — see invoice export)"
+      >
+        {row.feeAmount === "0" ? "—" : formatUsd(row.feeAmount, 6)}
       </td>
       <td className="px-6 py-3">
         <StatusBadge status={row.status} />

@@ -124,6 +124,21 @@ export const ConfigSchema = z.object({
   // Prometheus scrape_interval (15s) so dashboards always see a fresh
   // value within a tick. Raise on busy deploys to reduce DB load.
   metricsRefreshIntervalMs: z.coerce.number().int().positive().default(15_000),
+
+  // Phase 5 Block 4 Sub-task 3 — platform fee accounting layer.
+  // Default 30 bps (= 0.3%) is the operator-chosen starting point;
+  // override via PLATFORM_FEE_BPS. Per-key override is in
+  // resource_api_keys.fee_bps and takes precedence; this is only the
+  // fallback for keys with fee_bps IS NULL. The fee is NOT collected
+  // on-chain — the downstream facilitator still settles the full
+  // gross to the merchant's payTo. Collection is out-of-band via the
+  // dashboard's invoice CSV export. See PRICING.md.
+  platformFeeBps: z.coerce.number().int().min(0).max(1000).default(30),
+  // Reserved for the future Sub-task 3.5 on-chain collection path
+  // (splitter contract or native facilitator). Currently unused —
+  // the env var is documented in .env.example as a forward-compat
+  // hook so operators don't need to redeploy when collection ships.
+  platformFeePayoutAddress: z.string().optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -168,5 +183,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
     metricsRefreshIntervalMs: env.METRICS_REFRESH_INTERVAL_MS,
+    platformFeeBps: env.PLATFORM_FEE_BPS,
+    platformFeePayoutAddress: env.PLATFORM_FEE_PAYOUT_ADDRESS,
   });
 }

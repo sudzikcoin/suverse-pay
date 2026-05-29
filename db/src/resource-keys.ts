@@ -11,6 +11,13 @@ export interface ResourceKeyRow {
   label: string;
   rateLimitPerMinute: number;
   monthlySettleCap: number | null;
+  /**
+   * Per-key platform fee override in basis points (0..1000). NULL
+   * means "use the global default from PLATFORM_FEE_BPS env at
+   * settle time". Added by migration 004; settle handler reads
+   * this and falls back to the config default.
+   */
+  feeBps: number | null;
   createdAt: Date;
   lastUsedAt: Date | null;
   isActive: boolean;
@@ -69,6 +76,7 @@ export async function createResourceKey(
     label: string;
     rate_limit_per_minute: number;
     monthly_settle_cap: number | null;
+    fee_bps: number | null;
     created_at: Date;
     last_used_at: Date | null;
     is_active: boolean;
@@ -78,7 +86,7 @@ export async function createResourceKey(
        (id, key_hash, label, rate_limit_per_minute, monthly_settle_cap, metadata)
      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
      RETURNING id, key_hash, label, rate_limit_per_minute,
-               monthly_settle_cap, created_at, last_used_at, is_active, metadata`,
+               monthly_settle_cap, fee_bps, created_at, last_used_at, is_active, metadata`,
     [id, keyHash, opts.label, rateLimit, cap, JSON.stringify(metadata)],
   );
   const r = rows[0]!;
@@ -107,7 +115,7 @@ export async function findResourceKey(
   const keyHash = hashResourceKey(opts.plaintext);
   const { rows } = await opts.client.query(
     `SELECT id, key_hash, label, rate_limit_per_minute, monthly_settle_cap,
-            created_at, last_used_at, is_active, metadata
+            fee_bps, created_at, last_used_at, is_active, metadata
        FROM resource_api_keys
       WHERE key_hash = $1 AND is_active = TRUE
       LIMIT 1`,
@@ -180,6 +188,7 @@ function rowToResourceKey(r: {
   label: string;
   rate_limit_per_minute: number;
   monthly_settle_cap: number | null;
+  fee_bps: number | null;
   created_at: Date;
   last_used_at: Date | null;
   is_active: boolean;
@@ -191,6 +200,7 @@ function rowToResourceKey(r: {
     label: r.label,
     rateLimitPerMinute: r.rate_limit_per_minute,
     monthlySettleCap: r.monthly_settle_cap,
+    feeBps: r.fee_bps,
     createdAt: r.created_at,
     lastUsedAt: r.last_used_at,
     isActive: r.is_active,

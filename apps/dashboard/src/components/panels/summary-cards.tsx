@@ -11,6 +11,8 @@ interface StatsResponse {
   totalVolumeAtomic: string;
   successRate: number;
   activeNetworks: number;
+  totalFeeAtomic: string;
+  totalNetAtomic: string;
 }
 
 async function fetchStats(period: Period): Promise<StatsResponse> {
@@ -22,10 +24,15 @@ async function fetchStats(period: Period): Promise<StatsResponse> {
 }
 
 /**
- * Four summary cards across the top of the dashboard. The layout
- * sits in a 4-column grid on desktop, collapses to 2-up at md, then
+ * Five summary cards across the top of the dashboard. The layout
+ * sits in a 5-column grid on lg+, collapses to 2/3-up at md, then
  * stacked on mobile. Each card is a thin border + huge tabular
  * number — the editorial "stat" look rather than a marketing card.
+ *
+ * The Platform fee card is the suverse-pay-side metric: how much
+ * the customer owes us for this period under the current fee model.
+ * Kept neutral (not amber) — amber is reserved for Volume, which is
+ * the customer's primary metric.
  */
 export function SummaryCards({ period }: { period: Period }): React.JSX.Element {
   const { data, isLoading, isError } = useQuery({
@@ -35,7 +42,7 @@ export function SummaryCards({ period }: { period: Period }): React.JSX.Element 
   });
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-5">
       <StatCard
         title="Settles"
         value={data ? formatCount(data.totalSettles) : null}
@@ -58,6 +65,12 @@ export function SummaryCards({ period }: { period: Period }): React.JSX.Element 
       <StatCard
         title="Active networks"
         value={data ? formatCount(data.activeNetworks) : null}
+        loading={isLoading}
+        error={isError}
+      />
+      <StatCard
+        title="Platform fee"
+        value={data ? formatUsd(data.totalFeeAtomic, 6) : null}
         loading={isLoading}
         error={isError}
       />

@@ -87,15 +87,16 @@ data ever surfaces.
 
 | Method | Path | Returns |
 | --- | --- | --- |
-| GET | `/api/stats?period=24h\|7d\|30d` | totalSettles, totalVolumeAtomic, successRate, activeNetworks |
-| GET | `/api/settles?limit=50&filter=all\|settled\|failed` | last N settles |
+| GET | `/api/stats?period=24h\|7d\|30d` | totalSettles, totalVolumeAtomic, successRate, activeNetworks, **totalFeeAtomic, totalNetAtomic** |
+| GET | `/api/settles?limit=50&filter=all\|settled\|failed` | last N settles (each row includes `feeAmount`) |
 | GET | `/api/endpoints?period=24h\|7d\|30d` | per-network breakdown |
 | GET | `/api/volume-chart?period=24h\|7d\|30d` | time-bucketed volume points |
 | POST | `/api/link-key` | `{resourceKey}` body — links an existing key to the OAuth user |
 | GET | `/api/link-key` | the current user's linked keys + labels (legacy — prefer GET `/api/keys`) |
-| **POST** | **`/api/keys`** | `{label}` body — self-serve creation. 201 with `{resourceKeyId, plaintext, label, createdAt}` exactly once |
-| **GET** | **`/api/keys`** | linked keys with full metadata (label, createdAt, lastUsedAt, isActive) + rate-limit budget |
-| **DELETE** | **`/api/keys/:id`** | soft-revoke (sets `is_active = false`). 404 for keys not linked to this user |
+| POST | `/api/keys` | `{label}` body — self-serve creation. 201 with `{resourceKeyId, plaintext, label, createdAt}` exactly once |
+| GET | `/api/keys` | linked keys with full metadata (label, createdAt, lastUsedAt, isActive) + rate-limit budget |
+| DELETE | `/api/keys/:id` | soft-revoke (sets `is_active = false`). 404 for keys not linked to this user |
+| **GET** | **`/api/invoice[?from=YYYY-MM-DD&to=YYYY-MM-DD]`** | **CSV download — every settled row in `[from, to)` plus a summary header. Defaults to the previous completed UTC calendar month** |
 
 All return 401 if there's no session. POST `/api/link-key` and
 DELETE `/api/keys/:id` both return 404 on unknown / cross-tenant
