@@ -172,6 +172,22 @@ describe("ROUTING_CONFIG static entries", () => {
       expect(priority).toEqual(["payai"]);
     });
   }
+
+  // (e) Thirdweb-exclusive EVM routes (Phase 4 Block 1 Sub-task 3).
+  // Networks CDP and PayAI don't advertise — Thirdweb-only. Optimism
+  // is the headline route the sub-task was built to unlock.
+  const thirdwebOnlyEvmRoutes = [
+    "eip155:1:exact",  // Ethereum mainnet
+    "eip155:10:exact", // Optimism mainnet
+  ];
+  for (const key of thirdwebOnlyEvmRoutes) {
+    it(`routes ${key} thirdweb-only (CDP + PayAI don't advertise)`, async () => {
+      const { getRoutingPriority } = await import("./routing-config.js");
+      const network = key.replace(":exact", "");
+      const priority = getRoutingPriority(network, "exact");
+      expect(priority).toEqual(["thirdweb-x402"]);
+    });
+  }
 });
 
 describe("pickAdaptersForRoute", () => {

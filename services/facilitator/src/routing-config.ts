@@ -43,6 +43,12 @@ export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   "eip155:43114:exact":  ["payai"], // Avalanche C-Chain mainnet
   "eip155:43113:exact":  ["payai"], // Avalanche Fuji testnet
   "eip155:421614:exact": ["payai"], // Arbitrum Sepolia testnet
+  // Thirdweb-exclusive EVM routes (Phase 4 Block 1 Sub-task 3). CDP
+  // does not advertise these on x402 and PayAI's /supported does not
+  // list them either; Thirdweb's Nexus facilitator is the only route
+  // for now. No failover.
+  "eip155:1:exact":  ["thirdweb-x402"], // Ethereum mainnet
+  "eip155:10:exact": ["thirdweb-x402"], // Optimism mainnet
 
   // ---- Solana mainnet (CDP primary, PayAI failover) -----------------
   "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:exact": ["coinbase-cdp", "payai"],

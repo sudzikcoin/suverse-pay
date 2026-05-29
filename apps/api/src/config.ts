@@ -43,6 +43,20 @@ export const ConfigSchema = z.object({
   payAiApiKeyId: z.string().optional(),
   payAiApiKeySecret: z.string().optional(),
 
+  // Thirdweb Nexus x402 facilitator (https://nexus-api.thirdweb.com).
+  // /supported + /health are open (so we can register and discover
+  // without a key); /verify + /settle require an API key sent in the
+  // `x-nexus-key` header. Set `thirdwebX402Enabled=false` to skip
+  // registration entirely. `thirdwebX402ApiKey` defaults to unset —
+  // the adapter still registers in capability-discovery-only mode and
+  // routing skips it for /verify+/settle when there's no key.
+  thirdwebX402Enabled: z
+    .union([z.boolean(), z.string().transform((v) => v === "true" || v === "1")])
+    .default(true),
+  thirdwebX402BaseUrl: z.string().optional(),
+  thirdwebX402ApiKey: z.string().optional(),
+  thirdwebX402AuthHeader: z.string().optional(),
+
   capabilityDiscoveryIntervalMs: z.coerce
     .number()
     .int()
@@ -72,6 +86,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     payAiBaseUrl: env.PAYAI_BASE_URL,
     payAiApiKeyId: env.PAYAI_API_KEY_ID,
     payAiApiKeySecret: env.PAYAI_API_KEY_SECRET,
+    thirdwebX402Enabled: env.THIRDWEB_X402_ENABLED,
+    thirdwebX402BaseUrl: env.THIRDWEB_X402_BASE_URL,
+    thirdwebX402ApiKey: env.THIRDWEB_X402_API_KEY,
+    thirdwebX402AuthHeader: env.THIRDWEB_X402_AUTH_HEADER,
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
   });

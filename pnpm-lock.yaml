@@ -32,6 +32,9 @@ importers:
       '@suverse-pay/adapter-payai':
         specifier: workspace:*
         version: link:../../packages/adapters/payai
+      '@suverse-pay/adapter-thirdweb-x402':
+        specifier: workspace:*
+        version: link:../../packages/adapters/thirdweb-x402
       '@suverse-pay/core-types':
         specifier: workspace:*
         version: link:../../packages/core-types
@@ -186,6 +189,22 @@ importers:
         version: 20.19.41
 
   packages/adapters/payai:
+    dependencies:
+      '@suverse-pay/core-types':
+        specifier: workspace:*
+        version: link:../../core-types
+      '@suverse-pay/provider-sdk':
+        specifier: workspace:*
+        version: link:../../provider-sdk
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.41
+
+  packages/adapters/thirdweb-x402:
     dependencies:
       '@suverse-pay/core-types':
         specifier: workspace:*

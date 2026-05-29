@@ -1,6 +1,7 @@
 import { CoinbaseCdpAdapter } from "@suverse-pay/adapter-coinbase-cdp";
 import { CosmosPayAdapter } from "@suverse-pay/adapter-cosmos-pay";
 import { PayAiAdapter } from "@suverse-pay/adapter-payai";
+import { ThirdwebX402Adapter } from "@suverse-pay/adapter-thirdweb-x402";
 import { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
 import {
   CapabilityDiscoveryCron,
@@ -196,6 +197,78 @@ async function main(): Promise<void> {
     });
   } else {
     logger.warn("PAYAI_ENABLED=false — skipping PayAI registration");
+  }
+
+  // ---- Thirdweb Nexus x402 (Ethereum + Optimism + multi-EVM) -----------
+  // Phase 4 Block 1 Sub-task 3 — adds eip155:1 (Ethereum) and eip155:10
+  // (Optimism) as Thirdweb-only routes; design doc in
+  // docs/design/non-cdp-evm-adapter.md (option A).
+  //
+  // Thirdweb's facilitator advertises ~20 EVM L1/L2s, but this
+  // sub-task ships only the two networks we've verified on-chain
+  // (Optimism + Ethereum mainnet, signer EIP-712 domain probed via
+  // eth_call against publicnode + mainnet.optimism.io). The rest of
+  // Thirdweb's footprint stays advertised at the adapter layer but is
+  // not routed until each new network gets its own real-network smoke
+  // and signer domain entry (follow-on sub-tasks).
+  //
+  // /supported + /health are open on the Nexus surface — registration
+  // works without an API key (capability discovery + health checks
+  // still function). Routing for /verify+/settle when no key is set
+  // would 401 on the upstream, so operators who want live settlement
+  // must set THIRDWEB_X402_API_KEY. We log a warning when it's missing
+  // but keep the adapter registered so the gateway can still show
+  // capabilities + health for the surface.
+  if (config.thirdwebX402Enabled) {
+    const thirdwebCaps = [
+      // ---- Thirdweb-exclusive EVM mainnets (CDP + PayAI don't cover) ---
+      { network: "eip155:1",  asset: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", scheme: "exact" }, // Ethereum mainnet USDC
+      { network: "eip155:10", asset: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", scheme: "exact" }, // Optimism mainnet USDC
+    ] as const;
+    const thirdweb = new ThirdwebX402Adapter({
+      capabilities: thirdwebCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+      estimatedFeeUsd: "0.001",
+      ...(config.thirdwebX402BaseUrl !== undefined &&
+      config.thirdwebX402BaseUrl.length > 0
+        ? { baseUrl: config.thirdwebX402BaseUrl }
+        : {}),
+      ...(config.thirdwebX402ApiKey !== undefined &&
+      config.thirdwebX402ApiKey.length > 0
+        ? { apiKey: config.thirdwebX402ApiKey }
+        : {}),
+      ...(config.thirdwebX402AuthHeader !== undefined &&
+      config.thirdwebX402AuthHeader.length > 0
+        ? { authHeaderName: config.thirdwebX402AuthHeader }
+        : {}),
+    });
+    await registry.register(thirdweb, {
+      config: {
+        baseUrl:
+          config.thirdwebX402BaseUrl ?? "https://nexus-api.thirdweb.com",
+        estimatedFeeUsd: "0.001",
+      },
+      staticCapabilities: thirdwebCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+    });
+    if (
+      config.thirdwebX402ApiKey === undefined ||
+      config.thirdwebX402ApiKey.length === 0
+    ) {
+      logger.warn(
+        "THIRDWEB_X402_API_KEY not set — Thirdweb adapter is registered (capability discovery + health works) but /verify and /settle will 401 until a key is configured",
+      );
+    }
+  } else {
+    logger.warn(
+      "THIRDWEB_X402_ENABLED=false — skipping Thirdweb adapter registration",
+    );
   }
 
   // ---- Background crons ------------------------------------------------

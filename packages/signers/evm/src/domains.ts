@@ -25,8 +25,21 @@
  * — all native Circle USDC with EIP-712 domain `name="USD Coin"` /
  * `version="2"` (also `eth_call`-verified). These are routed
  * through the PayAI facilitator adapter (CDP doesn't advertise
- * them). Optimism (10), BNB (56), and other EVM networks await a
- * Thirdweb x402 adapter — see docs/design/non-cdp-evm-adapter.md.
+ * them).
+ *
+ * Phase 4 Block 1 Sub-task 3 (Thirdweb adapter) adds Ethereum
+ * mainnet (1) and Optimism mainnet (10) — both native Circle USDC
+ * with EIP-712 domain `name="USD Coin"` / `version="2"`, verified
+ * on-chain via `eth_call name()` / `version()` / `decimals()`
+ * against publicnode + mainnet.optimism.io RPCs respectively.
+ * Routed through the Thirdweb adapter (CDP doesn't advertise eip155:1
+ * or eip155:10; PayAI doesn't either as of 2026-05-29). The rest of
+ * Thirdweb's 20+ EVM footprint (Linea, Celo, Sonic, World Chain via
+ * a third adapter, etc.) is left for follow-on sub-tasks where each
+ * new network gets its own real smoke before going live.
+ *
+ * BNB Chain (56) and other Permit-only networks await a separate
+ * EIP-2612 signing path — see docs/design/non-cdp-evm-adapter.md.
  */
 
 export interface EvmTokenDomain {
@@ -149,6 +162,31 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
       verifyingContract: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
       decimals: 6,
     },
+    // Native Circle USDC on Ethereum mainnet — verified on-chain via
+    // eth_call name()/version() against publicnode (returns "USD Coin"
+    // / "2"). Routed through Thirdweb (CDP + PayAI don't advertise
+    // eip155:1 on x402 as of 2026-05-29).
+    {
+      symbol: "USDC",
+      name: "USD Coin",
+      version: "2",
+      chainId: 1,
+      verifyingContract: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      decimals: 6,
+    },
+    // Native Circle USDC on Optimism mainnet — verified on-chain via
+    // eth_call name()/version() against mainnet.optimism.io (returns
+    // "USD Coin" / "2"). Routed through Thirdweb (CDP + PayAI don't
+    // advertise eip155:10 on x402 as of 2026-05-29). This is the
+    // headline network Phase 4 Block 1 Sub-task 3 unlocked.
+    {
+      symbol: "USDC",
+      name: "USD Coin",
+      version: "2",
+      chainId: 10,
+      verifyingContract: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+      decimals: 6,
+    },
 
     // EURC — Circle's euro stablecoin. Currently deployed on Base; on
     // Polygon/Arbitrum it is not yet available, so we list only Base
@@ -170,6 +208,8 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
 })();
 
 export const SUPPORTED_CHAIN_IDS = [
+  1,       // Ethereum mainnet
+  10,      // Optimism mainnet
   8453,    // Base mainnet
   137,     // Polygon
   42161,   // Arbitrum mainnet

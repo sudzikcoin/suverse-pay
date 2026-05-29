@@ -108,16 +108,21 @@ describe("signPaymentPayload", () => {
     expect(auth.to).toBe("0x000000000000000000000000000000000000dEaD");
   });
 
-  it("rejects unsupported network (Ethereum mainnet 1)", async () => {
+  it("rejects unsupported network (BNB Chain 56 — Permit-only, no signer entry)", async () => {
+    // Ethereum mainnet (1) and Optimism (10) became supported in
+    // Phase 4 Block 1 Sub-task 3 (Thirdweb adapter); BNB Chain (56)
+    // remains unsupported because its USDC contract uses EIP-2612
+    // Permit not EIP-3009 — our signer doesn't produce Permit
+    // signatures yet (separate sub-task).
     const baseUsdc = getDomain(8453, "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")!;
     await expect(
       signPaymentPayload({
         secret: TEST_MNEMONIC,
-        network: "eip155:1",
-        requirements: makeRequirements(baseUsdc, { network: "eip155:1" }),
+        network: "eip155:56",
+        requirements: makeRequirements(baseUsdc, { network: "eip155:56" }),
         amount: "1000000",
       }),
-    ).rejects.toThrow(/unsupported chain|8453|137|42161/);
+    ).rejects.toThrow(/unsupported chain|chain 56|8453|137|42161/);
   });
 
   it("rejects unknown ERC-20 contract on a supported chain", async () => {
