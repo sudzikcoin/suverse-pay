@@ -7,6 +7,7 @@ import {
   type MppAdapter,
 } from "@suverse-pay/adapter-mpp-stripe";
 import { PayAiAdapter } from "@suverse-pay/adapter-payai";
+import { T402IoAdapter } from "@suverse-pay/adapter-t402-io";
 import { ThirdwebX402Adapter } from "@suverse-pay/adapter-thirdweb-x402";
 import { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
 import {
@@ -511,6 +512,90 @@ async function main(): Promise<void> {
   // the adapter as a dependency. Hold the reference to keep the
   // package live and stop linters from flagging it.
   void mppStripeAdapter;
+
+  // ---- t402-io universal USDT facilitator (Sub-task 10) -------------
+  // Capability advertising via the open /supported endpoint. Verify
+  // and settle gated on T402_IO_API_KEY (no public signup flow at
+  // t402-io as of 2026-05-29; the adapter registers in capability
+  // mode without a key). Caps deliberately scoped to chains where we
+  // have a working signer:
+  //   - EVM (signer-evm): mainnet USDT-friendly chains t402-io
+  //     advertises. We don't try to advertise EVM chains where t402-io
+  //     /supported doesn't list them.
+  //   - Cosmos noble-1 MAINNET: first Cosmos mainnet route. cosmos-pay
+  //     signer already exists.
+  //   - Solana mainnet: signer-solana exists.
+  // Non-EVM/Solana/Cosmos namespaces t402-io advertises (TON, NEAR,
+  // Aptos, Tezos, Polkadot, Stacks, Stellar) are NOT registered here:
+  // signers don't exist yet (Phase 5). Operators who want capability
+  // visibility for them can pass extra entries via config.
+  if (config.t402IoEnabled) {
+    // Caps scoped to (network, scheme) tuples t402-io's live
+    // /supported actually advertises AND where we have a working
+    // signer. Schemes per namespace per the 2026-05-29 fixture:
+    //   - eip155: `exact` for 1/10/137/8453/42161 USDT chains
+    //   - cosmos: `exact-direct` (NOT plain `exact`)
+    //   - solana: `exact`
+    // BSC (56) and Avalanche (43114) only get `exact-legacy` from
+    // t402-io as of 2026-05-29 — skipped here; we already route them
+    // through Binance/PayAI/BofAI for `exact`. Non-EVM/Solana/Cosmos
+    // namespaces t402-io advertises (TON, NEAR, Aptos, Tezos,
+    // Polkadot, Stacks, Stellar) need signer-* packages that arrive
+    // in Phase 5.
+    const t402IoCaps = [
+      // EVM USDT chains where t402-io advertises `exact` AND we
+      // already have signer-evm support. Asset addresses are the
+      // canonical Tether deployments per chain (from Sub-task 6 work).
+      { network: "eip155:1",     asset: "0xdAC17F958D2ee523a2206206994597C13D831ec7", scheme: "exact" }, // Ethereum USDT
+      { network: "eip155:10",    asset: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58", scheme: "exact" }, // Optimism USDT
+      { network: "eip155:137",   asset: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", scheme: "exact" }, // Polygon USDT0
+      { network: "eip155:8453",  asset: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2", scheme: "exact" }, // Base USDT
+      { network: "eip155:42161", asset: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", scheme: "exact" }, // Arbitrum USDT
+      // Cosmos noble-1 MAINNET — first Cosmos mainnet route. Native
+      // USDT on Noble (uusdt). t402-io advertises this as
+      // `exact-direct`, not `exact` — the routing key reflects that.
+      { network: "cosmos:noble-1", asset: "uusdt", scheme: "exact-direct" },
+      // Solana mainnet USDT (SPL mint).
+      { network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", scheme: "exact" },
+    ] as const;
+    const t402io = new T402IoAdapter({
+      capabilities: t402IoCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+      estimatedFeeUsd: "0.001",
+      ...(config.t402IoBaseUrl !== undefined && config.t402IoBaseUrl.length > 0
+        ? { baseUrl: config.t402IoBaseUrl }
+        : {}),
+      ...(config.t402IoApiKey !== undefined && config.t402IoApiKey.length > 0
+        ? { apiKey: config.t402IoApiKey }
+        : {}),
+    });
+    await registry.register(t402io, {
+      config: {
+        baseUrl: config.t402IoBaseUrl ?? "https://facilitator.t402.io",
+        estimatedFeeUsd: "0.001",
+      },
+      staticCapabilities: t402IoCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+    });
+    if (
+      config.t402IoApiKey === undefined ||
+      config.t402IoApiKey.length === 0
+    ) {
+      logger.warn(
+        "T402_IO_API_KEY not set — t402-io adapter registered (capability advertising + health works) but /verify and /settle throw unauthorized until a key is supplied (no public signup flow discovered as of 2026-05-29 — see packages/adapters/t402-io/README.md)",
+      );
+    }
+  } else {
+    logger.warn(
+      "T402_IO_ENABLED=false — skipping t402-io adapter registration",
+    );
+  }
 
   // ---- Background crons ------------------------------------------------
   const orchLogger = {

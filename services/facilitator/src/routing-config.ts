@@ -18,6 +18,14 @@ export type RoutingPriority = ReadonlyArray<string>;
 export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   // ---- Cosmos -------------------------------------------------------
   "cosmos:grand-1:exact_cosmos_authz": ["cosmos-pay"],
+  // Sub-task 10 — first Cosmos MAINNET route in the gateway, via
+  // t402-io's `cosmos:noble-1` advertisement (native USDT on Noble,
+  // `exact-direct` scheme — direct ERC-20-style transfer, NOT the
+  // Cosmos-authz variant cosmos-pay uses on testnet, and NOT plain
+  // `exact` either). Single-adapter, no failover. t402-io requires
+  // an API key for /settle (T402_IO_API_KEY env var); the route is
+  // registered so capability discovery + dashboards work without a key.
+  "cosmos:noble-1:exact-direct": ["t402-io"],
 
   // ---- EVM ----------------------------------------------------------
   // CDP-primary networks. PayAI added as failover in Phase 4 Block 1

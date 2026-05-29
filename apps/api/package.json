@@ -30,6 +30,7 @@
     "@suverse-pay/adapter-bofai-x402": "workspace:*",
     "@suverse-pay/adapter-mpp-stripe": "workspace:*",
     "@suverse-pay/adapter-payai": "workspace:*",
+    "@suverse-pay/adapter-t402-io": "workspace:*",
     "@suverse-pay/adapter-thirdweb-x402": "workspace:*",
     "@suverse-pay/core-types": "workspace:*",
     "@suverse-pay/db": "workspace:*",

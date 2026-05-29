@@ -101,6 +101,19 @@ export const ConfigSchema = z.object({
   stripeMppApiVersion: z.string().optional(),
   stripeMppSecretKey: z.string().optional(),
 
+  // t402-io universal USDT facilitator (Phase 4 Block 2 Sub-task 10).
+  // Hosted facilitator at https://facilitator.t402.io. /supported +
+  // /health open; /verify + /settle require X-API-Key. No public
+  // signup flow as of 2026-05-29 — adapter registers in capability-
+  // only mode without a key. Maturity flags documented in the
+  // adapter README: /health reports `version: "dev"`, 1 main
+  // contributor + 3 stars (org created Dec 2025).
+  t402IoEnabled: z
+    .union([z.boolean(), z.string().transform((v) => v === "true" || v === "1")])
+    .default(true),
+  t402IoBaseUrl: z.string().optional(),
+  t402IoApiKey: z.string().optional(),
+
   capabilityDiscoveryIntervalMs: z.coerce
     .number()
     .int()
@@ -149,6 +162,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     stripeMppBaseUrl: env.STRIPE_MPP_BASE_URL,
     stripeMppApiVersion: env.STRIPE_MPP_API_VERSION,
     stripeMppSecretKey: env.STRIPE_MPP_SECRET_KEY,
+    t402IoEnabled: env.T402_IO_ENABLED,
+    t402IoBaseUrl: env.T402_IO_BASE_URL,
+    t402IoApiKey: env.T402_IO_API_KEY,
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
     metricsRefreshIntervalMs: env.METRICS_REFRESH_INTERVAL_MS,

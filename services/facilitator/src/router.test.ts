@@ -199,6 +199,18 @@ describe("ROUTING_CONFIG static entries", () => {
     expect(getRoutingPriority("eip155:97", "exact")).toEqual(["bofai-x402"]);
   });
 
+  // (h) Cosmos noble-1 MAINNET — Phase 4 Block 2 Sub-task 10. First
+  // Cosmos mainnet route in the gateway (cosmos-pay covers testnet
+  // grand-1 only). t402-io advertises noble-1 with native USDT under
+  // `exact-direct` (direct ERC-20-style transfer, NOT plain `exact`
+  // and NOT cosmos-pay's `exact_cosmos_authz`).
+  it("routes cosmos:noble-1:exact-direct to t402-io (first Cosmos mainnet route)", async () => {
+    const { getRoutingPriority } = await import("./routing-config.js");
+    expect(getRoutingPriority("cosmos:noble-1", "exact-direct")).toEqual([
+      "t402-io",
+    ]);
+  });
+
   // (g) TRON — Phase 4 Block 2 Sub-task 8. First non-EVM, non-Solana,
   // non-Cosmos route in the gateway. BofAI is the only adapter today;
   // signer-tron arrives in Phase 5.

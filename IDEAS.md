@@ -305,7 +305,7 @@ sub-task, so 14 EVM routes have multi-adapter resilience.
 | 4. Internal Grafana dashboard | ✓ `b401cc8` |
 | ~~5. Cosmos mainnet~~ | deferred to Phase 5 — needs funded facilitator wallet |
 
-### Block 2 status
+### Block 2 status — CLOSED
 
 | Sub-task | Status |
 | --- | --- |
@@ -313,8 +313,34 @@ sub-task, so 14 EVM routes have multi-adapter resilience.
 | 6. Permit2 in signer-evm (USDT registry + signing) | ✓ `341b79a` |
 | 7. Binance x402 adapter (BNB Chain) | ✓ `5c2f6ba` |
 | 8. BofAI / TRON adapter | ✓ `1ba0136` |
-| 9. MPP protocol adapter (Stripe + Tempo) | in this commit |
-| 10. (optional) t402-io adapter | pending |
+| 9. MPP protocol adapter (Stripe + Tempo) | ✓ `dff8c64` |
+| 10. t402-io universal USDT adapter | in this commit |
+
+### Sub-task 10 — t402-io snapshot
+
+Final adapter of Block 2. Universal USDT facilitator with the broadest
+namespace footprint of any provider we've integrated: **77 (network,
+scheme) tuples across 11 namespaces** advertised live, including the
+gateway's **first `cosmos:noble-1` mainnet route**.
+
+**Maturity disclosure** (front and center, per honest-scope discipline):
+- `/health` reports `version: "dev"` — not production-versioned
+- 1 main contributor, 3 stars, org 5 months old (Dec 2025)
+- API key required for `/verify`+`/settle`; no public signup flow
+
+**Wire**: t402 is essentially x402 with `t402Version` instead of
+`x402Version`. Adapter emits both (belt + suspenders). Otherwise
+identical body shape — no envelope translation needed.
+
+**Capability scope today** (signer-backed only):
+- EVM `exact`: 5 USDT chains (1, 10, 137, 8453, 42161) — signer-evm
+- Cosmos `exact-direct`: noble-1 mainnet — cosmos-pay signs
+- Solana `exact`: mainnet USDT SPL
+
+**Advertised but signer-blocked** (Phase 5 signers):
+- TON, NEAR, Aptos, Tezos, Polkadot, Stacks, Stellar
+- BSC + Avalanche under `exact-legacy` (covered by other adapters'
+  `exact`)
 
 ### Sub-task 9 — MPP (Stripe + Tempo) snapshot
 
