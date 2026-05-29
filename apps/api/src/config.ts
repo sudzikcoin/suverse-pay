@@ -75,6 +75,15 @@ export const ConfigSchema = z.object({
   binanceX402ApiKey: z.string().optional(),
   binanceX402ApiSecret: z.string().optional(),
 
+  // BofAI x402 facilitator (TRON + BSC). Open / no auth required;
+  // default URL points at the BankOfAI hosted facilitator. Override
+  // BOFAI_X402_BASE_URL to a self-hosted instance. Sub-task 8 — first
+  // non-EVM, non-Solana, non-Cosmos route in the gateway.
+  bofaiX402Enabled: z
+    .union([z.boolean(), z.string().transform((v) => v === "true" || v === "1")])
+    .default(true),
+  bofaiX402BaseUrl: z.string().optional(),
+
   capabilityDiscoveryIntervalMs: z.coerce
     .number()
     .int()
@@ -117,6 +126,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     binanceX402PathPrefix: env.BINANCE_X402_PATH_PREFIX,
     binanceX402ApiKey: env.BINANCE_X402_API_KEY,
     binanceX402ApiSecret: env.BINANCE_X402_API_SECRET,
+    bofaiX402Enabled: env.BOFAI_X402_ENABLED,
+    bofaiX402BaseUrl: env.BOFAI_X402_BASE_URL,
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
     metricsRefreshIntervalMs: env.METRICS_REFRESH_INTERVAL_MS,

@@ -311,10 +311,71 @@ sub-task, so 14 EVM routes have multi-adapter resilience.
 | --- | --- |
 | 5. Thirdweb config expansion (9 networks) | ✓ `92185d0` |
 | 6. Permit2 in signer-evm (USDT registry + signing) | ✓ `341b79a` |
-| 7. Binance x402 adapter (BNB Chain) | in this commit |
-| 8. BofAI / Tron adapter | pending |
+| 7. Binance x402 adapter (BNB Chain) | ✓ `5c2f6ba` |
+| 8. BofAI / TRON adapter | in this commit |
 | 9. MPP protocol adapter | pending |
 | 10. (optional) t402-io adapter | pending |
+
+### Sub-task 8 — BofAI x402 (TRON + BSC) snapshot
+
+**First non-EVM, non-Solana, non-Cosmos route in the gateway.** TRON
+USDT is the single largest USDT deployment globally — this adapter
+unlocks that audience.
+
+- **Base URL**: `https://facilitator.bankofai.io` — open access, no
+  auth required (BofAI v0.6.0 CHANGELOG: "clients no longer need API
+  keys or secrets"). Self-host alternative documented at
+  [BofAI/x402-demo](https://github.com/BofAI/x402-demo).
+- **Wire shape**: vanilla x402 v2 — `{x402Version, paymentPayload,
+  paymentRequirements}`. `/supported` + `/health` open. `/verify` +
+  `/settle` accept POST with the standard body (422 on missing fields,
+  no 401).
+- **Networks**: `tron:mainnet`, `tron:nile` (testnet),
+  `eip155:56` (BSC mainnet, gives Binance failover),
+  `eip155:97` (BSC testnet).
+- **Schemes**: TRON gets `exact` + `exact_permit` + `exact_gasfree`
+  (BofAI's flagship: relayer pays gas, payer needs no TRX). BSC gets
+  `exact` + `exact_permit` (no GasFree on EVM).
+
+**Signing-path matrix** (none of the three TRON schemes have a
+gateway-native signer yet):
+
+| Scheme | EIP-712/TIP-712 domain | Signer status |
+| --- | --- | --- |
+| `exact` (ERC-3009) | Token contract domain | Works on BSC today via signer-evm; TRON needs Phase 5 signer-tron |
+| `exact_permit` | `PaymentPermit` contract domain | Phase 5 — both EVM and TRON |
+| `exact_gasfree` | `GasFreeController` contract domain (`name="GasFreeController"`, `version="V1.0.0"`) | Phase 5 — TRON-only, requires GasFree custodial wallet activation flow |
+
+The adapter is a pure HTTP forwarder — callers who produce
+TIP-712/EIP-712 signatures externally (via BofAI's own TypeScript
+SDK, for example) can settle through the gateway today. First-party
+gateway-side signing for these three schemes arrives in Phase 5.
+
+### Network namespace milestone
+
+Sub-task 8 makes the gateway truly multi-VM:
+
+| Namespace | Adapters | Networks (count) |
+| --- | --- | --- |
+| `eip155:` (EVM) | coinbase-cdp, payai, thirdweb-x402, binance-x402, bofai-x402 | 17 mainnets + 4 testnets |
+| `tron:` | bofai-x402 (Phase 4) | 1 mainnet + 1 testnet (Nile) |
+| `solana:` | coinbase-cdp, payai | mainnet + devnet |
+| `cosmos:` | cosmos-pay | testnet (mainnet → Phase 5) |
+
+Routing keys remain `${network}:${scheme}` — namespace prefix is
+opaque to the router, so adding a new VM family (Sui, Aptos, TON) is
+a config-only change once the corresponding adapter ships.
+
+### Coverage table after Sub-task 8
+
+| Tier | Networks |
+| --- | --- |
+| **EVM mainnets** | Base, Polygon, Arbitrum, World Chain, Avalanche, Ethereum, Optimism, BNB Chain, XDC, Monad, Sonic, Sei, Abstract, IoTeX, Celo, Ink, Linea (**17**) |
+| EVM testnets | Base Sepolia, World Sepolia, Avalanche Fuji, Arbitrum Sepolia, BSC Testnet (**5**) |
+| **TRON** | **mainnet**, Nile testnet (**2**) |
+| Solana | mainnet + devnet |
+| Cosmos | testnet |
+| **Total mainnets (deduped, non-Solana/Cosmos)** | **18 EVM + 1 TRON = 19** |
 
 ### Sub-task 7 — Binance x402 (BNB Chain) snapshot
 

@@ -65,12 +65,35 @@ export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   "eip155:42220:exact": ["thirdweb-x402"], // Celo
   "eip155:57073:exact": ["thirdweb-x402"], // Ink
   "eip155:59144:exact": ["thirdweb-x402"], // Linea
-  // Phase 4 Block 2 Sub-task 7 — Binance x402 (BNB Chain only). The
-  // only facilitator route to eip155:56; CDP/PayAI/Thirdweb don't
-  // advertise it. Single-adapter, no failover. USDT vs USDC dispatch
-  // happens at the asset layer (extra.assetTransferMethod="permit2-exact")
-  // inside PaymentRequirements, not via routing.
-  "eip155:56:exact": ["binance-x402"], // BNB Chain mainnet
+  // BNB Chain (eip155:56) — Binance x402 primary (Sub-task 7);
+  // BofAI x402 added as failover in Sub-task 8 because BofAI's
+  // /supported also advertises eip155:56 with the same Binance-Peg
+  // USDC + USDT contracts. Operators get adapter-level resilience on
+  // BSC. Asset-level dispatch (USDC vs USDT) still happens via
+  // PaymentRequirements.extra.assetTransferMethod.
+  "eip155:56:exact": ["binance-x402", "bofai-x402"],
+  // BSC mainnet also supports exact_permit via BofAI (Binance hasn't
+  // confirmed it on their surface yet — single-adapter route to BofAI
+  // until Binance advertises permit). exact_permit signing is itself
+  // Phase 5 work (no signer-evm Permit support yet), so this entry
+  // is for capability discovery / dashboard surfacing only today.
+  "eip155:56:exact_permit": ["bofai-x402"],
+  // BSC testnet via BofAI — useful staging ground for BSC integration.
+  "eip155:97:exact": ["bofai-x402"],
+  "eip155:97:exact_permit": ["bofai-x402"],
+
+  // ---- TRON (Phase 4 Block 2 Sub-task 8) -----------------------------
+  // First non-EVM, non-Solana, non-Cosmos routes in the gateway.
+  // BofAI is the only adapter today; native signer-tron arrives in
+  // Phase 5 to enable first-party signing. Adapter forwards
+  // verify/settle for callers who produce TIP-712 signatures via an
+  // external SDK (e.g. BofAI's TypeScript client).
+  "tron:mainnet:exact":         ["bofai-x402"],
+  "tron:mainnet:exact_permit":  ["bofai-x402"],
+  "tron:mainnet:exact_gasfree": ["bofai-x402"], // GasFree: relayer pays gas — TRON's flagship UX
+  "tron:nile:exact":            ["bofai-x402"], // testnet, primary smoke target
+  "tron:nile:exact_permit":     ["bofai-x402"],
+  "tron:nile:exact_gasfree":    ["bofai-x402"],
 
   // ---- Solana mainnet (CDP primary, PayAI failover) -----------------
   "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:exact": ["coinbase-cdp", "payai"],

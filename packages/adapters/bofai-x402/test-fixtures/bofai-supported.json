@@ -1,0 +1,54 @@
+{
+  "kinds": [
+    {
+      "x402Version": 2,
+      "scheme": "exact_permit",
+      "network": "tron:nile"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "tron:nile"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact_gasfree",
+      "network": "tron:nile"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact_permit",
+      "network": "tron:mainnet"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "tron:mainnet"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact_gasfree",
+      "network": "tron:mainnet"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact_permit",
+      "network": "eip155:97"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:97"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact_permit",
+      "network": "eip155:56"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:56"
+    }
+  ]
+}

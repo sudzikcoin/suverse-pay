@@ -26,6 +26,9 @@ importers:
       '@suverse-pay/adapter-binance-x402':
         specifier: workspace:*
         version: link:../../packages/adapters/binance-x402
+      '@suverse-pay/adapter-bofai-x402':
+        specifier: workspace:*
+        version: link:../../packages/adapters/bofai-x402
       '@suverse-pay/adapter-coinbase-cdp':
         specifier: workspace:*
         version: link:../../packages/adapters/coinbase-cdp
@@ -160,6 +163,22 @@ importers:
         version: 4.22.3
 
   packages/adapters/binance-x402:
+    dependencies:
+      '@suverse-pay/core-types':
+        specifier: workspace:*
+        version: link:../../core-types
+      '@suverse-pay/provider-sdk':
+        specifier: workspace:*
+        version: link:../../provider-sdk
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.41
+
+  packages/adapters/bofai-x402:
     dependencies:
       '@suverse-pay/core-types':
         specifier: workspace:*

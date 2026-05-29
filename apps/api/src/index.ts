@@ -1,6 +1,7 @@
 import { CoinbaseCdpAdapter } from "@suverse-pay/adapter-coinbase-cdp";
 import { CosmosPayAdapter } from "@suverse-pay/adapter-cosmos-pay";
 import { BinanceX402Adapter } from "@suverse-pay/adapter-binance-x402";
+import { BofaiX402Adapter } from "@suverse-pay/adapter-bofai-x402";
 import { PayAiAdapter } from "@suverse-pay/adapter-payai";
 import { ThirdwebX402Adapter } from "@suverse-pay/adapter-thirdweb-x402";
 import { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
@@ -388,6 +389,68 @@ async function main(): Promise<void> {
   } else {
     logger.warn(
       "BINANCE_X402_ENABLED=false — skipping Binance adapter registration",
+    );
+  }
+
+  // ---- BofAI x402 (TRON + BSC, Sub-task 8) ----------------------------
+  // First non-EVM, non-Solana, non-Cosmos route in the gateway.
+  // Open public facilitator (no auth required as of BofAI v0.6.0 —
+  // their CHANGELOG: "clients no longer need API keys or secrets").
+  // Default URL is the hosted facilitator; override BOFAI_X402_BASE_URL
+  // to point at a self-hosted instance.
+  //
+  // TRON USDT is the largest USDT deployment by volume globally — this
+  // adapter unlocks that audience. BSC overlap with Binance x402 lands
+  // as Binance-primary + BofAI-failover in routing-config.
+  //
+  // Important: signing TRON paymentPayloads requires a TRON-native
+  // signer the gateway doesn't yet ship (signer-tron is Phase 5). The
+  // adapter is a thin forwarder — callers who produce TIP-712
+  // signatures externally can settle through this route immediately;
+  // first-party gateway-side TRON signing arrives in Phase 5.
+  if (config.bofaiX402Enabled) {
+    const bofaiCaps = [
+      // TRON mainnet — USDT (Tether USD, 6 decimals), three schemes.
+      { network: "tron:mainnet", asset: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", scheme: "exact" },
+      { network: "tron:mainnet", asset: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", scheme: "exact_permit" },
+      { network: "tron:mainnet", asset: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", scheme: "exact_gasfree" },
+      // TRON Nile testnet — primary smoke target.
+      { network: "tron:nile", asset: "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf", scheme: "exact" },
+      { network: "tron:nile", asset: "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf", scheme: "exact_permit" },
+      { network: "tron:nile", asset: "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf", scheme: "exact_gasfree" },
+      // BSC mainnet — USDC + USDT, exact + exact_permit. Routing
+      // promotes Binance to primary + BofAI to failover for these.
+      { network: "eip155:56", asset: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", scheme: "exact" },
+      { network: "eip155:56", asset: "0x55d398326f99059fF775485246999027B3197955", scheme: "exact" },
+      { network: "eip155:56", asset: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", scheme: "exact_permit" },
+      { network: "eip155:56", asset: "0x55d398326f99059fF775485246999027B3197955", scheme: "exact_permit" },
+    ] as const;
+    const bofai = new BofaiX402Adapter({
+      capabilities: bofaiCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+      estimatedFeeUsd: "0.001",
+      ...(config.bofaiX402BaseUrl !== undefined &&
+      config.bofaiX402BaseUrl.length > 0
+        ? { baseUrl: config.bofaiX402BaseUrl }
+        : {}),
+    });
+    await registry.register(bofai, {
+      config: {
+        baseUrl: config.bofaiX402BaseUrl ?? "https://facilitator.bankofai.io",
+        estimatedFeeUsd: "0.001",
+      },
+      staticCapabilities: bofaiCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+    });
+  } else {
+    logger.warn(
+      "BOFAI_X402_ENABLED=false — skipping BofAI adapter registration",
     );
   }
 

@@ -176,12 +176,49 @@ describe("ROUTING_CONFIG static entries", () => {
     });
   }
 
-  // (f) Binance x402 — BNB Chain mainnet only. Phase 4 Block 2
-  // Sub-task 7. CDP/PayAI/Thirdweb don't advertise eip155:56.
-  it("routes eip155:56:exact binance-only (BNB Chain)", async () => {
+  // (f) BNB Chain — Phase 4 Block 2 Sub-task 7 launched Binance-only;
+  // Sub-task 8 added BofAI as failover because BofAI's /supported also
+  // advertises eip155:56 with the same USDC + USDT contracts. Plus
+  // exact_permit on BSC (mainnet + testnet) routes to BofAI alone
+  // (Binance hasn't confirmed permit support on their surface yet).
+  it("routes eip155:56:exact binance primary + bofai failover", async () => {
     const { getRoutingPriority } = await import("./routing-config.js");
-    expect(getRoutingPriority("eip155:56", "exact")).toEqual(["binance-x402"]);
+    expect(getRoutingPriority("eip155:56", "exact")).toEqual([
+      "binance-x402",
+      "bofai-x402",
+    ]);
   });
+  it("routes eip155:56:exact_permit bofai-only (Binance hasn't advertised permit)", async () => {
+    const { getRoutingPriority } = await import("./routing-config.js");
+    expect(getRoutingPriority("eip155:56", "exact_permit")).toEqual([
+      "bofai-x402",
+    ]);
+  });
+  it("routes eip155:97:exact bofai-only (BSC testnet via BofAI)", async () => {
+    const { getRoutingPriority } = await import("./routing-config.js");
+    expect(getRoutingPriority("eip155:97", "exact")).toEqual(["bofai-x402"]);
+  });
+
+  // (g) TRON — Phase 4 Block 2 Sub-task 8. First non-EVM, non-Solana,
+  // non-Cosmos route in the gateway. BofAI is the only adapter today;
+  // signer-tron arrives in Phase 5.
+  const tronRoutes = [
+    "tron:mainnet:exact",
+    "tron:mainnet:exact_permit",
+    "tron:mainnet:exact_gasfree",
+    "tron:nile:exact",
+    "tron:nile:exact_permit",
+    "tron:nile:exact_gasfree",
+  ];
+  for (const key of tronRoutes) {
+    it(`routes ${key} bofai-only (TRON namespace, single adapter)`, async () => {
+      const { getRoutingPriority } = await import("./routing-config.js");
+      const [namespace, ref, scheme] = key.split(":");
+      const network = `${namespace}:${ref}`;
+      const priority = getRoutingPriority(network, scheme!);
+      expect(priority).toEqual(["bofai-x402"]);
+    });
+  }
 
   // (e) Thirdweb-exclusive EVM routes (Phase 4 Block 1 Sub-task 3 +
   // Block 2 Sub-task 5). Networks where CDP and PayAI advertise nothing
