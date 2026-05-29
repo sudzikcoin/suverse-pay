@@ -4,6 +4,7 @@ import type {
   ProviderHealthSummary,
   ProviderRegistry,
 } from "@suverse-pay/orchestrator";
+import type { WebhookQueue } from "@suverse-pay/webhooks";
 import type { Pool } from "pg";
 import type { Config } from "./config.js";
 
@@ -33,6 +34,12 @@ export interface ServerContext {
    * route can omit it.
    */
   facilitatorRateLimiter?: FacilitatorRateLimiter;
+  /**
+   * BullMQ queue for outbound webhook delivery jobs. Set when the
+   * api boots in production; tests may leave undefined — the settle
+   * handler checks for presence before fanning out.
+   */
+  webhookQueue?: WebhookQueue;
   /**
    * Loads ProviderHealthSummary rows for the given provider ids.
    * The orchestrator's router consumes these to decide which

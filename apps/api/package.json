@@ -37,6 +37,7 @@
     "@suverse-pay/facilitator": "workspace:*",
     "@suverse-pay/orchestrator": "workspace:*",
     "@suverse-pay/provider-sdk": "workspace:*",
+    "@suverse-pay/webhooks": "workspace:*",
     "fastify": "^5.2.0",
     "ioredis": "^5.4.1",
     "pg": "^8.13.1",

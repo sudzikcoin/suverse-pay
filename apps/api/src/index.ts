@@ -10,6 +10,7 @@ import { PayAiAdapter } from "@suverse-pay/adapter-payai";
 import { T402IoAdapter } from "@suverse-pay/adapter-t402-io";
 import { ThirdwebX402Adapter } from "@suverse-pay/adapter-thirdweb-x402";
 import { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
+import { createWebhookQueue, createWebhookWorker } from "@suverse-pay/webhooks";
 import {
   CapabilityDiscoveryCron,
   HealthCheckCron,
@@ -630,12 +631,44 @@ async function main(): Promise<void> {
 
   // ---- ServerContext glue ---------------------------------------------
   const facilitatorRateLimiter = new FacilitatorRateLimiter({ redis });
+
+  // Webhook delivery — BullMQ Queue (producer) + Worker (consumer).
+  // The Queue gets attached to ServerContext so the settle handler
+  // can enqueue fan-out jobs. The Worker runs in-process. BullMQ
+  // requires `maxRetriesPerRequest: null` on the consumer connection
+  // (the main `redis` above already sets it), but the docs steer
+  // toward a dedicated connection per worker for isolation — we
+  // construct a new one from the same URL so a slow worker doesn't
+  // back-pressure the rate-limiter/cache path.
+  const redisParsed = new URL(config.redisUrl);
+  const bullConnection = {
+    host: redisParsed.hostname,
+    port: redisParsed.port.length > 0 ? Number(redisParsed.port) : 6379,
+  };
+  const webhookQueue = createWebhookQueue(bullConnection);
+  const webhookWorker = createWebhookWorker({
+    pool,
+    connection: bullConnection,
+    log: {
+      info: (obj, msg) => logger.info(obj, msg),
+      warn: (obj, msg) => logger.warn(obj, msg),
+      error: (obj, msg) => logger.error(obj, msg),
+    },
+  });
+  webhookWorker.on("ready", () =>
+    logger.info({ component: "webhook-worker" }, "webhook worker ready"),
+  );
+  webhookWorker.on("error", (err) =>
+    logger.error({ err: err.message }, "webhook worker error"),
+  );
+
   const ctx: ServerContext = {
     config,
     registry,
     ledger,
     pool,
     facilitatorRateLimiter,
+    webhookQueue,
     loadHealthSummaries: (providerIds) =>
       loadHealthSummariesFromDb(pool, providerIds),
     loadMetrics: () => loadMetricsFromDb(pool),
@@ -649,6 +682,8 @@ async function main(): Promise<void> {
     healthCron.stop();
     await stopMetricsRefresher();
     await app.close();
+    await webhookWorker.close();
+    await webhookQueue.close();
     await pool.end();
     redis.disconnect();
     logger.info("shutdown complete");

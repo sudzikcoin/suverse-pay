@@ -96,7 +96,12 @@ data ever surfaces.
 | POST | `/api/keys` | `{label}` body — self-serve creation. 201 with `{resourceKeyId, plaintext, label, createdAt}` exactly once |
 | GET | `/api/keys` | linked keys with full metadata (label, createdAt, lastUsedAt, isActive) + rate-limit budget |
 | DELETE | `/api/keys/:id` | soft-revoke (sets `is_active = false`). 404 for keys not linked to this user |
-| **GET** | **`/api/invoice[?from=YYYY-MM-DD&to=YYYY-MM-DD]`** | **CSV download — every settled row in `[from, to)` plus a summary header. Defaults to the previous completed UTC calendar month** |
+| GET | `/api/invoice[?from=YYYY-MM-DD&to=YYYY-MM-DD]` | CSV download — every settled row in `[from, to)` plus a summary header. Defaults to the previous completed UTC calendar month |
+| **GET** | **`/api/webhooks`** | **list endpoints (signing secrets OMITTED)** |
+| **POST** | **`/api/webhooks`** | **`{url, description?, events?}` body — creates endpoint, returns secret EXACTLY ONCE** |
+| **DELETE** | **`/api/webhooks/:id`** | **hard delete (deliveries cascade)** |
+| **GET** | **`/api/webhooks/:id/deliveries[?limit=50]`** | **recent delivery attempts** |
+| **POST** | **`/api/webhooks/:id/deliveries/:dId/retry`** | **manual retry — resets row to pending + enqueues BullMQ job** |
 
 All return 401 if there's no session. POST `/api/link-key` and
 DELETE `/api/keys/:id` both return 404 on unknown / cross-tenant

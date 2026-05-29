@@ -274,3 +274,188 @@ CREATE INDEX IF NOT EXISTS dashboard_user_resource_keys_user_id_idx
   ON dashboard_user_resource_keys (user_id);
 CREATE INDEX IF NOT EXISTS dashboard_user_resource_keys_resource_key_idx
   ON dashboard_user_resource_keys (resource_key_id);
+-- 004_per_settle_fees.sql — Phase 5 Block 4 Sub-task 3.
+--
+-- Per-settle platform fee accounting layer ("shadow ledger").
+--
+-- Adds:
+--   * resource_api_keys.fee_bps        — per-key override in basis
+--                                        points (NULL = use global
+--                                        default from PLATFORM_FEE_BPS
+--                                        env). Bounded 0..1000 (0..10%).
+--   * facilitator_payments.gross_amount, fee_amount, net_amount
+--                                      — accounting overlay on the
+--                                        existing `amount` column. The
+--                                        invariant is
+--                                        `gross_amount = fee_amount + net_amount`.
+--                                        `amount` keeps its meaning of
+--                                        "what was settled on-chain"
+--                                        (= gross for now — suverse-pay
+--                                        does not yet collect the fee
+--                                        on-chain; collection is
+--                                        out-of-band via invoice CSV
+--                                        download from the dashboard).
+--
+-- Backfill semantics: every pre-existing facilitator_payments row
+-- becomes (gross=amount, fee=0, net=amount). This is honest — those
+-- settles were not fee'd, the customer was not charged. From this
+-- migration forward, every new row is computed via the same path.
+
+
+-- ---------------------------------------------------------------
+-- resource_api_keys.fee_bps
+-- ---------------------------------------------------------------
+
+ALTER TABLE resource_api_keys
+  ADD COLUMN IF NOT EXISTS fee_bps INTEGER;
+
+-- Named CHECK so future migrations / introspection have a stable
+-- handle. The migration runner records this file in
+-- schema_migrations and will not re-apply it, so plain ADD
+-- CONSTRAINT is safe (no need for plpgsql IF NOT EXISTS — pg-mem
+-- in tests does not register the plpgsql language).
+ALTER TABLE resource_api_keys
+  ADD CONSTRAINT resource_api_keys_fee_bps_range
+  CHECK (fee_bps IS NULL OR (fee_bps >= 0 AND fee_bps <= 1000));
+
+
+-- ---------------------------------------------------------------
+-- facilitator_payments — gross/fee/net columns
+-- ---------------------------------------------------------------
+
+ALTER TABLE facilitator_payments
+  ADD COLUMN IF NOT EXISTS gross_amount NUMERIC(78, 0);
+ALTER TABLE facilitator_payments
+  ADD COLUMN IF NOT EXISTS fee_amount   NUMERIC(78, 0);
+ALTER TABLE facilitator_payments
+  ADD COLUMN IF NOT EXISTS net_amount   NUMERIC(78, 0);
+
+-- Backfill — existing settles did not have a fee deducted.
+-- `amount` is TEXT (carries the atomic uint256 as a string to avoid
+-- precision loss), so cast explicitly to numeric for the assignment.
+UPDATE facilitator_payments
+   SET gross_amount = amount::numeric,
+       fee_amount   = 0,
+       net_amount   = amount::numeric
+ WHERE gross_amount IS NULL;
+
+-- Now that every row has values, pin NOT NULL so the application
+-- writer must always supply them going forward.
+ALTER TABLE facilitator_payments
+  ALTER COLUMN gross_amount SET NOT NULL,
+  ALTER COLUMN fee_amount   SET NOT NULL,
+  ALTER COLUMN net_amount   SET NOT NULL;
+
+-- Invariant guard. Cheap CHECK — the planner skips it on read, and
+-- the writer-side computeFee() helper is the authoritative source of
+-- the split. The CHECK catches a future direct UPDATE that
+-- accidentally desyncs the three columns.
+ALTER TABLE facilitator_payments
+  ADD CONSTRAINT facilitator_payments_fee_split_balanced
+  CHECK (gross_amount = fee_amount + net_amount);
+-- 005_webhooks.sql — Phase 5 Block 4 Sub-task 4.
+--
+-- Outbound webhook delivery for settle lifecycle events.
+--
+-- Two tables:
+--
+--   * webhook_endpoints   — one row per customer-configured URL.
+--                           Owned by a dashboard_user (NOT by a
+--                           resource_api_key — a customer often
+--                           manages multiple keys and wants one
+--                           webhook stream for the whole account).
+--                           `secret` holds the PLAINTEXT signing key.
+--                           Stored in plaintext because HMAC signing
+--                           requires the secret material itself (unlike
+--                           resource_api_keys where we only compare
+--                           against a hash of received input). Shown
+--                           to the customer EXACTLY ONCE at create
+--                           time then served only over auth'd UI for
+--                           manual re-copy if needed. Same trust model
+--                           as Stripe's whsec_*.
+--
+--   * webhook_deliveries  — one row per (endpoint, event) attempt
+--                           tuple. Status moves
+--                           pending → success | failed | dead.
+--                           `event_id` is the X-Suverse-Pay-Event-Id
+--                           we put on the wire so the receiver can
+--                           dedupe across retries; unique per
+--                           (endpoint_id, event_id) so the same
+--                           event is never fanned out twice for one
+--                           endpoint.
+--
+-- The BullMQ queue is the source of truth for "what's next to
+-- deliver"; this table is the source of truth for
+-- "what was attempted and how it ended" (audit + dashboard log).
+
+CREATE TABLE IF NOT EXISTS webhook_endpoints (
+  id              UUID PRIMARY KEY,
+  dashboard_user_id UUID NOT NULL
+                       REFERENCES dashboard_users(id) ON DELETE CASCADE,
+  url             TEXT NOT NULL,
+  -- PLAINTEXT signing secret (whsec_<base64url>). Stored as text
+  -- because the delivery worker needs the actual bytes to compute
+  -- HMAC-SHA256 against each payload. Shown to the customer ONCE
+  -- at create time + served over auth'd dashboard UI on demand.
+  secret          TEXT NOT NULL,
+  -- Human label so the customer recognises which integration this
+  -- endpoint is for ("staging-worker", "production-zap", ...).
+  description     TEXT NOT NULL DEFAULT '',
+  -- Subset of advertised event types this endpoint subscribes to.
+  -- v1 only emits 'settle.succeeded' and 'settle.failed' but the
+  -- column is flexible for future event types (key.*, invoice.*).
+  events          TEXT[] NOT NULL DEFAULT ARRAY['settle.succeeded','settle.failed'],
+  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_used_at    TIMESTAMPTZ,
+  -- Cheap guard against accidentally subscribing to nothing.
+  -- Use empty-array comparison rather than cardinality() so pg-mem
+  -- (the in-memory Postgres used in db/__tests__) accepts it; both
+  -- forms compile identically on real Postgres 15+.
+  CONSTRAINT webhook_endpoints_events_nonempty CHECK (events <> '{}'::text[])
+);
+
+CREATE INDEX IF NOT EXISTS webhook_endpoints_by_user_idx
+  ON webhook_endpoints (dashboard_user_id) WHERE is_active = TRUE;
+
+
+CREATE TABLE IF NOT EXISTS webhook_deliveries (
+  id                UUID PRIMARY KEY,
+  endpoint_id       UUID NOT NULL
+                       REFERENCES webhook_endpoints(id) ON DELETE CASCADE,
+  -- The id we put on the wire (X-Suverse-Pay-Event-Id). Receivers
+  -- dedupe on this — the same id will reappear on every retry
+  -- attempt for the same delivery. Unique per (endpoint, event_id)
+  -- so two endpoints can each receive the same logical event but
+  -- the same endpoint never receives it twice.
+  event_id          TEXT NOT NULL,
+  event_type        TEXT NOT NULL,
+  -- The full JSON payload that gets HMAC'd + sent. Stored so the
+  -- dashboard's deliveries log can show exactly what the receiver
+  -- got, and so a retry replays the same bytes.
+  payload           JSONB NOT NULL,
+  status            TEXT NOT NULL DEFAULT 'pending'
+                       CHECK (status IN ('pending', 'success', 'failed', 'dead')),
+  attempts          INTEGER NOT NULL DEFAULT 0,
+  max_attempts      INTEGER NOT NULL DEFAULT 6,
+  last_attempt_at   TIMESTAMPTZ,
+  last_response_code INTEGER,
+  -- Short error string for the dashboard ("timeout", "5xx",
+  -- "connection_refused", "4xx_no_retry"). Full debug detail lives
+  -- in pino logs, NOT in DB — keeps the row size bounded.
+  last_error        TEXT,
+  -- Scheduled time for the next attempt (NULL once status is
+  -- terminal — success / dead — or never scheduled).
+  next_attempt_at   TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT webhook_deliveries_event_unique
+    UNIQUE (endpoint_id, event_id)
+);
+
+CREATE INDEX IF NOT EXISTS webhook_deliveries_by_endpoint_recent_idx
+  ON webhook_deliveries (endpoint_id, created_at DESC);
+-- The worker doesn't poll this index — BullMQ owns the queue — but
+-- a dashboard "show me everything still pending" query needs it.
+CREATE INDEX IF NOT EXISTS webhook_deliveries_pending_idx
+  ON webhook_deliveries (status, next_attempt_at)
+  WHERE status = 'pending';

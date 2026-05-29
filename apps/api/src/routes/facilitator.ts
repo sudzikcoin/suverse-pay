@@ -15,6 +15,7 @@ import {
   routeSettleWithFailover,
   routeVerify,
 } from "@suverse-pay/facilitator";
+import { enqueueSettleEvent } from "@suverse-pay/webhooks";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ServerContext } from "../context.js";
@@ -197,6 +198,48 @@ export function registerFacilitatorRoutes(
           ? { errorMessage: response.errorMessage }
           : {}),
       });
+
+      // Fan-out webhook event. Best-effort — a queue/DB hiccup here
+      // MUST NOT cause us to return an error to the resource server
+      // (the settle already happened on-chain). Failures land in
+      // pino at warn-level; the operator can rerun delivery from
+      // the dashboard if a misconfiguration drops events.
+      if (ctx.webhookQueue !== undefined) {
+        try {
+          await enqueueSettleEvent({
+            client: pool,
+            queue: ctx.webhookQueue,
+            eventType: finalRow.status === "settled"
+              ? "settle.succeeded"
+              : "settle.failed",
+            settle: {
+              id: finalRow.id,
+              resource_key_id: finalRow.resourceKeyId,
+              network: finalRow.network,
+              asset: finalRow.asset,
+              scheme: finalRow.scheme,
+              gross_amount: finalRow.grossAmount,
+              fee_amount: finalRow.feeAmount,
+              net_amount: finalRow.netAmount,
+              payer: finalRow.payer,
+              recipient: finalRow.recipient,
+              adapter_used: finalRow.adapterUsed,
+              tx_hash: finalRow.txHash,
+              status: finalRow.status,
+              error_code: finalRow.errorCode,
+              error_message: finalRow.errorMessage,
+              created_at: finalRow.createdAt.toISOString(),
+              settled_at: finalRow.settledAt?.toISOString() ?? null,
+            },
+          });
+        } catch (err) {
+          app.log.warn(
+            { err: err instanceof Error ? err.message : String(err), settleId: finalRow.id },
+            "webhook enqueue failed — settle response unaffected",
+          );
+        }
+      }
+
       return facilitatorSettleResponse(finalRow);
     },
   );

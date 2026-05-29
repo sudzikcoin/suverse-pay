@@ -10,6 +10,7 @@ import { PeriodToggle, type Period } from "@/components/panels/period-toggle";
 import { SettlesTable } from "@/components/panels/settles-table";
 import { SummaryCards } from "@/components/panels/summary-cards";
 import { VolumeChart } from "@/components/panels/volume-chart";
+import { WebhooksSection } from "@/components/panels/webhooks-section";
 
 /**
  * Four-panel dashboard view. Period state lives at this level so
@@ -79,6 +80,8 @@ export function DashboardView({
       </div>
 
       <KeysList />
+
+      <WebhooksSection />
 
       <InvoiceDownload />
     </div>
