@@ -1,9 +1,18 @@
 # STATUS
 
 Last session: 2026-05-29
-Last tag: **v0.4.0**
+Last tag: **v0.4.0** (v0.5.0-alpha in development)
 
 ## Current state
+
+**Phase 5 STARTED.** Block 4 Sub-task 1 shipped: customer dashboard
+MVP (Next.js 15 app under `apps/dashboard`, OAuth via Google + GitHub
+through NextAuth.js v5, four panels, multi-tenant from day one).
+Dashboard NOT yet deployed — needs DNS + OAuth registrations + env
+vars before first sign-in works; full operator runbook in
+`apps/dashboard/README.md`.
+
+Phase 4 baseline below (still current).
 
 **Phase 4 closed. v0.4.0 released — "Multi-protocol multi-chain".**
 
@@ -86,12 +95,27 @@ Build: **19/19 packages green**. Tests: **36/36 turbo tasks green**.
 - Discovery layer multi-source aggregator (x402 + MPP + t402 catalogs)
 
 **Infrastructure**:
-- Multi-tenant customer dashboard
-- Self-serve resource API key signup
+- ~~Multi-tenant customer dashboard~~ ✓ MVP shipped in Phase 5 Block 4 Sub-task 1 (NOT yet deployed — needs DNS + OAuth)
+- Self-serve resource API key signup (Phase 5 Block 4 Sub-task 2 — next)
 - Per-settle fee mechanism for revenue
 - Native facilitator settlement (isolated service with its own keys)
 - AP2 authorization layer
 - AI-assisted routing once payment_attempts volume justifies it
+
+## Phase 5 progress
+
+| Block / Sub-task | Status |
+| --- | --- |
+| Block 4 Sub-task 1: Customer dashboard MVP (OAuth + 4 panels) | ✓ in this commit |
+| Block 4 Sub-task 2: Self-serve API key signup | next |
+| Block 4 Sub-task 3+: TBD (signers, smokes, …) | pending |
+
+Operator runbook for the dashboard:
+1. Add DNS A-record `suverse-pay.suverse.io → <server IP>`
+2. Register Google + GitHub OAuth apps (callback URLs in `apps/dashboard/README.md`)
+3. Set env vars (`NEXTAUTH_SECRET`, `*_CLIENT_ID`, `*_CLIENT_SECRET`, `DATABASE_URL`)
+4. `pnpm db:migrate` to apply `003_dashboard.sql`
+5. Deploy via Vercel (recommended) or self-host (`pnpm --filter @suverse-pay/dashboard build && start --port 3002` behind nginx)
 
 ## Infrastructure
 - Postgres on :5433, Redis on :6380 (Docker)

@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/*  Design tokens                                                     */
+/*                                                                    */
+/*  Dark-mode-default. Warm neutral foundation (`#0A0A0A` family) +   */
+/*  single amber accent. Deliberate restraint — no purple gradients, */
+/*  no surprise colour palette. The accent appears only on:          */
+/*  active states, chart strokes, badges, focus rings.               */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  :root {
+    /* Light mode (toggleable). Slightly warm cream rather than pure   */
+    /* white — sits better against amber accents.                     */
+    --background:           36 33% 97%;    /* #FBF8F2 */
+    --foreground:           24 10% 10%;    /* #1B1916 */
+    --card:                 0 0% 100%;
+    --card-foreground:      24 10% 10%;
+    --primary:              24 10% 10%;
+    --primary-foreground:   36 33% 97%;
+    --secondary:            24 8% 92%;
+    --secondary-foreground: 24 10% 18%;
+    --muted:                24 8% 92%;
+    --muted-foreground:     24 5% 42%;
+    --accent:               36 92% 50%;    /* #F59E0B */
+    --accent-foreground:    24 10% 8%;
+    --destructive:          0 72% 51%;
+    --destructive-foreground: 36 33% 97%;
+    --border:               24 8% 88%;
+    --input:                24 8% 88%;
+    --ring:                 36 92% 50%;
+    --radius:               0.5rem;
+  }
+
+  .dark {
+    /* Dark mode (default). Black is `#0A0A0A` — warm rather than     */
+    /* a flat #000. Cards lift by 4% lightness.                       */
+    --background:           24 7% 5%;      /* #0D0C0A */
+    --foreground:           36 25% 92%;    /* #F0EBE0 */
+    --card:                 24 7% 8%;      /* #14130F */
+    --card-foreground:      36 25% 92%;
+    --primary:              36 25% 92%;
+    --primary-foreground:   24 7% 5%;
+    --secondary:            24 7% 12%;
+    --secondary-foreground: 36 25% 92%;
+    --muted:                24 7% 12%;
+    --muted-foreground:     36 10% 60%;
+    --accent:               36 92% 50%;
+    --accent-foreground:    24 7% 5%;
+    --destructive:          0 72% 51%;
+    --destructive-foreground: 36 25% 92%;
+    --border:               24 7% 14%;
+    --input:                24 7% 14%;
+    --ring:                 36 92% 50%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "cv11" 1;
+  }
+  /* Tabular numerals everywhere — financial dashboard. Lines up     */
+  /* digits across rows for instant comparison.                     */
+  table, .tabular, .stat-value {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Subtle grain overlay on dark mode — adds depth without theatre. */
+  .grain::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.025;
+    mix-blend-mode: overlay;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+}

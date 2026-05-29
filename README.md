@@ -73,6 +73,22 @@ Capability-only (Phase 5 native signers required to settle):
 - TON, NEAR, Aptos, Tezos, Polkadot, Stacks, Stellar — all routable
   via t402-io once corresponding signers ship
 
+### Customer dashboard (new in v0.5.0-alpha)
+
+Live at `https://suverse-pay.suverse.io` (DNS + OAuth setup needed
+before first sign-in works — see
+[`apps/dashboard/README.md`](apps/dashboard/README.md) for the
+operator runbook).
+
+- OAuth sign-in via Google or GitHub (NextAuth.js v5, JWT sessions)
+- Multi-tenant: one OAuth user can link N existing resource API keys
+- Four panels: summary cards, volume chart, recent settles, network
+  breakdown — all scoped to the user's linked keys, 30-second
+  auto-refresh
+- Dark-mode-default editorial dashboard aesthetic (JetBrains Mono
+  for figures, Inter Tight body, single amber accent)
+- Self-serve API key signup deferred to the next Phase 5 sub-task
+
 ### Smoke suites (still green from Phase 3)
 
 - `mocked` (10) — full gateway end-to-end against mock adapters

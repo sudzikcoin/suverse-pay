@@ -4,6 +4,60 @@ All notable changes to `suverse-pay` are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — v0.5.0-alpha — Phase 5
+
+Phase 5 has started. Iterating toward customer-facing infrastructure.
+
+### Added — apps/dashboard (Phase 5 Block 4 Sub-task 1)
+
+- **`@suverse-pay/dashboard`** — customer-facing Next.js 15 dashboard
+  at `suverse-pay.suverse.io` (NOT yet deployed — operator runbook
+  in `apps/dashboard/README.md`).
+- **OAuth sign-in** via Google + GitHub (NextAuth.js v5, JWT
+  sessions). Multi-tenant from day one: one OAuth user can link N
+  existing resource API keys.
+- **Four panels** scoped to the user's linked keys:
+  - Summary cards — total settles, settled volume USDC, success
+    rate, distinct networks active. 24h / 7d / 30d period toggle.
+  - Volume chart — area chart, hourly buckets (24h) or daily (7d/30d).
+  - Recent settles — last 50 settles with status filter pills.
+    Auto-refresh every 30s; tx hashes link to the right block
+    explorer per chain.
+  - Network breakdown — per-network settled / failed / volume
+    table. (Renamed from "per-endpoint" because
+    `facilitator_payments` doesn't carry an endpoint-path column
+    today — Phase 5 carry-over to extend the wire spec.)
+- **API key linker** — paste an existing resource API key
+  plaintext to associate it with the OAuth user.
+- **Database migration** — `db/migrations/003_dashboard.sql` adds
+  `dashboard_users` + `dashboard_user_resource_keys`. UUIDs are
+  app-generated (Node `crypto.randomUUID`) rather than via Postgres
+  `gen_random_uuid()` so the schema runs unchanged on pg-mem (the
+  db test suite's backend).
+- **Aesthetic direction**: editorial financial dashboard. Dark mode
+  default. JetBrains Mono for figures, Inter Tight body, single
+  amber accent. Restraint over decoration — no purple-gradient AI
+  cliché.
+
+### Deferred to upcoming Phase 5 sub-tasks
+
+- Self-serve resource API key signup (no manual ops contact required)
+- Per-key filter selector in the dashboard (multi-key UI)
+- WebSocket / SSE real-time settles stream
+- Export CSV / advanced filter UI
+- Native non-EVM signers (TON, NEAR, Aptos, Tezos, Polkadot, Stacks,
+  Stellar) — capability-advertised today, end-to-end signing pending
+- MPP HTTP `/mpp/*` routes — waiting on Stripe's public REST surface
+- Real-network mainnet smoke per Phase-4 adapter
+
+### Tests
+
+- Workspace turbo: 36 → **37 tasks** (added `@suverse-pay/dashboard`).
+- Dashboard package: 22 tests covering util helpers + period
+  arithmetic. Route handler unit tests are intentionally minimal
+  (handlers are thin proxies to `queries.ts`).
+- `pnpm build` 19 → **20 packages**; `pnpm test` 37/37 green.
+
 ## [v0.4.0] — 2026-05-29 — "Multi-protocol multi-chain"
 
 Phase 4 complete. The gateway grows from "x402 across 4 networks" to
