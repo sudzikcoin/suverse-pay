@@ -84,6 +84,23 @@ export const ConfigSchema = z.object({
     .default(true),
   bofaiX402BaseUrl: z.string().optional(),
 
+  // Stripe Machine Payments Protocol (MPP) — second protocol family
+  // alongside x402. Phase 4 Block 2 Sub-task 9. The adapter is
+  // wired here so the package is exercised at boot and operators
+  // see it on the Grafana dashboard; HTTP-facing /mpp/* routes are
+  // deferred to Phase 5 because Stripe has not yet published the
+  // production REST paths for MPP verify/settle (the docs reference
+  // the SDK, not REST). When STRIPE_MPP_SECRET_KEY is unset, the
+  // adapter advertises capabilities but verify/settle throws
+  // unauthorized with a clear message (same pattern as Binance
+  // Sub-task 7).
+  stripeMppEnabled: z
+    .union([z.boolean(), z.string().transform((v) => v === "true" || v === "1")])
+    .default(true),
+  stripeMppBaseUrl: z.string().optional(),
+  stripeMppApiVersion: z.string().optional(),
+  stripeMppSecretKey: z.string().optional(),
+
   capabilityDiscoveryIntervalMs: z.coerce
     .number()
     .int()
@@ -128,6 +145,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     binanceX402ApiSecret: env.BINANCE_X402_API_SECRET,
     bofaiX402Enabled: env.BOFAI_X402_ENABLED,
     bofaiX402BaseUrl: env.BOFAI_X402_BASE_URL,
+    stripeMppEnabled: env.STRIPE_MPP_ENABLED,
+    stripeMppBaseUrl: env.STRIPE_MPP_BASE_URL,
+    stripeMppApiVersion: env.STRIPE_MPP_API_VERSION,
+    stripeMppSecretKey: env.STRIPE_MPP_SECRET_KEY,
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
     metricsRefreshIntervalMs: env.METRICS_REFRESH_INTERVAL_MS,

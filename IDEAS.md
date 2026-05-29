@@ -312,9 +312,81 @@ sub-task, so 14 EVM routes have multi-adapter resilience.
 | 5. Thirdweb config expansion (9 networks) | ✓ `92185d0` |
 | 6. Permit2 in signer-evm (USDT registry + signing) | ✓ `341b79a` |
 | 7. Binance x402 adapter (BNB Chain) | ✓ `5c2f6ba` |
-| 8. BofAI / TRON adapter | in this commit |
-| 9. MPP protocol adapter | pending |
+| 8. BofAI / TRON adapter | ✓ `1ba0136` |
+| 9. MPP protocol adapter (Stripe + Tempo) | in this commit |
 | 10. (optional) t402-io adapter | pending |
+
+### Sub-task 9 — MPP (Stripe + Tempo) snapshot
+
+**Multi-protocol milestone**: gateway now hosts a second protocol
+family alongside x402. MPP is a 402-protocol sibling with header-
+based wire format (`WWW-Authenticate: Payment ...` + `Authorization:
+Payment <token>` instead of x402's body-based challenge).
+
+#### Important corrective on the spec
+
+An earlier sketch described MPP as "session-lifecycle: open/use/close
+with persisted server-side sessions". Reading the actual spec
+([mpp.dev/protocol/http-402](https://mpp.dev/protocol/http-402),
+[wevm/mppx](https://github.com/wevm/mppx)): MPP's `intent` field has
+three values (`charge`, `subscription`, `session`) but each individual
+402 challenge is single-shot, same shape as x402. The "session" intent
+is for pay-as-you-go billing meters (token streaming, real-time API
+metering), not persistent user-facing session lifecycle. So the
+sub-task ships the spec-honest shape: `MppAdapter` interface +
+wire-format primitives + Tempo USDC registry entry. The persistent
+session DB tables + `/mpp/sessions*` HTTP front door from the
+original prompt are NOT shipped — they didn't match the actual MPP
+spec.
+
+#### Architecture decision
+
+Option A++ — new `MppAdapter` interface alongside the existing
+`FacilitatorAdapter` (for x402). The two interfaces are intentionally
+distinct: same 402 semantics, different wire formats. The new
+interface lives in `@suverse-pay/adapter-mpp-stripe`.
+
+Tempo is EVM-compatible (chainId **4217**) → fits the existing
+`eip155:` namespace, no new namespace needed. The Tempo USDC contract
+is added to `signer-evm/domains.ts` (Bridged USDC Stargate variant,
+6 decimals, on-chain-verified via `rpc.tempo.xyz`). This means any
+operator who wires an x402 facilitator that covers Tempo can use
+existing routing keys.
+
+#### What ships in this commit
+
+| Surface | Status |
+| --- | --- |
+| `MppAdapter` interface | ✓ |
+| `StripeMppAdapter` implementation — capability advertising + healthCheck | ✓ |
+| Wire-format primitives: `challengeToHeaderLine` / `credentialFromHeaderLine` / base64url codec | ✓ |
+| Tempo USDC entry in `signer-evm` | ✓ (eip155:4217) |
+| Stripe MPP `/verify` and `/settle` REST paths | ✗ Stripe has not yet published the REST endpoints publicly; adapter returns structured "endpoint-not-wired" results until they do |
+| `/mpp/*` HTTP routes in `apps/api` | ✗ Phase 5 (needs the REST paths to wire against) |
+| Real on-chain Tempo smoke | ✗ Phase 5 (needs `STRIPE_MPP_SECRET_KEY`, merchant onboarding required) |
+
+#### Protocol footprint after Sub-task 9
+
+| Protocol | Adapters | Networks |
+| --- | --- | --- |
+| **x402** | coinbase-cdp, payai, thirdweb-x402, binance-x402, bofai-x402, cosmos-pay (6) | eip155 (17 mainnets), tron (mainnet + Nile), solana (mainnet + devnet), cosmos (testnet) |
+| **MPP (NEW)** | mpp-stripe (1) | Tempo mainnet (eip155:4217), Tempo Moderato testnet (eip155:42431), Stripe SPT (fiat) |
+
+The gateway is now a multi-protocol payment router, not just a
+multi-chain x402 facilitator. Discovery layer (Phase 5) can aggregate
+both x402 and MPP catalogs into a unified merchant feed.
+
+#### Coverage table after Sub-task 9
+
+| Tier | Networks |
+| --- | --- |
+| **EVM mainnets** | Base, Polygon, Arbitrum, World Chain, Avalanche, Ethereum, Optimism, BNB Chain, XDC, Monad, Sonic, Sei, Abstract, IoTeX, Celo, Ink, Linea, **Tempo** (**18**) |
+| EVM testnets | Base Sepolia, World Sepolia, Avalanche Fuji, Arbitrum Sepolia, BSC Testnet, Tempo Moderato (**6**) |
+| TRON | mainnet, Nile testnet (**2**) |
+| Solana | mainnet + devnet |
+| Cosmos | testnet |
+| Fiat (Stripe SPT via MPP, NEW) | (no chain) |
+| **Total mainnets (deduped, EVM + TRON)** | **19** |
 
 ### Sub-task 8 — BofAI x402 (TRON + BSC) snapshot
 

@@ -2,6 +2,10 @@ import { CoinbaseCdpAdapter } from "@suverse-pay/adapter-coinbase-cdp";
 import { CosmosPayAdapter } from "@suverse-pay/adapter-cosmos-pay";
 import { BinanceX402Adapter } from "@suverse-pay/adapter-binance-x402";
 import { BofaiX402Adapter } from "@suverse-pay/adapter-bofai-x402";
+import {
+  StripeMppAdapter,
+  type MppAdapter,
+} from "@suverse-pay/adapter-mpp-stripe";
 import { PayAiAdapter } from "@suverse-pay/adapter-payai";
 import { ThirdwebX402Adapter } from "@suverse-pay/adapter-thirdweb-x402";
 import { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
@@ -453,6 +457,60 @@ async function main(): Promise<void> {
       "BOFAI_X402_ENABLED=false — skipping BofAI adapter registration",
     );
   }
+
+  // ---- Stripe MPP (second protocol family, Sub-task 9) ----------------
+  // MPP is a 402-protocol sibling to x402 with header-based wire
+  // format. It does NOT register through ProviderRegistry — the
+  // x402 ProviderAdapter interface and the new MppAdapter interface
+  // are distinct (different wire-format, different verify/settle
+  // semantics). The adapter is instantiated here so the package is
+  // exercised at boot + the operator sees a clear status line, but
+  // HTTP-facing /mpp/* routes wait on Phase 5 (Stripe's REST surface
+  // for MPP verify/settle is not yet publicly documented).
+  let mppStripeAdapter: MppAdapter | undefined;
+  if (config.stripeMppEnabled) {
+    mppStripeAdapter = new StripeMppAdapter({
+      ...(config.stripeMppBaseUrl !== undefined &&
+      config.stripeMppBaseUrl.length > 0
+        ? { baseUrl: config.stripeMppBaseUrl }
+        : {}),
+      ...(config.stripeMppApiVersion !== undefined &&
+      config.stripeMppApiVersion.length > 0
+        ? { apiVersion: config.stripeMppApiVersion }
+        : {}),
+      ...(config.stripeMppSecretKey !== undefined &&
+      config.stripeMppSecretKey.length > 0
+        ? { secretKey: config.stripeMppSecretKey }
+        : {}),
+    });
+    const caps = mppStripeAdapter.getCapabilities();
+    logger.info(
+      {
+        capabilities: caps.length,
+        secretKeyConfigured:
+          config.stripeMppSecretKey !== undefined &&
+          config.stripeMppSecretKey.length > 0,
+      },
+      "Stripe MPP adapter ready (Phase 4 — capability advertising + wire primitives; HTTP /mpp/* routes deferred to Phase 5)",
+    );
+    if (
+      config.stripeMppSecretKey === undefined ||
+      config.stripeMppSecretKey.length === 0
+    ) {
+      logger.warn(
+        "STRIPE_MPP_SECRET_KEY not set — MPP adapter advertises capabilities but verify/settle will throw unauthorized until a sk_live_... / sk_test_... key is supplied",
+      );
+    }
+  } else {
+    logger.warn(
+      "STRIPE_MPP_ENABLED=false — skipping MPP adapter registration",
+    );
+  }
+  // mppStripeAdapter is intentionally NOT attached to ServerContext
+  // — no HTTP routes consume it yet. Phase 5 will wire /mpp/* with
+  // the adapter as a dependency. Hold the reference to keep the
+  // package live and stop linters from flagging it.
+  void mppStripeAdapter;
 
   // ---- Background crons ------------------------------------------------
   const orchLogger = {

@@ -36,7 +36,7 @@
  * Phase 4 Block 2 Sub-task 5 expands Thirdweb routing to 9 more EVM
  * mainnets: XDC (50), Monad mainnet (143), Sonic (146), Sei mainnet
  * (1329), Abstract (2741), IoTeX (4689), Celo (42220), Ink (57073),
- * Linea (59144). All probed via chain-specific public RPCs
+ * Linea (59144). Sub-task 9 adds Tempo mainnet (4217) for MPP routing. All probed via chain-specific public RPCs
  * (erpc.xinfin.network, rpc.monad.xyz, rpc.soniclabs.com,
  * evm-rpc.sei-apis.com, api.mainnet.abs.xyz,
  * babel-api.mainnet.iotex.io, forno.celo.org, rpc-gel.inkonchain.com,
@@ -291,6 +291,30 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
       verifyingContract: "0x176211869cA2b568f2A7D4EE941E073a821EE1ff",
       decimals: 6,
     },
+    // ---- Sub-task 9: Tempo (Stripe's payments-focused L1) ----------
+    // Tempo is the canonical settlement chain for Stripe's Machine
+    // Payments Protocol (MPP). EVM-compatible, EIP-155 chainId 4217
+    // (0x1079). USDC is bridged via Stargate — on-chain name() returns
+    // "Bridged USDC (Stargate)", symbol() returns "USDC.e",
+    // decimals() returns 6. Tempo has NO native gas token — fees are
+    // paid in any whitelisted USD stablecoin.
+    //
+    // version() reverts on this contract — like BSC's Binance-Peg USDC,
+    // Tempo's USDC is NOT canonical Circle EIP-3009. EIP-3009 sigs
+    // produced against this entry will fail at on-chain verification.
+    // Routed through MPP / Stripe API (Sub-task 9 adapter), not via
+    // the EIP-3009 path. The entry exists here so the signer table is
+    // the single source of truth for "what USDC contract lives on
+    // this chain" — see `hasEip3009: false` future flag (not yet on
+    // EvmTokenDomain; Phase 5 cleanup).
+    {
+      symbol: "USDC",
+      name: "Bridged USDC (Stargate)",
+      version: "2",
+      chainId: 4217,
+      verifyingContract: "0x20C000000000000000000000b9537d11c60E8b50",
+      decimals: 6,
+    },
 
     // EURC — Circle's euro stablecoin. Currently deployed on Base; on
     // Polygon/Arbitrum it is not yet available, so we list only Base
@@ -328,6 +352,7 @@ export const SUPPORTED_CHAIN_IDS = [
   42220,   // Celo
   43113,   // Avalanche Fuji
   43114,   // Avalanche C-Chain mainnet
+  4217,    // Tempo mainnet (Sub-task 9)
   57073,   // Ink
   59144,   // Linea
   84532,   // Base Sepolia
