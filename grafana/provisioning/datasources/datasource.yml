@@ -1,0 +1,43 @@
+# Grafana datasource provisioning — Phase 4 Block 1 Sub-task 4.
+#
+# Two datasources: Prometheus for the gauge-driven counters scraped
+# from apps/api, and Postgres for direct queries against the
+# facilitator_* tables (historical aggregates that are awkward to
+# pre-aggregate in Prometheus — top-N resource keys by 7d volume,
+# failover event timeline with payment ids, etc).
+#
+# Provisioned files are read-only inside Grafana's UI — to override
+# the connection string, set GF_DATASOURCES_DEFAULT_URL or edit this
+# file and restart Grafana.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: suverse_pay_prom
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
+
+  - name: SuversePayPostgres
+    uid: suverse_pay_pg
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: ${POSTGRES_USER}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    jsonData:
+      database: ${POSTGRES_DB}
+      sslmode: disable
+      maxOpenConns: 4
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    editable: true

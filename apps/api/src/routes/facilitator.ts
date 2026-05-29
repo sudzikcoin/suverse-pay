@@ -18,6 +18,7 @@ import {
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ServerContext } from "../context.js";
+import { facilitatorRateLimitHitsTotal } from "../lib/metrics.js";
 import { requireResourceKey } from "../plugins/resource-key-auth.js";
 
 const FacilitatorRequestSchema = z.object({
@@ -107,6 +108,9 @@ export function registerFacilitatorRoutes(
         perMinuteLimit: resourceKey.rateLimitPerMinute,
       });
       if (!rl.allowed) {
+        facilitatorRateLimitHitsTotal
+          .labels({ resource_key_label: resourceKey.label })
+          .inc();
         throw new GatewayError(
           "rate_limited",
           429,

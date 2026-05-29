@@ -63,6 +63,10 @@ export const ConfigSchema = z.object({
     .positive()
     .default(2 * 60 * 60 * 1000),
   healthCheckIntervalMs: z.coerce.number().int().positive().default(30_000),
+  // Phase 4 Block 1 Sub-task 4 — observability stack. Matches the
+  // Prometheus scrape_interval (15s) so dashboards always see a fresh
+  // value within a tick. Raise on busy deploys to reduce DB load.
+  metricsRefreshIntervalMs: z.coerce.number().int().positive().default(15_000),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -92,5 +96,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     thirdwebX402AuthHeader: env.THIRDWEB_X402_AUTH_HEADER,
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
+    metricsRefreshIntervalMs: env.METRICS_REFRESH_INTERVAL_MS,
   });
 }

@@ -55,16 +55,19 @@ function safeEqual(a: string, b: string): boolean {
 export interface AuthOptions {
   config: Config;
   /**
-   * Endpoints exempt from auth. v0.1: just `/health` for liveness
-   * probes (industry convention for k8s-style health checks; the
-   * endpoint reveals nothing beyond "process is up").
+   * Endpoints exempt from auth. v0.1: `/health` for liveness probes
+   * (industry convention; reveals nothing beyond "process is up").
+   * Phase 4 Block 1 Sub-task 4 adds `/metrics` — the Prometheus
+   * scrape path. Prometheus has no concept of bearer tokens at scrape
+   * time; if apps/api is exposed to the internet, gate this path at
+   * the proxy layer (nginx allowlist, cloudflare access, etc).
    */
   exempt?: ReadonlySet<string>;
 }
 
 export function registerAuth(app: FastifyInstance, opts: AuthOptions): void {
   const adminHash = sha256Hex(opts.config.adminApiKey);
-  const exempt = opts.exempt ?? new Set(["/health"]);
+  const exempt = opts.exempt ?? new Set(["/health", "/metrics"]);
 
   app.addHook("onRequest", async (req: FastifyRequest) => {
     const routeUrl = req.routeOptions.url ?? req.url;

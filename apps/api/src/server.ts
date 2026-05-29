@@ -9,6 +9,7 @@ import { registerResourceKeyAuth } from "./plugins/resource-key-auth.js";
 import { registerFacilitatorRoutes } from "./routes/facilitator.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerMetricsRoute } from "./routes/metrics.js";
+import { registerPromMetricsRoute } from "./routes/metrics-prom.js";
 import { registerPaymentsRoute } from "./routes/payments.js";
 import { registerProvidersRoute } from "./routes/providers.js";
 import { registerQuoteRoute } from "./routes/quote.js";
@@ -62,6 +63,7 @@ export async function buildServer(
   registerSettleRoute(app, opts.ctx);
   registerPaymentsRoute(app, opts.ctx);
   registerMetricsRoute(app, opts.ctx);
+  registerPromMetricsRoute(app);
   registerFacilitatorRoutes(app, opts.ctx);
 
   return app;

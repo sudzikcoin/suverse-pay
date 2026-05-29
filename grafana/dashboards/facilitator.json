@@ -1,0 +1,453 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Internal observability for the suverse-pay facilitator surface. Phase 4 Block 1 Sub-task 4. Counters are absolute cumulative gauges sourced from Postgres on a 15s refresher tick; use `increase()` over a window rather than `rate()`.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "panels": [],
+      "title": "System health",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "color": "red", "text": "DOWN" } }, "type": "value" },
+            { "options": { "1": { "color": "green", "text": "UP" } }, "type": "value" }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+          "editorMode": "code",
+          "expr": "adapter_health",
+          "legendFormat": "{{adapter}}",
+          "range": false,
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Adapter health",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+          "editorMode": "code",
+          "expr": "sum(increase(facilitator_settle_total[24h]))",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Settles (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "none"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+          "editorMode": "code",
+          "expr": "sum(payment_amount_sum) / 1e6",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Volume (USDC, lifetime)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS active_keys FROM resource_api_keys WHERE is_active",
+          "refId": "A"
+        }
+      ],
+      "title": "Active resource API keys",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "panels": [],
+      "title": "Settle activity",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": { "group": "A", "mode": "normal" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 6 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+          "editorMode": "code",
+          "expr": "sum by (adapter) (increase(facilitator_settle_total[1h]))",
+          "legendFormat": "{{adapter}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Settles per hour, by adapter",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "vis": false } },
+          "mappings": []
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+      "id": 6,
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": { "displayMode": "list", "placement": "right", "showLegend": true, "values": [] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+          "editorMode": "code",
+          "expr": "sum by (network) (increase(facilitator_settle_total{status=\"settled\"}[24h]))",
+          "legendFormat": "{{network}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Settles by network (24h)",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": { "group": "A", "mode": "normal" }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 14 },
+      "id": 7,
+      "options": {
+        "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+          "editorMode": "code",
+          "expr": "sum by (status) (increase(facilitator_settle_total[5m]))",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Settles by status (rolling 5m increase)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "id": 102,
+      "panels": [],
+      "title": "Failover and errors",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT e.created_at, e.primary_adapter AS from_adapter, e.backup_adapter AS to_adapter, fp.network, e.primary_error_code AS error, e.payment_id FROM facilitator_failover_events e JOIN facilitator_payments fp ON fp.id = e.payment_id WHERE e.created_at > NOW() - INTERVAL '24 hours' ORDER BY e.created_at DESC LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Failover events (last 24h)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT adapter_used AS adapter, error_code, COUNT(*) AS occurrences FROM facilitator_payments WHERE status = 'failed' AND created_at > NOW() - INTERVAL '24 hours' GROUP BY adapter_used, error_code ORDER BY occurrences DESC LIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "Top errors by adapter (24h)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "orientation": "horizontal"
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 30 },
+      "id": 10,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "suverse_pay_prom" },
+          "editorMode": "code",
+          "expr": "facilitator_rate_limit_hits_total",
+          "legendFormat": "{{resource_key_label}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Rate-limit hits per resource key (since process start)",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 },
+      "id": 103,
+      "panels": [],
+      "title": "Resource keys",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } }
+      },
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 38 },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "showHeader": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT rk.label AS resource_key, fp.network, COALESCE(SUM(CASE WHEN fp.status = 'settled' THEN fp.amount::numeric ELSE 0 END), 0) / 1000000 AS volume_usdc, COUNT(*) FILTER (WHERE fp.status = 'settled') AS settled, COUNT(*) FILTER (WHERE fp.status = 'failed') AS failed FROM resource_api_keys rk JOIN facilitator_payments fp ON fp.resource_key_id = rk.id WHERE fp.created_at > NOW() - INTERVAL '7 days' GROUP BY rk.label, fp.network ORDER BY volume_usdc DESC LIMIT 20",
+          "refId": "A"
+        }
+      ],
+      "title": "Top resource keys by volume (7d)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } }
+      },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 38 },
+      "id": 12,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "showHeader": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "suverse_pay_pg" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT rk.label AS resource_key, COUNT(*) FILTER (WHERE fp.status = 'settled') AS settled, COUNT(*) FILTER (WHERE fp.status = 'failed') AS failed FROM resource_api_keys rk LEFT JOIN facilitator_payments fp ON fp.resource_key_id = rk.id GROUP BY rk.label ORDER BY settled DESC NULLS LAST",
+          "refId": "A"
+        }
+      ],
+      "title": "Per-resource-key settle counts (lifetime)",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["suverse-pay", "facilitator", "internal"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Facilitator Observability",
+  "uid": "suverse-pay-facilitator",
+  "version": 1,
+  "weekStart": ""
+}

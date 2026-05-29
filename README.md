@@ -62,6 +62,22 @@ To run the production server with real provider adapters instead of
 the smoke mocks: set `COINBASE_CDP_API_KEY_NAME` / `*_SECRET` (see
 `.env.example`) and `pnpm --filter @suverse-pay/api run dev`.
 
+### Observability (Grafana + Prometheus)
+
+Opt-in operator dashboard. Both services live behind the
+`observability` Docker Compose profile so a normal dev loop doesn't
+pull two extra images.
+
+```bash
+docker compose --profile observability up -d grafana prometheus
+open http://localhost:3030        # admin / admin (override via env)
+```
+
+Pre-provisioned dashboard: "Facilitator Observability" — settle
+activity by adapter / network, failover events, top resource keys,
+adapter health, rate-limit hits. Full reference and panel breakdown
+in [`docs/observability.md`](docs/observability.md).
+
 ## Architecture
 
 ```

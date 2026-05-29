@@ -29,6 +29,81 @@ services:
       timeout: 5s
       retries: 10
 
+  # ---- Observability stack (Phase 4 Block 1 Sub-task 4) ----------------
+  # Both services are operator-only — there's no app dependency on
+  # either one. apps/api exposes a /metrics endpoint regardless; if the
+  # observability stack is down, the gateway keeps serving traffic.
+  #
+  # Grafana ships at :3030 (NOT the Grafana default :3000 — that's our
+  # API; not :3001 either — that's LaunchLoop on this host). Override
+  # with GRAFANA_PORT / PROMETHEUS_PORT if you redeploy.
+  #
+  # Both containers mount host directories for declarative config, so
+  # changes in `grafana/` / `prometheus/` are picked up by re-running
+  # `docker compose up -d grafana prometheus`. The dashboards JSON is
+  # provisioned at boot from `grafana/provisioning/dashboards/`.
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: suverse-pay-prometheus
+    profiles: ["observability"]
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - suverse_pay_prom:/prometheus
+    extra_hosts:
+      # Lets Prometheus scrape apps/api running on the host (port 3000)
+      # without forcing the operator to run apps/api inside a container.
+      # On Docker for Linux this resolves to the host gateway IP.
+      - "host.docker.internal:host-gateway"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: suverse-pay-grafana
+    profiles: ["observability"]
+    ports:
+      - "${GRAFANA_PORT:-3030}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      # Allow connecting to Postgres + Prometheus across the user-defined
+      # docker network without TLS — internal stack only.
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Pre-load the Postgres connection password so the datasource
+      # provisioning file can reference it via $POSTGRES_PASSWORD.
+      POSTGRES_USER: suverse
+      POSTGRES_PASSWORD: suverse
+      POSTGRES_DB: suverse_pay
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - suverse_pay_grafana:/var/lib/grafana
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
 volumes:
   suverse_pay_pg:
   suverse_pay_redis:
+  suverse_pay_prom:
+  suverse_pay_grafana:

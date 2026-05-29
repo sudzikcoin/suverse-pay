@@ -16,6 +16,7 @@ import { Pool } from "pg";
 import pino from "pino";
 import { loadConfig } from "./config.js";
 import type { MetricsSummary, ServerContext } from "./context.js";
+import { MetricsRefresher } from "./lib/metrics-refresher.js";
 import { sha256Hex, ADMIN_API_KEY_ID } from "./plugins/auth.js";
 import { buildServer } from "./server.js";
 
@@ -292,6 +293,16 @@ async function main(): Promise<void> {
   discoveryCron.start();
   healthCron.start();
 
+  // Prometheus-format /metrics endpoint refresher — polls Postgres on
+  // a tick and updates the prom-client Gauge registry. Phase 4 Block 1
+  // Sub-task 4.
+  const metricsRefresher = new MetricsRefresher({
+    pool,
+    intervalMs: config.metricsRefreshIntervalMs,
+    logger: orchLogger,
+  });
+  const stopMetricsRefresher = metricsRefresher.start();
+
   // ---- ServerContext glue ---------------------------------------------
   const facilitatorRateLimiter = new FacilitatorRateLimiter({ redis });
   const ctx: ServerContext = {
@@ -311,6 +322,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, "shutdown initiated");
     discoveryCron.stop();
     healthCron.stop();
+    await stopMetricsRefresher();
     await app.close();
     await pool.end();
     redis.disconnect();
