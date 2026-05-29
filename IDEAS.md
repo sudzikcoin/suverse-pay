@@ -305,16 +305,41 @@ sub-task, so 14 EVM routes have multi-adapter resilience.
 | 4. Internal Grafana dashboard | ✓ `b401cc8` |
 | ~~5. Cosmos mainnet~~ | deferred to Phase 5 — needs funded facilitator wallet |
 
-### Block 2 status (started)
+### Block 2 status
 
 | Sub-task | Status |
 | --- | --- |
-| 5. Thirdweb config expansion (9 networks) | in this commit |
-| 6. Permit2 support in signer-evm (unlocks USDT) | pending |
+| 5. Thirdweb config expansion (9 networks) | ✓ `92185d0` |
+| 6. Permit2 in signer-evm (USDT registry + signing) | in this commit |
 | 7. Binance x402 adapter (BNB Chain) | pending |
 | 8. BofAI / Tron adapter | pending |
 | 9. MPP protocol adapter | pending |
 | 10. (optional) t402-io adapter | pending |
+
+### Sub-task 6 — Permit2 capability snapshot
+
+USDT signing primitives shipped + token registry. Settlement wiring
+deferred because no facilitator advertises Permit2 in `/supported`
+yet (verified 2026-05-29 against CDP + Thirdweb fixtures).
+
+| Chain | Permit2 | x402 Proxy | USDT registered | Signs |
+| --- | --- | --- | --- | --- |
+| Ethereum (1) | ✓ | ✓ | ✓ Tether USD (no Permit) | ✓ round-trip |
+| Optimism (10) | ✓ | ✓ | ✓ Tether USD (no Permit) | ✓ round-trip |
+| Polygon (137) | ✓ | ✓ | ✓ USDT0 (Permit yes) | ✓ round-trip |
+| Base (8453) | ✓ | ✓ | ✓ Tether USD (no Permit) | ✓ round-trip |
+| Arbitrum (42161) | ✓ | ✓ | ✓ USD₮0 (Permit yes) | ✓ round-trip |
+| Celo (42220) | ✓ | ✓ | ✓ USD₮ (no Permit) | ✓ round-trip |
+| Avalanche (43114) | ✓ | ✓ | ✓ USDt (Permit yes) | ✓ round-trip |
+| Sei (1329) | ✓ | ✓ | ✓ USDT.kava (no Permit) | ✓ round-trip |
+| Linea (59144) | ✓ | ✗ | ✓ Tether USD (no Permit) | ✓ signs, settle blocked |
+| XDC (50) | ✓ | ✓ | — | — |
+| Monad (143) | ✓ | ✓ | — | — |
+| World Chain (480) | ✓ | ✓ | — | — |
+| Sonic (146) | ✓ | ✗ | — | — |
+| Abstract (2741) | ✓ | ✗ | — | — |
+| IoTeX (4689) | ✓ | ✗ | — | — |
+| Ink (57073) | ✓ | ✗ | — | — |
 
 ### Networks Thirdweb advertises but we don't route (yet)
 
