@@ -27,18 +27,35 @@
  * through the PayAI facilitator adapter (CDP doesn't advertise
  * them).
  *
- * Phase 4 Block 1 Sub-task 3 (Thirdweb adapter) adds Ethereum
+ * Phase 4 Block 1 Sub-task 3 (Thirdweb adapter) added Ethereum
  * mainnet (1) and Optimism mainnet (10) — both native Circle USDC
  * with EIP-712 domain `name="USD Coin"` / `version="2"`, verified
  * on-chain via `eth_call name()` / `version()` / `decimals()`
  * against publicnode + mainnet.optimism.io RPCs respectively.
- * Routed through the Thirdweb adapter (CDP doesn't advertise eip155:1
- * or eip155:10; PayAI doesn't either as of 2026-05-29). The rest of
- * Thirdweb's 20+ EVM footprint (Linea, Celo, Sonic, World Chain via
- * a third adapter, etc.) is left for follow-on sub-tasks where each
- * new network gets its own real smoke before going live.
  *
- * BNB Chain (56) and other Permit-only networks await a separate
+ * Phase 4 Block 2 Sub-task 5 expands Thirdweb routing to 9 more EVM
+ * mainnets: XDC (50), Monad mainnet (143), Sonic (146), Sei mainnet
+ * (1329), Abstract (2741), IoTeX (4689), Celo (42220), Ink (57073),
+ * Linea (59144). All probed via chain-specific public RPCs
+ * (erpc.xinfin.network, rpc.monad.xyz, rpc.soniclabs.com,
+ * evm-rpc.sei-apis.com, api.mainnet.abs.xyz,
+ * babel-api.mainnet.iotex.io, forno.celo.org, rpc-gel.inkonchain.com,
+ * rpc.linea.build). Domain `name` strings vary across deployments —
+ * Abstract advertises `"Bridged USDC (Stargate)"`, IoTeX advertises
+ * `"Bridged USDC"`, the rest are plain `"USDC"`. These are NOT
+ * guesses — the strings come from `eth_call name()` on the deployed
+ * contract and the EIP-712 hash depends on them being exact.
+ *
+ * Networks Thirdweb advertises but Sub-task 5 skipped (left for a
+ * follow-up):
+ *   - Flare (14): contract at advertised address returns `0x` on
+ *     three public RPCs (flare-api.flare.network, ankr, public-rpc).
+ *   - Gravity (1776): `rpc.gravity.xyz` returns `0x`, `gravity.drpc.org`
+ *     returns `Not Found`; no working RPC discovered.
+ *   - Ham (5112): no resolvable public RPC.
+ *
+ * BNB Chain (56) and Permit-only networks (Peaq 3338, Berachain
+ * testnet 80069 advertising Honey not USDC) await a separate
  * EIP-2612 signing path — see docs/design/non-cdp-evm-adapter.md.
  */
 
@@ -187,6 +204,93 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
       verifyingContract: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
       decimals: 6,
     },
+    // ---- Phase 4 Block 2 Sub-task 5 — Thirdweb-routed EVM mainnets ---
+    // USDC on XDC Network — verified via erpc.xinfin.network.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 50,
+      verifyingContract: "0xfA2958CB79b0491CC627c1557F441eF849Ca8eb1",
+      decimals: 6,
+    },
+    // USDC on Monad mainnet — verified via rpc.monad.xyz.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 143,
+      verifyingContract: "0x754704Bc059F8C67012fEd69BC8A327a5aafb603",
+      decimals: 6,
+    },
+    // USDC on Sonic — verified via rpc.soniclabs.com.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 146,
+      verifyingContract: "0x29219dd400f2Bf60E5a23d13Be72B486D4038894",
+      decimals: 6,
+    },
+    // USDC on Sei mainnet — verified via evm-rpc.sei-apis.com.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 1329,
+      verifyingContract: "0xe15fc38f6d8c56af07bbcbe3baf5708a2bf42392",
+      decimals: 6,
+    },
+    // Bridged USDC on Abstract — verified via api.mainnet.abs.xyz.
+    // Domain name is "Bridged USDC (Stargate)" — the Stargate-bridged
+    // variant, NOT plain Circle USDC. EIP-712 hash differs from
+    // mainnet USDC; do not collapse these into one entry.
+    {
+      symbol: "USDC",
+      name: "Bridged USDC (Stargate)",
+      version: "2",
+      chainId: 2741,
+      verifyingContract: "0x84A71ccD554Cc1b02749b35d22F684CC8ec987e1",
+      decimals: 6,
+    },
+    // Bridged USDC on IoTeX — verified via babel-api.mainnet.iotex.io.
+    // Domain name is "Bridged USDC" (no parenthetical) — a third
+    // distinct variant from "USD Coin" and "Bridged USDC (Stargate)".
+    {
+      symbol: "USDC",
+      name: "Bridged USDC",
+      version: "2",
+      chainId: 4689,
+      verifyingContract: "0xcdf79194c6c285077a58da47641d4dbe51f63542",
+      decimals: 6,
+    },
+    // Native USDC on Celo — verified via forno.celo.org.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 42220,
+      verifyingContract: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+      decimals: 6,
+    },
+    // USDC on Ink (Optimism Superchain L2) — verified via rpc-gel.inkonchain.com.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 57073,
+      verifyingContract: "0x2D270e6886d130D724215A266106e6832161EAEd",
+      decimals: 6,
+    },
+    // USDC on Linea — verified via rpc.linea.build.
+    {
+      symbol: "USDC",
+      name: "USDC",
+      version: "2",
+      chainId: 59144,
+      verifyingContract: "0x176211869cA2b568f2A7D4EE941E073a821EE1ff",
+      decimals: 6,
+    },
 
     // EURC — Circle's euro stablecoin. Currently deployed on Base; on
     // Polygon/Arbitrum it is not yet available, so we list only Base
@@ -210,14 +314,23 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
 export const SUPPORTED_CHAIN_IDS = [
   1,       // Ethereum mainnet
   10,      // Optimism mainnet
-  8453,    // Base mainnet
+  50,      // XDC
   137,     // Polygon
-  42161,   // Arbitrum mainnet
-  84532,   // Base Sepolia
+  143,     // Monad mainnet
+  146,     // Sonic
   480,     // World Chain mainnet
+  1329,    // Sei mainnet
+  2741,    // Abstract (Bridged USDC Stargate)
+  4689,    // IoTeX (Bridged USDC)
   4801,    // World Sepolia
-  43114,   // Avalanche C-Chain mainnet
+  8453,    // Base mainnet
+  42161,   // Arbitrum mainnet
+  42220,   // Celo
   43113,   // Avalanche Fuji
+  43114,   // Avalanche C-Chain mainnet
+  57073,   // Ink
+  59144,   // Linea
+  84532,   // Base Sepolia
   421614,  // Arbitrum Sepolia
 ] as const;
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number];

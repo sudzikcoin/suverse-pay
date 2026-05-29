@@ -223,8 +223,36 @@ async function main(): Promise<void> {
   if (config.thirdwebX402Enabled) {
     const thirdwebCaps = [
       // ---- Thirdweb-exclusive EVM mainnets (CDP + PayAI don't cover) ---
+      // Sub-task 3 — Ethereum + Optimism.
       { network: "eip155:1",  asset: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", scheme: "exact" }, // Ethereum mainnet USDC
       { network: "eip155:10", asset: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", scheme: "exact" }, // Optimism mainnet USDC
+      // Sub-task 5 expansion — 9 more EVM mainnets routed exclusively
+      // through Thirdweb. USDC contract addresses match Thirdweb's
+      // live /supported response (cached at
+      // packages/adapters/thirdweb-x402/test-fixtures/thirdweb-supported.json)
+      // and have been on-chain-verified via eth_call name()/version()/
+      // decimals() against chain-specific public RPCs — see
+      // packages/signers/evm/src/domains.ts header for the RPC list.
+      { network: "eip155:50",    asset: "0xfA2958CB79b0491CC627c1557F441eF849Ca8eb1", scheme: "exact" }, // XDC USDC
+      { network: "eip155:143",   asset: "0x754704Bc059F8C67012fEd69BC8A327a5aafb603", scheme: "exact" }, // Monad mainnet USDC
+      { network: "eip155:146",   asset: "0x29219dd400f2Bf60E5a23d13Be72B486D4038894", scheme: "exact" }, // Sonic USDC
+      { network: "eip155:1329",  asset: "0xe15fc38f6d8c56af07bbcbe3baf5708a2bf42392", scheme: "exact" }, // Sei mainnet USDC
+      { network: "eip155:2741",  asset: "0x84A71ccD554Cc1b02749b35d22F684CC8ec987e1", scheme: "exact" }, // Abstract Bridged USDC (Stargate)
+      { network: "eip155:4689",  asset: "0xcdf79194c6c285077a58da47641d4dbe51f63542", scheme: "exact" }, // IoTeX Bridged USDC
+      { network: "eip155:42220", asset: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", scheme: "exact" }, // Celo USDC
+      { network: "eip155:57073", asset: "0x2D270e6886d130D724215A266106e6832161EAEd", scheme: "exact" }, // Ink USDC
+      { network: "eip155:59144", asset: "0x176211869cA2b568f2A7D4EE941E073a821EE1ff", scheme: "exact" }, // Linea USDC
+      // ---- Thirdweb-also-covered EVM (PayAI primary, Thirdweb failover) ---
+      // These three networks are already in PayAI's static config and
+      // routed PayAI-only; Thirdweb's /supported lists them too, so we
+      // register them in the Thirdweb cap set as well. The routing
+      // config (services/facilitator/src/routing-config.ts) is what
+      // upgrades them from PayAI-only to PayAI-primary + Thirdweb-
+      // failover. Asset addresses MUST match PayAI's caps verbatim so
+      // both adapters advertise the same (network, asset, scheme).
+      { network: "eip155:43114",  asset: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", scheme: "exact" }, // Avalanche C-Chain USDC
+      { network: "eip155:43113",  asset: "0x5425890298aed601595a70AB815c96711a31Bc65", scheme: "exact" }, // Avalanche Fuji USDC
+      { network: "eip155:421614", asset: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", scheme: "exact" }, // Arbitrum Sepolia USDC
     ] as const;
     const thirdweb = new ThirdwebX402Adapter({
       capabilities: thirdwebCaps.map((c) => ({

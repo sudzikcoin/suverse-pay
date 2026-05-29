@@ -157,28 +157,41 @@ describe("ROUTING_CONFIG static entries", () => {
     });
   }
 
-  // (d) PayAI-exclusive EVM routes (Phase 4 Block 1 Sub-task 2).
-  // Networks CDP doesn't advertise — PayAI-only.
-  const payaiOnlyEvmRoutes = [
+  // (d) PayAI-primary + Thirdweb-failover routes. Phase 4 Block 1
+  // Sub-task 2 launched these PayAI-only; Phase 4 Block 2 Sub-task 5
+  // added Thirdweb as a secondary because Thirdweb's /supported lists
+  // the same USDC contracts for these three networks. Routing keeps
+  // PayAI primary (Sub-task 2 already smoke-tested that path).
+  const payaiPlusThirdwebRoutes = [
     "eip155:43114:exact",  // Avalanche C-Chain mainnet
     "eip155:43113:exact",  // Avalanche Fuji
     "eip155:421614:exact", // Arbitrum Sepolia
   ];
-  for (const key of payaiOnlyEvmRoutes) {
-    it(`routes ${key} payai-only (CDP doesn't advertise)`, async () => {
+  for (const key of payaiPlusThirdwebRoutes) {
+    it(`routes ${key} with payai primary + thirdweb failover`, async () => {
       const { getRoutingPriority } = await import("./routing-config.js");
       const network = key.replace(":exact", "");
       const priority = getRoutingPriority(network, "exact");
-      expect(priority).toEqual(["payai"]);
+      expect(priority).toEqual(["payai", "thirdweb-x402"]);
     });
   }
 
-  // (e) Thirdweb-exclusive EVM routes (Phase 4 Block 1 Sub-task 3).
-  // Networks CDP and PayAI don't advertise — Thirdweb-only. Optimism
-  // is the headline route the sub-task was built to unlock.
+  // (e) Thirdweb-exclusive EVM routes (Phase 4 Block 1 Sub-task 3 +
+  // Block 2 Sub-task 5). Networks where CDP and PayAI advertise nothing
+  // on x402 — Thirdweb's Nexus facilitator is the only path. Sub-task 5
+  // expanded this from 2 to 11 networks.
   const thirdwebOnlyEvmRoutes = [
-    "eip155:1:exact",  // Ethereum mainnet
-    "eip155:10:exact", // Optimism mainnet
+    "eip155:1:exact",     // Ethereum mainnet      (Sub-task 3)
+    "eip155:10:exact",    // Optimism mainnet      (Sub-task 3)
+    "eip155:50:exact",    // XDC                    (Sub-task 5)
+    "eip155:143:exact",   // Monad mainnet          (Sub-task 5)
+    "eip155:146:exact",   // Sonic                  (Sub-task 5)
+    "eip155:1329:exact",  // Sei mainnet            (Sub-task 5)
+    "eip155:2741:exact",  // Abstract               (Sub-task 5)
+    "eip155:4689:exact",  // IoTeX                  (Sub-task 5)
+    "eip155:42220:exact", // Celo                   (Sub-task 5)
+    "eip155:57073:exact", // Ink                    (Sub-task 5)
+    "eip155:59144:exact", // Linea                  (Sub-task 5)
   ];
   for (const key of thirdwebOnlyEvmRoutes) {
     it(`routes ${key} thirdweb-only (CDP + PayAI don't advertise)`, async () => {

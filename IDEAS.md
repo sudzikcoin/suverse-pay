@@ -275,6 +275,71 @@ Operator-side visibility makes entry 9 (self-serve signup) usable.
 - Signup automation (entry 9) — without it, the operator dashboard
   has no users
 
+## Phase 4 progress markers
+
+Snapshot at end of Phase 4 Block 2 Sub-task 5 (commit pending):
+
+### Networks routed through the gateway
+
+Across CDP + PayAI + Thirdweb-x402:
+
+| Adapter | Mainnets | Testnets | Total |
+| --- | --- | --- | --- |
+| coinbase-cdp | Base (8453), Polygon (137), Arbitrum (42161), World Chain (480) | Base Sepolia (84532), World Sepolia (4801) | 6 |
+| payai | Avalanche C-Chain (43114) | Avalanche Fuji (43113), Arbitrum Sepolia (421614) | 3 |
+| thirdweb-x402 | Ethereum (1), Optimism (10), XDC (50), Monad (143), Sonic (146), Sei (1329), Abstract (2741), IoTeX (4689), Celo (42220), Ink (57073), Linea (59144) | — | 11 |
+| Total (deduped) |  |  | **20** |
+
+Plus Solana mainnet (CDP+PayAI failover) + Solana devnet (PayAI) +
+Cosmos testnet via cosmos-pay. The 20 above is **EVM-only**. The 3
+PayAI mainnet/testnet routes also failover to Thirdweb after this
+sub-task, so 14 EVM routes have multi-adapter resilience.
+
+### Block 1 status (closed except 5)
+
+| Sub-task | Status |
+| --- | --- |
+| 1. World Chain + design doc | ✓ `62e66e3` |
+| 2. PayAI EVM failover + Avalanche | ✓ `5dd4575` |
+| 3. Thirdweb adapter (Ethereum + Optimism) | ✓ `f536dc0` |
+| 4. Internal Grafana dashboard | ✓ `b401cc8` |
+| ~~5. Cosmos mainnet~~ | deferred to Phase 5 — needs funded facilitator wallet |
+
+### Block 2 status (started)
+
+| Sub-task | Status |
+| --- | --- |
+| 5. Thirdweb config expansion (9 networks) | in this commit |
+| 6. Permit2 support in signer-evm (unlocks USDT) | pending |
+| 7. Binance x402 adapter (BNB Chain) | pending |
+| 8. BofAI / Tron adapter | pending |
+| 9. MPP protocol adapter | pending |
+| 10. (optional) t402-io adapter | pending |
+
+### Networks Thirdweb advertises but we don't route (yet)
+
+- **Flare (14)**: `0x` response from 3 public RPCs at the advertised
+  USDC contract; deployment unverified. Defer until a working RPC
+  confirms the contract exists.
+- **Gravity (1776)**: same — `rpc.gravity.xyz` returns `0x`, `drpc.org`
+  returns `Not Found`.
+- **Ham (5112)**: no resolvable public RPC.
+- **Peaq (3338)** and **Berachain testnet (80069)**: use EIP-2612
+  Permit, not EIP-3009. Unlocked by Sub-task 6 (Permit2 in
+  signer-evm). Berachain additionally advertises Honey not USDC
+  (18 decimals) — separate question whether we want non-USDC routes.
+
+### Deferred to Phase 5
+
+- All mainnet real-money smoke tests on the 11 new Thirdweb networks
+  (Sub-task 5 is config + verification; each chain needs its own
+  Thirdweb-key-funded smoke before going live for paying users).
+- Cosmos mainnet with funded facilitator wallet (Block 1 Sub-task
+  5's original scope).
+- Sui, Aptos, TON signers (Move ecosystem — separate signer surface,
+  no Thirdweb coverage today).
+- Mainnet alert rules (Grafana — see Block 1 Sub-task 4 docs).
+
 ## Discarded ideas
 
 ### Build our own Bazaar competitor

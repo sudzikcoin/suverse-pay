@@ -36,19 +36,35 @@ export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   // NOT in PayAI's EVM list — CDP-only routes.
   "eip155:480:exact":  ["coinbase-cdp"],
   "eip155:4801:exact": ["coinbase-cdp"],
-  // PayAI-exclusive EVM routes (Phase 4 Block 1 Sub-task 2). CDP
-  // does NOT advertise these networks on x402; PayAI does. No
-  // failover (single adapter), but routed cleanly through the same
-  // /facilitator/settle surface as everything else.
-  "eip155:43114:exact":  ["payai"], // Avalanche C-Chain mainnet
-  "eip155:43113:exact":  ["payai"], // Avalanche Fuji testnet
-  "eip155:421614:exact": ["payai"], // Arbitrum Sepolia testnet
+  // PayAI-primary EVM routes (Phase 4 Block 1 Sub-task 2 + Sub-task 5
+  // failover). CDP does NOT advertise these networks on x402; PayAI
+  // does. Phase 4 Block 2 Sub-task 5 added Thirdweb as a secondary on
+  // each of these three (Thirdweb /supported lists all three with the
+  // identical USDC contract — see thirdweb-supported.json fixture).
+  // PayAI stays primary because its EVM coverage is already exercised
+  // in Sub-task 2's smoke; Thirdweb is here for resilience.
+  "eip155:43114:exact":  ["payai", "thirdweb-x402"], // Avalanche C-Chain mainnet
+  "eip155:43113:exact":  ["payai", "thirdweb-x402"], // Avalanche Fuji testnet
+  "eip155:421614:exact": ["payai", "thirdweb-x402"], // Arbitrum Sepolia testnet
   // Thirdweb-exclusive EVM routes (Phase 4 Block 1 Sub-task 3). CDP
   // does not advertise these on x402 and PayAI's /supported does not
-  // list them either; Thirdweb's Nexus facilitator is the only route
-  // for now. No failover.
+  // list them either; Thirdweb's Nexus facilitator is the only route.
   "eip155:1:exact":  ["thirdweb-x402"], // Ethereum mainnet
   "eip155:10:exact": ["thirdweb-x402"], // Optimism mainnet
+  // Phase 4 Block 2 Sub-task 5 — 9 more Thirdweb-exclusive EVM
+  // mainnets. All on-chain-USDC-verified via eth_call; details and
+  // RPC sources in packages/signers/evm/src/domains.ts header. No
+  // failover (single adapter advertises these). Add to the routing
+  // tier when another facilitator picks up the network.
+  "eip155:50:exact":    ["thirdweb-x402"], // XDC
+  "eip155:143:exact":   ["thirdweb-x402"], // Monad mainnet
+  "eip155:146:exact":   ["thirdweb-x402"], // Sonic
+  "eip155:1329:exact":  ["thirdweb-x402"], // Sei mainnet
+  "eip155:2741:exact":  ["thirdweb-x402"], // Abstract (Bridged USDC Stargate)
+  "eip155:4689:exact":  ["thirdweb-x402"], // IoTeX (Bridged USDC)
+  "eip155:42220:exact": ["thirdweb-x402"], // Celo
+  "eip155:57073:exact": ["thirdweb-x402"], // Ink
+  "eip155:59144:exact": ["thirdweb-x402"], // Linea
 
   // ---- Solana mainnet (CDP primary, PayAI failover) -----------------
   "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:exact": ["coinbase-cdp", "payai"],
