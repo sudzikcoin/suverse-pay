@@ -1,5 +1,6 @@
 import { CoinbaseCdpAdapter } from "@suverse-pay/adapter-coinbase-cdp";
 import { CosmosPayAdapter } from "@suverse-pay/adapter-cosmos-pay";
+import { BinanceX402Adapter } from "@suverse-pay/adapter-binance-x402";
 import { PayAiAdapter } from "@suverse-pay/adapter-payai";
 import { ThirdwebX402Adapter } from "@suverse-pay/adapter-thirdweb-x402";
 import { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
@@ -297,6 +298,96 @@ async function main(): Promise<void> {
   } else {
     logger.warn(
       "THIRDWEB_X402_ENABLED=false — skipping Thirdweb adapter registration",
+    );
+  }
+
+  // ---- Binance x402 (BNB Chain, Sub-task 7) ---------------------------
+  // The only adapter route to eip155:56 — CDP, PayAI, and Thirdweb
+  // /supported responses don't list it. Binance's facilitator is a
+  // Binance Pay product (HMAC-SHA512 merchant auth). As of 2026-05-29
+  // there's no public endpoint we can hit unauthenticated; the adapter
+  // is wired against the documented Binance Pay scheme + canonical
+  // x402 v2 wire shape so the moment merchant credentials land in env,
+  // routing works.
+  //
+  // Without API_KEY + API_SECRET set the adapter still registers (so
+  // operators see it on the dashboard) but verify/settle calls throw
+  // ProviderError("unauthorized") with a message pointing to the env
+  // vars. Routing for eip155:56:exact is added below — gateway will
+  // surface a clean 401 to the caller until keys arrive.
+  if (config.binanceX402Enabled) {
+    // BNB Chain mainnet stablecoins are 18 decimals — the canonical
+    // BSC gotcha. Each entry below is the on-chain-verified
+    // Binance-Peg address. USD1 and U await on-chain verification.
+    const binanceCaps = [
+      // USDC (Binance-Peg USD Coin) — 18 decimals, no version().
+      // Settled via permit2-exact since BSC USDC doesn't implement
+      // EIP-3009 standardly.
+      {
+        network: "eip155:56",
+        asset: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+        scheme: "exact",
+        assetTransferMethod: "permit2-exact" as const,
+      },
+      // USDT (Binance-Peg Tether USD) — 18 decimals.
+      {
+        network: "eip155:56",
+        asset: "0x55d398326f99059fF775485246999027B3197955",
+        scheme: "exact",
+        assetTransferMethod: "permit2-exact" as const,
+      },
+    ];
+    const binance = new BinanceX402Adapter({
+      capabilities: binanceCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+        assetTransferMethod: c.assetTransferMethod,
+      })),
+      estimatedFeeUsd: "0.001",
+      ...(config.binanceX402BaseUrl !== undefined &&
+      config.binanceX402BaseUrl.length > 0
+        ? { baseUrl: config.binanceX402BaseUrl }
+        : {}),
+      ...(config.binanceX402PathPrefix !== undefined &&
+      config.binanceX402PathPrefix.length > 0
+        ? { pathPrefix: config.binanceX402PathPrefix }
+        : {}),
+      ...(config.binanceX402ApiKey !== undefined &&
+      config.binanceX402ApiKey.length > 0
+        ? { apiKeyId: config.binanceX402ApiKey }
+        : {}),
+      ...(config.binanceX402ApiSecret !== undefined &&
+      config.binanceX402ApiSecret.length > 0
+        ? { apiSecret: config.binanceX402ApiSecret }
+        : {}),
+    });
+    await registry.register(binance, {
+      config: {
+        baseUrl: config.binanceX402BaseUrl ?? "https://bpay.binanceapi.com",
+        pathPrefix:
+          config.binanceX402PathPrefix ?? "/binancepay/openapi/v1/x402",
+        estimatedFeeUsd: "0.001",
+      },
+      staticCapabilities: binanceCaps.map((c) => ({
+        network: c.network,
+        asset: c.asset,
+        scheme: c.scheme,
+      })),
+    });
+    if (
+      config.binanceX402ApiKey === undefined ||
+      config.binanceX402ApiKey.length === 0 ||
+      config.binanceX402ApiSecret === undefined ||
+      config.binanceX402ApiSecret.length === 0
+    ) {
+      logger.warn(
+        "BINANCE_X402_API_KEY / BINANCE_X402_API_SECRET not set — Binance adapter registered but /verify and /settle will throw unauthorized until merchant credentials are configured",
+      );
+    }
+  } else {
+    logger.warn(
+      "BINANCE_X402_ENABLED=false — skipping Binance adapter registration",
     );
   }
 

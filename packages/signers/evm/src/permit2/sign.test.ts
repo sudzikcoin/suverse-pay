@@ -58,9 +58,12 @@ describe("Permit2 constants", () => {
     // Linea — Permit2 deployed, proxy NOT deployed.
     expect(isPermit2ChainId(59144)).toBe(true);
     expect(isX402Permit2SettlableChainId(59144)).toBe(false);
-    // BNB Chain — Sub-task 6 doesn't add it; both checks fail.
-    expect(isPermit2ChainId(56)).toBe(false);
-    expect(isX402Permit2SettlableChainId(56)).toBe(false);
+    // BNB Chain — Sub-task 7 added it; both checks pass.
+    expect(isPermit2ChainId(56)).toBe(true);
+    expect(isX402Permit2SettlableChainId(56)).toBe(true);
+    // Sui (mvm:101) — fictional EVM ID, neither check passes.
+    expect(isPermit2ChainId(999_999)).toBe(false);
+    expect(isX402Permit2SettlableChainId(999_999)).toBe(false);
   });
 });
 
@@ -80,21 +83,37 @@ describe("Permit2 EIP-712 domain", () => {
   });
 });
 
-describe("USDT token registry", () => {
-  it("registers a USDT entry for each Permit2-routed chain (9 chains)", () => {
+describe("Permit2 token registry", () => {
+  it("registers token entries on the 10 Permit2-routed chains (Sub-task 6 nine + BNB Chain Sub-task 7)", () => {
     expect(PERMIT2_TOKEN_CHAIN_IDS).toEqual(
-      [1, 10, 137, 1329, 8453, 42161, 42220, 43114, 59144].sort((a, b) => a - b),
+      [1, 10, 56, 137, 1329, 8453, 42161, 42220, 43114, 59144].sort(
+        (a, b) => a - b,
+      ),
     );
   });
 
-  it("all USDT entries have decimals=6 and hasEip3009=false", () => {
+  it("hasEip3009=false on every entry (EIP-3009 path is the eip3009.ts signer)", () => {
     for (const t of allPermit2Tokens()) {
-      expect(t.decimals).toBe(6);
-      // Ethereum-canonical USDT and most wrappers do NOT support
-      // EIP-3009; Permit2 is the path. If a future entry flips this
-      // flag, the EIP-3009 signer becomes the cheaper choice.
       expect(t.hasEip3009).toBe(false);
     }
+  });
+
+  it("decimals=6 on every entry EXCEPT BNB Chain (Binance-Peg = 18 decimals)", () => {
+    for (const t of allPermit2Tokens()) {
+      if (t.chainId === 56) {
+        // BNB Chain Binance-Peg stablecoins use 18 decimals.
+        expect(t.decimals).toBe(18);
+      } else {
+        expect(t.decimals).toBe(6);
+      }
+    }
+  });
+
+  it("BNB Chain has BOTH USDC and USDT registered (Sub-task 7)", () => {
+    const bsc = allPermit2Tokens().filter((t) => t.chainId === 56);
+    expect(bsc).toHaveLength(2);
+    const symbols = bsc.map((t) => t.symbol).sort();
+    expect(symbols).toEqual(["USDC", "USDT"]);
   });
 
   it("getUsdtToken returns the canonical Ethereum address", () => {
@@ -103,9 +122,16 @@ describe("USDT token registry", () => {
     expect(eth?.hasEip2612Permit).toBe(false);
   });
 
-  it("getUsdtToken returns null for unsupported chains", () => {
-    expect(getUsdtToken(56)).toBeNull(); // BNB — not in this sub-task
+  it("getUsdtToken on BNB Chain throws (two tokens registered — caller must use getPermit2Token)", () => {
+    // BNB Chain has both USDC and USDT in the registry — getUsdtToken
+    // must NOT silently return USDT, since the caller might mean USDC.
+    // The error tells the operator to specify the address.
+    expect(() => getUsdtToken(56)).toThrow(/multiple Permit2 token entries on chain 56/);
+  });
+
+  it("getUsdtToken returns null for chains with no entry", () => {
     expect(getUsdtToken(480)).toBeNull(); // World Chain — no USDT entry
+    expect(getUsdtToken(50)).toBeNull(); // XDC — no USDT entry
   });
 
   it("isPermit2Token is case-insensitive on the address", () => {
@@ -211,15 +237,17 @@ describe("signPermit2UsdtAuthorization", () => {
 
 describe("signPermit2Authorization input validation", () => {
   it("rejects an unsupported chain", async () => {
+    // Sub-task 7 added BNB Chain (56) — so we need a chain that is
+    // genuinely unknown. eip155:1234 is a fictional id with no Permit2.
     await expect(
       signPermit2Authorization({
         secret: TEST_MNEMONIC,
-        network: "eip155:56", // BNB Chain — not added in this sub-task
+        network: "eip155:1234",
         token: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         amount: "1000000",
         payTo: TEST_PAY_TO,
       }),
-    ).rejects.toThrow(/Permit2 is not deployed on chain 56/);
+    ).rejects.toThrow(/Permit2 is not deployed on chain 1234/);
   });
 
   it("rejects an unknown token on a supported chain", async () => {

@@ -65,6 +65,12 @@ export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   "eip155:42220:exact": ["thirdweb-x402"], // Celo
   "eip155:57073:exact": ["thirdweb-x402"], // Ink
   "eip155:59144:exact": ["thirdweb-x402"], // Linea
+  // Phase 4 Block 2 Sub-task 7 — Binance x402 (BNB Chain only). The
+  // only facilitator route to eip155:56; CDP/PayAI/Thirdweb don't
+  // advertise it. Single-adapter, no failover. USDT vs USDC dispatch
+  // happens at the asset layer (extra.assetTransferMethod="permit2-exact")
+  // inside PaymentRequirements, not via routing.
+  "eip155:56:exact": ["binance-x402"], // BNB Chain mainnet
 
   // ---- Solana mainnet (CDP primary, PayAI failover) -----------------
   "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:exact": ["coinbase-cdp", "payai"],

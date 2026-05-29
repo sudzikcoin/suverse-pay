@@ -14,9 +14,13 @@
  *
  * USDT addresses + metadata verified on-chain via `eth_call
  * name()/symbol()/decimals()` against each chain's public RPC on
- * 2026-05-29. Decimals are 6 across every USDT deployment we
- * support — USDT-on-BSC is 18 but BSC isn't yet a routed chain
- * (requires the Binance x402 adapter, Sub-task 7).
+ * 2026-05-29. Decimals are 6 across every entry EXCEPT BNB Chain
+ * (Sub-task 7), where Binance-Peg USDC and Tether USDT both use
+ * **18 decimals**. This is the canonical BSC stablecoin gotcha —
+ * application code that assumes 6-decimal scaling will silently
+ * under-charge by 12 orders of magnitude. The `decimals` field on
+ * each entry is what authoritative; callers that format amounts
+ * MUST read it, not hard-code.
  *
  * Naming variance observed on-chain (purely informational, not
  * used by the signer):
@@ -75,6 +79,32 @@ const USDT_TOKEN_TABLE: Record<TokenKey, Permit2TokenEntry> = (() => {
       decimals: 6,
       chainId: 10,
       address: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+      hasEip3009: false,
+      hasEip2612Permit: false,
+    },
+    // ---- Sub-task 7: BNB Chain (Binance x402 adapter) ----
+    // BSC stablecoins use 18 decimals, NOT 6 like every other entry
+    // in this table. Verified 2026-05-29 via bsc-dataseed.binance.org
+    // (decimals() returned 0x12 = 18 for both).
+    //
+    // Binance-Peg USD Coin — NOT a Circle-native deployment; on-chain
+    // `version()` reverts, so the EIP-3009 path isn't available. The
+    // Permit2 path through Binance's x402 facilitator is the route.
+    {
+      symbol: "USDC",
+      decimals: 18,
+      chainId: 56,
+      address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+      hasEip3009: false,
+      hasEip2612Permit: false,
+    },
+    // Binance-Peg Tether USD — same shape as Ethereum USDT (no
+    // EIP-3009, no EIP-2612 Permit), but 18 decimals.
+    {
+      symbol: "USDT",
+      decimals: 18,
+      chainId: 56,
+      address: "0x55d398326f99059fF775485246999027B3197955",
       hasEip3009: false,
       hasEip2612Permit: false,
     },

@@ -8,14 +8,15 @@
  *   - x402ExactPermit2Proxy:   0x402085c248EeA27D92E8b30b2C58ed07f9E20001
  *
  * Deployment verified 2026-05-29 via eth_getCode against these
- * mainnets (16 EVM total): Ethereum, Optimism, XDC, Polygon, Monad,
- * Sonic, World Chain, Sei, Abstract, IoTeX, Base, Arbitrum, Celo,
- * Avalanche, Ink, Linea. All 16 have the Permit2 contract; the
- * x402ExactPermit2Proxy is present on 11 (the five missing are
- * Sonic 146, Abstract 2741, IoTeX 4689, Ink 57073, Linea 59144 —
- * settle through the x402 proxy will revert there until upstream
- * deploys; client-side Permit2 signing still produces a valid
- * signature, the proxy deployment is a settlement-side concern).
+ * mainnets (17 EVM total): Ethereum, Optimism, XDC, BNB Chain
+ * (Sub-task 7), Polygon, Monad, Sonic, World Chain, Sei, Abstract,
+ * IoTeX, Base, Arbitrum, Celo, Avalanche, Ink, Linea. All 17 have
+ * the Permit2 contract; the x402ExactPermit2Proxy is present on 12
+ * (the five missing are Sonic 146, Abstract 2741, IoTeX 4689, Ink
+ * 57073, Linea 59144 — settle through the x402 proxy will revert
+ * there until upstream deploys; client-side Permit2 signing still
+ * produces a valid signature, the proxy deployment is a settlement-
+ * side concern).
  *
  * Critical Permit2 quirk: the EIP-712 domain has NO `version` field.
  * Permit2's `DOMAIN_SEPARATOR()` is computed as
@@ -51,6 +52,7 @@ export const PERMIT2_DEPLOYED_CHAIN_IDS = [
   1,       // Ethereum mainnet
   10,      // Optimism mainnet
   50,      // XDC
+  56,      // BNB Chain (Phase 4 Block 2 Sub-task 7)
   137,     // Polygon
   143,     // Monad mainnet
   146,     // Sonic
@@ -77,6 +79,7 @@ export const X402_PERMIT2_SETTLABLE_CHAIN_IDS = [
   1,       // Ethereum mainnet
   10,      // Optimism mainnet
   50,      // XDC
+  56,      // BNB Chain (Sub-task 7)
   137,     // Polygon
   143,     // Monad mainnet
   480,     // World Chain mainnet

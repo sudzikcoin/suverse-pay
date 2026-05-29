@@ -57,6 +57,24 @@ export const ConfigSchema = z.object({
   thirdwebX402ApiKey: z.string().optional(),
   thirdwebX402AuthHeader: z.string().optional(),
 
+  // Binance x402 facilitator on BNB Chain (Phase 4 Block 2 Sub-task 7).
+  // Binance Pay product; auth is HMAC-SHA512 with `BinancePay-*`
+  // headers per `binance/binance-pay-signature-examples`. As of
+  // 2026-05-29 Binance has not published a public x402 endpoint —
+  // base URL defaults to the canonical Binance Pay merchant host and
+  // path prefix is a best-guess matching their Pay API conventions
+  // (`/binancepay/openapi/v1/...`). Override both once Binance
+  // documents the exact mount point. Without keys, /verify and
+  // /settle throw `unauthorized`; the adapter still registers so
+  // operators see it in the dashboard.
+  binanceX402Enabled: z
+    .union([z.boolean(), z.string().transform((v) => v === "true" || v === "1")])
+    .default(true),
+  binanceX402BaseUrl: z.string().optional(),
+  binanceX402PathPrefix: z.string().optional(),
+  binanceX402ApiKey: z.string().optional(),
+  binanceX402ApiSecret: z.string().optional(),
+
   capabilityDiscoveryIntervalMs: z.coerce
     .number()
     .int()
@@ -94,6 +112,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     thirdwebX402BaseUrl: env.THIRDWEB_X402_BASE_URL,
     thirdwebX402ApiKey: env.THIRDWEB_X402_API_KEY,
     thirdwebX402AuthHeader: env.THIRDWEB_X402_AUTH_HEADER,
+    binanceX402Enabled: env.BINANCE_X402_ENABLED,
+    binanceX402BaseUrl: env.BINANCE_X402_BASE_URL,
+    binanceX402PathPrefix: env.BINANCE_X402_PATH_PREFIX,
+    binanceX402ApiKey: env.BINANCE_X402_API_KEY,
+    binanceX402ApiSecret: env.BINANCE_X402_API_SECRET,
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
     metricsRefreshIntervalMs: env.METRICS_REFRESH_INTERVAL_MS,

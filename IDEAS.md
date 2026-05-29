@@ -310,11 +310,46 @@ sub-task, so 14 EVM routes have multi-adapter resilience.
 | Sub-task | Status |
 | --- | --- |
 | 5. Thirdweb config expansion (9 networks) | ✓ `92185d0` |
-| 6. Permit2 in signer-evm (USDT registry + signing) | in this commit |
-| 7. Binance x402 adapter (BNB Chain) | pending |
+| 6. Permit2 in signer-evm (USDT registry + signing) | ✓ `341b79a` |
+| 7. Binance x402 adapter (BNB Chain) | in this commit |
 | 8. BofAI / Tron adapter | pending |
 | 9. MPP protocol adapter | pending |
 | 10. (optional) t402-io adapter | pending |
+
+### Sub-task 7 — Binance x402 (BNB Chain) snapshot
+
+The only adapter route to `eip155:56` — CDP, PayAI, Thirdweb don't
+advertise it. Binance launched Binance x402 on 2026-05-19; supported
+stablecoins per their announcement: USDT, USDC, USD1, U; supported
+authorization methods: `eip3009`, `permit2-exact`, `permit2-upto`.
+
+Endpoint + auth:
+- Binance has not published a public x402 endpoint as of 2026-05-29.
+  Both `x402.binance.com` and `www.binance.com/en/x402` are gated
+  behind CloudFront WAF and reject unauthenticated requests.
+- Adapter defaults: base URL `https://bpay.binanceapi.com` (Binance
+  Pay merchant host), path prefix `/binancepay/openapi/v1/x402`
+  (best-guess matching Binance Pay's conventions). Both overridable
+  once Binance documents the exact mount.
+- Auth: HMAC-SHA512 with `BinancePay-*` headers — exact scheme from
+  `binance/binance-pay-signature-examples`. Real smoke needs Binance
+  Pay merchant onboarding (no public self-serve key flow at launch);
+  deferred to Phase 5.
+
+On-chain verifications (2026-05-29):
+- USDC BSC `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` — name="USD Coin",
+  symbol="USDC", **decimals=18**, version() reverts (NOT canonical
+  Circle EIP-3009 — Binance-Peg variant).
+- USDT BSC `0x55d398326f99059fF775485246999027B3197955` — name="Tether USD",
+  symbol="USDT", **decimals=18**.
+- Permit2 + x402ExactPermit2Proxy both deployed on BSC.
+
+**Critical**: BNB Chain stablecoins are 18-decimal, not 6 like every
+other USDC/USDT route. Decimal scaling errors at the application
+layer would under-charge by 12 orders of magnitude — guarded by an
+explicit test in `adapter-binance-x402/src/adapter.test.ts`
+("$1.00 USDT = 1e18, not 1e6") and a registry assertion in
+`signer-evm/src/permit2/sign.test.ts` ("decimals=6 except BNB Chain").
 
 ### Sub-task 6 — Permit2 capability snapshot
 
@@ -326,6 +361,7 @@ yet (verified 2026-05-29 against CDP + Thirdweb fixtures).
 | --- | --- | --- | --- | --- |
 | Ethereum (1) | ✓ | ✓ | ✓ Tether USD (no Permit) | ✓ round-trip |
 | Optimism (10) | ✓ | ✓ | ✓ Tether USD (no Permit) | ✓ round-trip |
+| BNB Chain (56) | ✓ | ✓ | ✓ USDC + USDT (Binance-Peg, **18 decimals**) | ✓ Sub-task 7 |
 | Polygon (137) | ✓ | ✓ | ✓ USDT0 (Permit yes) | ✓ round-trip |
 | Base (8453) | ✓ | ✓ | ✓ Tether USD (no Permit) | ✓ round-trip |
 | Arbitrum (42161) | ✓ | ✓ | ✓ USD₮0 (Permit yes) | ✓ round-trip |

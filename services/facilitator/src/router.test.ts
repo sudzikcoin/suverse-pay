@@ -176,6 +176,13 @@ describe("ROUTING_CONFIG static entries", () => {
     });
   }
 
+  // (f) Binance x402 — BNB Chain mainnet only. Phase 4 Block 2
+  // Sub-task 7. CDP/PayAI/Thirdweb don't advertise eip155:56.
+  it("routes eip155:56:exact binance-only (BNB Chain)", async () => {
+    const { getRoutingPriority } = await import("./routing-config.js");
+    expect(getRoutingPriority("eip155:56", "exact")).toEqual(["binance-x402"]);
+  });
+
   // (e) Thirdweb-exclusive EVM routes (Phase 4 Block 1 Sub-task 3 +
   // Block 2 Sub-task 5). Networks where CDP and PayAI advertise nothing
   // on x402 — Thirdweb's Nexus facilitator is the only path. Sub-task 5
