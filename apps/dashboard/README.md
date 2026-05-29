@@ -92,11 +92,51 @@ data ever surfaces.
 | GET | `/api/endpoints?period=24h\|7d\|30d` | per-network breakdown |
 | GET | `/api/volume-chart?period=24h\|7d\|30d` | time-bucketed volume points |
 | POST | `/api/link-key` | `{resourceKey}` body — links an existing key to the OAuth user |
-| GET | `/api/link-key` | the current user's linked keys + labels |
+| GET | `/api/link-key` | the current user's linked keys + labels (legacy — prefer GET `/api/keys`) |
+| **POST** | **`/api/keys`** | `{label}` body — self-serve creation. 201 with `{resourceKeyId, plaintext, label, createdAt}` exactly once |
+| **GET** | **`/api/keys`** | linked keys with full metadata (label, createdAt, lastUsedAt, isActive) + rate-limit budget |
+| **DELETE** | **`/api/keys/:id`** | soft-revoke (sets `is_active = false`). 404 for keys not linked to this user |
 
-All return 401 if there's no session. POST `/api/link-key` returns
-404 on unknown/inactive keys (generic — never confirms "key exists
-but is inactive" vs "key not found").
+All return 401 if there's no session. POST `/api/link-key` and
+DELETE `/api/keys/:id` both return 404 on unknown / cross-tenant
+references (generic — never confirms "key exists but is inactive"
+vs "key not found").
+
+## Self-serve key creation (Sub-task 2)
+
+A signed-in user can mint a fresh resource API key from the
+dashboard — no manual ops contact required. Two safeguards:
+
+- **Hard cap**: up to 5 active keys per user (revoke one before
+  creating another).
+- **Cooldown**: at most 1 new key per hour, measured against the
+  user's most recently created key.
+
+Both rules are enforced server-side in `checkCreateKeyRateLimit`
+(DB-based — no Redis client wired into the dashboard yet) and the
+UI surfaces a precise error including "try again at <ISO time>" on
+the cooldown case.
+
+The plaintext is shown **exactly once**: the POST response carries
+it, the `<CreateKeyForm />` displays it with a copy-to-clipboard
+button + a sharply-worded "you cannot see this key again" warning,
+and dismissing the warning clears it from React state. We only
+ever stored the sha256 hash on disk.
+
+Plaintext format: `sup_live_<32 alphanumeric>` (`sup` = Suverse
+Pay namespace, chosen so the prefix does not collide with Stripe
+/ GitHub / AWS / OpenAI / Anthropic key patterns and therefore
+never trips upstream secret-scanning false positives; ~190 bits of
+entropy from a 62-char alphabet). The `live` segment is reserved
+for a future live/test split — for v1 only `live` is emitted.
+
+Id format (the log-safe public identifier): `reskey_<8 hex>`,
+matching the existing `apps/api` convention.
+
+Revoke is **soft** — we never DELETE the row because
+`facilitator_payments` FKs against it and CASCADE would drop the
+audit trail. Settles already routed under a revoked key keep their
+history; new requests using it 401 at the apps/api auth gate.
 
 ## First-time setup
 
@@ -166,22 +206,33 @@ Production (Vercel recommended):
 - Set environment variables in Vercel.
 - Bind the custom domain `suverse-pay.suverse.io`.
 
-## Linking the first API key
+## First-key flow for new customers
 
-The dashboard does not yet ship self-serve resource API key
-creation — that's the next Phase 5 sub-task. For now: bootstrap an
-API key via `pnpm db:bootstrap-resource-key`, then paste the
-plaintext into the in-app "Link key" form after signing in.
+After signing in for the first time, the dashboard shows a "Get
+started" card with two tabs:
+
+- **Create new** (default) — type a label, hit "Create key", the
+  generated plaintext appears with copy-to-clipboard. Save it; we
+  cannot show it again.
+- **Link existing** — paste a key that was issued out of band (ops
+  bootstrapped it, a teammate sent it). Same form as before.
+
+Both flows write into the `dashboard_user_resource_keys` link
+table; from that point on, the dashboard panels populate with that
+key's settles.
+
+The bootstrap CLI (`pnpm db:bootstrap-resource-key`) is still
+available for the ops case — but customers no longer need it.
 
 ## Tests
 
 ```bash
 pnpm --filter @suverse-pay/dashboard test
-# 22 tests covering utils + query helpers
+# 29 tests across utils, queries, and the key-format invariants
 ```
 
 The route handlers themselves are intentionally **not** unit-tested
-yet — they're 8-line proxies to `queries.ts`. The queries module is
+yet — they're thin proxies to `queries.ts`. The queries module is
 where the real logic lives and where future tests should accrete.
 
 ## Status

@@ -1,3 +1,4 @@
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { dbQuery } from "./db";
 
 /**
@@ -246,6 +247,8 @@ export interface LinkedKeyInfo {
   label: string;
   linkedAt: string;
   isActive: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
 }
 
 export async function listLinkedKeysWithLabel(
@@ -256,13 +259,16 @@ export async function listLinkedKeysWithLabel(
     label: string;
     linked_at: Date;
     is_active: boolean;
+    created_at: Date;
+    last_used_at: Date | null;
   }>(
     `
-    SELECT k.id AS resource_key_id, k.label, l.linked_at, k.is_active
+    SELECT k.id AS resource_key_id, k.label, l.linked_at, k.is_active,
+           k.created_at, k.last_used_at
     FROM dashboard_user_resource_keys l
     JOIN resource_api_keys k ON k.id = l.resource_key_id
     WHERE l.user_id = $1
-    ORDER BY l.linked_at DESC
+    ORDER BY k.is_active DESC, l.linked_at DESC
     `,
     [userId],
   );
@@ -271,6 +277,8 @@ export async function listLinkedKeysWithLabel(
     label: r.label,
     linkedAt: r.linked_at.toISOString(),
     isActive: r.is_active,
+    createdAt: r.created_at.toISOString(),
+    lastUsedAt: r.last_used_at ? r.last_used_at.toISOString() : null,
   }));
 }
 
@@ -281,7 +289,6 @@ export async function listLinkedKeysWithLabel(
  * the resource key id + label on success, null if the key is unknown
  * or inactive.
  */
-import { createHash, randomUUID } from "node:crypto";
 
 export interface LinkKeyResult {
   resourceKeyId: string;
@@ -321,4 +328,229 @@ export async function linkResourceKey(args: {
     label: key.label,
     alreadyLinked: linked.length === 0,
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Self-serve resource key creation (Phase 5 Block 4 Sub-task 2)             */
+/* -------------------------------------------------------------------------- */
+
+/** Maximum active keys a single dashboard user can hold at once. */
+export const MAX_KEYS_PER_USER = 5;
+/** Cooldown between creations — prevents brute-spawn even within the cap. */
+export const CREATE_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Result of `checkCreateKeyRateLimit` — either OK or a reason the
+ * request should be rejected. Reasons map directly to user-facing
+ * messages so the UI can show them verbatim.
+ */
+export type CreateRateLimitResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: "max-keys-reached" | "cooldown";
+      activeKeys: number;
+      cooldownEndsAt: string | null;
+    };
+
+/**
+ * Two-rule rate limit:
+ *   1. ≤ MAX_KEYS_PER_USER active (is_active=true) keys total.
+ *   2. ≤ 1 new key per CREATE_COOLDOWN_MS window — measured against
+ *      `resource_api_keys.created_at` on the user's most recently
+ *      created (or linked, whichever is newer) key.
+ *
+ * DB-based, not Redis — at the rate one user creates a handful of
+ * keys total, the count query is essentially free and the schema
+ * stays the source of truth.
+ */
+export async function checkCreateKeyRateLimit(
+  userId: string,
+): Promise<CreateRateLimitResult> {
+  const rows = await dbQuery<{
+    active_count: string;
+    most_recent_created_at: Date | null;
+  }>(
+    `
+    SELECT
+      COUNT(*) FILTER (WHERE k.is_active)::text       AS active_count,
+      MAX(k.created_at)                                AS most_recent_created_at
+    FROM dashboard_user_resource_keys l
+    JOIN resource_api_keys k ON k.id = l.resource_key_id
+    WHERE l.user_id = $1
+    `,
+    [userId],
+  );
+  const r = rows[0] ?? { active_count: "0", most_recent_created_at: null };
+  const active = Number(r.active_count);
+  if (active >= MAX_KEYS_PER_USER) {
+    return {
+      ok: false,
+      reason: "max-keys-reached",
+      activeKeys: active,
+      cooldownEndsAt: null,
+    };
+  }
+  if (r.most_recent_created_at) {
+    const elapsedMs = Date.now() - r.most_recent_created_at.getTime();
+    if (elapsedMs < CREATE_COOLDOWN_MS) {
+      return {
+        ok: false,
+        reason: "cooldown",
+        activeKeys: active,
+        cooldownEndsAt: new Date(
+          r.most_recent_created_at.getTime() + CREATE_COOLDOWN_MS,
+        ).toISOString(),
+      };
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Generate a fresh resource API key id matching the existing
+ * convention: `reskey_<8 lowercase hex>`. Random 4 bytes is 32 bits
+ * = ~4.3B namespace; the unique index on `resource_api_keys.id`
+ * catches the astronomically rare collision and the caller can
+ * retry. Kept short because this id surfaces in logs.
+ */
+function generateKeyId(): string {
+  return "reskey_" + randomBytes(4).toString("hex");
+}
+
+/**
+ * Generate the plaintext key the customer copies + stores.
+ * `sup_live_<32 alphanumeric>` — `sup` is the Suverse Pay namespace,
+ * chosen so the prefix does not collide with Stripe (`rk_`, `sk_`),
+ * GitHub (`ghp_`), AWS (`AKIA`), OpenAI/Anthropic (`sk-`, `sk-ant-`)
+ * and therefore never trips upstream secret-scanning false positives.
+ * 32 chars from a 62-char alphabet ≈ 190 bits of entropy — brute-
+ * force is infeasible even with the hash being sha256 (no salt).
+ *
+ * `live` is reserved for a future split between live / test keys
+ * (Phase 5+); for v1 only `live` is emitted, the segment is there so
+ * `sup_test_` can be added without changing the wire format.
+ */
+const PLAINTEXT_ALPHABET =
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+function generatePlaintextKey(): string {
+  const buf = randomBytes(32);
+  let out = "sup_live_";
+  for (let i = 0; i < 32; i++) {
+    out += PLAINTEXT_ALPHABET[buf[i]! % PLAINTEXT_ALPHABET.length];
+  }
+  return out;
+}
+
+export interface CreatedKey {
+  resourceKeyId: string;
+  /** Plaintext key — shown to the customer EXACTLY ONCE. */
+  plaintext: string;
+  label: string;
+  createdAt: string;
+}
+
+/**
+ * Self-serve key creation. Generates id + plaintext, hashes the
+ * plaintext, inserts into resource_api_keys, links to the dashboard
+ * user. All three writes happen in a single transaction so an
+ * orphaned key row never persists if the link insert fails.
+ *
+ * Idempotency-wise: not idempotent by design — every call mints a
+ * fresh secret. The rate limit upstream prevents accidental
+ * duplicate clicks from spawning extra keys.
+ */
+export async function createResourceKey(args: {
+  userId: string;
+  label: string;
+}): Promise<CreatedKey> {
+  if (args.label.length === 0 || args.label.length > 80) {
+    throw new Error("label must be 1-80 characters");
+  }
+  const plaintext = generatePlaintextKey();
+  const hash = createHash("sha256").update(plaintext, "utf8").digest("hex");
+  // Retry on rare id collision (8-hex namespace × insert per user is
+  // tiny but the unique index makes this defensive cheap).
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const id = generateKeyId();
+    const pool = (await import("./db")).getPool();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      try {
+        const inserted = await client.query<{ created_at: Date }>(
+          `
+          INSERT INTO resource_api_keys (id, key_hash, label, metadata)
+          VALUES ($1, $2, $3, $4::jsonb)
+          RETURNING created_at
+          `,
+          [
+            id,
+            hash,
+            args.label,
+            JSON.stringify({
+              createdVia: "dashboard-self-serve",
+              dashboardUserId: args.userId,
+            }),
+          ],
+        );
+        await client.query(
+          `
+          INSERT INTO dashboard_user_resource_keys
+            (id, user_id, resource_key_id)
+          VALUES ($1, $2, $3)
+          `,
+          [randomUUID(), args.userId, id],
+        );
+        await client.query("COMMIT");
+        return {
+          resourceKeyId: id,
+          plaintext,
+          label: args.label,
+          createdAt: inserted.rows[0]!.created_at.toISOString(),
+        };
+      } catch (err) {
+        await client.query("ROLLBACK");
+        const code =
+          err && typeof err === "object" && "code" in err
+            ? String((err as { code: unknown }).code)
+            : "";
+        // 23505 = unique_violation in Postgres. Only the id column
+        // collides (key_hash is essentially unique by construction);
+        // retry with a new id.
+        if (code === "23505" && attempt < 4) continue;
+        throw err;
+      }
+    } finally {
+      client.release();
+    }
+  }
+  throw new Error("could not generate a unique key id after 5 attempts");
+}
+
+/**
+ * Soft-revoke. We never DELETE — keeps the audit trail intact (the
+ * payment_attempts / facilitator_payments tables FK against
+ * resource_api_keys.id, and CASCADE would orphan that history).
+ * Returns false if the key isn't linked to this user (treated the
+ * same as "not found" — never leak existence of someone else's key).
+ */
+export async function revokeResourceKey(args: {
+  userId: string;
+  resourceKeyId: string;
+}): Promise<boolean> {
+  const updated = await dbQuery<{ id: string }>(
+    `
+    UPDATE resource_api_keys k
+       SET is_active = FALSE
+      FROM dashboard_user_resource_keys l
+     WHERE k.id = l.resource_key_id
+       AND l.user_id = $1
+       AND k.id = $2
+       AND k.is_active = TRUE
+    RETURNING k.id
+    `,
+    [args.userId, args.resourceKeyId],
+  );
+  return updated.length > 0;
 }

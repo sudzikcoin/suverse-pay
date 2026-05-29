@@ -5,9 +5,11 @@ Last tag: **v0.4.0** (v0.5.0-alpha in development)
 
 ## Current state
 
-**Phase 5 STARTED.** Block 4 Sub-task 1 shipped: customer dashboard
-MVP (Next.js 15 app under `apps/dashboard`, OAuth via Google + GitHub
-through NextAuth.js v5, four panels, multi-tenant from day one).
+**Phase 5 STARTED.** Block 4 Sub-tasks 1 + 2 shipped: customer
+dashboard MVP (Next.js 15 app under `apps/dashboard`, OAuth via
+Google + GitHub through NextAuth.js v5, four panels, multi-tenant
+from day one) **and self-serve resource API key creation +
+revocation** (no manual ops handoff needed for new customers).
 Dashboard NOT yet deployed — needs DNS + OAuth registrations + env
 vars before first sign-in works; full operator runbook in
 `apps/dashboard/README.md`.
@@ -96,7 +98,10 @@ Build: **19/19 packages green**. Tests: **36/36 turbo tasks green**.
 
 **Infrastructure**:
 - ~~Multi-tenant customer dashboard~~ ✓ MVP shipped in Phase 5 Block 4 Sub-task 1 (NOT yet deployed — needs DNS + OAuth)
-- Self-serve resource API key signup (Phase 5 Block 4 Sub-task 2 — next)
+- ~~Self-serve resource API key signup~~ ✓ Phase 5 Block 4 Sub-task 2
+- Email verification on top of OAuth (deferred — OAuth providers already verify the user's email)
+- CAPTCHA on /api/keys (deferred — endpoint is auth-gated, abuse vector is small)
+- Per-key filter selector in the dashboard (multi-key UI follow-on)
 - Per-settle fee mechanism for revenue
 - Native facilitator settlement (isolated service with its own keys)
 - AP2 authorization layer
@@ -107,7 +112,7 @@ Build: **19/19 packages green**. Tests: **36/36 turbo tasks green**.
 | Block / Sub-task | Status |
 | --- | --- |
 | Block 4 Sub-task 1: Customer dashboard MVP (OAuth + 4 panels) | ✓ in this commit |
-| Block 4 Sub-task 2: Self-serve API key signup | next |
+| Block 4 Sub-task 2: Self-serve API key signup | ✓ in this commit |
 | Block 4 Sub-task 3+: TBD (signers, smokes, …) | pending |
 
 Operator runbook for the dashboard:
