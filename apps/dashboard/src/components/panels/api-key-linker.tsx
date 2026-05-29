@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,6 +100,7 @@ function LinkExistingForm({
   onLinked?: () => void;
 }): React.JSX.Element {
   const qc = useQueryClient();
+  const router = useRouter();
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -146,6 +148,12 @@ function LinkExistingForm({
       await qc.invalidateQueries({ queryKey: ["settles"] });
       await qc.invalidateQueries({ queryKey: ["networks"] });
       await qc.invalidateQueries({ queryKey: ["volume-chart"] });
+      // Flip the server-rendered conditional in dashboard/page.tsx
+      // from "zero linked keys" to "has linked keys" so the four-
+      // panel view replaces this card. Safe to call immediately —
+      // unlike CreateKeyForm there's no one-time plaintext reveal
+      // that an early unmount would destroy.
+      router.refresh();
       onLinked?.();
     } finally {
       setSubmitting(false);

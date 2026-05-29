@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ export function CreateKeyForm({
   className?: string;
 }): React.JSX.Element {
   const qc = useQueryClient();
+  const router = useRouter();
   const [label, setLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedKey | null>(null);
@@ -91,6 +93,14 @@ export function CreateKeyForm({
     // acknowledges the warning.
     setCreated(null);
     setCopied(false);
+    // Re-fetch the server tree so dashboard/page.tsx switches from
+    // the zero-keys "Get started" landing to the four-panel view
+    // (the conditional is server-rendered from a Postgres count,
+    // so a TanStack query invalidate alone won't flip it). Calling
+    // refresh here — not at mint time — preserves the one-time
+    // plaintext reveal: a mid-reveal refresh would unmount this
+    // component before the customer copies the secret.
+    router.refresh();
   }
 
   if (created) {
