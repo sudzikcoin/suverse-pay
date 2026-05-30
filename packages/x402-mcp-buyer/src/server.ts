@@ -11,6 +11,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { name as pkgName, version as pkgVersion } from "./meta.js";
+import { registerCatalogSearch } from "./tools/catalog-search.js";
 
 export function buildServer(): McpServer {
   const server = new McpServer({
@@ -18,10 +19,7 @@ export function buildServer(): McpServer {
     version: pkgVersion,
   });
 
-  // Tool registration happens in subsequent subtasks. The server
-  // starts up with zero tools today — that's intentional. A client
-  // that connects can still call `listTools` and confirm the
-  // handshake works.
+  registerCatalogSearch(server);
 
   return server;
 }
