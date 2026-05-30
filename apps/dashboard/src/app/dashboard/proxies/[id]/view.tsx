@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
@@ -57,8 +57,25 @@ export function ProxyDetailView({
 }): React.JSX.Element {
   const qc = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [range, setRange] = useState<Range>("24h");
+  const [showJustCreated, setShowJustCreated] = useState(
+    searchParams.get("just-created") === "1",
+  );
   const proxyUrl = `${proxyBase}/v1/proxy/${proxy.resourceKeyId}/${proxy.endpointSlug}`;
+
+  useEffect(() => {
+    // Clean the query string the moment the banner mounts so a refresh
+    // or back-nav doesn't re-trigger the celebration. Replace, not
+    // push, so the back stack still points at /dashboard/proxies/new.
+    if (showJustCreated && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("just-created")) {
+        url.searchParams.delete("just-created");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+  }, [showJustCreated]);
 
   const statsQ = useQuery<Stats>({
     queryKey: ["proxy-stats", proxy.id, range],
@@ -103,6 +120,38 @@ export function ProxyDetailView({
 
   return (
     <div className="space-y-8">
+      {showJustCreated ? (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-[10px] font-medium uppercase tracking-[0.22em] text-emerald-300">
+                Proxy live
+              </div>
+              <p className="mt-2 text-sm text-foreground">
+                Share the URL below with buyers. They'll get a 402
+                challenge, sign a USDC payment, and your upstream API
+                receives the forwarded request. Settles show up on the
+                main{" "}
+                <Link
+                  href="/dashboard"
+                  className="text-emerald-300 underline-offset-4 hover:underline"
+                >
+                  dashboard
+                </Link>{" "}
+                within ~30 seconds of payment.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowJustCreated(false)}
+              aria-label="Dismiss"
+              className="rounded text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      ) : null}
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
