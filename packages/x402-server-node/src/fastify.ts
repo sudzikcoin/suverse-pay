@@ -31,6 +31,11 @@ declare module "fastify" {
   }
 }
 
+/** base64(JSON.stringify(value)) — standard base64, NOT URL-safe. */
+function encodeHeaderJson(value: unknown): string {
+  return Buffer.from(JSON.stringify(value)).toString("base64");
+}
+
 export function createFastifyPreHandler(
   opts: MiddlewareOptions,
 ): preHandlerHookHandler {
@@ -40,9 +45,15 @@ export function createFastifyPreHandler(
     reply: FastifyReply,
   ): Promise<void> {
     const resourceUrl = buildResourceUrl(request);
-    const paymentHeader = readSingleHeader(
-      request.headers["x-payment"] as string | string[] | undefined,
-    );
+    // x402 v2 ecosystem clients send the payment payload on the
+    // `PAYMENT-SIGNATURE` header; v1 clients used `X-PAYMENT`.
+    const paymentHeader =
+      readSingleHeader(
+        request.headers["payment-signature"] as string | string[] | undefined,
+      ) ??
+      readSingleHeader(
+        request.headers["x-payment"] as string | string[] | undefined,
+      );
     const idempotencyKey = readSingleHeader(
       request.headers["idempotency-key"] as string | string[] | undefined,
     );
@@ -55,12 +66,30 @@ export function createFastifyPreHandler(
     });
     if (result.kind === "accepted") {
       request.x402Payment = result.receipt;
+      // Mirror the Express adapter: surface the settle receipt on
+      // PAYMENT-RESPONSE (v2) + X-PAYMENT-RESPONSE (v1) headers.
+      const responseBody = {
+        success: true,
+        transaction: result.receipt.txHash ?? "",
+        network: result.receipt.network,
+        payer: result.receipt.payer,
+        amount: result.receipt.amount,
+      };
+      const encoded = encodeHeaderJson(responseBody);
+      reply.header("PAYMENT-RESPONSE", encoded);
+      reply.header("X-PAYMENT-RESPONSE", encoded);
+      reply.header(
+        "Access-Control-Expose-Headers",
+        "PAYMENT-RESPONSE, X-PAYMENT-RESPONSE",
+      );
       return;
     }
     reply
       .code(result.status)
       .header("Content-Type", "application/json")
       .header("Cache-Control", "no-store")
+      // v2 ecosystem clients read the challenge from PAYMENT-REQUIRED.
+      .header("PAYMENT-REQUIRED", encodeHeaderJson(result.body))
       .send(result.body);
   };
 }

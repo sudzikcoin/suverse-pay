@@ -15,22 +15,56 @@ import type {
 import { X402Error } from "./types.js";
 
 /**
- * The exact x402 v2 challenge body. Field names track the spec so
- * a wire dump is grep-able. The middleware also supports v1 clients
- * by toggling the version number — the rest of the shape is the
- * same superset both versions accept.
+ * Per-accept entry in the 402 challenge body. Matches the
+ * `PaymentRequirementsV2Schema` in `@x402/core@2.14+`:
+ * scheme, network (CAIP-2), asset, payTo, `amount` (NOT
+ * `maxAmountRequired`), `maxTimeoutSeconds`, optional `extra`.
  */
-export interface ChallengeBody {
-  readonly x402Version: 1 | 2;
-  readonly accepts: ReadonlyArray<AcceptedPayment & { resource: string }>;
-  readonly error?: string;
-  readonly description?: string;
+export interface ChallengeAccept {
+  readonly scheme: "exact";
+  readonly network: string;
+  readonly asset: string;
+  readonly payTo: string;
+  readonly amount: string;
+  readonly maxTimeoutSeconds: number;
+  readonly extra?: Record<string, unknown>;
 }
 
 /**
- * Constructs the 402 challenge body. Inlines `resource` (the URL
- * that triggered the 402) per spec so the client doesn't have to
- * re-derive it.
+ * Top-level resource descriptor in the 402 challenge body. Mirrors
+ * the `ResourceInfoSchema` in `@x402/core@2.14+`.
+ */
+export interface ChallengeResource {
+  readonly url: string;
+  readonly description?: string;
+  readonly mimeType?: string;
+}
+
+/**
+ * The 402 challenge body in Coinbase-flavour x402 v2 shape
+ * (`@x402/core@2.14+`), which is what shipping ecosystem clients
+ * (`@x402/fetch`, `@x402/express`, …) parse against. Setting
+ * `opts.x402Version: 1` still tags the body with version 1 but
+ * keeps the rest of the v2-superset shape; legacy v1-only clients
+ * should look at the per-accept fields they care about.
+ */
+export interface ChallengeBody {
+  readonly x402Version: 1 | 2;
+  readonly resource: ChallengeResource;
+  readonly accepts: ReadonlyArray<ChallengeAccept>;
+  readonly error?: string;
+}
+
+/** Default per-accept timeout when the seller didn't override it. */
+const DEFAULT_MAX_TIMEOUT_SECONDS = 60;
+
+/**
+ * Constructs the 402 challenge body. Emits the Coinbase-flavour
+ * x402 v2 shape so that ecosystem clients (`@x402/fetch` v2.14+)
+ * parse it without a custom selector: top-level structured
+ * `resource`, per-accept `amount` (not `maxAmountRequired`),
+ * per-accept `maxTimeoutSeconds`, optional `extra` forwarded
+ * verbatim from the seller's `acceptedPayments` entry.
  */
 export function buildChallenge(
   opts: MiddlewareOptions,
@@ -49,11 +83,21 @@ export function buildChallenge(
   }
   return {
     x402Version: opts.x402Version ?? 2,
-    accepts: opts.acceptedPayments.map((p) => ({ ...p, resource: resourceUrl })),
+    resource: {
+      url: resourceUrl,
+      ...(opts.description !== undefined ? { description: opts.description } : {}),
+      mimeType: "application/json",
+    },
+    accepts: opts.acceptedPayments.map((p): ChallengeAccept => ({
+      scheme: p.scheme,
+      network: p.network,
+      asset: p.asset,
+      payTo: p.payTo,
+      amount: p.maxAmountRequired,
+      maxTimeoutSeconds: DEFAULT_MAX_TIMEOUT_SECONDS,
+      ...(p.extra !== undefined ? { extra: p.extra } : {}),
+    })),
     ...(errorHint !== undefined ? { error: errorHint } : {}),
-    ...(opts.description !== undefined
-      ? { description: opts.description }
-      : {}),
   };
 }
 
@@ -108,8 +152,17 @@ export function decodePaymentHeader(headerValue: string): DecodedPaymentHeader {
   }
   const obj = parsed as Record<string, unknown>;
   const version = obj["x402Version"];
-  const scheme = obj["scheme"];
-  const network = obj["network"];
+  // x402 v2 ecosystem clients (`@x402/fetch` v2.14+) nest scheme/network
+  // inside an `accepted` object (PaymentPayloadV2Schema). v1 clients
+  // (`x402-fetch` v1.x) put them at the top level. Read both.
+  const acc =
+    obj["accepted"] && typeof obj["accepted"] === "object" && !Array.isArray(obj["accepted"])
+      ? (obj["accepted"] as Record<string, unknown>)
+      : null;
+  const scheme = (acc && typeof acc["scheme"] === "string" ? acc["scheme"] : undefined)
+    ?? obj["scheme"];
+  const network = (acc && typeof acc["network"] === "string" ? acc["network"] : undefined)
+    ?? obj["network"];
   if (typeof version !== "number") {
     throw new X402Error(
       "invalid_payment_header",
@@ -167,6 +220,7 @@ async function callFacilitator(
   decoded: DecodedPaymentHeader,
   requirement: AcceptedPayment,
   idempotencyKey: string,
+  resourceUrl: string,
 ): Promise<Record<string, unknown>> {
   const baseUrl = normaliseBaseUrl(opts.facilitator);
   const url = `${baseUrl}/facilitator/${endpoint}`;
@@ -183,14 +237,38 @@ async function callFacilitator(
     headers["Authorization"] = `Bearer ${opts.apiKey}`;
     headers["Idempotency-Key"] = idempotencyKey;
   }
+  // facilitator.suverse.io currently validates against an x402 v1-flat
+  // shape (top-level scheme/network/payload on paymentPayload; v1 fields
+  // — maxAmountRequired, resource string, description, mimeType,
+  // maxTimeoutSeconds — on paymentRequirements). v2 ecosystem clients
+  // emit the v2-nested shape (`accepted.scheme`, `accepted.network`),
+  // so flatten here. Keep the original v2 `accepted`/`resource` fields
+  // alongside so a future v2-native facilitator can read either form.
+  const rawObj =
+    decoded.raw && typeof decoded.raw === "object"
+      ? (decoded.raw as Record<string, unknown>)
+      : {};
+  const flatPaymentPayload: Record<string, unknown> = {
+    x402Version: decoded.x402Version,
+    scheme: decoded.scheme,
+    network: decoded.network,
+    payload: decoded.payload,
+  };
+  if (rawObj["accepted"] !== undefined) flatPaymentPayload["accepted"] = rawObj["accepted"];
+  if (rawObj["resource"] !== undefined) flatPaymentPayload["resource"] = rawObj["resource"];
   const body = JSON.stringify({
-    paymentPayload: decoded.raw,
+    paymentPayload: flatPaymentPayload,
     paymentRequirements: {
       scheme: requirement.scheme,
       network: requirement.network,
       asset: requirement.asset,
       payTo: requirement.payTo,
       maxAmountRequired: requirement.maxAmountRequired,
+      resource: resourceUrl,
+      description: opts.description ?? "",
+      mimeType: "application/json",
+      maxTimeoutSeconds: DEFAULT_MAX_TIMEOUT_SECONDS,
+      ...(requirement.extra !== undefined ? { extra: requirement.extra } : {}),
     },
   });
   let response: Response;
@@ -328,6 +406,7 @@ export async function runProtocol(args: {
       decoded,
       requirement,
       idempotencyKey,
+      resourceUrl,
     );
   } catch (err) {
     if (err instanceof X402Error) {
@@ -381,6 +460,7 @@ export async function runProtocol(args: {
       decoded,
       requirement,
       idempotencyKey,
+      resourceUrl,
     );
   } catch (err) {
     if (err instanceof X402Error) {
