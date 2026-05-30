@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
+import { CATALOG_CATEGORIES } from "@/lib/catalog-categories";
 import type { NamespaceFamily, NetworkEntry } from "@/lib/networks-catalog";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,12 @@ interface FormState {
   payToTron: string;
   headers: Array<{ name: string; value: string }>;
   isActive: boolean;
+  publishToCatalog: boolean;
+  catalogDescription: string;
+  catalogCategory: string;
+  catalogTags: string;
+  catalogSampleRequest: string;
+  catalogSampleResponse: string;
 }
 
 function initialState(firstKey: string): FormState {
@@ -48,6 +55,12 @@ function initialState(firstKey: string): FormState {
     payToTron: "",
     headers: [],
     isActive: true,
+    publishToCatalog: true,
+    catalogDescription: "",
+    catalogCategory: "data",
+    catalogTags: "",
+    catalogSampleRequest: "",
+    catalogSampleResponse: "",
   };
 }
 
@@ -109,8 +122,36 @@ export function NewProxyForm({
       if (h.name.trim() === "") continue;
       headersMap[h.name.trim()] = h.value;
     }
+    // Per-field client validation for the optional catalog block —
+    // surfaces the same 100..500 char rule the server enforces.
+    if (state.publishToCatalog) {
+      const len = state.catalogDescription.trim().length;
+      if (len < 100 || len > 500) {
+        setFieldErrors([
+          {
+            field: "catalogDescription",
+            message: `description must be 100–500 characters (currently ${len})`,
+          },
+        ]);
+        return;
+      }
+    }
     setSubmitting(true);
     try {
+      const catalogBlock = state.publishToCatalog
+        ? {
+            description: state.catalogDescription.trim(),
+            category: state.catalogCategory,
+            tags: state.catalogTags
+              .split(",")
+              .map((t) => t.trim())
+              .filter((t) => t.length > 0),
+            sampleRequestCurl:
+              state.catalogSampleRequest.trim() || undefined,
+            sampleResponseJson:
+              state.catalogSampleResponse.trim() || undefined,
+          }
+        : undefined;
       const res = await fetch("/api/proxies", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -131,6 +172,7 @@ export function NewProxyForm({
             forwardHeaders:
               Object.keys(headersMap).length > 0 ? headersMap : undefined,
             isActive: state.isActive,
+            catalogListing: catalogBlock,
           },
         }),
       });
@@ -483,6 +525,141 @@ export function NewProxyForm({
             </p>
           )}
         </div>
+      </Section>
+
+      <Section
+        title="Publish to public catalog"
+        hint="Listed at /catalog after a quick moderator review. Buyers can discover and call your endpoint with one click."
+        help={
+          <>
+            Catalog listings get reviewed within 24h. You can edit or
+            unpublish them later from the dashboard. Skip this for
+            private/internal proxies — the proxy works either way.
+          </>
+        }
+      >
+        <label className="mb-3 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={state.publishToCatalog}
+            onChange={(e) =>
+              setState((s) => ({ ...s, publishToCatalog: e.target.checked }))
+            }
+          />
+          <span>Publish this proxy to the public catalog</span>
+        </label>
+        {state.publishToCatalog ? (
+          <div className="space-y-4 rounded-md border border-border bg-card/30 p-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
+                  Description (100–500 chars)
+                </label>
+                <span
+                  className={cn(
+                    "font-mono text-[11px]",
+                    state.catalogDescription.length < 100 ||
+                      state.catalogDescription.length > 500
+                      ? "text-destructive"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {state.catalogDescription.length}/500
+                </span>
+              </div>
+              <textarea
+                value={state.catalogDescription}
+                onChange={(e) =>
+                  setState((s) => ({
+                    ...s,
+                    catalogDescription: e.target.value,
+                  }))
+                }
+                rows={4}
+                maxLength={500}
+                placeholder="What does this endpoint return? Who is it for? What input does it expect?"
+                className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+              />
+              {errorFor("catalogDescription") ? (
+                <p className="mt-1 text-[11px] text-destructive">
+                  {errorFor("catalogDescription")}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
+                  Category
+                </label>
+                <select
+                  value={state.catalogCategory}
+                  onChange={(e) =>
+                    setState((s) => ({
+                      ...s,
+                      catalogCategory: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                >
+                  {CATALOG_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
+                  Tags (comma separated, optional)
+                </label>
+                <Input
+                  value={state.catalogTags}
+                  onChange={(e) =>
+                    setState((s) => ({ ...s, catalogTags: e.target.value }))
+                  }
+                  placeholder="weather, US, hourly"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
+                Sample request (curl one-liner, optional)
+              </label>
+              <textarea
+                value={state.catalogSampleRequest}
+                onChange={(e) =>
+                  setState((s) => ({
+                    ...s,
+                    catalogSampleRequest: e.target.value,
+                  }))
+                }
+                rows={2}
+                placeholder={`curl -X ${state.originalMethod} ${previewUrl}`}
+                className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-[11px]"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
+                Sample response (JSON, optional)
+              </label>
+              <textarea
+                value={state.catalogSampleResponse}
+                onChange={(e) =>
+                  setState((s) => ({
+                    ...s,
+                    catalogSampleResponse: e.target.value,
+                  }))
+                }
+                rows={4}
+                placeholder={`{\n  "temp_f": 72,\n  "summary": "clear"\n}`}
+                className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-[11px]"
+              />
+            </div>
+          </div>
+        ) : null}
       </Section>
 
       {error ? (

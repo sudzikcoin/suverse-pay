@@ -65,10 +65,11 @@ describe("migration 007: catalog_listings", () => {
     await seedUser(pool!, userId);
     const id = randomUUID();
     await pool!.query(
-      `INSERT INTO catalog_listings (id, title, endpoint_url, networks, status, submitted_by_user_id)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO catalog_listings (id, slug, title, endpoint_url, networks, status, submitted_by_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         id,
+        `test-${id.slice(0, 6)}`,
         "Test",
         "https://example.com/v1",
         ["eip155:8453"],
@@ -111,10 +112,11 @@ describe("migration 007: catalog_listings", () => {
     // The CHECK constraint should reject 'banned' (not in the enum).
     await expect(
       pool!.query(
-        `INSERT INTO catalog_listings (id, title, endpoint_url, networks, status)
-         VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO catalog_listings (id, slug, title, endpoint_url, networks, status)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           id,
+          `bad-${id.slice(0, 6)}`,
           "Bad",
           "https://example.com",
           ["eip155:8453"],
@@ -127,10 +129,11 @@ describe("migration 007: catalog_listings", () => {
   it("FK ON DELETE CASCADE wipes external submissions when listing is deleted", async () => {
     const listingId = randomUUID();
     await pool!.query(
-      `INSERT INTO catalog_listings (id, title, endpoint_url, networks, status)
-       VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO catalog_listings (id, slug, title, endpoint_url, networks, status)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         listingId,
+        `cascade-${listingId.slice(0, 6)}`,
         "X",
         "https://example.com",
         ["eip155:8453"],
@@ -156,10 +159,11 @@ describe("migration 007: catalog_listings", () => {
   it("verification_token UNIQUE constraint rejects collisions", async () => {
     const listingId = randomUUID();
     await pool!.query(
-      `INSERT INTO catalog_listings (id, title, endpoint_url, networks, status)
-       VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO catalog_listings (id, slug, title, endpoint_url, networks, status)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         listingId,
+        `dup-${listingId.slice(0, 6)}`,
         "X",
         "https://example.com",
         ["eip155:8453"],
@@ -207,10 +211,11 @@ describe("migration 007: catalog_listings", () => {
     );
     const listingId = randomUUID();
     await pool!.query(
-      `INSERT INTO catalog_listings (id, title, endpoint_url, networks, status, resource_key_id, is_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO catalog_listings (id, slug, title, endpoint_url, networks, status, resource_key_id, is_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         listingId,
+        `linked-${listingId.slice(0, 6)}`,
         "Linked",
         "https://example.com",
         ["eip155:8453"],

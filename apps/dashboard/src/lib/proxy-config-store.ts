@@ -150,6 +150,29 @@ const ForwardHeadersSchema = z
   })
   .optional();
 
+/**
+ * Per-proxy publish-to-catalog block. When supplied, the proxy
+ * creation route also writes a catalog_listings row in 'pending'
+ * status so the admin moderation queue picks it up.
+ *
+ * description is required (100..500 chars) so listings always carry
+ * enough info for buyers to evaluate the endpoint at a glance.
+ * category is drawn from CATALOG_CATEGORIES so the public-facing
+ * filter dropdown stays meaningful (validated downstream).
+ */
+export const CatalogPublishSchema = z.object({
+  description: z
+    .string()
+    .min(100, "description must be at least 100 characters")
+    .max(500, "description must be 500 characters or fewer"),
+  category: z.string().min(1).max(80),
+  tags: z.array(z.string().min(1).max(40)).max(20).optional(),
+  sampleRequestCurl: z.string().max(2000).optional(),
+  sampleResponseJson: z.string().max(8000).optional(),
+});
+
+export type CatalogPublishInput = z.infer<typeof CatalogPublishSchema>;
+
 export const ProxyConfigInputSchema = z.object({
   endpointSlug: SlugSchema,
   originalUrl: HttpsUrlSchema,
@@ -170,6 +193,8 @@ export const ProxyConfigInputSchema = z.object({
   payToTron: z.string().nullable().optional(),
   forwardHeaders: ForwardHeadersSchema,
   isActive: z.boolean().default(true),
+  /** Optional. When supplied, also create a public catalog listing. */
+  catalogListing: CatalogPublishSchema.optional(),
 });
 
 export type ProxyConfigInput = z.infer<typeof ProxyConfigInputSchema>;

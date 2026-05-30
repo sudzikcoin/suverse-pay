@@ -8,6 +8,12 @@ import {
   validateProxyConfig,
 } from "@/lib/proxy-config-store";
 import { findOwnedResourceKey } from "@/lib/seller-config";
+import { insertListing } from "@/lib/catalog-store";
+import { isValidCategory } from "@/lib/catalog-categories";
+
+/** Default proxy base URL — matches the production proxy.suverse.io host. */
+const PROXY_BASE =
+  process.env["NEXT_PUBLIC_PROXY_BASE_URL"] ?? "https://proxy.suverse.io";
 
 /**
  * GET /api/proxies
@@ -72,12 +78,66 @@ export async function POST(req: Request): Promise<NextResponse> {
       { status: 400 },
     );
   }
+  const publish = parsed.data.config.catalogListing;
+  if (publish && !isValidCategory(publish.category)) {
+    return NextResponse.json(
+      {
+        error: "invalid_category",
+        message: `category must be one of the preset values; got '${publish.category}'`,
+      },
+      { status: 400 },
+    );
+  }
   try {
     const created = await createProxy({
       resourceKeyId: parsed.data.resourceKeyId,
       input: parsed.data.config,
     });
-    return NextResponse.json({ proxy: created }, { status: 201 });
+
+    // If the seller asked to publish, write a catalog row in
+    // 'pending' status referencing the public proxy URL. Failures
+    // here don't fail the proxy creation — the seller can resubmit
+    // the catalog metadata later via the standalone /catalog/submit
+    // flow. Logged to stderr so the operator can spot it.
+    if (publish) {
+      const proxyUrl = `${PROXY_BASE}/v1/proxy/${created.resourceKeyId}/${created.endpointSlug}`;
+      try {
+        await insertListing({
+          input: {
+            title: created.displayName ?? created.endpointSlug,
+            description: publish.description,
+            endpointUrl: proxyUrl,
+            category: publish.category,
+            tags: publish.tags ?? [],
+            priceAtomicMin: created.priceAtomic,
+            priceAtomicMax: created.priceAtomic,
+            priceUnit: "per-call",
+            networks: [...created.acceptedNetworks],
+            sampleRequestCurl: publish.sampleRequestCurl,
+            sampleResponseJson: publish.sampleResponseJson,
+            linkResourceKey: created.resourceKeyId,
+          },
+          submittedByUserId: session.user.id,
+          submittedEmail: null,
+          submissionIp: null,
+          isVerified: false,
+          status: "pending",
+        });
+      } catch (e: unknown) {
+        // eslint-disable-next-line no-console
+        console.error(
+          "[catalog] auto-listing for proxy",
+          created.id,
+          "failed:",
+          e,
+        );
+      }
+    }
+
+    return NextResponse.json(
+      { proxy: created, listingQueued: publish !== undefined },
+      { status: 201 },
+    );
   } catch (err: unknown) {
     // 23505 = unique_violation (slug already used for this key).
     const code =

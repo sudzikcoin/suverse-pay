@@ -53,6 +53,10 @@ export const CreateListingSchema = z.object({
    * + auto-approved on insert.
    */
   linkResourceKey: z.string().optional(),
+  /** Curl one-liner showing buyers how to call the endpoint. */
+  sampleRequestCurl: z.string().max(2000).optional(),
+  /** Example response body (typically JSON). */
+  sampleResponseJson: z.string().max(8000).optional(),
 });
 
 export type CreateListingInput = z.infer<typeof CreateListingSchema>;
@@ -63,6 +67,7 @@ export type CreateListingInput = z.infer<typeof CreateListingSchema>;
 
 interface ListingRow {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   endpoint_url: string;
@@ -81,9 +86,13 @@ interface ListingRow {
   submitted_email: string | null;
   status: "pending" | "approved" | "rejected" | "suspended";
   rejection_reason: string | null;
+  reviewed_by: string | null;
+  reviewed_at: Date | string | null;
   logo_url: string | null;
   homepage_url: string | null;
   documentation_url: string | null;
+  sample_request_curl: string | null;
+  sample_response_json: string | null;
   view_count: number | string;
   click_count: number | string;
   created_at: Date | string;
@@ -95,6 +104,7 @@ function toApi(row: ListingRow): CatalogListing {
   // numbers. Coerce both into number for the public-facing shape.
   return {
     id: row.id,
+    slug: row.slug,
     title: row.title,
     description: row.description,
     endpointUrl: row.endpoint_url,
@@ -111,9 +121,18 @@ function toApi(row: ListingRow): CatalogListing {
     facilitatorUrl: row.facilitator_url,
     status: row.status,
     rejectionReason: row.rejection_reason,
+    reviewedBy: row.reviewed_by,
+    reviewedAt:
+      row.reviewed_at === null
+        ? null
+        : row.reviewed_at instanceof Date
+        ? row.reviewed_at.toISOString()
+        : String(row.reviewed_at),
     logoUrl: row.logo_url,
     homepageUrl: row.homepage_url,
     documentationUrl: row.documentation_url,
+    sampleRequestCurl: row.sample_request_curl,
+    sampleResponseJson: row.sample_response_json,
     viewCount: Number(row.view_count) || 0,
     clickCount: Number(row.click_count) || 0,
     createdAt:
@@ -130,16 +149,33 @@ function toApi(row: ListingRow): CatalogListing {
 }
 
 const LISTING_COLUMNS = `
-  id, title, description, endpoint_url, category, tags,
+  id, slug, title, description, endpoint_url, category, tags,
   price_atomic_min, price_atomic_max, price_unit,
   networks, regions, region_restrictions,
   is_verified, resource_key_id, facilitator_url,
   submitted_by_user_id, submitted_email,
-  status, rejection_reason,
+  status, rejection_reason, reviewed_by, reviewed_at,
   logo_url, homepage_url, documentation_url,
+  sample_request_curl, sample_response_json,
   view_count, click_count,
   created_at, published_at
 `;
+
+/**
+ * Derive a URL-safe slug from a title. Lower-case, alnum + hyphens
+ * only, edges trimmed. Appends a 6-hex suffix from a random uuid for
+ * uniqueness — callers can re-roll if the unique index conflicts.
+ */
+export function deriveSlug(title: string): string {
+  const base = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  const safe = base.length > 0 ? base : "listing";
+  const suffix = randomUUID().replace(/-/g, "").slice(0, 6);
+  return `${safe}-${suffix}`;
+}
 
 /* ────────────────────────────────────────────────────────────────
    Reads
@@ -235,47 +271,117 @@ export async function insertListing(
   const tags = args.input.tags ?? [];
   const publishedAt = args.status === "approved" ? new Date() : null;
 
+  // Slug derivation retries on UNIQUE-index collision (a freshly
+  // generated 6-hex suffix has 1-in-16M collision probability per
+  // shared title — 5 attempts is wildly overkill but cheap insurance).
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const slug = deriveSlug(args.input.title);
+    try {
+      const rows = await dbQuery<ListingRow>(
+        `INSERT INTO catalog_listings (
+           id, slug, title, description, endpoint_url, category, tags,
+           price_atomic_min, price_atomic_max, price_unit,
+           networks, regions, region_restrictions,
+           is_verified, resource_key_id, facilitator_url,
+           submitted_by_user_id, submitted_email, submission_ip,
+           status, published_at,
+           sample_request_curl, sample_response_json,
+           view_count, click_count, created_at, updated_at
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6, $7,
+           $8, $9, $10,
+           $11, $12, $13,
+           $14, $15, $16,
+           $17, $18, $19,
+           $20, $21,
+           $22, $23,
+           0, 0, NOW(), NOW()
+         )
+         RETURNING ${LISTING_COLUMNS}`,
+        [
+          id,
+          slug,
+          args.input.title,
+          args.input.description ?? null,
+          args.input.endpointUrl,
+          args.input.category ?? null,
+          tags,
+          args.input.priceAtomicMin ?? null,
+          args.input.priceAtomicMax ?? null,
+          args.input.priceUnit ?? "per-call",
+          args.input.networks,
+          regions,
+          restrictions,
+          args.isVerified,
+          args.isVerified ? args.input.linkResourceKey ?? null : null,
+          args.input.facilitatorUrl ?? null,
+          args.submittedByUserId,
+          args.submittedEmail,
+          args.submissionIp,
+          args.status,
+          publishedAt,
+          args.input.sampleRequestCurl ?? null,
+          args.input.sampleResponseJson ?? null,
+        ],
+      );
+      return toApi(rows[0]!);
+    } catch (e: unknown) {
+      const code =
+        e && typeof e === "object" && "code" in e
+          ? String((e as { code: unknown }).code)
+          : "";
+      // 23505 = unique_violation. Only retry on slug conflicts; other
+      // unique violations (none expected) should still propagate.
+      if (code === "23505" && attempt < 4) continue;
+      throw e;
+    }
+  }
+  throw new Error("catalog slug collision exceeded 5 attempts");
+}
+
+/** Look a listing up by slug. Returns null when not found. */
+export async function getListingBySlug(
+  slug: string,
+): Promise<CatalogListing | null> {
   const rows = await dbQuery<ListingRow>(
-    `INSERT INTO catalog_listings (
-       id, title, description, endpoint_url, category, tags,
-       price_atomic_min, price_atomic_max, price_unit,
-       networks, regions, region_restrictions,
-       is_verified, resource_key_id, facilitator_url,
-       submitted_by_user_id, submitted_email, submission_ip,
-       status, published_at, view_count, click_count, created_at, updated_at
-     ) VALUES (
-       $1, $2, $3, $4, $5, $6,
-       $7, $8, $9,
-       $10, $11, $12,
-       $13, $14, $15,
-       $16, $17, $18,
-       $19, $20, 0, 0, NOW(), NOW()
-     )
-     RETURNING ${LISTING_COLUMNS}`,
-    [
-      id,
-      args.input.title,
-      args.input.description ?? null,
-      args.input.endpointUrl,
-      args.input.category ?? null,
-      tags,
-      args.input.priceAtomicMin ?? null,
-      args.input.priceAtomicMax ?? null,
-      args.input.priceUnit ?? "per-call",
-      args.input.networks,
-      regions,
-      restrictions,
-      args.isVerified,
-      args.isVerified ? args.input.linkResourceKey ?? null : null,
-      args.input.facilitatorUrl ?? null,
-      args.submittedByUserId,
-      args.submittedEmail,
-      args.submissionIp,
-      args.status,
-      publishedAt,
-    ],
+    `SELECT ${LISTING_COLUMNS} FROM catalog_listings WHERE slug = $1`,
+    [slug],
   );
-  return toApi(rows[0]!);
+  return rows.length === 0 ? null : toApi(rows[0]!);
+}
+
+/** Pending listings for the admin moderation queue, oldest first. */
+export async function listPendingListings(): Promise<CatalogListing[]> {
+  const rows = await dbQuery<ListingRow>(
+    `SELECT ${LISTING_COLUMNS} FROM catalog_listings
+       WHERE status = 'pending'
+       ORDER BY created_at ASC`,
+  );
+  return rows.map(toApi);
+}
+
+/** Admin transitions a listing's status; records who+when. */
+export async function moderateListing(args: {
+  id: string;
+  reviewerEmail: string;
+  decision: "approved" | "rejected";
+  reason: string | null;
+}): Promise<CatalogListing | null> {
+  // Publish-at is bumped only on approval transitions; rejection
+  // doesn't (the row stays hidden, no UX value to a publish ts).
+  const rows = await dbQuery<ListingRow>(
+    `UPDATE catalog_listings
+        SET status = $2,
+            rejection_reason = $3,
+            reviewed_by = $4,
+            reviewed_at = NOW(),
+            published_at = CASE WHEN $2 = 'approved' THEN NOW() ELSE published_at END,
+            updated_at = NOW()
+      WHERE id = $1 AND status = 'pending'
+      RETURNING ${LISTING_COLUMNS}`,
+    [args.id, args.decision, args.reason, args.reviewerEmail],
+  );
+  return rows.length === 0 ? null : toApi(rows[0]!);
 }
 
 export interface UpdateListingArgs {

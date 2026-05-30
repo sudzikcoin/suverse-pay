@@ -12,6 +12,7 @@ import {
 function fixture(overrides: Partial<CatalogListing> = {}): CatalogListing {
   return {
     id: "id-1",
+    slug: "weather-api-abc123",
     title: "Weather API",
     description: "Hourly forecasts for any lat/lon pair worldwide.",
     endpointUrl: "https://api.example.com/v1/weather",
@@ -28,9 +29,13 @@ function fixture(overrides: Partial<CatalogListing> = {}): CatalogListing {
     facilitatorUrl: null,
     status: "approved",
     rejectionReason: null,
+    reviewedBy: null,
+    reviewedAt: null,
     logoUrl: null,
     homepageUrl: null,
     documentationUrl: null,
+    sampleRequestCurl: null,
+    sampleResponseJson: null,
     viewCount: 0,
     clickCount: 0,
     createdAt: "2026-05-01T00:00:00.000Z",

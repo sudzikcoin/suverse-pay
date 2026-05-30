@@ -27,6 +27,7 @@ import { isValidRegionCode } from "./regions-catalog";
 
 export interface CatalogListing {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   endpointUrl: string;
@@ -43,9 +44,13 @@ export interface CatalogListing {
   facilitatorUrl: string | null;
   status: "pending" | "approved" | "rejected" | "suspended";
   rejectionReason: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
   logoUrl: string | null;
   homepageUrl: string | null;
   documentationUrl: string | null;
+  sampleRequestCurl: string | null;
+  sampleResponseJson: string | null;
   viewCount: number;
   clickCount: number;
   createdAt: string;
