@@ -1,0 +1,67 @@
+{
+  "name": "@suverselabs/x402-mcp",
+  "version": "0.0.1",
+  "description": "Model Context Protocol server for buyer-side x402. Lets AI agents discover, compare, and call paid x402 APIs across our catalog and the wider ecosystem — pays automatically via @suverselabs/x402-client.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sudzikcoin/suverse-pay.git",
+    "directory": "packages/x402-mcp-buyer"
+  },
+  "homepage": "https://github.com/sudzikcoin/suverse-pay/tree/main/packages/x402-mcp-buyer#readme",
+  "bugs": {
+    "url": "https://github.com/sudzikcoin/suverse-pay/issues"
+  },
+  "keywords": [
+    "x402",
+    "mcp",
+    "model-context-protocol",
+    "agent",
+    "ai",
+    "claude",
+    "cursor",
+    "buyer",
+    "usdc",
+    "suverse-pay"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "suverse-x402-mcp": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@suverselabs/x402-client": "^0.1.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "vitest": "^1.6.0"
+  }
+}
