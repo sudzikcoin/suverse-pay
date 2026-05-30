@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -80,9 +81,7 @@ export function SettlesTable({
             Couldn’t load settles — try refreshing.
           </div>
         ) : !data || data.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-muted-foreground">
-            No settles yet. Make a paid request and they’ll appear here within 30 seconds.
-          </div>
+          <SettlesEmpty />
         ) : (
           <table className="w-full text-sm">
             <thead>
@@ -174,6 +173,39 @@ function StatusBadge({
     >
       {status}
     </span>
+  );
+}
+
+function SettlesEmpty(): React.JSX.Element {
+  return (
+    <div className="px-6 py-10 text-center">
+      <div className="mx-auto max-w-md">
+        <h4 className="font-medium text-foreground">No settles yet</h4>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Settles are paid requests that landed on one of your proxy
+          endpoints. Each row shows the network, amount, and tx hash —
+          live within ~30 seconds of payment.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Link
+            href="/dashboard/proxies"
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+          >
+            View proxies
+          </Link>
+          <Link
+            href="/dashboard/proxies/new"
+            className="rounded-md border border-amber-400/50 bg-amber-400/10 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-400/20"
+          >
+            + New proxy
+          </Link>
+        </div>
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          Share your proxy URL with a buyer to receive your first
+          payment.
+        </p>
+      </div>
+    </div>
   );
 }
 

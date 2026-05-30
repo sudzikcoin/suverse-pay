@@ -102,8 +102,15 @@ export function KeysList(): React.JSX.Element {
           Couldn’t load keys — try refreshing.
         </div>
       ) : !data || data.keys.length === 0 ? (
-        <div className="px-6 py-12 text-center text-sm text-muted-foreground">
-          No keys yet.
+        <div className="px-6 py-10 text-center">
+          <h4 className="font-medium text-foreground">No API keys yet</h4>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            API keys identify which seller a payment is settled for.
+            Generate one with the{" "}
+            <span className="font-medium text-foreground">+ New key</span>{" "}
+            button above — the plaintext is shown ONCE, then only the
+            hash is kept.
+          </p>
         </div>
       ) : (
         <ul className="divide-y divide-border/50">

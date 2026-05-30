@@ -159,15 +159,26 @@ function EmptyState(): React.JSX.Element {
   return (
     <div className="rounded-lg border border-dashed border-border bg-card/40 p-12 text-center">
       <h3 className="font-display text-lg text-foreground">
-        No listings yet.
+        Publish your endpoint to the public catalog
       </h3>
-      <p className="mt-2 text-sm text-muted-foreground">
-        List any x402-compatible endpoint — even ones that use other
-        facilitators.
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+        Listings show up at{" "}
+        <Link
+          href="/catalog"
+          className="text-amber-400 underline-offset-4 hover:underline"
+        >
+          /catalog
+        </Link>{" "}
+        so AI agents and buyers can discover your paid endpoint. You can
+        list any x402-compatible URL — even ones routed through a
+        different facilitator.
       </p>
-      <div className="mt-6">
+      <div className="mt-6 flex justify-center gap-2">
         <Button asChild variant="accent" size="sm">
           <Link href="/dashboard/catalog/new">Create your first listing</Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/catalog">Browse catalog</Link>
         </Button>
       </div>
     </div>
