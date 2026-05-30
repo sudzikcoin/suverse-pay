@@ -111,9 +111,21 @@ Build: **19/19 packages green**. Tests: **36/36 turbo tasks green**.
 
 | Block / Sub-task | Status |
 | --- | --- |
-| Block 4 Sub-task 1: Customer dashboard MVP (OAuth + 4 panels) | ✓ in this commit |
-| Block 4 Sub-task 2: Self-serve API key signup | ✓ in this commit |
-| Block 4 Sub-task 3+: TBD (signers, smokes, …) | pending |
+| Block 4 Sub-task 1: Customer dashboard MVP (OAuth + 4 panels) | ✓ shipped |
+| Block 4 Sub-task 2: Self-serve API key signup | ✓ shipped |
+| Block 4 Sub-task 3: Per-settle platform fee (accounting-only) | ✓ shipped |
+| Block 4 Sub-task 4: Outbound webhooks (BullMQ + HMAC) | ✓ shipped |
+| Block 4 Sub-task 4.5: Seller onboarding (configure UI + snippet + probe + facilitator subdomain + `@suverselabs/x402-server` pkg) | ✓ in this commit |
+| Block 4 Sub-task 5+: TBD (signers, smokes, …) | pending |
+
+### Sub-task 4.5 deliverables (this commit)
+- Migration `006_seller_configs.sql` — `resource_server_configs` table with per-namespace payTo, accepted_networks, default_price_atomic + range CHECK
+- Dashboard page `/dashboard/keys/[id]/configure` — 7-section flow (networks picker → payTo inputs → price → description → save → snippet tabs → probe) with sticky 402-challenge preview
+- API routes `/api/keys/[id]/{config,probe,snippet}` — ownership-gated, Zod-validated, per-user 30/hr probe rate limit, SSRF guard
+- `apps/dashboard/src/lib/{networks-catalog,seller-config,probe,snippet-templates}.ts` — pure libs, 38 new unit tests in `apps/dashboard/tests/` (total dashboard now 127 tests)
+- New publishable pnpm workspace package `packages/x402-server-node` (publishes as `@suverselabs/x402-server`) — Express + Fastify adapters, 23 unit tests, ready to `npm publish` (waiting on 2FA OTP)
+- `deploy/nginx-facilitator.suverse.io.conf` + `docs/SELLER_ONBOARDING.md` — operator runbook for exposing the facilitator API at `https://facilitator.suverse.io` (needs sudo from operator to apply nginx + certbot)
+- Docs page `/dashboard/docs/configure-resource-server` — 5-min setup guide + FAQ
 
 Operator runbook for the dashboard:
 1. Add DNS A-record `suverse-pay.suverse.io → <server IP>`

@@ -1,0 +1,80 @@
+{
+  "name": "@suverselabs/x402-server",
+  "version": "0.1.0",
+  "description": "x402 server middleware for Node.js (Express + Fastify). Issues 402 Payment Required challenges, verifies + settles via a remote facilitator, exposes the payment metadata to your handler.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sudzikcoin/suverse-pay.git",
+    "directory": "packages/x402-server-node"
+  },
+  "homepage": "https://github.com/sudzikcoin/suverse-pay/tree/main/packages/x402-server-node#readme",
+  "bugs": {
+    "url": "https://github.com/sudzikcoin/suverse-pay/issues"
+  },
+  "keywords": [
+    "x402",
+    "http-402",
+    "payment-required",
+    "usdc",
+    "stablecoin",
+    "express",
+    "fastify",
+    "middleware",
+    "suverse-pay"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./express": {
+      "types": "./dist/express.d.ts",
+      "import": "./dist/express.js"
+    },
+    "./fastify": {
+      "types": "./dist/fastify.d.ts",
+      "import": "./dist/fastify.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "express": ">=4 <6",
+    "fastify": ">=4 <6"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    },
+    "fastify": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "express": "^4.19.2",
+    "fastify": "^4.28.1",
+    "vitest": "^1.6.0"
+  }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -137,15 +138,23 @@ export function KeysList(): React.JSX.Element {
               </div>
               <div className="flex items-center gap-3">
                 {k.isActive ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onRevoke(k.resourceKeyId, k.label)}
-                    disabled={revokingId === k.resourceKeyId}
-                  >
-                    {revokingId === k.resourceKeyId ? "Revoking…" : "Revoke"}
-                  </Button>
+                  <>
+                    <Link
+                      href={`/dashboard/keys/${encodeURIComponent(k.resourceKeyId)}/configure`}
+                      className="inline-flex h-9 items-center rounded-md border border-border bg-transparent px-3 text-xs font-medium hover:bg-secondary"
+                    >
+                      Configure
+                    </Link>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onRevoke(k.resourceKeyId, k.label)}
+                      disabled={revokingId === k.resourceKeyId}
+                    >
+                      {revokingId === k.resourceKeyId ? "Revoking…" : "Revoke"}
+                    </Button>
+                  </>
                 ) : (
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     revoked
