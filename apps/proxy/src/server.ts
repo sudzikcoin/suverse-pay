@@ -66,7 +66,13 @@ export async function buildServer(
       return `${slugPart}::${req.ip}`;
     },
     errorResponseBuilder: (_req, ctx) => ({
+      // statusCode + code in the body — both are recognised by
+      // @fastify/rate-limit and propagated onto the reply. Without
+      // either, Fastify falls back to 500 because the plugin throws
+      // a generic Error.
+      statusCode: 429,
       error: "rate_limited",
+      message: "rate_limited",
       retryAfterSeconds: Math.ceil(ctx.ttl / 1000),
     }),
     ...(redisInstance ? { redis: redisInstance } : {}),
