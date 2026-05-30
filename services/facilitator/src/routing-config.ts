@@ -17,14 +17,21 @@ export type RoutingPriority = ReadonlyArray<string>;
 
 export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   // ---- Cosmos -------------------------------------------------------
-  "cosmos:grand-1:exact_cosmos_authz": ["cosmos-pay"],
-  // Sub-task 10 — first Cosmos MAINNET route in the gateway, via
-  // t402-io's `cosmos:noble-1` advertisement (native USDT on Noble,
+  // cosmos-pay was repointed from Noble TESTNET (grand-1) to MAINNET
+  // (noble-1) on 2026-05-30 — the running facilitator now signs with
+  // the mainnet grantee `noble18jq3tgk39z8qk5jz304zqkhd02gs5zkhrj7sqt`,
+  // CapabilityDiscoveryCron superseded the grand-1 row in
+  // provider_capabilities. We mirror that in the static routing config
+  // so /facilitator/supported (which reads from this map intersected
+  // with the registry) advertises noble-1 instead of grand-1.
+  "cosmos:noble-1:exact_cosmos_authz": ["cosmos-pay"],
+  // Sub-task 10 — Cosmos MAINNET route in the gateway via t402-io's
+  // `cosmos:noble-1` advertisement (native USDT on Noble,
   // `exact-direct` scheme — direct ERC-20-style transfer, NOT the
-  // Cosmos-authz variant cosmos-pay uses on testnet, and NOT plain
-  // `exact` either). Single-adapter, no failover. t402-io requires
-  // an API key for /settle (T402_IO_API_KEY env var); the route is
-  // registered so capability discovery + dashboards work without a key.
+  // Cosmos-authz variant cosmos-pay uses, and NOT plain `exact`
+  // either). Single-adapter, no failover. t402-io requires an API
+  // key for /settle (T402_IO_API_KEY env var); the route is registered
+  // so capability discovery + dashboards work without a key.
   "cosmos:noble-1:exact-direct": ["t402-io"],
 
   // ---- EVM ----------------------------------------------------------

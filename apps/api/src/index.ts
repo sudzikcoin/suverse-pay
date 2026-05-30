@@ -55,11 +55,16 @@ async function main(): Promise<void> {
   const ledger = new PaymentLedger(pool, redis);
 
   // ---- Provider registration ------------------------------------------
+  // cosmos-pay was repointed from Noble TESTNET (grand-1) to MAINNET
+  // (noble-1) on 2026-05-30. The running facilitator only serves
+  // noble-1 now, so the grand-1 capability is dropped here too —
+  // otherwise the discovery cron would re-supersede it on every
+  // restart. To bring grand-1 back, re-add both entries here AND
+  // re-add `cosmos:grand-1:exact_cosmos_authz` to ROUTING_CONFIG.
   const cosmosPay = new CosmosPayAdapter({
     baseUrl: config.cosmosPayBaseUrl,
     networkAssets: {
       "cosmos:noble-1": ["uusdc"],
-      "cosmos:grand-1": ["uusdc"],
     },
     estimatedFeeUsd: "0.0001",
   });
@@ -67,7 +72,6 @@ async function main(): Promise<void> {
     config: { baseUrl: config.cosmosPayBaseUrl, estimatedFeeUsd: "0.0001" },
     staticCapabilities: [
       { network: "cosmos:noble-1", asset: "uusdc", scheme: "exact_cosmos_authz" },
-      { network: "cosmos:grand-1", asset: "uusdc", scheme: "exact_cosmos_authz" },
     ],
   });
 
