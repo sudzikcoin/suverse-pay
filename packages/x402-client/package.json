@@ -1,0 +1,86 @@
+{
+  "name": "@suverselabs/x402-client",
+  "version": "0.1.0",
+  "description": "Unified buyer SDK for the x402 payment protocol. One client, one config — pays any seller across 18 EVM mainnets, Cosmos Noble, TRON, Solana, and the testnets behind them. Wraps the suverse-pay facilitator by default.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sudzikcoin/suverse-pay.git",
+    "directory": "packages/x402-client"
+  },
+  "homepage": "https://github.com/sudzikcoin/suverse-pay/tree/main/packages/x402-client#readme",
+  "bugs": {
+    "url": "https://github.com/sudzikcoin/suverse-pay/issues"
+  },
+  "keywords": [
+    "x402",
+    "http-402",
+    "payment-required",
+    "usdc",
+    "stablecoin",
+    "buyer",
+    "client",
+    "wallet",
+    "evm",
+    "solana",
+    "cosmos",
+    "tron",
+    "suverse-pay",
+    "multi-chain"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./evm": {
+      "types": "./dist/signers/evm.d.ts",
+      "import": "./dist/signers/evm.js"
+    },
+    "./solana": {
+      "types": "./dist/signers/solana.d.ts",
+      "import": "./dist/signers/solana.js"
+    },
+    "./cosmos": {
+      "types": "./dist/signers/cosmos.d.ts",
+      "import": "./dist/signers/cosmos.js"
+    },
+    "./tron": {
+      "types": "./dist/signers/tron.d.ts",
+      "import": "./dist/signers/tron.js"
+    },
+    "./chains": {
+      "types": "./dist/network/chains.d.ts",
+      "import": "./dist/network/chains.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "viem": "^2.51.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "vitest": "^1.6.0"
+  }
+}
