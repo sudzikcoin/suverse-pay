@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.3.1 — 2026-05-30
+
+**Bug fix** — extras merge now applies to `/verify` and `/settle` too,
+not just to the emitted 402 challenge.
+
+### What broke in 0.3.0
+
+`buildChallenge` correctly merged facilitator-published extras +
+seller-provided extras into each 402 response, so the buyer signed
+against the right `extra.feePayer` (Solana), `extra.facilitator`
+(Cosmos), or `extra.{name,version}` (EVM EIP-712 USDC).
+
+But `callFacilitator` — the function that POSTs `/verify` and
+`/settle` to the facilitator — was sending the seller's **raw**
+`AcceptedPayment.extra`, not the merged value. CDP-style adapters
+that validate `paymentRequirements.extra.feePayer` against the
+signed transaction's `payerKey` rejected the request as
+`missing_fee_payer`, which x402-server then propagated to the buyer
+as HTTP 502.
+
+In practice this meant Solana payments that depended on
+auto-discovery (sellers who shipped without hardcoding `feePayer`)
+got a 402 → buyer signed OK → seller's middleware sent verify →
+verify 502 → buyer received `payment_retry_failed`. The 402 looked
+fine; the verify silently dropped the auto-discovered field.
+
+### The fix
+
+A new internal helper `resolveRequirementExtra(opts, requirement)`
+runs the same merge as `buildChallenge` did (facilitator-published
+base ∪ seller-provided override, seller wins per key) and is invoked
+in `callFacilitator` before constructing the body. Both `/verify`
+and `/settle` requests now carry the merged `extra` exactly matching
+what the buyer signed against.
+
+Regression test added: `runProtocol` with auto-discovery on emits a
+`/verify` AND `/settle` body whose `paymentRequirements.extra`
+contains the facilitator-published value.
+
+### Migration
+
+None. Stock upgrade from 0.3.0 → 0.3.1. No API or config changes.
+
+---
+
 ## 0.3.0 — 2026-05-30
 
 **Facilitator-extras auto-discovery** — the middleware now fetches

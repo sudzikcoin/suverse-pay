@@ -257,6 +257,40 @@ function normaliseBaseUrl(url: string): string {
 }
 
 /**
+ * Resolve the `extra` to send to the facilitator on /verify and
+ * /settle for the matched requirement. Mirrors `buildChallenge`'s
+ * merge semantics: facilitator-published extras are the base,
+ * seller-provided extras override per key. The two surfaces MUST
+ * agree — the buyer signed against the merged value emitted in the
+ * 402 challenge, so verify/settle must see the same value or the
+ * facilitator will reject the payload (`missing extra.feePayer`,
+ * `missing extra.facilitator`, etc.).
+ *
+ * Returns `undefined` when no extras flow from either source so the
+ * caller can omit `extra` from the body cleanly.
+ */
+async function resolveRequirementExtra(
+  opts: MiddlewareOptions,
+  requirement: AcceptedPayment,
+): Promise<Record<string, unknown> | undefined> {
+  const facilitatorExtras = opts.disableAutoDiscover === true
+    ? undefined
+    : await getAllFacilitatorExtras(opts.facilitator, {
+        ...(opts.facilitatorExtrasCacheTtlMs !== undefined
+          ? { ttlMs: opts.facilitatorExtrasCacheTtlMs }
+          : {}),
+        ...(opts.fetchImpl !== undefined ? { fetchImpl: opts.fetchImpl } : {}),
+        ...(opts.logger !== undefined ? { logger: opts.logger } : {}),
+      }).then((m) => m.get(facilitatorExtrasKey(requirement.network, requirement.scheme)));
+  if (facilitatorExtras === undefined && requirement.extra === undefined) {
+    return undefined;
+  }
+  if (facilitatorExtras === undefined) return requirement.extra;
+  if (requirement.extra === undefined) return facilitatorExtras;
+  return { ...facilitatorExtras, ...requirement.extra };
+}
+
+/**
  * Calls the facilitator's verify or settle endpoint with the
  * standard x402 v2 envelope. Both endpoints take the same body
  * shape per spec § 5.3 / 5.4: `{ paymentPayload, paymentRequirements }`.
@@ -306,6 +340,12 @@ async function callFacilitator(
   };
   if (rawObj["accepted"] !== undefined) flatPaymentPayload["accepted"] = rawObj["accepted"];
   if (rawObj["resource"] !== undefined) flatPaymentPayload["resource"] = rawObj["resource"];
+  // Merge facilitator-published + seller-provided extras the same
+  // way buildChallenge did when emitting the 402. Without this, the
+  // buyer's signature (which the buyer constructed against the merged
+  // 402 extras) gets verified against an incomplete `extra` here and
+  // the facilitator/adapter rejects with e.g. `missing extra.feePayer`.
+  const mergedExtra = await resolveRequirementExtra(opts, requirement);
   const body = JSON.stringify({
     paymentPayload: flatPaymentPayload,
     paymentRequirements: {
@@ -318,7 +358,7 @@ async function callFacilitator(
       description: opts.description ?? "",
       mimeType: "application/json",
       maxTimeoutSeconds: DEFAULT_MAX_TIMEOUT_SECONDS,
-      ...(requirement.extra !== undefined ? { extra: requirement.extra } : {}),
+      ...(mergedExtra !== undefined ? { extra: mergedExtra } : {}),
     },
   });
   let response: Response;

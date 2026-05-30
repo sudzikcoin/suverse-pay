@@ -434,6 +434,70 @@ describe("runProtocol", () => {
     });
   });
 
+  it("merges facilitator-published extras into /verify + /settle paymentRequirements (v0.3.1)", async () => {
+    // Regression for the PR-B bug: buildChallenge correctly merged
+    // facilitator extras into the 402's per-accept entry, but
+    // callFacilitator was sending the seller's raw `requirement` (no
+    // extras) to /verify and /settle. CDP-style adapters checking
+    // `paymentRequirements.extra.feePayer` would reject as
+    // missing_fee_payer → x402-server propagated a 502.
+    _resetFacilitatorExtrasCache();
+    _setCachedFacilitatorExtras(
+      "https://facilitator.example.com",
+      new Map([
+        [
+          facilitatorExtrasKey("eip155:8453", "exact"),
+          { name: "USD Coin", version: "2" },
+        ],
+      ]),
+    );
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ isValid: true, payer: "0xabc" }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ success: true, transaction: "0xtx", payer: "0xabc" }),
+          { status: 200 },
+        ),
+      );
+    await runProtocol({
+      // BASE_OPTS has disableAutoDiscover: true; flip it for this test.
+      opts: { ...BASE_OPTS, disableAutoDiscover: false, fetchImpl },
+      resourceUrl: "https://api.example/paid",
+      paymentHeader: encodeHeader({
+        x402Version: 2,
+        scheme: "exact",
+        network: "eip155:8453",
+        payload: { sig: "deadbeef" },
+      }),
+      idempotencyKey: "fixed-key",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const [, verifyInit] = fetchImpl.mock.calls[0]!;
+    const [, settleInit] = fetchImpl.mock.calls[1]!;
+    const verifyBody = JSON.parse(
+      (verifyInit as RequestInit).body as string,
+    );
+    const settleBody = JSON.parse(
+      (settleInit as RequestInit).body as string,
+    );
+    // Both verify AND settle must carry the merged extra so the
+    // facilitator's verifier (CDP / PayAI / etc.) gets the same
+    // `extra` the buyer signed against.
+    expect(verifyBody.paymentRequirements.extra).toEqual({
+      name: "USD Coin",
+      version: "2",
+    });
+    expect(settleBody.paymentRequirements.extra).toEqual({
+      name: "USD Coin",
+      version: "2",
+    });
+  });
+
   it("verify-only mode skips settle and returns null txHash", async () => {
     const fetchImpl = vi
       .fn()
