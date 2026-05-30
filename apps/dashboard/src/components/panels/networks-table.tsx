@@ -12,8 +12,14 @@ interface NetworkBreakdownRow {
   volumeAtomic: string;
 }
 
-async function fetchNetworks(period: Period): Promise<NetworkBreakdownRow[]> {
-  const res = await fetch(`/api/endpoints?period=${period}`, {
+async function fetchNetworks(
+  period: Period,
+  includeTestnet: boolean,
+): Promise<NetworkBreakdownRow[]> {
+  const qs = includeTestnet
+    ? `?period=${period}&testnet=1`
+    : `?period=${period}`;
+  const res = await fetch(`/api/endpoints${qs}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`endpoints ${res.status}`);
@@ -29,10 +35,16 @@ async function fetchNetworks(period: Period): Promise<NetworkBreakdownRow[]> {
  * `resource_path` on settle will turn this into a true per-endpoint
  * breakdown without changing the panel.
  */
-export function NetworksTable({ period }: { period: Period }): React.JSX.Element {
+export function NetworksTable({
+  period,
+  includeTestnet = false,
+}: {
+  period: Period;
+  includeTestnet?: boolean;
+}): React.JSX.Element {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["networks", period],
-    queryFn: () => fetchNetworks(period),
+    queryKey: ["networks", period, includeTestnet],
+    queryFn: () => fetchNetworks(period, includeTestnet),
     refetchInterval: 30_000,
   });
 

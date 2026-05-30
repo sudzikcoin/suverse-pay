@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { CreateKeyForm } from "@/components/panels/create-key-form";
 import { InvoiceDownload } from "@/components/panels/invoice-download";
 import { KeysList } from "@/components/panels/keys-list";
+import {
+  NetworkModeToggle,
+  type NetworkMode,
+} from "@/components/panels/network-mode-toggle";
 import { NetworksTable } from "@/components/panels/networks-table";
 import { PeriodToggle, type Period } from "@/components/panels/period-toggle";
 import { SettlesTable } from "@/components/panels/settles-table";
@@ -35,13 +39,15 @@ export function DashboardView({
   linkedKeys: ReadonlyArray<{ resource_key_id: string; label: string }>;
 }): React.JSX.Element {
   const [period, setPeriod] = useState<Period>("24h");
+  const [networkMode, setNetworkMode] = useState<NetworkMode>("mainnet");
   const [showCreate, setShowCreate] = useState(false);
+  const includeTestnet = networkMode === "all";
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <KeyPill linkedKeys={linkedKeys} />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             type="button"
             variant="outline"
@@ -51,6 +57,7 @@ export function DashboardView({
           >
             {showCreate ? "Close" : "+ New key"}
           </Button>
+          <NetworkModeToggle value={networkMode} onChange={setNetworkMode} />
           <PeriodToggle value={period} onChange={setPeriod} />
         </div>
       </div>
@@ -71,12 +78,12 @@ export function DashboardView({
         </div>
       ) : null}
 
-      <SummaryCards period={period} />
-      <VolumeChart period={period} />
+      <SummaryCards period={period} includeTestnet={includeTestnet} />
+      <VolumeChart period={period} includeTestnet={includeTestnet} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
-        <SettlesTable />
-        <NetworksTable period={period} />
+        <SettlesTable includeTestnet={includeTestnet} />
+        <NetworksTable period={period} includeTestnet={includeTestnet} />
       </div>
 
       <KeysList />

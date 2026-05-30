@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/ui/code-block";
 import { Input } from "@/components/ui/input";
 import type {
   NamespaceFamily,
@@ -213,29 +215,23 @@ export function ConfigureView({
 
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-border bg-card/80 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between gap-4">
-          <div className="flex items-baseline gap-3 overflow-hidden">
-            <Link
-              href="/dashboard"
-              className="font-mono text-xs uppercase tracking-[0.3em] text-amber-400 hover:underline"
-            >
-              Suverse Pay
-            </Link>
-            <span className="text-sm text-muted-foreground truncate">
-              / Dashboard / Keys /{" "}
-              <span className="text-foreground">{keyLabel}</span> /
-              Configure
-            </span>
-          </div>
+      <DashboardHeader
+        sticky
+        breadcrumb={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Keys" },
+          { label: keyLabel },
+          { label: "Configure" },
+        ]}
+        right={
           <Link
             href="/dashboard/docs/configure-resource-server"
             className="hidden text-xs text-muted-foreground hover:text-foreground sm:inline"
           >
             5-min setup guide →
           </Link>
-        </div>
-      </header>
+        }
+      />
 
       <div className="container grid grid-cols-1 gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
         <div className="space-y-8">
@@ -744,7 +740,6 @@ function SnippetTabs({
   const [snippet, setSnippet] = useState<SnippetPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState<"code" | "env" | null>(null);
 
   async function load(fw: "express" | "fastify" | "fastapi") {
     if (!enabled) return;
@@ -768,13 +763,6 @@ function SnippetTabs({
     } finally {
       setLoading(false);
     }
-  }
-
-  function copy(value: string, what: "code" | "env") {
-    void navigator.clipboard.writeText(value).then(() => {
-      setCopied(what);
-      window.setTimeout(() => setCopied(null), 1500);
-    });
   }
 
   return (
@@ -836,36 +824,16 @@ function SnippetTabs({
               against the same facilitator.
             </div>
           ) : null}
-          <div className="relative">
-            <pre className="max-h-[28rem] overflow-auto rounded-md border border-border bg-background/40 p-4 font-mono text-[12px] leading-relaxed">
-              <code>{snippet.code}</code>
-            </pre>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="absolute right-3 top-3"
-              onClick={() => copy(snippet.code, "code")}
-            >
-              {copied === "code" ? "Copied ✓" : "Copy code"}
-            </Button>
-          </div>
+          <CodeBlock
+            value={snippet.code}
+            maxHeightClass="max-h-[28rem]"
+          />
           <div className="rounded-md border border-border bg-background/40 p-4">
-            <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              .env
-            </div>
-            <pre className="font-mono text-[12px]">
-              <code>{snippet.envVars.join("\n")}</code>
-            </pre>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              onClick={() => copy(snippet.envVars.join("\n"), "env")}
-            >
-              {copied === "env" ? "Copied ✓" : "Copy env vars"}
-            </Button>
+            <CodeBlock
+              value={snippet.envVars.join("\n")}
+              label=".env"
+              tone="inline"
+            />
             <p className="mt-2 text-[11px] text-muted-foreground">
               The plaintext API key shown to you at creation time goes
               after <code>sup_live_</code>. We do NOT store the
@@ -971,9 +939,9 @@ function ProbePanel({
               <summary className="cursor-pointer">
                 Show raw response body
               </summary>
-              <pre className="mt-2 overflow-auto rounded bg-background p-2 font-mono">
-                <code>{result.rawResponse}</code>
-              </pre>
+              <div className="mt-2">
+                <CodeBlock value={result.rawResponse} />
+              </div>
             </details>
           ) : null}
         </div>
@@ -1024,9 +992,12 @@ function PreviewCard({
         This is what your server will return on an unpaid request.
         Updates as you edit.
       </p>
-      <pre className="mt-3 max-h-[60vh] overflow-auto rounded-md border border-border bg-background/40 p-3 font-mono text-[11px] leading-relaxed">
-        <code>{JSON.stringify(challenge, null, 2)}</code>
-      </pre>
+      <div className="mt-3">
+        <CodeBlock
+          value={JSON.stringify(challenge, null, 2)}
+          maxHeightClass="max-h-[60vh]"
+        />
+      </div>
       <div className="mt-3 text-[10px] text-muted-foreground">
         Families: {families.size === 0 ? "—" : [...families].join(", ")}
       </div>

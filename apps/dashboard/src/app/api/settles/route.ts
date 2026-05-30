@@ -26,11 +26,13 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid query" }, { status: 400 });
   }
+  const includeTestnet = url.searchParams.get("testnet") === "1";
   const keys = await getLinkedResourceKeys(session.user.id);
   const settles = await loadRecentSettles({
     resourceKeyIds: keys,
     limit: parsed.data.limit,
     filter: parsed.data.filter,
+    includeTestnet,
   });
   return NextResponse.json({ settles });
 }

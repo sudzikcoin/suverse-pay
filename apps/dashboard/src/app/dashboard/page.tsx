@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
+import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { ApiKeyLinker } from "@/components/panels/api-key-linker";
 import { dbQuery } from "@/lib/db";
 import { DashboardView } from "./view";
@@ -40,21 +41,15 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-border bg-card/40 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-baseline gap-3">
-            <span className="font-mono text-xs uppercase tracking-[0.3em] text-amber-400">
-              Suverse Pay
-            </span>
-            <span className="text-sm text-muted-foreground">/ Dashboard</span>
-          </div>
-
+      <DashboardHeader
+        breadcrumb={[{ label: "Dashboard" }]}
+        right={
           <div className="flex items-center gap-4">
             <UserChip name={displayName} avatarUrl={avatarUrl} />
             <SignOutButton />
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <section className="container py-10">
         {linkedKeys.length === 0 ? (

@@ -4,6 +4,29 @@ import { computeFee } from "./fees.js";
 
 export type FacilitatorPaymentStatus = "settled" | "failed" | "pending";
 
+const TESTNET_NETWORKS: ReadonlySet<string> = new Set([
+  "eip155:84532",   // Base Sepolia
+  "eip155:11155111", // Ethereum Sepolia
+  "eip155:421614",  // Arbitrum Sepolia
+  "eip155:11155420", // Optimism Sepolia
+  "cosmos:grand-1", // Noble testnet
+  "solana:devnet",
+  "solana:testnet",
+  "tron:nile",
+]);
+
+/**
+ * Classify a payment as testnet / synthetic mock. The dashboard's
+ * default views filter on is_test=FALSE so production aggregates
+ * stay clean. Synthetic-mock detection covers the asset='0x0' Base
+ * mainnet rows that historic Phase 4 probing left behind.
+ */
+function isTestNetwork(network: string, asset: string): boolean {
+  if (TESTNET_NETWORKS.has(network)) return true;
+  if (network === "eip155:8453" && asset === "0x0") return true;
+  return false;
+}
+
 export interface CreateFacilitatorPaymentOptions {
   client: ClientBase | PoolClient | Pool;
   resourceKeyId: string;
@@ -71,12 +94,13 @@ export async function createOrFetchFacilitatorPayment(
   // constraint asserting gross = fee + net (migration 004) — keep
   // this code path the only writer.
   const split = computeFee(BigInt(opts.amount), opts.feeBps);
+  const isTest = isTestNetwork(opts.network, opts.asset);
   const insert = await opts.client.query(
     `INSERT INTO facilitator_payments
        (id, resource_key_id, idempotency_key, network, asset, scheme,
         amount, gross_amount, fee_amount, net_amount,
-        recipient, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
+        recipient, status, is_test)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending', $12)
      ON CONFLICT (resource_key_id, idempotency_key) DO NOTHING
      RETURNING id, resource_key_id, idempotency_key, network, asset, scheme,
                amount, gross_amount, fee_amount, net_amount,
@@ -94,6 +118,7 @@ export async function createOrFetchFacilitatorPayment(
       split.fee.toString(),
       split.net.toString(),
       opts.recipient,
+      isTest,
     ],
   );
   if (insert.rows.length > 0) {

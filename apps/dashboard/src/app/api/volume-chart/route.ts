@@ -27,11 +27,13 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "invalid period" }, { status: 400 });
   }
   const period: Period = parsed.data;
+  const includeTestnet = url.searchParams.get("testnet") === "1";
   const keys = await getLinkedResourceKeys(session.user.id);
   const points = await loadVolumeChart({
     resourceKeyIds: keys,
     since: periodToSince(period),
     period,
+    includeTestnet,
   });
   return NextResponse.json({ period, points });
 }

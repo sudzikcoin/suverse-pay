@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/catalog/status-badge";
 import { auth } from "@/lib/auth";
@@ -25,27 +26,20 @@ export default async function DashboardCatalogPage(): Promise<React.JSX.Element>
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-border bg-card/40 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-baseline gap-3">
-            <Link
-              href="/dashboard"
-              className="font-mono text-xs uppercase tracking-[0.3em] text-amber-400"
-            >
-              Suverse Pay
-            </Link>
-            <span className="text-sm text-muted-foreground">
-              / Dashboard / Catalog
-            </span>
-          </div>
+      <DashboardHeader
+        breadcrumb={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Catalog" },
+        ]}
+        right={
           <Link
             href="/catalog"
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="hidden text-xs text-muted-foreground hover:text-foreground sm:inline"
           >
             Browse public catalog →
           </Link>
-        </div>
-      </header>
+        }
+      />
 
       <section className="container py-10">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

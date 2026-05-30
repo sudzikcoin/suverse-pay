@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { auth } from "@/lib/auth";
 
 /**
@@ -18,19 +19,13 @@ export default async function DocsConfigurePage(): Promise<React.JSX.Element> {
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-border bg-card/40 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="font-mono text-xs uppercase tracking-[0.3em] text-amber-400 hover:underline"
-          >
-            Suverse Pay
-          </Link>
-          <span className="text-sm text-muted-foreground">
-            / Docs / Configure resource server
-          </span>
-        </div>
-      </header>
+      <DashboardHeader
+        breadcrumb={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Docs" },
+          { label: "Configure resource server" },
+        ]}
+      />
 
       <article className="container max-w-3xl space-y-10 py-12">
         <header>

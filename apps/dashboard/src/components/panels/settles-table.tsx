@@ -27,8 +27,14 @@ interface SettleRow {
   errorCode: string | null;
 }
 
-async function fetchSettles(filter: Filter): Promise<SettleRow[]> {
-  const res = await fetch(`/api/settles?filter=${filter}&limit=50`, {
+async function fetchSettles(
+  filter: Filter,
+  includeTestnet: boolean,
+): Promise<SettleRow[]> {
+  const qs = includeTestnet
+    ? `?filter=${filter}&limit=50&testnet=1`
+    : `?filter=${filter}&limit=50`;
+  const res = await fetch(`/api/settles${qs}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`settles ${res.status}`);
@@ -41,11 +47,15 @@ async function fetchSettles(filter: Filter): Promise<SettleRow[]> {
  * pills sit inline above the table; clicking one reissues the
  * query. Tx hashes link to the relevant block explorer when known.
  */
-export function SettlesTable(): React.JSX.Element {
+export function SettlesTable({
+  includeTestnet = false,
+}: {
+  includeTestnet?: boolean;
+} = {}): React.JSX.Element {
   const [filter, setFilter] = useState<Filter>("all");
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["settles", filter],
-    queryFn: () => fetchSettles(filter),
+    queryKey: ["settles", filter, includeTestnet],
+    queryFn: () => fetchSettles(filter, includeTestnet),
     refetchInterval: 30_000,
   });
 

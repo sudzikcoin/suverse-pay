@@ -15,8 +15,12 @@ interface StatsResponse {
   totalNetAtomic: string;
 }
 
-async function fetchStats(period: Period): Promise<StatsResponse> {
-  const res = await fetch(`/api/stats?period=${period}`, {
+async function fetchStats(
+  period: Period,
+  includeTestnet: boolean,
+): Promise<StatsResponse> {
+  const qs = includeTestnet ? `?period=${period}&testnet=1` : `?period=${period}`;
+  const res = await fetch(`/api/stats${qs}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`stats ${res.status}`);
@@ -34,10 +38,16 @@ async function fetchStats(period: Period): Promise<StatsResponse> {
  * Kept neutral (not amber) — amber is reserved for Volume, which is
  * the customer's primary metric.
  */
-export function SummaryCards({ period }: { period: Period }): React.JSX.Element {
+export function SummaryCards({
+  period,
+  includeTestnet = false,
+}: {
+  period: Period;
+  includeTestnet?: boolean;
+}): React.JSX.Element {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["stats", period],
-    queryFn: () => fetchStats(period),
+    queryKey: ["stats", period, includeTestnet],
+    queryFn: () => fetchStats(period, includeTestnet),
     refetchInterval: 30_000,
   });
 

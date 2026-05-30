@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { SubmissionForm } from "@/components/catalog/submission-form";
 import { auth } from "@/lib/auth";
 import { listLinkedKeysWithLabel } from "@/lib/queries";
@@ -20,21 +20,13 @@ export default async function NewListingPage(): Promise<React.JSX.Element> {
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-border bg-card/40 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-baseline gap-3">
-            <Link
-              href="/dashboard"
-              className="font-mono text-xs uppercase tracking-[0.3em] text-amber-400"
-            >
-              Suverse Pay
-            </Link>
-            <span className="text-sm text-muted-foreground">
-              / Dashboard / Catalog / New
-            </span>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader
+        breadcrumb={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Catalog", href: "/dashboard/catalog" },
+          { label: "New" },
+        ]}
+      />
 
       <section className="container max-w-3xl py-10">
         <div className="mb-8">

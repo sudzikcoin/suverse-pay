@@ -54,6 +54,7 @@ export interface DashboardStats {
 export async function loadStats(args: {
   resourceKeyIds: ReadonlyArray<string>;
   since: Date;
+  includeTestnet?: boolean;
 }): Promise<DashboardStats> {
   if (args.resourceKeyIds.length === 0) {
     return {
@@ -65,6 +66,7 @@ export async function loadStats(args: {
       totalNetAtomic: "0",
     };
   }
+  const testClause = args.includeTestnet ? "" : "AND is_test = FALSE";
   const rows = await dbQuery<{
     total: string;
     settled: string;
@@ -86,6 +88,7 @@ export async function loadStats(args: {
     FROM facilitator_payments
     WHERE resource_key_id = ANY($1::text[])
       AND created_at >= $2
+      ${testClause}
     `,
     [args.resourceKeyIds, args.since],
   );
@@ -120,10 +123,12 @@ export async function loadRecentSettles(args: {
   resourceKeyIds: ReadonlyArray<string>;
   limit: number;
   filter: "all" | "settled" | "failed";
+  includeTestnet?: boolean;
 }): Promise<SettleRow[]> {
   if (args.resourceKeyIds.length === 0) return [];
   const statusClause =
     args.filter === "all" ? "" : "AND status = $3";
+  const testClause = args.includeTestnet ? "" : "AND is_test = FALSE";
   const params: unknown[] = [args.resourceKeyIds, args.limit];
   if (args.filter !== "all") params.push(args.filter);
   const rows = await dbQuery<{
@@ -142,7 +147,7 @@ export async function loadRecentSettles(args: {
     SELECT id, created_at, network, asset, amount, fee_amount, status, tx_hash,
            adapter_used, error_code
     FROM facilitator_payments
-    WHERE resource_key_id = ANY($1::text[]) ${statusClause}
+    WHERE resource_key_id = ANY($1::text[]) ${statusClause} ${testClause}
     ORDER BY created_at DESC
     LIMIT $2
     `,
@@ -199,6 +204,8 @@ export async function loadInvoice(args: {
   resourceKeyIds: ReadonlyArray<string>;
   from: Date;
   until: Date;
+  /** Invoices default to mainnet-only — testnet rows are never billed. */
+  includeTestnet?: boolean;
 }): Promise<{ lines: InvoiceLineRow[]; summary: InvoiceSummary }> {
   if (args.resourceKeyIds.length === 0) {
     return {
@@ -236,6 +243,7 @@ export async function loadInvoice(args: {
        AND fp.status = 'settled'
        AND fp.created_at >= $2
        AND fp.created_at <  $3
+       ${args.includeTestnet ? "" : "AND fp.is_test = FALSE"}
      ORDER BY fp.created_at ASC
     `,
     [args.resourceKeyIds, args.from, args.until],
@@ -289,8 +297,10 @@ export interface NetworkBreakdownRow {
 export async function loadNetworkBreakdown(args: {
   resourceKeyIds: ReadonlyArray<string>;
   since: Date;
+  includeTestnet?: boolean;
 }): Promise<NetworkBreakdownRow[]> {
   if (args.resourceKeyIds.length === 0) return [];
+  const testClause = args.includeTestnet ? "" : "AND is_test = FALSE";
   const rows = await dbQuery<{
     network: string;
     settles: string;
@@ -306,6 +316,7 @@ export async function loadNetworkBreakdown(args: {
     FROM facilitator_payments
     WHERE resource_key_id = ANY($1::text[])
       AND created_at >= $2
+      ${testClause}
     GROUP BY network
     ORDER BY SUM(amount::numeric) FILTER (WHERE status = 'settled') DESC NULLS LAST,
              COUNT(*) DESC
@@ -334,9 +345,11 @@ export async function loadVolumeChart(args: {
   resourceKeyIds: ReadonlyArray<string>;
   since: Date;
   period: Period;
+  includeTestnet?: boolean;
 }): Promise<VolumeChartPoint[]> {
   if (args.resourceKeyIds.length === 0) return [];
   const bucket = args.period === "24h" ? "hour" : "day";
+  const testClause = args.includeTestnet ? "" : "AND is_test = FALSE";
   const rows = await dbQuery<{
     bucket: Date;
     volume: string;
@@ -350,6 +363,7 @@ export async function loadVolumeChart(args: {
     FROM facilitator_payments
     WHERE resource_key_id = ANY($1::text[])
       AND created_at >= $2
+      ${testClause}
     GROUP BY date_trunc($3, created_at)
     ORDER BY bucket ASC
     `,

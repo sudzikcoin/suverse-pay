@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { SubmissionForm } from "@/components/catalog/submission-form";
 import { StatusBadge } from "@/components/catalog/status-badge";
 import { DeleteListingButton } from "./delete-button";
@@ -40,27 +41,21 @@ export default async function EditListingPage({
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-border bg-card/40 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-baseline gap-3">
-            <Link
-              href="/dashboard"
-              className="font-mono text-xs uppercase tracking-[0.3em] text-amber-400"
-            >
-              Suverse Pay
-            </Link>
-            <span className="text-sm text-muted-foreground">
-              / Dashboard / Catalog / Edit
-            </span>
-          </div>
+      <DashboardHeader
+        breadcrumb={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Catalog", href: "/dashboard/catalog" },
+          { label: "Edit" },
+        ]}
+        right={
           <Link
             href="/dashboard/catalog"
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             ← All listings
           </Link>
-        </div>
-      </header>
+        }
+      />
 
       <section className="container max-w-3xl py-10">
         <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

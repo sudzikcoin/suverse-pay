@@ -20,8 +20,14 @@ interface ChartPoint {
   settles: number;
 }
 
-async function fetchChart(period: Period): Promise<ChartPoint[]> {
-  const res = await fetch(`/api/volume-chart?period=${period}`, {
+async function fetchChart(
+  period: Period,
+  includeTestnet: boolean,
+): Promise<ChartPoint[]> {
+  const qs = includeTestnet
+    ? `?period=${period}&testnet=1`
+    : `?period=${period}`;
+  const res = await fetch(`/api/volume-chart${qs}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`volume-chart ${res.status}`);
@@ -35,10 +41,16 @@ async function fetchChart(period: Period): Promise<ChartPoint[]> {
  * Recharts is deliberately style-stripped (no axis lines, dashed
  * gridlines) to fit the editorial dashboard look.
  */
-export function VolumeChart({ period }: { period: Period }): React.JSX.Element {
+export function VolumeChart({
+  period,
+  includeTestnet = false,
+}: {
+  period: Period;
+  includeTestnet?: boolean;
+}): React.JSX.Element {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["volume-chart", period],
-    queryFn: () => fetchChart(period),
+    queryKey: ["volume-chart", period, includeTestnet],
+    queryFn: () => fetchChart(period, includeTestnet),
     refetchInterval: 30_000,
   });
 
