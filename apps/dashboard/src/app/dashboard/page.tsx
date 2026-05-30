@@ -2,10 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
+import { ModeToggle } from "@/components/layout/mode-toggle";
 import { ApiKeyLinker } from "@/components/panels/api-key-linker";
 import { ProgressTracker } from "@/components/onboarding/progress-tracker";
 import { WelcomeModal } from "@/components/onboarding/welcome-modal";
 import { dbQuery } from "@/lib/db";
+import { getUserMode } from "@/lib/buyer";
 import { DashboardView } from "./view";
 
 interface LinkedKey {
@@ -39,6 +41,12 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
   if (!session?.user?.id) {
     redirect("/login");
   }
+
+  // If the user last left in buyer mode, send them straight there.
+  // The buyer page re-checks and bounces back if mode is 'seller', so
+  // we don't get into a redirect loop.
+  const mode = await getUserMode(session.user.id);
+  if (mode === "buyer") redirect("/dashboard/buyer");
 
   const [linkedKeys, onboardingRows, proxyCountRows, settleCountRows] =
     await Promise.all([
@@ -91,6 +99,7 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
         breadcrumb={[{ label: "Dashboard" }]}
         right={
           <div className="flex items-center gap-4">
+            <ModeToggle current="seller" />
             <nav className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
               <Link
                 href="/dashboard/proxies"
