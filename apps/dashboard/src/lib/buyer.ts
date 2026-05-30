@@ -34,6 +34,87 @@ export async function setUserMode(userId: string, mode: Mode): Promise<void> {
   );
 }
 
+/**
+ * Per-chain address format check. Pragmatic regex — catches the
+ * obvious typos (wrong chain prefix, wrong length, base58-invalid
+ * chars). NOT a cryptographic proof of ownership; v1 trusts the
+ * claim and surfaces public on-chain facts only.
+ */
+export function validateAddress(
+  family: BuyerWallet["networkFamily"],
+  address: string,
+): { ok: true } | { ok: false; reason: string } {
+  const a = address.trim();
+  switch (family) {
+    case "evm":
+      if (!/^0x[0-9a-fA-F]{40}$/.test(a)) {
+        return { ok: false, reason: "EVM addresses are 0x + 40 hex chars" };
+      }
+      return { ok: true };
+    case "solana":
+      // Base58 (no 0, O, I, l), 32-44 chars covers all real pubkeys.
+      if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) {
+        return {
+          ok: false,
+          reason: "Solana addresses are 32–44 base58 chars (no 0/O/I/l)",
+        };
+      }
+      return { ok: true };
+    case "cosmos":
+      // Noble bech32: human-readable part "noble", then "1", then 38+ chars.
+      if (!/^noble1[023456789ac-hj-np-z]{38,}$/.test(a)) {
+        return {
+          ok: false,
+          reason: "Cosmos Noble addresses start with 'noble1' (bech32)",
+        };
+      }
+      return { ok: true };
+    case "tron":
+      if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a)) {
+        return {
+          ok: false,
+          reason: "TRON addresses start with 'T' (34 chars total, base58)",
+        };
+      }
+      return { ok: true };
+  }
+}
+
+export async function addWallet(
+  userId: string,
+  args: { networkFamily: BuyerWallet["networkFamily"]; address: string; label?: string },
+): Promise<{ id: string } | null> {
+  const check = validateAddress(args.networkFamily, args.address);
+  if (!check.ok) {
+    throw new Error(`invalid_address:${check.reason}`);
+  }
+  // Canonical storage rules: EVM lower-cased (mixed-case checksum is
+  // just visual aid); Cosmos bech32 is always lowercase; TRON +
+  // Solana are case-sensitive base58 and stored as-pasted.
+  const trimmed = args.address.trim();
+  const address =
+    args.networkFamily === "evm" || args.networkFamily === "cosmos"
+      ? trimmed.toLowerCase()
+      : trimmed;
+  const id = crypto.randomUUID();
+  const rows = await dbQuery<{ id: string }>(
+    `INSERT INTO buyer_wallets (id, user_id, network_family, address, label)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (user_id, network_family, address) DO NOTHING
+     RETURNING id`,
+    [id, userId, args.networkFamily, address, args.label ?? null],
+  );
+  return rows.length === 0 ? null : { id: rows[0]!.id };
+}
+
+export async function deleteWallet(userId: string, walletId: string): Promise<boolean> {
+  const rows = await dbQuery<{ id: string }>(
+    `DELETE FROM buyer_wallets WHERE id = $1 AND user_id = $2 RETURNING id`,
+    [walletId, userId],
+  );
+  return rows.length > 0;
+}
+
 export async function listWallets(userId: string): Promise<BuyerWallet[]> {
   const rows = await dbQuery<{
     id: string;

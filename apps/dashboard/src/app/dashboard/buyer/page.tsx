@@ -30,6 +30,14 @@ export default async function BuyerLandingPage(): Promise<React.JSX.Element> {
         right={
           <div className="flex items-center gap-4">
             <ModeToggle current="buyer" />
+            <nav className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
+              <a href="/dashboard/buyer/payments" className="hover:text-foreground">
+                Payments
+              </a>
+              <a href="/dashboard/buyer/wallets" className="hover:text-foreground">
+                Wallets
+              </a>
+            </nav>
             <span className="hidden text-xs text-muted-foreground sm:inline">
               {displayName}
             </span>
