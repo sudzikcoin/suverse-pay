@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
@@ -45,6 +46,20 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
         breadcrumb={[{ label: "Dashboard" }]}
         right={
           <div className="flex items-center gap-4">
+            <nav className="hidden items-center gap-3 text-xs text-muted-foreground sm:flex">
+              <Link
+                href="/dashboard/proxies"
+                className="hover:text-foreground"
+              >
+                Proxies
+              </Link>
+              <Link
+                href="/dashboard/catalog"
+                className="hover:text-foreground"
+              >
+                Catalog
+              </Link>
+            </nav>
             <UserChip name={displayName} avatarUrl={avatarUrl} />
             <SignOutButton />
           </div>

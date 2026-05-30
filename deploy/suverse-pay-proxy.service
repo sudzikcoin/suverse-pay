@@ -1,0 +1,51 @@
+# systemd unit for apps/proxy (T2 self-serve x402 proxy).
+#
+# Apply with:
+#   sudo cp deploy/suverse-pay-proxy.service \
+#       /etc/systemd/system/suverse-pay-proxy.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now suverse-pay-proxy
+#
+# Logs go to journald: `journalctl -u suverse-pay-proxy -f`.
+#
+# Env file must include at least:
+#   DATABASE_URL=postgres://...
+#   FACILITATOR_URL=https://facilitator.suverse.io
+#   PROXY_RESOURCE_API_KEY=<plaintext sup_... or 64-hex>
+#   PROXY_HEADER_KEY=<base64 32-byte AES-GCM master key>
+# Plus optional:
+#   PORT=3003
+#   REDIS_URL=redis://...
+#   RATE_LIMIT_PER_MIN=120
+#   LOG_LEVEL=info
+
+[Unit]
+Description=Suverse Pay self-serve x402 proxy (apps/proxy)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=govhub
+WorkingDirectory=/home/govhub/suverse-pay/apps/proxy
+EnvironmentFile=/home/govhub/suverse-pay/.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+# Hardening — the proxy talks to Postgres + Redis on localhost and
+# fetches upstream HTTPS APIs. It needs nothing on the filesystem
+# beyond its install dir.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
