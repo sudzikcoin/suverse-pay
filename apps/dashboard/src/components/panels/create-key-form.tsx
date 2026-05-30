@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -149,6 +150,15 @@ export function CreateKeyForm({
 
   return (
     <form onSubmit={onSubmit} className={cn("flex flex-col gap-3", className)}>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Key label</span>
+        <HelpTip>
+          A human-friendly name so you can tell keys apart later. The
+          label appears next to settles in the dashboard. Common
+          conventions: the upstream API hostname, or
+          <code> staging / prod</code>.
+        </HelpTip>
+      </div>
       <Input
         type="text"
         value={label}

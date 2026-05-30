@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import type { NamespaceFamily, NetworkEntry } from "@/lib/networks-catalog";
 import { cn } from "@/lib/utils";
@@ -187,6 +189,14 @@ export function NewProxyForm({
         title="Endpoint slug"
         hint="Lowercase letters / digits / hyphens. Combined with the resource key to build the proxy URL."
         error={errorFor("endpointSlug")}
+        help={
+          <>
+            The slug is the public part of your proxy URL. Pick something
+            short and memorable like <code>forecast</code> or{" "}
+            <code>geocode-v1</code>. You can change it later by deleting
+            and re-creating the proxy.
+          </>
+        }
       >
         <Input
           value={state.endpointSlug}
@@ -208,6 +218,14 @@ export function NewProxyForm({
         title="Upstream URL"
         hint="The HTTPS URL we forward paid requests to."
         error={errorFor("originalUrl")}
+        help={
+          <>
+            The original API endpoint you already operate. We never
+            cache the response — every paid request hits your upstream
+            in real time. Must be HTTPS; localhost / private IPs are
+            blocked at the gateway.
+          </>
+        }
       >
         <div className="flex gap-2">
           <select
@@ -267,6 +285,14 @@ export function NewProxyForm({
         title="Price per call (USDC)"
         hint="$0.001 – $10. Charged on every successful settle."
         error={errorFor("priceUsdc") ?? errorFor("priceAtomic")}
+        help={
+          <>
+            Each successful call costs the buyer this amount in USDC.
+            Sweet spot is usually $0.01 – $0.50 for data APIs. We
+            charge a small platform fee on top (see the invoice export
+            on your dashboard).
+          </>
+        }
       >
         <Input
           value={state.priceUsdc}
@@ -282,6 +308,14 @@ export function NewProxyForm({
         title="Accepted networks"
         hint="Buyers may pay on any of these chains. Each network needs the matching receive address below."
         error={errorFor("acceptedNetworks")}
+        help={
+          <>
+            Pick the chains you have wallets on. Base is the most
+            common today for x402 buyers; Solana is gaining traction.
+            More chains = more buyers reachable, but each one needs a
+            valid receive address below.
+          </>
+        }
       >
         <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
           {networksCatalog.map((n) => {
@@ -324,6 +358,14 @@ export function NewProxyForm({
       <Section
         title="Receive wallets"
         hint="One per network family. We never custody — these are the addresses the buyer transfers USDC to."
+        help={
+          <>
+            We are non-custodial. The buyer signs a transfer straight
+            to YOUR address; suverse-pay only verifies and broadcasts.
+            Use a wallet you control — e.g. a Coinbase Smart Wallet on
+            Base or a Phantom wallet on Solana.
+          </>
+        }
       >
         <div className="space-y-3">
           {families.has("evm") ? (
@@ -368,6 +410,14 @@ export function NewProxyForm({
       <Section
         title="Forwarded headers (optional)"
         hint="Auth keys / tokens we attach to every upstream call. Stored encrypted at rest; never returned to the dashboard after save."
+        help={
+          <>
+            Use this if your upstream needs an <code>Authorization</code>{" "}
+            or <code>X-API-Key</code> header. The buyer never sees the
+            value — only your upstream API does. Encrypted at rest with
+            AES-GCM and never returned via API.
+          </>
+        }
       >
         <div className="space-y-2">
           {state.headers.map((h, i) => (
@@ -461,16 +511,21 @@ function Section({
   title,
   hint,
   error,
+  help,
   children,
 }: {
   title: string;
   hint?: string;
   error?: string;
+  help?: React.ReactNode;
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
     <section className="rounded-lg border border-border bg-card p-5">
-      <h3 className="text-sm font-medium">{title}</h3>
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-medium">{title}</h3>
+        {help ? <HelpTip>{help}</HelpTip> : null}
+      </div>
       {hint ? (
         <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
       ) : null}

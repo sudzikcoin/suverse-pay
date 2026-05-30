@@ -46,6 +46,20 @@ export default async function NewProxyPage(): Promise<React.JSX.Element> {
             return a 402 challenge. After payment we forward the request
             to your upstream URL with the headers you set here.
           </p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Hover the{" "}
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border bg-secondary text-[10px] font-bold text-muted-foreground">
+              ?
+            </span>{" "}
+            icon next to a field for context, or read the{" "}
+            <a
+              href="/dashboard/docs/configure-resource-server"
+              className="text-amber-400 underline-offset-4 hover:underline"
+            >
+              5-minute setup guide
+            </a>
+            .
+          </p>
         </div>
 
         <NewProxyForm
