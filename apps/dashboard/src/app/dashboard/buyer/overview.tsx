@@ -85,6 +85,15 @@ export function BuyerOverview({
         />
       </div>
 
+      <div className="-mt-3 flex justify-end">
+        <Link
+          href="/dashboard/buyer/payments"
+          className="text-xs text-amber-400 underline-offset-4 hover:underline"
+        >
+          View full payment log →
+        </Link>
+      </div>
+
       <Panel title="Top endpoints by spend">
         {isLoading ? (
           <div className="space-y-2">

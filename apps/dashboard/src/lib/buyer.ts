@@ -207,3 +207,126 @@ function intervalToMs(p: SummaryPeriod): number {
       return 30 * 24 * 60 * 60 * 1000;
   }
 }
+
+export interface BuyerPayment {
+  id: string;
+  createdAt: string;
+  network: string;
+  amount: string;
+  asset: string;
+  payer: string | null;
+  recipient: string;
+  txHash: string | null;
+  status: string;
+  errorCode: string | null;
+}
+
+export interface ListPaymentsOptions {
+  /** ISO date string lower bound (inclusive). */
+  since?: string;
+  /** ISO date string upper bound (exclusive). */
+  until?: string;
+  /** CAIP-2 network filter. */
+  network?: string;
+  /** Substring filter on recipient address. */
+  recipient?: string;
+  /** 1-based page (default 1). */
+  page?: number;
+  /** Page size (default 50, max 500). */
+  pageSize?: number;
+}
+
+export interface ListPaymentsResult {
+  payments: BuyerPayment[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * Paginated payment list for the buyer dashboard. Same wallet
+ * scoping as the summary; supports network/date/recipient filters.
+ * Returns total count alongside the page so the UI can show
+ * "Showing 1-50 of 312" without a second query.
+ */
+export async function listBuyerPayments(
+  userId: string,
+  opts: ListPaymentsOptions = {},
+): Promise<ListPaymentsResult> {
+  const addrs = await listWalletAddressesLower(userId);
+  const page = Math.max(1, opts.page ?? 1);
+  const pageSize = Math.min(500, Math.max(1, opts.pageSize ?? 50));
+  if (addrs.length === 0) {
+    return { payments: [], total: 0, page, pageSize };
+  }
+  const where: string[] = [`lower(payer) = ANY($1::text[])`];
+  const params: unknown[] = [addrs];
+  let ix = 2;
+  if (opts.since) {
+    where.push(`created_at >= $${ix++}`);
+    params.push(new Date(opts.since));
+  }
+  if (opts.until) {
+    where.push(`created_at < $${ix++}`);
+    params.push(new Date(opts.until));
+  }
+  if (opts.network) {
+    where.push(`network = $${ix++}`);
+    params.push(opts.network);
+  }
+  if (opts.recipient) {
+    where.push(`recipient ILIKE $${ix++}`);
+    params.push(`%${opts.recipient}%`);
+  }
+  const whereClause = where.join(" AND ");
+
+  // Aggregate count first — cheap with our partial payer index.
+  const countRows = await dbQuery<{ c: string }>(
+    `SELECT COUNT(*)::text AS c FROM facilitator_payments WHERE ${whereClause}`,
+    params,
+  );
+  const total = Number(countRows[0]?.c ?? "0");
+
+  const offset = (page - 1) * pageSize;
+  const rows = await dbQuery<{
+    id: string;
+    created_at: Date;
+    network: string;
+    amount: string;
+    asset: string;
+    payer: string | null;
+    recipient: string;
+    tx_hash: string | null;
+    status: string;
+    error_code: string | null;
+  }>(
+    `SELECT id, created_at, network, amount, asset, payer, recipient,
+            tx_hash, status, error_code
+       FROM facilitator_payments
+       WHERE ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${ix} OFFSET $${ix + 1}`,
+    [...params, pageSize, offset],
+  );
+
+  return {
+    payments: rows.map((r) => ({
+      id: r.id,
+      createdAt:
+        r.created_at instanceof Date
+          ? r.created_at.toISOString()
+          : String(r.created_at),
+      network: r.network,
+      amount: r.amount,
+      asset: r.asset,
+      payer: r.payer,
+      recipient: r.recipient,
+      txHash: r.tx_hash,
+      status: r.status,
+      errorCode: r.error_code,
+    })),
+    total,
+    page,
+    pageSize,
+  };
+}
