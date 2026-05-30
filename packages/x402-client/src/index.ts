@@ -41,3 +41,16 @@ export {
   isSupportedEvmCaip2,
 } from "./network/chains.js";
 export type { ChainEntry } from "./network/chains.js";
+
+export {
+  SOLANA_MAINNET,
+  SOLANA_DEVNET,
+  SUPPORTED_SOLANA_NETWORKS,
+  SOLANA_TOKENS,
+  isSupportedSolanaNetwork,
+  lookupToken,
+} from "./network/solana-networks.js";
+export type {
+  SolanaNetwork,
+  SolanaToken,
+} from "./network/solana-networks.js";

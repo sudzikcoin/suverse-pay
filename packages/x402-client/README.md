@@ -46,10 +46,17 @@ npm install @suverselabs/x402-client
 
 | VM family | Networks | Implementation |
 | --- | --- | --- |
-| **EVM** | Ethereum (1), Optimism (10), XDC (50), BNB (56), Polygon (137), Sonic (146), World Chain (480), Tempo (1329 → 4217), Sei (1329), Abstract (2741), Tempo MPP (4217), IoTeX (4689), World Sepolia (4801), Base (8453), Arbitrum (42161), Celo (42220), Avalanche Fuji (43113), Avalanche (43114), Monad (143), Ink (57073), Linea (59144), Base Sepolia (84532), Arbitrum Sepolia (421614) | ✅ ready — EIP-3009 `transferWithAuthorization` |
-| Solana | mainnet + devnet | ⏳ Phase 3 |
+| **EVM** | Ethereum (1), Optimism (10), XDC (50), Polygon (137), Sonic (146), World Chain (480), Sei (1329), Abstract (2741), IoTeX (4689), World Sepolia (4801), Base (8453), Arbitrum (42161), Celo (42220), Avalanche Fuji (43113), Avalanche (43114), Monad (143), Ink (57073), Linea (59144), Base Sepolia (84532), Arbitrum Sepolia (421614) | ✅ ready — EIP-3009 `transferWithAuthorization` |
+| **Solana** | mainnet + devnet (USDC + USDT) | ✅ ready — SPL `transferChecked` partial-sign, facilitator co-signs as fee payer |
 | Cosmos Noble | `noble-1` mainnet | ⏳ Phase 4 |
 | TRON | mainnet + Nile | ⏳ Phase 5 |
+
+> **Notes on excluded chains** (visible in `CHAINS` registry but signer refuses with `chain_not_eip3009`):
+> - **BNB Chain (56)** — Binance-Peg USDC is 18-decimal EIP-2612 permit, route through Binance x402 adapter
+> - **Tempo (4217)** — `version()` reverts on the deployed USDC; route through MPP / Stripe settlement
+>
+> **Solana wallet shapes** (v0.1.0): base58 secret key string OR `Uint8Array` (32-byte seed or 64-byte secret key). BIP-39 mnemonic input not included to avoid the bip39 + ed25519-hd-key deps; decode externally if you have one.
+> **Recent blockhash** is auto-fetched from public RPC (`api.mainnet-beta.solana.com` / `api.devnet.solana.com`) on each sign. Pass `signerOptions.solana.rpcEndpoint` to use Helius / Triton / QuickNode in production.
 
 The signing API is stable across families — adding a new wallet
 config to an existing `SuverseClient` instance never requires changing

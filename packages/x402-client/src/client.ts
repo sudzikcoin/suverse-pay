@@ -7,6 +7,7 @@
  */
 
 import { EvmSigner, toHeaderValue } from "./signers/evm.js";
+import { SolanaSigner } from "./signers/solana.js";
 import { parseChallenge, parseChallengeHeader } from "./network/challenge.js";
 import { selectRequirement } from "./network/routing.js";
 import { DEFAULT_FACILITATOR_URL } from "./facilitator/suverse.js";
@@ -36,6 +37,18 @@ export interface SuverseClientOptions {
    * Defaults to the global `fetch`.
    */
   readonly fetchImpl?: typeof fetch;
+  /**
+   * Per-VM signer overrides. Use these to pass an explicit RPC
+   * endpoint for Solana blockhash fetching, or a custom signer
+   * subclass. Optional.
+   */
+  readonly signerOptions?: {
+    readonly solana?: {
+      readonly rpcEndpoint?: string;
+      readonly computeUnitPriceMicroLamports?: number;
+      readonly computeUnitLimit?: number;
+    };
+  };
 }
 
 export class SuverseClient {
@@ -44,6 +57,7 @@ export class SuverseClient {
   private readonly fetchImpl: typeof fetch;
   private readonly defaultFacilitator: string;
   private readonly evm: EvmSigner | null;
+  private readonly solana: SolanaSigner | null;
 
   constructor(options: SuverseClientOptions) {
     this.wallets = options.wallets;
@@ -54,6 +68,25 @@ export class SuverseClient {
     this.evm =
       options.wallets.evm !== undefined
         ? new EvmSigner({ wallet: options.wallets.evm })
+        : null;
+    const solanaOpts = options.signerOptions?.solana ?? {};
+    this.solana =
+      options.wallets.solana !== undefined
+        ? new SolanaSigner({
+            wallet: options.wallets.solana,
+            ...(solanaOpts.rpcEndpoint !== undefined
+              ? { rpcEndpoint: solanaOpts.rpcEndpoint }
+              : {}),
+            ...(solanaOpts.computeUnitPriceMicroLamports !== undefined
+              ? {
+                  computeUnitPriceMicroLamports:
+                    solanaOpts.computeUnitPriceMicroLamports,
+                }
+              : {}),
+            ...(solanaOpts.computeUnitLimit !== undefined
+              ? { computeUnitLimit: solanaOpts.computeUnitLimit }
+              : {}),
+          })
         : null;
   }
 
@@ -129,11 +162,13 @@ export class SuverseClient {
       return this.evm.sign({ requirement });
     }
     if (requirement.network.startsWith("solana:")) {
-      const { signSolanaPayment } = await import("./signers/solana.js");
-      return signSolanaPayment({
-        wallet: this.wallets.solana!,
-        requirement,
-      });
+      if (!this.solana) {
+        throw new X402ClientError(
+          "no_solana_wallet",
+          "configured no Solana wallet but the seller requires a Solana network",
+        );
+      }
+      return this.solana.sign({ requirement });
     }
     if (requirement.network === "cosmos:noble-1") {
       const { signCosmosPayment } = await import("./signers/cosmos.js");
