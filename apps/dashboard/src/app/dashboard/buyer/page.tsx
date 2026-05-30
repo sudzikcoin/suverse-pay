@@ -37,6 +37,12 @@ export default async function BuyerLandingPage(): Promise<React.JSX.Element> {
               <a href="/dashboard/buyer/wallets" className="hover:text-foreground">
                 Wallets
               </a>
+              <a href="/dashboard/buyer/agent-keys" className="hover:text-foreground">
+                Agent keys
+              </a>
+              <a href="/dashboard/buyer/limits" className="hover:text-foreground">
+                Limits
+              </a>
             </nav>
             <span className="hidden text-xs text-muted-foreground sm:inline">
               {displayName}

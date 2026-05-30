@@ -7,6 +7,7 @@
  * correct behaviour — the UI surfaces an "add a wallet" empty state.
  */
 
+import { createHash, randomBytes } from "node:crypto";
 import { dbQuery } from "./db";
 
 export type Mode = "seller" | "buyer";
@@ -330,6 +331,221 @@ export interface ListPaymentsResult {
  * Returns total count alongside the page so the UI can show
  * "Showing 1-50 of 312" without a second query.
  */
+/* ────────────────────────────────────────────────────────────────
+   Agent API keys
+   ──────────────────────────────────────────────────────────────── */
+
+export interface AgentKey {
+  id: string;
+  label: string;
+  isActive: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+export interface CreatedAgentKey extends AgentKey {
+  /** Plaintext — shown ONCE. */
+  plaintext: string;
+}
+
+const AGENT_KEY_ALPHABET =
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+function generateAgentKeyPlaintext(): string {
+  const buf = randomBytes(32);
+  let out = "sup_agent_";
+  for (let i = 0; i < 32; i++) {
+    out += AGENT_KEY_ALPHABET[buf[i]! % AGENT_KEY_ALPHABET.length];
+  }
+  return out;
+}
+
+function generateAgentKeyId(): string {
+  return `agtkey_${randomBytes(4).toString("hex")}`;
+}
+
+export async function listAgentKeys(userId: string): Promise<AgentKey[]> {
+  const rows = await dbQuery<{
+    id: string;
+    label: string;
+    is_active: boolean;
+    created_at: Date;
+    last_used_at: Date | null;
+  }>(
+    `SELECT id, label, is_active, created_at, last_used_at
+       FROM agent_keys
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+    [userId],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    label: r.label,
+    isActive: r.is_active,
+    createdAt: r.created_at.toISOString(),
+    lastUsedAt: r.last_used_at ? r.last_used_at.toISOString() : null,
+  }));
+}
+
+export async function createAgentKey(args: {
+  userId: string;
+  label: string;
+}): Promise<CreatedAgentKey> {
+  if (args.label.length === 0 || args.label.length > 80) {
+    throw new Error("label must be 1-80 characters");
+  }
+  const plaintext = generateAgentKeyPlaintext();
+  const hash = createHash("sha256").update(plaintext, "utf8").digest("hex");
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const id = generateAgentKeyId();
+    try {
+      const rows = await dbQuery<{ created_at: Date }>(
+        `INSERT INTO agent_keys (id, user_id, label, key_hash)
+           VALUES ($1, $2, $3, $4)
+         RETURNING created_at`,
+        [id, args.userId, args.label, hash],
+      );
+      const created = rows[0]!;
+      return {
+        id,
+        label: args.label,
+        isActive: true,
+        createdAt: created.created_at.toISOString(),
+        lastUsedAt: null,
+        plaintext,
+      };
+    } catch (e) {
+      if (attempt === 4) throw e;
+      // Collision (UNIQUE on key_hash or PK) — try again.
+    }
+  }
+  throw new Error("agent key generation collided 5 times");
+}
+
+export async function revokeAgentKey(
+  userId: string,
+  id: string,
+): Promise<boolean> {
+  const rows = await dbQuery<{ id: string }>(
+    `UPDATE agent_keys SET is_active = FALSE
+       WHERE id = $1 AND user_id = $2 AND is_active = TRUE
+     RETURNING id`,
+    [id, userId],
+  );
+  return rows.length > 0;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Spending limits — accounting-only in v1
+   ──────────────────────────────────────────────────────────────── */
+
+export type LimitScope = "user" | "agent_key" | "endpoint";
+export type LimitPeriod = "day" | "week" | "month";
+
+export interface SpendingLimit {
+  id: string;
+  scope: LimitScope;
+  scopeId: string | null;
+  period: LimitPeriod;
+  maxAtomicUsd: string;
+  enabled: boolean;
+  notifyEmail: boolean;
+  autoPause: boolean;
+  createdAt: string;
+}
+
+export async function listLimits(userId: string): Promise<SpendingLimit[]> {
+  const rows = await dbQuery<{
+    id: string;
+    scope: LimitScope;
+    scope_id: string | null;
+    period: LimitPeriod;
+    max_atomic_usd: string;
+    enabled: boolean;
+    notify_email: boolean;
+    auto_pause: boolean;
+    created_at: Date;
+  }>(
+    `SELECT id, scope, scope_id, period, max_atomic_usd,
+            enabled, notify_email, auto_pause, created_at
+       FROM spending_limits
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+    [userId],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    scope: r.scope,
+    scopeId: r.scope_id,
+    period: r.period,
+    maxAtomicUsd: r.max_atomic_usd,
+    enabled: r.enabled,
+    notifyEmail: r.notify_email,
+    autoPause: r.auto_pause,
+    createdAt: r.created_at.toISOString(),
+  }));
+}
+
+export async function createLimit(args: {
+  userId: string;
+  scope: LimitScope;
+  scopeId: string | null;
+  period: LimitPeriod;
+  maxAtomicUsd: string;
+  notifyEmail: boolean;
+  autoPause: boolean;
+}): Promise<{ id: string } | null> {
+  try {
+    BigInt(args.maxAtomicUsd);
+  } catch {
+    throw new Error("max_atomic_usd must be a decimal integer string");
+  }
+  const id = crypto.randomUUID();
+  const rows = await dbQuery<{ id: string }>(
+    `INSERT INTO spending_limits
+       (id, user_id, scope, scope_id, period, max_atomic_usd, notify_email, auto_pause)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (user_id, scope, scope_id, period) DO NOTHING
+     RETURNING id`,
+    [
+      id,
+      args.userId,
+      args.scope,
+      args.scopeId,
+      args.period,
+      args.maxAtomicUsd,
+      args.notifyEmail,
+      args.autoPause,
+    ],
+  );
+  return rows.length === 0 ? null : { id: rows[0]!.id };
+}
+
+export async function deleteLimit(
+  userId: string,
+  id: string,
+): Promise<boolean> {
+  const rows = await dbQuery<{ id: string }>(
+    `DELETE FROM spending_limits WHERE id = $1 AND user_id = $2 RETURNING id`,
+    [id, userId],
+  );
+  return rows.length > 0;
+}
+
+export async function setLimitEnabled(
+  userId: string,
+  id: string,
+  enabled: boolean,
+): Promise<boolean> {
+  const rows = await dbQuery<{ id: string }>(
+    `UPDATE spending_limits SET enabled = $3
+       WHERE id = $1 AND user_id = $2
+     RETURNING id`,
+    [id, userId, enabled],
+  );
+  return rows.length > 0;
+}
+
 export async function listBuyerPayments(
   userId: string,
   opts: ListPaymentsOptions = {},
