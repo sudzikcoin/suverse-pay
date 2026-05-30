@@ -156,7 +156,13 @@ export class SuverseClient {
       );
     }
     const challenge = await this.readChallenge(first, url);
-    const headerValue = await this.signFor(challenge, this.preferences);
+    // We need to know which requirement won so the receipt payer is
+    // the address of the matching signer, not the EVM fallback.
+    const decision = selectRequirement(challenge, this.wallets, this.preferences);
+    const envelope = await this.signRequirement(decision.requirement, {
+      resource: challenge.resource.url,
+    });
+    const headerValue = toHeaderValue(envelope);
 
     const retryHeaders = mergeHeaders(init.headers, {
       "PAYMENT-SIGNATURE": headerValue,
@@ -169,7 +175,7 @@ export class SuverseClient {
         `retry after payment returned HTTP ${retry.status} from ${url}`,
       );
     }
-    const receipt = this.readReceipt(retry, challenge);
+    const receipt = await this.readReceipt(retry, decision.requirement);
     const data = await readBody<T>(retry);
     return { data, response: retry, payment: receipt };
   }
@@ -188,6 +194,22 @@ export class SuverseClient {
       resource: challenge.resource.url,
     });
     return toHeaderValue(envelope);
+  }
+
+  /**
+   * Alias for `signFor`. Reads more naturally at call sites where the
+   * caller talks about "paying a challenge" rather than "signing for"
+   * one.
+   *
+   * ```ts
+   * const header = await client.pay(challenge);
+   * ```
+   */
+  async pay(
+    challenge: ChallengeBody,
+    prefs: Preferences = this.preferences,
+  ): Promise<string> {
+    return this.signFor(challenge, prefs);
   }
 
   /**
@@ -280,71 +302,88 @@ export class SuverseClient {
     return parseChallenge(parsed, requestUrl);
   }
 
-  private readReceipt(
+  /**
+   * Build a PaymentReceipt from the seller's response. Prefers values
+   * extracted from the PAYMENT-RESPONSE / X-PAYMENT-RESPONSE base64
+   * header (v2 emits PAYMENT-RESPONSE; v1 emits X-PAYMENT-RESPONSE);
+   * falls back to the requirement we paid against so the caller still
+   * gets a populated `network`/`scheme`/`amount` even when the seller
+   * forgot to set the response header. The `payer` field is keyed off
+   * the actual signer that produced the payment, NOT a global default.
+   */
+  private async readReceipt(
     response: Response,
-    challenge: ChallengeBody,
-  ): PaymentReceipt {
-    // v2 servers emit PAYMENT-RESPONSE; v1 emit X-PAYMENT-RESPONSE.
+    requirement: AcceptedRequirement,
+  ): Promise<PaymentReceipt> {
+    const fallbackPayer = await this.payerFor(requirement.network);
     const headerValue =
       response.headers.get("payment-response") ??
       response.headers.get("x-payment-response");
     if (!headerValue) {
-      // No header — synthesise from challenge so the caller still
-      // sees what they paid against, but txHash will be null.
-      const accept = challenge.accepts[0]!;
       return {
-        network: accept.network,
-        scheme: accept.scheme,
-        asset: accept.asset,
-        amount: accept.amount,
-        payer: this.evm?.address ?? "",
-        payTo: accept.payTo,
+        network: requirement.network,
+        scheme: requirement.scheme,
+        asset: requirement.asset,
+        amount: requirement.amount,
+        payer: fallbackPayer,
+        payTo: requirement.payTo,
         txHash: null,
       };
     }
+    let decoded: Record<string, unknown> | null = null;
     try {
-      const decoded = JSON.parse(
+      decoded = JSON.parse(
         Buffer.from(headerValue, "base64").toString("utf8"),
       ) as Record<string, unknown>;
-      const accept = challenge.accepts[0]!;
-      return {
-        network:
-          typeof decoded["network"] === "string"
-            ? (decoded["network"] as string)
-            : accept.network,
-        scheme:
-          typeof decoded["scheme"] === "string"
-            ? (decoded["scheme"] as string)
-            : accept.scheme,
-        asset: accept.asset,
-        amount:
-          typeof decoded["amount"] === "string"
-            ? (decoded["amount"] as string)
-            : accept.amount,
-        payer:
-          typeof decoded["payer"] === "string"
-            ? (decoded["payer"] as string)
-            : this.evm?.address ?? "",
-        payTo: accept.payTo,
-        txHash:
-          typeof decoded["transaction"] === "string"
-            ? (decoded["transaction"] as string)
-            : typeof decoded["txHash"] === "string"
-              ? (decoded["txHash"] as string)
-              : null,
-      };
     } catch {
-      const accept = challenge.accepts[0]!;
+      decoded = null;
+    }
+    if (decoded === null) {
       return {
-        network: accept.network,
-        scheme: accept.scheme,
-        asset: accept.asset,
-        amount: accept.amount,
-        payer: this.evm?.address ?? "",
-        payTo: accept.payTo,
+        network: requirement.network,
+        scheme: requirement.scheme,
+        asset: requirement.asset,
+        amount: requirement.amount,
+        payer: fallbackPayer,
+        payTo: requirement.payTo,
         txHash: null,
       };
     }
+    return {
+      network: pickString(decoded["network"], requirement.network),
+      scheme: pickString(decoded["scheme"], requirement.scheme),
+      asset: requirement.asset,
+      amount: pickString(decoded["amount"], requirement.amount),
+      payer: pickString(decoded["payer"], fallbackPayer),
+      payTo: requirement.payTo,
+      txHash:
+        typeof decoded["transaction"] === "string"
+          ? (decoded["transaction"] as string)
+          : typeof decoded["txHash"] === "string"
+            ? (decoded["txHash"] as string)
+            : null,
+    };
+  }
+
+  /**
+   * Resolve the buyer's address for the family that owns `network`,
+   * using whichever signer is configured. Returns "" when there is no
+   * signer for that family — keeps the receipt populated without
+   * throwing on best-effort parsing.
+   */
+  private async payerFor(network: string): Promise<string> {
+    if (network.startsWith("eip155:")) return this.evm?.address ?? "";
+    if (network.startsWith("solana:")) return this.solana?.address ?? "";
+    if (network.startsWith("cosmos:")) {
+      if (!this.cosmos) return "";
+      try {
+        return await this.cosmos.address(network);
+      } catch {
+        return "";
+      }
+    }
+    if (network.startsWith("tron:")) return this.tron?.address ?? "";
+    return "";
   }
 
   private async buildPassthroughResult<T>(
@@ -382,4 +421,10 @@ function mergeHeaders(
   const out = new Headers(base);
   for (const [k, v] of Object.entries(extra)) out.set(k, v);
   return out;
+}
+
+function pickString(candidate: unknown, fallback: string): string {
+  return typeof candidate === "string" && candidate.length > 0
+    ? candidate
+    : fallback;
 }
