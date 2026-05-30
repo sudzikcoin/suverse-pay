@@ -41,6 +41,11 @@ declare global {
   }
 }
 
+/** base64(JSON.stringify(value)) — standard base64, NOT URL-safe. */
+function encodeHeaderJson(value: unknown): string {
+  return Buffer.from(JSON.stringify(value)).toString("base64");
+}
+
 export function createExpressMiddleware(
   opts: MiddlewareOptions,
 ): RequestHandler {
@@ -51,7 +56,12 @@ export function createExpressMiddleware(
     next: NextFunction,
   ): Promise<void> {
     const resourceUrl = buildResourceUrl(req);
-    const paymentHeader = readSingleHeader(req.headers["x-payment"]);
+    // x402 v2 ecosystem clients (`@x402/fetch` v2.14+) send the payment
+    // payload on the `PAYMENT-SIGNATURE` header; legacy v1 clients
+    // (`x402-fetch` v1.x) use `X-PAYMENT`. Accept either.
+    const paymentHeader =
+      readSingleHeader(req.headers["payment-signature"]) ??
+      readSingleHeader(req.headers["x-payment"]);
     const idempotencyKey = readSingleHeader(req.headers["idempotency-key"]);
 
     try {
@@ -63,6 +73,24 @@ export function createExpressMiddleware(
       });
       if (result.kind === "accepted") {
         req.x402Payment = result.receipt;
+        // x402 v2 ecosystem clients read the settle receipt from the
+        // `PAYMENT-RESPONSE` header; v1 clients used
+        // `X-PAYMENT-RESPONSE`. Set both for compatibility, and expose
+        // them for browser-based agents via CORS.
+        const responseBody = {
+          success: true,
+          transaction: result.receipt.txHash ?? "",
+          network: result.receipt.network,
+          payer: result.receipt.payer,
+          amount: result.receipt.amount,
+        };
+        const encoded = encodeHeaderJson(responseBody);
+        res.setHeader("PAYMENT-RESPONSE", encoded);
+        res.setHeader("X-PAYMENT-RESPONSE", encoded);
+        res.setHeader(
+          "Access-Control-Expose-Headers",
+          "PAYMENT-RESPONSE, X-PAYMENT-RESPONSE",
+        );
         next();
         return;
       }
@@ -70,6 +98,10 @@ export function createExpressMiddleware(
       res.status(result.status);
       res.setHeader("Content-Type", "application/json");
       res.setHeader("Cache-Control", "no-store");
+      // x402 v2 ecosystem clients read the challenge from the
+      // `PAYMENT-REQUIRED` header (base64-encoded JSON), not the body.
+      // The body is still emitted for human inspection and v1 clients.
+      res.setHeader("PAYMENT-REQUIRED", encodeHeaderJson(result.body));
       res.send(JSON.stringify(result.body));
     } catch (err) {
       opts.logger?.error?.(

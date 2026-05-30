@@ -63,11 +63,20 @@ describe("validateOptions", () => {
 });
 
 describe("buildChallenge", () => {
-  it("returns x402Version 2 by default", () => {
+  it("emits Coinbase-flavour v2 shape (resource top-level, amount per-accept)", () => {
     const body = buildChallenge(BASE_OPTS, "https://api.example/paid");
     expect(body.x402Version).toBe(2);
+    // resource is now top-level structured (not a per-accept string).
+    expect(body.resource.url).toBe("https://api.example/paid");
+    expect(body.resource.description).toBe("test");
+    expect(body.resource.mimeType).toBe("application/json");
+    // accepts uses v2 field names: `amount` (not `maxAmountRequired`),
+    // `maxTimeoutSeconds` (required positive number per @x402/core spec).
     expect(body.accepts).toHaveLength(1);
-    expect(body.accepts[0]!.resource).toBe("https://api.example/paid");
+    expect(body.accepts[0]!.amount).toBe(
+      BASE_OPTS.acceptedPayments[0]!.maxAmountRequired,
+    );
+    expect(body.accepts[0]!.maxTimeoutSeconds).toBeGreaterThan(0);
     expect(body.accepts[0]!.payTo).toBe(BASE_OPTS.acceptedPayments[0]!.payTo);
   });
   it("forwards an error hint when supplied", () => {
@@ -80,6 +89,40 @@ describe("buildChallenge", () => {
       "https://x",
     );
     expect(body.x402Version).toBe(1);
+  });
+  it("forwards per-accept `extra` (e.g. EIP-712 domain) when configured", () => {
+    const body = buildChallenge(
+      {
+        ...BASE_OPTS,
+        acceptedPayments: [
+          {
+            ...BASE_OPTS.acceptedPayments[0]!,
+            extra: { name: "USD Coin", version: "2" },
+          },
+        ],
+      },
+      "https://x",
+    );
+    expect(body.accepts[0]!.extra).toEqual({ name: "USD Coin", version: "2" });
+  });
+});
+
+describe("buildChallenge — ecosystem compatibility", () => {
+  it("matches the @x402/core@2.14+ PaymentRequiredV2Schema field set", () => {
+    const body = buildChallenge(BASE_OPTS, "https://api.example/paid");
+    // Required by ResourceInfoSchema:
+    expect(typeof body.resource.url).toBe("string");
+    expect(body.resource.url.length).toBeGreaterThan(0);
+    // Required by PaymentRequirementsV2Schema (per-accept):
+    for (const a of body.accepts) {
+      expect(typeof a.scheme).toBe("string");
+      expect(typeof a.network).toBe("string");
+      expect(typeof a.amount).toBe("string");
+      expect(typeof a.asset).toBe("string");
+      expect(typeof a.payTo).toBe("string");
+      expect(typeof a.maxTimeoutSeconds).toBe("number");
+      expect(a.maxTimeoutSeconds).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -111,6 +154,26 @@ describe("decodePaymentHeader", () => {
     expect(() =>
       decodePaymentHeader(Buffer.from("[]", "utf8").toString("base64")),
     ).toThrowError(X402Error);
+  });
+  it("accepts the v2-nested shape (`accepted.scheme`/`accepted.network`)", () => {
+    // What `@x402/fetch` v2.14+ sends on the PAYMENT-SIGNATURE header:
+    // scheme/network are nested inside `accepted`, not at the top level.
+    const decoded = decodePaymentHeader(
+      encodeHeader({
+        x402Version: 2,
+        accepted: {
+          scheme: "exact",
+          network: "eip155:8453",
+          asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          payTo: "0x260fbe1ec46968ee02e5b972507d7bb7f09f82b0",
+          amount: "70000",
+          maxTimeoutSeconds: 60,
+        },
+        payload: { authorization: { from: "0xabc" }, signature: "0xdead" },
+      }),
+    );
+    expect(decoded.scheme).toBe("exact");
+    expect(decoded.network).toBe("eip155:8453");
   });
 });
 

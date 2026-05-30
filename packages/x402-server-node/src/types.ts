@@ -29,6 +29,18 @@ export interface AcceptedPayment {
    * show different prices per network (rare in v1).
    */
   readonly description?: string;
+  /**
+   * Optional per-network extension data, forwarded verbatim into the
+   * 402 challenge's per-accept `extra` field. Used by signing clients
+   * that need network-specific context. For EVM `exact`, ecosystem
+   * v2 clients (e.g. `@x402/evm`) require the EIP-712 domain to
+   * construct the `transferWithAuthorization` typed-data signature:
+   *
+   *   extra: { name: "USD Coin", version: "2" }     // Circle USDC
+   *
+   * For Solana, Cosmos, TRON `exact`, no `extra` is needed today.
+   */
+  readonly extra?: Record<string, unknown>;
 }
 
 /**

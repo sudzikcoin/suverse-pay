@@ -8,6 +8,56 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
+### Fixed — packages/x402-server-node (x402 v2 ecosystem-client interop)
+
+- **Wire format aligned with `@x402/core@2.14+` (Coinbase-flavour
+  x402 v2)** so out-of-the-box ecosystem clients (`@x402/fetch`,
+  `@x402/express`, …) interop without custom selectors. Discovered
+  by the first real production paid call against
+  `https://agentos.suverse.io/v1/freight/parse_ratecon` on Base
+  (2026-05-30): `@x402/fetch@2.14` threw at challenge parse before
+  ever signing, because the prior shape (per-accept `resource`
+  string, `maxAmountRequired` instead of `amount`, missing
+  `maxTimeoutSeconds`, no top-level structured `resource`) did not
+  pass `PaymentRequiredV2Schema`. With these fixes the same
+  reference test wallet now settles end-to-end.
+- **`buildChallenge`** emits the v2 shape: top-level
+  `resource: { url, description, mimeType }`, per-accept `amount`
+  (renamed from `maxAmountRequired`), per-accept `maxTimeoutSeconds`,
+  and forwards optional per-accept `extra` (e.g. EIP-712 domain for
+  EVM USDC, required by `@x402/evm`'s `ExactEvmScheme`).
+- **`decodePaymentHeader`** accepts both the v2-nested
+  (`accepted.scheme` / `accepted.network`, as `@x402/fetch` v2
+  emits) and the v1-flat shape, with v2 taking precedence. v1
+  legacy clients keep working unchanged.
+- **`callFacilitator`** translates v2-nested decoded payloads to
+  the v1-flat shape that `facilitator.suverse.io` validates
+  against today (top-level `scheme`/`network`/`payload` on
+  `paymentPayload`; full v1 fields — `maxAmountRequired`,
+  `resource`, `description`, `mimeType`, `maxTimeoutSeconds`,
+  `extra` — on `paymentRequirements`). Retains the v2 `accepted`
+  /`resource` fields alongside so a future v2-native facilitator
+  can read either form without another middleware change.
+- **Express + Fastify adapters** read the payment payload from
+  `PAYMENT-SIGNATURE` (v2 header name) with `X-PAYMENT` fallback
+  (v1), and emit the challenge on `PAYMENT-REQUIRED` (base64
+  JSON) plus the settle receipt on `PAYMENT-RESPONSE` (v2) +
+  `X-PAYMENT-RESPONSE` (v1) headers, with the corresponding CORS
+  `Access-Control-Expose-Headers` so browser-based agents can
+  read them.
+- **`AcceptedPayment.extra`** added to the type definition
+  (optional `Record<string, unknown>`). Without this, sellers
+  cannot configure the EIP-712 domain needed for EVM USDC, and
+  any payment from a v2 EVM client fails at typed-data
+  construction with `EIP-712 domain parameters (name, version)
+  are required in payment requirements for asset 0x…`.
+
+This is a wire-format change but a strictly compatible one for
+the seller-facing API: existing `acceptedPayments` configs
+continue to work. Old v1 clients keep their existing happy path
+(read body, send `X-PAYMENT`). The minor version bump in the
+package manifest is appropriate when this lands.
+
 ### Added — apps/dashboard (Phase 5 Block 4 Sub-task 1)
 
 - **`@suverse-pay/dashboard`** — customer-facing Next.js 15 dashboard
