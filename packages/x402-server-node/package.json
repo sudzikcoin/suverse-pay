@@ -1,6 +1,6 @@
 {
   "name": "@suverselabs/x402-server",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "x402 server middleware for Node.js (Express + Fastify). Issues 402 Payment Required challenges, verifies + settles via a remote facilitator, exposes the payment metadata to your handler.",
   "license": "Apache-2.0",
   "repository": {
@@ -43,6 +43,7 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {

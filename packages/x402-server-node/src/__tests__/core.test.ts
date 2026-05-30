@@ -3,7 +3,7 @@
  * adapters are covered by integration tests in core-integration.test.ts.
  */
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildChallenge,
   decodePaymentHeader,
@@ -11,6 +11,11 @@ import {
   runProtocol,
   validateOptions,
 } from "../core.js";
+import {
+  _resetFacilitatorExtrasCache,
+  _setCachedFacilitatorExtras,
+  facilitatorExtrasKey,
+} from "../discover.js";
 import { X402Error, type MiddlewareOptions } from "../types.js";
 
 const BASE_OPTS: MiddlewareOptions = {
@@ -26,6 +31,11 @@ const BASE_OPTS: MiddlewareOptions = {
     },
   ],
   description: "test",
+  // Auto-discovery is exercised in `discover.test.ts` against a stubbed
+  // fetchImpl. The unit tests for buildChallenge/runProtocol here
+  // disable it so they don't trigger an HTTP probe of
+  // facilitator.example.com.
+  disableAutoDiscover: true,
 };
 
 // Helper: build a base64-encoded X-Payment header from a JS object.
@@ -63,8 +73,8 @@ describe("validateOptions", () => {
 });
 
 describe("buildChallenge", () => {
-  it("emits Coinbase-flavour v2 shape (resource top-level, amount per-accept)", () => {
-    const body = buildChallenge(BASE_OPTS, "https://api.example/paid");
+  it("emits Coinbase-flavour v2 shape (resource top-level, amount per-accept)", async () => {
+    const body = await buildChallenge(BASE_OPTS, "https://api.example/paid");
     expect(body.x402Version).toBe(2);
     // resource is now top-level structured (not a per-accept string).
     expect(body.resource.url).toBe("https://api.example/paid");
@@ -79,19 +89,19 @@ describe("buildChallenge", () => {
     expect(body.accepts[0]!.maxTimeoutSeconds).toBeGreaterThan(0);
     expect(body.accepts[0]!.payTo).toBe(BASE_OPTS.acceptedPayments[0]!.payTo);
   });
-  it("forwards an error hint when supplied", () => {
-    const body = buildChallenge(BASE_OPTS, "https://x", "bad_sig");
+  it("forwards an error hint when supplied", async () => {
+    const body = await buildChallenge(BASE_OPTS, "https://x", "bad_sig");
     expect(body.error).toBe("bad_sig");
   });
-  it("honours an explicit x402Version=1", () => {
-    const body = buildChallenge(
+  it("honours an explicit x402Version=1", async () => {
+    const body = await buildChallenge(
       { ...BASE_OPTS, x402Version: 1 },
       "https://x",
     );
     expect(body.x402Version).toBe(1);
   });
-  it("forwards per-accept `extra` (e.g. EIP-712 domain) when configured", () => {
-    const body = buildChallenge(
+  it("forwards per-accept `extra` (e.g. EIP-712 domain) when configured", async () => {
+    const body = await buildChallenge(
       {
         ...BASE_OPTS,
         acceptedPayments: [
@@ -108,8 +118,8 @@ describe("buildChallenge", () => {
 });
 
 describe("buildChallenge — ecosystem compatibility", () => {
-  it("matches the @x402/core@2.14+ PaymentRequiredV2Schema field set", () => {
-    const body = buildChallenge(BASE_OPTS, "https://api.example/paid");
+  it("matches the @x402/core@2.14+ PaymentRequiredV2Schema field set", async () => {
+    const body = await buildChallenge(BASE_OPTS, "https://api.example/paid");
     // Required by ResourceInfoSchema:
     expect(typeof body.resource.url).toBe("string");
     expect(body.resource.url.length).toBeGreaterThan(0);
@@ -123,6 +133,139 @@ describe("buildChallenge — ecosystem compatibility", () => {
       expect(typeof a.maxTimeoutSeconds).toBe("number");
       expect(a.maxTimeoutSeconds).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("buildChallenge — facilitator-extras auto-discovery (v0.3.0)", () => {
+  beforeEach(() => {
+    _resetFacilitatorExtrasCache();
+  });
+
+  it("merges facilitator-published extras into the per-accept extra", async () => {
+    _setCachedFacilitatorExtras(
+      "https://facilitator.example.com",
+      new Map([
+        [
+          facilitatorExtrasKey("eip155:8453", "exact"),
+          { name: "USD Coin", version: "2" },
+        ],
+      ]),
+    );
+    // Seller config has NO `extra` on the accept entry — facilitator
+    // should fill it in.
+    const body = await buildChallenge(
+      { ...BASE_OPTS, disableAutoDiscover: false },
+      "https://api.example/paid",
+    );
+    expect(body.accepts[0]!.extra).toEqual({
+      name: "USD Coin",
+      version: "2",
+    });
+  });
+
+  it("seller-provided extra wins per key, facilitator fills gaps", async () => {
+    _setCachedFacilitatorExtras(
+      "https://facilitator.example.com",
+      new Map([
+        [
+          facilitatorExtrasKey("eip155:8453", "exact"),
+          { name: "Wrong USDC", version: "1", note: "filled-by-facilitator" },
+        ],
+      ]),
+    );
+    const body = await buildChallenge(
+      {
+        ...BASE_OPTS,
+        disableAutoDiscover: false,
+        acceptedPayments: [
+          {
+            ...BASE_OPTS.acceptedPayments[0]!,
+            // Seller pins their own values for name/version, but
+            // doesn't set `note` — facilitator's `note` should land.
+            extra: { name: "USD Coin", version: "2" },
+          },
+        ],
+      },
+      "https://api.example/paid",
+    );
+    expect(body.accepts[0]!.extra).toEqual({
+      name: "USD Coin", // seller wins
+      version: "2", // seller wins
+      note: "filled-by-facilitator", // facilitator fills gap
+    });
+  });
+
+  it("disableAutoDiscover skips the merge entirely (pre-v0.3.0 behavior)", async () => {
+    _setCachedFacilitatorExtras(
+      "https://facilitator.example.com",
+      new Map([
+        [
+          facilitatorExtrasKey("eip155:8453", "exact"),
+          { name: "USD Coin", version: "2" },
+        ],
+      ]),
+    );
+    const body = await buildChallenge(
+      BASE_OPTS, // BASE_OPTS already has disableAutoDiscover: true
+      "https://api.example/paid",
+    );
+    // With auto-discover off, the cached extra is NOT merged.
+    expect(body.accepts[0]!.extra).toBeUndefined();
+  });
+
+  it("omits `extra` from the kind when neither source has any data", async () => {
+    // No facilitator extras pre-populated for eip155:8453.
+    const body = await buildChallenge(
+      { ...BASE_OPTS, disableAutoDiscover: false, fetchImpl: vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ kinds: [] }), { status: 200 }),
+      ) },
+      "https://api.example/paid",
+    );
+    expect(body.accepts[0]!.extra).toBeUndefined();
+  });
+
+  it("multi-network challenge: each kind gets its own facilitator extras", async () => {
+    _setCachedFacilitatorExtras(
+      "https://facilitator.example.com",
+      new Map([
+        [
+          facilitatorExtrasKey("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", "exact"),
+          { feePayer: "PubkeyAaa" },
+        ],
+        [
+          facilitatorExtrasKey("cosmos:noble-1", "exact_cosmos_authz"),
+          { facilitator: "noble1grantee", chainId: "noble-1" },
+        ],
+      ]),
+    );
+    const body = await buildChallenge(
+      {
+        ...BASE_OPTS,
+        disableAutoDiscover: false,
+        acceptedPayments: [
+          {
+            scheme: "exact",
+            network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            payTo: "SellerSolanaAddress",
+            maxAmountRequired: "70000",
+          },
+          {
+            scheme: "exact_cosmos_authz" as "exact", // TS workaround — scheme is "exact" literal in v0.x
+            network: "cosmos:noble-1",
+            asset: "uusdc",
+            payTo: "noble1seller",
+            maxAmountRequired: "70000",
+          },
+        ],
+      },
+      "https://api.example/paid",
+    );
+    expect(body.accepts[0]!.extra).toEqual({ feePayer: "PubkeyAaa" });
+    expect(body.accepts[1]!.extra).toEqual({
+      facilitator: "noble1grantee",
+      chainId: "noble-1",
+    });
   });
 });
 

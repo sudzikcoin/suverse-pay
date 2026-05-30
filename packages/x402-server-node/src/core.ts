@@ -13,6 +13,11 @@ import type {
   PaymentReceipt,
 } from "./types.js";
 import { X402Error } from "./types.js";
+import {
+  facilitatorExtrasKey,
+  getAllFacilitatorExtras,
+  warmFacilitatorCache,
+} from "./discover.js";
 
 /**
  * Per-accept entry in the 402 challenge body. Matches the
@@ -63,14 +68,29 @@ const DEFAULT_MAX_TIMEOUT_SECONDS = 60;
  * x402 v2 shape so that ecosystem clients (`@x402/fetch` v2.14+)
  * parse it without a custom selector: top-level structured
  * `resource`, per-accept `amount` (not `maxAmountRequired`),
- * per-accept `maxTimeoutSeconds`, optional `extra` forwarded
- * verbatim from the seller's `acceptedPayments` entry.
+ * per-accept `maxTimeoutSeconds`, optional `extra`.
+ *
+ * As of v0.3.0 each accept's `extra` is the merge of two sources:
+ *
+ *   1. Facilitator-published per-kind extras, auto-fetched from
+ *      `${opts.facilitator}/facilitator/supported` and cached in
+ *      process (1 hour TTL by default). Surfaces things sellers
+ *      don't own — Solana feePayer pubkey, Cosmos grantee address,
+ *      EVM EIP-712 USDC domain — so sellers don't have to hardcode
+ *      infrastructure data.
+ *
+ *   2. Seller-provided `extra` on the AcceptedPayment entry —
+ *      overrides the facilitator's value per key. Old (pre-v0.3.0)
+ *      configs with hardcoded extras keep working unchanged.
+ *
+ * Set `opts.disableAutoDiscover: true` to skip step 1 entirely; the
+ * v0.2.0 "seller-only extras" behavior comes back.
  */
-export function buildChallenge(
+export async function buildChallenge(
   opts: MiddlewareOptions,
   resourceUrl: string,
   errorHint?: string,
-): ChallengeBody {
+): Promise<ChallengeBody> {
   if (opts.acceptedPayments.length === 0) {
     // This is a configuration bug (caught at createX402Middleware
     // time, but be defensive). A 402 with no payment options is
@@ -81,6 +101,15 @@ export function buildChallenge(
       "x402-server: acceptedPayments is empty; configure at least one",
     );
   }
+  const extrasByKind = opts.disableAutoDiscover === true
+    ? null
+    : await getAllFacilitatorExtras(opts.facilitator, {
+        ...(opts.facilitatorExtrasCacheTtlMs !== undefined
+          ? { ttlMs: opts.facilitatorExtrasCacheTtlMs }
+          : {}),
+        ...(opts.fetchImpl !== undefined ? { fetchImpl: opts.fetchImpl } : {}),
+        ...(opts.logger !== undefined ? { logger: opts.logger } : {}),
+      });
   return {
     x402Version: opts.x402Version ?? 2,
     resource: {
@@ -88,17 +117,38 @@ export function buildChallenge(
       ...(opts.description !== undefined ? { description: opts.description } : {}),
       mimeType: "application/json",
     },
-    accepts: opts.acceptedPayments.map((p): ChallengeAccept => ({
-      scheme: p.scheme,
-      network: p.network,
-      asset: p.asset,
-      payTo: p.payTo,
-      amount: p.maxAmountRequired,
-      maxTimeoutSeconds: DEFAULT_MAX_TIMEOUT_SECONDS,
-      ...(p.extra !== undefined ? { extra: p.extra } : {}),
-    })),
+    accepts: opts.acceptedPayments.map((p): ChallengeAccept => {
+      const merged = mergeExtras(
+        extrasByKind?.get(facilitatorExtrasKey(p.network, p.scheme)),
+        p.extra,
+      );
+      return {
+        scheme: p.scheme,
+        network: p.network,
+        asset: p.asset,
+        payTo: p.payTo,
+        amount: p.maxAmountRequired,
+        maxTimeoutSeconds: DEFAULT_MAX_TIMEOUT_SECONDS,
+        ...(merged !== undefined ? { extra: merged } : {}),
+      };
+    }),
     ...(errorHint !== undefined ? { error: errorHint } : {}),
   };
+}
+
+/**
+ * Merge precedence: seller wins per key. Returns `undefined` only
+ * when both inputs are absent so `extra` can be omitted from the
+ * challenge entirely (instead of emitting `extra: {}` noise).
+ */
+function mergeExtras(
+  facilitator: Record<string, unknown> | undefined,
+  seller: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (facilitator === undefined && seller === undefined) return undefined;
+  if (facilitator === undefined) return seller;
+  if (seller === undefined) return facilitator;
+  return { ...facilitator, ...seller };
 }
 
 /**
@@ -360,7 +410,7 @@ export async function runProtocol(args: {
     return {
       kind: "challenge",
       status: 402,
-      body: buildChallenge(opts, resourceUrl),
+      body: await buildChallenge(opts, resourceUrl),
     };
   }
 
@@ -372,7 +422,7 @@ export async function runProtocol(args: {
       return {
         kind: "rejected",
         status: 400,
-        body: buildChallenge(opts, resourceUrl, err.message),
+        body: await buildChallenge(opts, resourceUrl, err.message),
         reason: err.message,
       };
     }
@@ -384,7 +434,7 @@ export async function runProtocol(args: {
     return {
       kind: "rejected",
       status: 402,
-      body: buildChallenge(
+      body: await buildChallenge(
         opts,
         resourceUrl,
         `no matching requirement for scheme=${decoded.scheme} network=${decoded.network}`,
@@ -413,7 +463,7 @@ export async function runProtocol(args: {
       return {
         kind: "rejected",
         status: err.statusCode >= 500 ? 502 : 402,
-        body: buildChallenge(opts, resourceUrl, err.message),
+        body: await buildChallenge(opts, resourceUrl, err.message),
         reason: err.code,
       };
     }
@@ -428,7 +478,7 @@ export async function runProtocol(args: {
     return {
       kind: "rejected",
       status: 402,
-      body: buildChallenge(opts, resourceUrl, reason),
+      body: await buildChallenge(opts, resourceUrl, reason),
       reason,
     };
   }
@@ -467,7 +517,7 @@ export async function runProtocol(args: {
       return {
         kind: "rejected",
         status: err.statusCode >= 500 ? 502 : 402,
-        body: buildChallenge(opts, resourceUrl, err.message),
+        body: await buildChallenge(opts, resourceUrl, err.message),
         reason: err.code,
       };
     }
@@ -482,7 +532,7 @@ export async function runProtocol(args: {
     return {
       kind: "rejected",
       status: 402,
-      body: buildChallenge(opts, resourceUrl, reason),
+      body: await buildChallenge(opts, resourceUrl, reason),
       reason,
     };
   }
@@ -549,5 +599,18 @@ export function validateOptions(opts: MiddlewareOptions): void {
         `x402-server: acceptedPayments entry missing required string fields (network/asset/payTo/maxAmountRequired)`,
       );
     }
+  }
+  // Fire-and-forget warm of the facilitator /supported cache so the
+  // first real 402 doesn't pay the fetch latency. Failure is logged
+  // by `discover.ts` and never propagates here — `buildChallenge`
+  // gracefully degrades to seller-only extras if the warm errored.
+  if (opts.disableAutoDiscover !== true) {
+    warmFacilitatorCache(opts.facilitator, {
+      ...(opts.facilitatorExtrasCacheTtlMs !== undefined
+        ? { ttlMs: opts.facilitatorExtrasCacheTtlMs }
+        : {}),
+      ...(opts.fetchImpl !== undefined ? { fetchImpl: opts.fetchImpl } : {}),
+      ...(opts.logger !== undefined ? { logger: opts.logger } : {}),
+    });
   }
 }

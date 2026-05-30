@@ -88,6 +88,33 @@ export interface MiddlewareOptions {
    * pino/winston logger if you want middleware events on stderr.
    */
   readonly logger?: Pick<Console, "warn" | "error" | "info">;
+  /**
+   * Disable the auto-discovery of facilitator-published per-kind
+   * `extra` data (added in v0.3.0). When `true`, the middleware
+   * builds 402 challenges using ONLY the `extra` you set on each
+   * `acceptedPayments` entry — the same behavior as v0.2.0.
+   *
+   * Defaults to `false` (auto-discovery on). Set to `true` if:
+   * - you don't want the middleware reaching out to the facilitator
+   *   at boot (e.g. tight network egress policy),
+   * - you maintain your own `extra` values and want them to be the
+   *   sole source of truth, or
+   * - you're running against a facilitator that doesn't implement
+   *   the suverse-pay PR-A /supported.extra surface yet.
+   *
+   * Note: even with auto-discovery on, seller-provided `extra` wins
+   * over facilitator-published values per key, so you can mix
+   * partial overrides with auto-fetched defaults.
+   */
+  readonly disableAutoDiscover?: boolean;
+  /**
+   * TTL for the in-process facilitator `/supported` cache, in
+   * milliseconds. Default: 3,600,000 (1 hour). Lower it to react
+   * faster to facilitator config changes; raise it to reduce the
+   * number of `/supported` round-trips on long-lived processes.
+   * Ignored when `disableAutoDiscover` is true.
+   */
+  readonly facilitatorExtrasCacheTtlMs?: number;
 }
 
 /**
