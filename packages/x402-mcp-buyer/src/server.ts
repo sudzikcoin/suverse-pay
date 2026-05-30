@@ -11,6 +11,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { name as pkgName, version as pkgVersion } from "./meta.js";
+import { registerBuyAndCall } from "./tools/buy-and-call.js";
 import { registerCatalogSearch } from "./tools/catalog-search.js";
 
 export function buildServer(): McpServer {
@@ -20,6 +21,7 @@ export function buildServer(): McpServer {
   });
 
   registerCatalogSearch(server);
+  registerBuyAndCall(server);
 
   return server;
 }
