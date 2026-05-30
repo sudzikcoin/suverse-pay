@@ -54,3 +54,12 @@ export type {
   SolanaNetwork,
   SolanaToken,
 } from "./network/solana-networks.js";
+
+export {
+  COSMOS_NOBLE_MAINNET,
+  COSMOS_NOBLE_TESTNET,
+  COSMOS_NETWORKS,
+  lookupCosmosNetwork,
+  isSupportedCosmosNetwork,
+} from "./network/cosmos-networks.js";
+export type { CosmosNetwork } from "./network/cosmos-networks.js";

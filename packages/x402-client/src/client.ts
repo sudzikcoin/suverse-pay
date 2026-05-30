@@ -8,6 +8,7 @@
 
 import { EvmSigner, toHeaderValue } from "./signers/evm.js";
 import { SolanaSigner } from "./signers/solana.js";
+import { CosmosSigner } from "./signers/cosmos.js";
 import { parseChallenge, parseChallengeHeader } from "./network/challenge.js";
 import { selectRequirement } from "./network/routing.js";
 import { DEFAULT_FACILITATOR_URL } from "./facilitator/suverse.js";
@@ -48,6 +49,9 @@ export interface SuverseClientOptions {
       readonly computeUnitPriceMicroLamports?: number;
       readonly computeUnitLimit?: number;
     };
+    readonly cosmos?: {
+      readonly validitySeconds?: number;
+    };
   };
 }
 
@@ -58,6 +62,7 @@ export class SuverseClient {
   private readonly defaultFacilitator: string;
   private readonly evm: EvmSigner | null;
   private readonly solana: SolanaSigner | null;
+  private readonly cosmos: CosmosSigner | null;
 
   constructor(options: SuverseClientOptions) {
     this.wallets = options.wallets;
@@ -85,6 +90,16 @@ export class SuverseClient {
               : {}),
             ...(solanaOpts.computeUnitLimit !== undefined
               ? { computeUnitLimit: solanaOpts.computeUnitLimit }
+              : {}),
+          })
+        : null;
+    const cosmosOpts = options.signerOptions?.cosmos ?? {};
+    this.cosmos =
+      options.wallets.cosmos !== undefined
+        ? new CosmosSigner({
+            wallet: options.wallets.cosmos,
+            ...(cosmosOpts.validitySeconds !== undefined
+              ? { validitySeconds: cosmosOpts.validitySeconds }
               : {}),
           })
         : null;
@@ -140,7 +155,9 @@ export class SuverseClient {
     prefs: Preferences = this.preferences,
   ): Promise<string> {
     const decision = selectRequirement(challenge, this.wallets, prefs);
-    const envelope = await this.signRequirement(decision.requirement);
+    const envelope = await this.signRequirement(decision.requirement, {
+      resource: challenge.resource.url,
+    });
     return toHeaderValue(envelope);
   }
 
@@ -148,9 +165,14 @@ export class SuverseClient {
    * Sign one specific `AcceptedRequirement` directly. Useful when the
    * caller has already decided which network to pay on (e.g. they
    * implemented their own routing).
+   *
+   * `options.resource` is REQUIRED for Cosmos networks — the resource
+   * URL is part of the signed preimage. `.signFor(challenge)` and
+   * `.fetch(url)` pass it through automatically.
    */
   async signRequirement(
     requirement: AcceptedRequirement,
+    options: { resource?: string } = {},
   ): Promise<PaymentEnvelope> {
     if (requirement.network.startsWith("eip155:")) {
       if (!this.evm) {
@@ -170,12 +192,22 @@ export class SuverseClient {
       }
       return this.solana.sign({ requirement });
     }
-    if (requirement.network === "cosmos:noble-1") {
-      const { signCosmosPayment } = await import("./signers/cosmos.js");
-      return signCosmosPayment({
-        wallet: this.wallets.cosmos!,
+    if (requirement.network.startsWith("cosmos:")) {
+      if (!this.cosmos) {
+        throw new X402ClientError(
+          "no_cosmos_wallet",
+          "configured no Cosmos wallet but the seller requires a Cosmos network",
+        );
+      }
+      if (!options.resource) {
+        throw new X402ClientError(
+          "missing_resource",
+          "signRequirement on a Cosmos network requires options.resource (the URL the buyer is paying for — part of the signed preimage). Pass the URL from challenge.resource.url.",
+        );
+      }
+      return this.cosmos.sign({
         requirement,
-        resource: "",
+        resource: options.resource,
       });
     }
     if (requirement.network.startsWith("tron:")) {

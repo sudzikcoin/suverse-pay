@@ -77,6 +77,9 @@
     "access": "public"
   },
   "dependencies": {
+    "@cosmjs/amino": "^0.32.4",
+    "@cosmjs/crypto": "^0.32.4",
+    "@cosmjs/encoding": "^0.32.4",
     "@solana/spl-token": "^0.4.9",
     "@solana/web3.js": "^1.95.4",
     "bs58": "^6.0.0",

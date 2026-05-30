@@ -127,7 +127,11 @@ export interface EvmAccount {
 }
 
 export type SolanaWallet = string | Uint8Array;
-export type CosmosWallet = string;
+/**
+ * Cosmos wallet — 12 or 24 BIP-39 mnemonic words separated by
+ * whitespace, OR a 32-byte raw secp256k1 private key as Uint8Array.
+ */
+export type CosmosWallet = string | Uint8Array;
 export type TronWallet = string;
 
 // ---------------------------------------------------------------

@@ -48,7 +48,7 @@ npm install @suverselabs/x402-client
 | --- | --- | --- |
 | **EVM** | Ethereum (1), Optimism (10), XDC (50), Polygon (137), Sonic (146), World Chain (480), Sei (1329), Abstract (2741), IoTeX (4689), World Sepolia (4801), Base (8453), Arbitrum (42161), Celo (42220), Avalanche Fuji (43113), Avalanche (43114), Monad (143), Ink (57073), Linea (59144), Base Sepolia (84532), Arbitrum Sepolia (421614) | ✅ ready — EIP-3009 `transferWithAuthorization` |
 | **Solana** | mainnet + devnet (USDC + USDT) | ✅ ready — SPL `transferChecked` partial-sign, facilitator co-signs as fee payer |
-| Cosmos Noble | `noble-1` mainnet | ⏳ Phase 4 |
+| **Cosmos Noble** | `noble-1` mainnet + `grand-1` testnet | ✅ ready — ADR-036 sign of canonical Authorization JSON, scheme `exact_cosmos_authz` (pre-condition: payer must have run `MsgGrant{SendAuthorization}` to the facilitator grantee) |
 | TRON | mainnet + Nile | ⏳ Phase 5 |
 
 > **Notes on excluded chains** (visible in `CHAINS` registry but signer refuses with `chain_not_eip3009`):
