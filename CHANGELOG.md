@@ -8,7 +8,27 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
-### Fixed — packages/x402-server-node (x402 v2 ecosystem-client interop)
+## [packages/x402-server-node 0.2.0] — 2026-05-30 — Coinbase v2 ecosystem interop
+
+Published to npm as
+[`@suverselabs/x402-server@0.2.0`](https://www.npmjs.com/package/@suverselabs/x402-server/v/0.2.0).
+Source merged via PR #2 (commit `6743faf`).
+
+### ⚠️ Breaking — wire format
+
+This release changes the bytes the middleware emits on the wire so they
+match the shape `@x402/core@2.14+` (Coinbase-flavour x402 v2) expects.
+Any consumer pinned to `0.1.0` keeps working unchanged — they read
+the body or `X-PAYMENT` and the middleware still understands them.
+Anything that was depending on the **old** challenge body (per-accept
+string `resource`, top-level `maxAmountRequired`, no
+`maxTimeoutSeconds`, no top-level structured `resource`) must update.
+
+For the typical seller-facing API the shape of `acceptedPayments` is
+unchanged; the only opt-in addition is `extra?: Record<string, unknown>`
+per accept entry (required by `@x402/evm`'s EIP-712 USDC signer).
+
+### Fixed — x402 v2 ecosystem-client interop
 
 - **Wire format aligned with `@x402/core@2.14+` (Coinbase-flavour
   x402 v2)** so out-of-the-box ecosystem clients (`@x402/fetch`,
