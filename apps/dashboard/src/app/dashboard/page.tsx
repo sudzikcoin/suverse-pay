@@ -3,12 +3,26 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { ApiKeyLinker } from "@/components/panels/api-key-linker";
+import { ProgressTracker } from "@/components/onboarding/progress-tracker";
+import { WelcomeModal } from "@/components/onboarding/welcome-modal";
 import { dbQuery } from "@/lib/db";
 import { DashboardView } from "./view";
 
 interface LinkedKey {
   resource_key_id: string;
   label: string;
+}
+
+interface OnboardingRow {
+  onboarding_dismissed_at: string | null;
+}
+
+interface ProxyCountRow {
+  c: string;
+}
+
+interface SettleCountRow {
+  c: string;
 }
 
 /**
@@ -26,22 +40,53 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
     redirect("/login");
   }
 
-  const linkedKeys = await dbQuery<LinkedKey>(
-    `
-    SELECT k.id AS resource_key_id, k.label
-    FROM dashboard_user_resource_keys l
-    JOIN resource_api_keys k ON k.id = l.resource_key_id
-    WHERE l.user_id = $1 AND k.is_active
-    ORDER BY l.linked_at DESC
-    `,
-    [session.user.id],
-  );
+  const [linkedKeys, onboardingRows, proxyCountRows, settleCountRows] =
+    await Promise.all([
+      dbQuery<LinkedKey>(
+        `
+        SELECT k.id AS resource_key_id, k.label
+        FROM dashboard_user_resource_keys l
+        JOIN resource_api_keys k ON k.id = l.resource_key_id
+        WHERE l.user_id = $1 AND k.is_active
+        ORDER BY l.linked_at DESC
+        `,
+        [session.user.id],
+      ),
+      dbQuery<OnboardingRow>(
+        `SELECT onboarding_dismissed_at FROM dashboard_users WHERE id = $1`,
+        [session.user.id],
+      ),
+      dbQuery<ProxyCountRow>(
+        `SELECT COUNT(*)::text AS c
+           FROM seller_proxy_configs spc
+           JOIN dashboard_user_resource_keys l
+             ON l.resource_key_id = spc.resource_key_id
+          WHERE l.user_id = $1`,
+        [session.user.id],
+      ),
+      dbQuery<SettleCountRow>(
+        `SELECT COUNT(*)::text AS c
+           FROM facilitator_payments fp
+           JOIN dashboard_user_resource_keys l
+             ON l.resource_key_id = fp.resource_key_id
+          WHERE l.user_id = $1 AND fp.status = 'settled'`,
+        [session.user.id],
+      ),
+    ]);
 
   const displayName = session.user.name ?? session.user.email ?? "";
   const avatarUrl = session.user.image ?? null;
+  const onboardingDismissedAt =
+    onboardingRows[0]?.onboarding_dismissed_at ?? null;
+  const progress = {
+    hasKey: linkedKeys.length > 0,
+    hasProxy: Number(proxyCountRows[0]?.c ?? "0") > 0,
+    hasSettle: Number(settleCountRows[0]?.c ?? "0") > 0,
+  };
 
   return (
     <main className="min-h-screen">
+      <WelcomeModal initialDismissedAt={onboardingDismissedAt} />
       <DashboardHeader
         breadcrumb={[{ label: "Dashboard" }]}
         right={
@@ -66,7 +111,8 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
         }
       />
 
-      <section className="container py-10">
+      <section className="container space-y-6 py-10">
+        <ProgressTracker progress={progress} />
         {linkedKeys.length === 0 ? (
           <ApiKeyLinker />
         ) : (
