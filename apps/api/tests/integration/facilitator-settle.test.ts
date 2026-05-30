@@ -91,16 +91,16 @@ async function buildStack(): Promise<Stack> {
   const registry = new ProviderRegistry(pool);
   const ledger = new PaymentLedger(pool, redis);
 
-  // cosmos-pay against grand-1 — matches the static routing config.
+  // cosmos-pay against noble-1 mainnet — matches the static routing config.
   const cosmos = new CosmosPayAdapter({
     baseUrl: COSMOS_PAY_MOCK_HOST,
-    networkAssets: { "cosmos:grand-1": ["uusdc"] },
+    networkAssets: { "cosmos:noble-1": ["uusdc"] },
     estimatedFeeUsd: "0.0001",
   });
   await registry.register(cosmos, {
     config: { baseUrl: COSMOS_PAY_MOCK_HOST, estimatedFeeUsd: "0.0001" },
     staticCapabilities: [
-      { network: "cosmos:grand-1", asset: "uusdc", scheme: "exact_cosmos_authz" },
+      { network: "cosmos:noble-1", asset: "uusdc", scheme: "exact_cosmos_authz" },
     ],
   });
 
@@ -166,7 +166,7 @@ function cosmosPayload(): unknown {
   return {
     x402Version: 2,
     scheme: "exact_cosmos_authz",
-    network: "cosmos:grand-1",
+    network: "cosmos:noble-1",
     payload: {
       from: "noble1payer",
       publicKey: "pk",
@@ -180,7 +180,7 @@ function cosmosPayload(): unknown {
         validAfter: 0,
         validBefore: 9_999_999_999,
         resource: "https://example.com/x",
-        chainId: "grand-1",
+        chainId: "noble-1",
       },
     },
   };
@@ -189,13 +189,13 @@ function cosmosPayload(): unknown {
 function cosmosRequirements(): unknown {
   return {
     scheme: "exact_cosmos_authz",
-    network: "cosmos:grand-1",
+    network: "cosmos:noble-1",
     maxAmountRequired: "10000",
     asset: "uusdc",
     payTo: "noble1recipient",
     resource: "https://example.com/x",
     maxTimeoutSeconds: 60,
-    extra: { facilitator: "noble1grantee", chainId: "grand-1" },
+    extra: { facilitator: "noble1grantee", chainId: "noble-1" },
   };
 }
 
@@ -230,7 +230,7 @@ describe("POST /facilitator/settle — auth + rate limit + idempotency + persist
     nock(COSMOS_PAY_MOCK_HOST).post("/settle").reply(200, {
       success: true,
       transaction: "DEADBEEF",
-      network: "cosmos:grand-1",
+      network: "cosmos:noble-1",
       payer: "noble1payer",
     });
     const res = await stack!.app.inject({
@@ -246,7 +246,7 @@ describe("POST /facilitator/settle — auth + rate limit + idempotency + persist
     const body = res.json();
     expect(body.success).toBe(true);
     expect(body.transaction).toBe("DEADBEEF");
-    expect(body.network).toBe("cosmos:grand-1");
+    expect(body.network).toBe("cosmos:noble-1");
 
     // Row was written to facilitator_payments.
     const rows = await stack!.pool.query<{ status: string; tx_hash: string; adapter_used: string }>(
@@ -262,7 +262,7 @@ describe("POST /facilitator/settle — auth + rate limit + idempotency + persist
     nock(COSMOS_PAY_MOCK_HOST).post("/settle").once().reply(200, {
       success: true,
       transaction: "FIRSTTX",
-      network: "cosmos:grand-1",
+      network: "cosmos:noble-1",
       payer: "noble1payer",
     });
     const first = await stack!.app.inject({
@@ -310,7 +310,7 @@ describe("POST /facilitator/settle — auth + rate limit + idempotency + persist
     nock(COSMOS_PAY_MOCK_HOST).post("/settle").twice().reply(200, {
       success: true,
       transaction: "TWICE",
-      network: "cosmos:grand-1",
+      network: "cosmos:noble-1",
       payer: "noble1payer",
     });
     const tenantA = await stack!.app.inject({
@@ -372,7 +372,7 @@ describe("POST /facilitator/settle — auth + rate limit + idempotency + persist
     nock(COSMOS_PAY_MOCK_HOST).post("/settle").reply(200, {
       success: true,
       transaction: "T1",
-      network: "cosmos:grand-1",
+      network: "cosmos:noble-1",
     });
     const ok = await stack!.app.inject({
       method: "POST",
