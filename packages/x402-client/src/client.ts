@@ -9,6 +9,10 @@
 import { EvmSigner, toHeaderValue } from "./signers/evm.js";
 import { SolanaSigner } from "./signers/solana.js";
 import { CosmosSigner } from "./signers/cosmos.js";
+import {
+  TronSigner,
+  type GasfreeDomain,
+} from "./signers/tron.js";
 import { parseChallenge, parseChallengeHeader } from "./network/challenge.js";
 import { selectRequirement } from "./network/routing.js";
 import { DEFAULT_FACILITATOR_URL } from "./facilitator/suverse.js";
@@ -52,6 +56,14 @@ export interface SuverseClientOptions {
     readonly cosmos?: {
       readonly validitySeconds?: number;
     };
+    readonly tron?: {
+      readonly gasfreeDomain?: {
+        readonly mainnet?: GasfreeDomain;
+        readonly nile?: GasfreeDomain;
+      };
+      readonly validitySeconds?: number;
+      readonly defaultMaxFeeAtomic?: bigint;
+    };
   };
 }
 
@@ -63,6 +75,7 @@ export class SuverseClient {
   private readonly evm: EvmSigner | null;
   private readonly solana: SolanaSigner | null;
   private readonly cosmos: CosmosSigner | null;
+  private readonly tron: TronSigner | null;
 
   constructor(options: SuverseClientOptions) {
     this.wallets = options.wallets;
@@ -100,6 +113,22 @@ export class SuverseClient {
             wallet: options.wallets.cosmos,
             ...(cosmosOpts.validitySeconds !== undefined
               ? { validitySeconds: cosmosOpts.validitySeconds }
+              : {}),
+          })
+        : null;
+    const tronOpts = options.signerOptions?.tron ?? {};
+    this.tron =
+      options.wallets.tron !== undefined
+        ? new TronSigner({
+            wallet: options.wallets.tron,
+            ...(tronOpts.gasfreeDomain !== undefined
+              ? { gasfreeDomain: tronOpts.gasfreeDomain }
+              : {}),
+            ...(tronOpts.validitySeconds !== undefined
+              ? { validitySeconds: tronOpts.validitySeconds }
+              : {}),
+            ...(tronOpts.defaultMaxFeeAtomic !== undefined
+              ? { defaultMaxFeeAtomic: tronOpts.defaultMaxFeeAtomic }
               : {}),
           })
         : null;
@@ -211,11 +240,13 @@ export class SuverseClient {
       });
     }
     if (requirement.network.startsWith("tron:")) {
-      const { signTronPayment } = await import("./signers/tron.js");
-      return signTronPayment({
-        wallet: this.wallets.tron!,
-        requirement,
-      });
+      if (!this.tron) {
+        throw new X402ClientError(
+          "no_tron_wallet",
+          "configured no TRON wallet but the seller requires a TRON network",
+        );
+      }
+      return this.tron.sign({ requirement });
     }
     throw new X402ClientError(
       "unsupported_network_family",

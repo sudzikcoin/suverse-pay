@@ -49,7 +49,7 @@ npm install @suverselabs/x402-client
 | **EVM** | Ethereum (1), Optimism (10), XDC (50), Polygon (137), Sonic (146), World Chain (480), Sei (1329), Abstract (2741), IoTeX (4689), World Sepolia (4801), Base (8453), Arbitrum (42161), Celo (42220), Avalanche Fuji (43113), Avalanche (43114), Monad (143), Ink (57073), Linea (59144), Base Sepolia (84532), Arbitrum Sepolia (421614) | ✅ ready — EIP-3009 `transferWithAuthorization` |
 | **Solana** | mainnet + devnet (USDC + USDT) | ✅ ready — SPL `transferChecked` partial-sign, facilitator co-signs as fee payer |
 | **Cosmos Noble** | `noble-1` mainnet + `grand-1` testnet | ✅ ready — ADR-036 sign of canonical Authorization JSON, scheme `exact_cosmos_authz` (pre-condition: payer must have run `MsgGrant{SendAuthorization}` to the facilitator grantee) |
-| TRON | mainnet + Nile | ⏳ Phase 5 |
+| **TRON** | `mainnet` + `nile` testnet — **`exact_gasfree` only** | ⚠️ ready, experimental — TIP-712 PermitTransfer via gasfree.io relay; $1.50 USDT minimum; TIP-712 `verifyingContract` is a placeholder by default, pass `signerOptions.tron.gasfreeDomain.{mainnet,nile}` with the real gasfree.io contract before production. TRON `exact` + `exact_permit` schemes NOT in v0.1.0 (Tether USDT on TRON does not expose EIP-3009/EIP-2612 — no working pathway exists for those schemes today). |
 
 > **Notes on excluded chains** (visible in `CHAINS` registry but signer refuses with `chain_not_eip3009`):
 > - **BNB Chain (56)** — Binance-Peg USDC is 18-decimal EIP-2612 permit, route through Binance x402 adapter

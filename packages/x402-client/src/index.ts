@@ -63,3 +63,16 @@ export {
   isSupportedCosmosNetwork,
 } from "./network/cosmos-networks.js";
 export type { CosmosNetwork } from "./network/cosmos-networks.js";
+
+export {
+  TRON_MAINNET,
+  TRON_NILE,
+  TRON_TOKENS,
+  GASFREE_MIN_USDT_ATOMIC,
+  isSupportedTronNetwork,
+  lookupTronToken,
+} from "./network/tron-networks.js";
+export type {
+  TronNetwork,
+  TronToken,
+} from "./network/tron-networks.js";

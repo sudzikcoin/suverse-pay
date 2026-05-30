@@ -104,6 +104,11 @@ function canSign(
   }
   if (r.network.startsWith("tron:")) {
     if (wallets.tron === undefined) return false;
+    // v0.1.0 ships only `exact_gasfree` for TRON — refuse other
+    // schemes here so the client doesn't pick them and fail at sign
+    // time. When future releases add `exact` / `exact_permit`, widen
+    // this check to mirror TronSigner.supportedSchemes().
+    if (r.scheme !== "exact_gasfree") return false;
     // Decline if amount is below the gasfree.io minimum so the client
     // doesn't burn signatures on attempts that will fail at the relay.
     try {

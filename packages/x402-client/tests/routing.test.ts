@@ -99,15 +99,32 @@ describe("selectRequirement — wallet matching", () => {
   });
 
   it("declines TRON when amount is below gasfree minimum", () => {
-    const c = challenge([baseAcc("tron:mainnet", "100000")]); // $0.10 < $1.50 min
+    const c = challenge([
+      { ...baseAcc("tron:mainnet", "100000"), scheme: "exact_gasfree" },
+    ]); // $0.10 < $1.50 min
     expect(() =>
       selectRequirement(c, { tron: "0x" + "ab".repeat(32) }),
     ).toThrowError(NoSupportedNetworkError);
   });
 
-  it("accepts TRON when amount meets the gasfree minimum", () => {
-    const c = challenge([baseAcc("tron:mainnet", "1500000")]); // exactly $1.50
-    const decision = selectRequirement(c, { tron: "0x" + "ab".repeat(32) });
+  it("accepts TRON only when scheme is exact_gasfree AND amount meets the minimum", () => {
+    // exact_gasfree at $1.50 — passes
+    const ok = challenge([
+      { ...baseAcc("tron:mainnet", "1500000"), scheme: "exact_gasfree" },
+    ]);
+    const decision = selectRequirement(ok, {
+      tron: "0x" + "ab".repeat(32),
+    });
     expect(decision.requirement.network).toBe("tron:mainnet");
+    expect(decision.requirement.scheme).toBe("exact_gasfree");
+  });
+
+  it("declines TRON `exact` scheme (v0.1.0 only signs exact_gasfree)", () => {
+    const c = challenge([
+      { ...baseAcc("tron:mainnet", "1500000"), scheme: "exact" },
+    ]);
+    expect(() =>
+      selectRequirement(c, { tron: "0x" + "ab".repeat(32) }),
+    ).toThrowError(NoSupportedNetworkError);
   });
 });
