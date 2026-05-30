@@ -15,13 +15,15 @@ const client = new SuverseClient({
   wallets: { evm: process.env.PRIVATE_KEY as `0x${string}` },
 });
 
-const { data, payment } = await client.fetch(
+const { data, response, payment } = await client.fetch(
   "https://agentos.suverse.io/v1/freight/parse_ratecon",
   { method: "POST", body: JSON.stringify({ text: "..." }) },
 );
 
+console.log(response.status);                                  // 200
 console.log(payment.network, payment.txHash, payment.amount);
 // → "eip155:8453"  "0x82f4..."  "70000"
+console.log(data);                                              // parsed body
 ```
 
 The client handles 402 challenges automatically: pick the cheapest
@@ -152,7 +154,7 @@ const client = new SuverseClient({
   },
 });
 
-const { data, payment } = await client.fetch(
+const { data, response, payment } = await client.fetch(
   "https://agentos.suverse.io/v1/freight/parse_ratecon",
   {
     method: "POST",
@@ -161,9 +163,9 @@ const { data, payment } = await client.fetch(
   },
 );
 
-console.log(`paid on ${payment.network} for ${payment.amount}`);
+console.log(`HTTP ${response.status} — paid on ${payment.network} for ${payment.amount}`);
 console.log(`tx: ${payment.txHash}`);
-console.log("response:", data);
+console.log("response body:", data);
 ```
 
 ## Network selection
@@ -250,6 +252,38 @@ const retry = await fetch(url, {
 
 `.pay()` and `.signFor()` are aliases; pick whichever reads better.
 
+### What `.fetch()` returns
+
+`client.fetch<T>(url, init?)` resolves to a `FetchResult<T>` — **not**
+a raw `Response`. The three fields are:
+
+```ts
+interface FetchResult<T> {
+  data: T;             // parsed body (JSON if Content-Type JSON, else text)
+  response: Response;  // the raw Response from the retried fetch
+  payment: PaymentReceipt;  // what was paid, on which chain, txHash, …
+}
+```
+
+So a common pitfall:
+
+```ts
+// ❌ wrong — these are undefined on FetchResult
+const r = await client.fetch(url, init);
+r.status;          // undefined
+r.payment.txHash;  // ✓ but most users hit the line above first
+await r.json();    // not a function — body is already parsed in `data`
+
+// ✓ destructure
+const { data, response, payment } = await client.fetch<MyShape>(url, init);
+response.status;   // HTTP status from the retry
+payment.txHash;    // settle tx hash (or null in verify-only mode)
+data;              // already parsed
+```
+
+The `response` object is the same `Response` you'd get from native
+`fetch`; use it when you need `.status`, `.headers`, `.ok`, etc.
+
 ### `client.signRequirement(requirement, options?)`
 
 When you've already picked the network and just want the envelope:
@@ -330,6 +364,27 @@ import {
 Every error message also includes a human-readable hint pointing at
 the most likely fix. `.code` is the stable identifier — match on it
 rather than the message text in production code.
+
+## Examples
+
+Runnable examples live in [`examples/`](./examples/). Each one is a
+single TypeScript file with the env-var prerequisites at the top.
+
+| file | what it does | env vars |
+| --- | --- | --- |
+| [`cosmos-payment.ts`](./examples/cosmos-payment.ts) | $0.07 USDC settle on Noble mainnet via the AgentOS freight seller — full end-to-end x402 payment, prints on-chain tx hash + mintscan link | `COSMOS_MNEMONIC` (12 or 24 BIP-39 words, with `MsgGrant` already on-chain to the facilitator grantee) |
+
+Run any of them with `tsx`:
+
+```bash
+npm install @suverselabs/x402-client tsx
+COSMOS_MNEMONIC="word1 word2 ... word24" npx tsx examples/cosmos-payment.ts
+```
+
+This recipe (Cosmos example, same wallet, same grantee, same AgentOS
+endpoint) was used to settle a real $0.07 payment on 2026-05-30,
+confirming the published npm package drives end-to-end on-chain
+settlement — not just signature verification.
 
 ## Tests
 
