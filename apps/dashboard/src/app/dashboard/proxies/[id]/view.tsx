@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProxyConfigRow } from "@/lib/proxy-config-store";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,7 @@ export function ProxyDetailView({
   const [showJustCreated, setShowJustCreated] = useState(
     searchParams.get("just-created") === "1",
   );
+  const [pendingDelete, setPendingDelete] = useState(false);
   const proxyUrl = `${proxyBase}/v1/proxy/${proxy.resourceKeyId}/${proxy.endpointSlug}`;
 
   useEffect(() => {
@@ -190,13 +192,7 @@ export function ProxyDetailView({
               variant="destructive"
               size="sm"
               disabled={remove.isPending}
-              onClick={() => {
-                if (
-                  confirm("Delete this proxy? Request history is cascaded.")
-                ) {
-                  remove.mutate();
-                }
-              }}
+              onClick={() => setPendingDelete(true)}
             >
               Delete
             </Button>
@@ -385,6 +381,25 @@ export function ProxyDetailView({
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete}
+        title="Delete this proxy?"
+        body={
+          <>
+            The proxy URL stops responding immediately and the request
+            log is cascade-deleted. This can't be undone.
+          </>
+        }
+        confirmLabel="Delete proxy"
+        variant="destructive"
+        disabled={remove.isPending}
+        onCancel={() => setPendingDelete(false)}
+        onConfirm={() => {
+          setPendingDelete(false);
+          remove.mutate();
+        }}
+      />
     </div>
   );
 }

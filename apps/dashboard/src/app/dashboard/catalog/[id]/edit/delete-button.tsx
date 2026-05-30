@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
- * Client-only suspend button. Confirms via window.confirm (matches
- * the existing keys-list pattern) then redirects back to the
- * listings table on success. No HTML <form>; the entire flow is an
- * onClick (project convention from CLAUDE.md).
+ * Client-only suspend button. Confirms via ConfirmDialog then
+ * redirects back to the listings table on success. No HTML <form>;
+ * the entire flow is an onClick (project convention from CLAUDE.md).
  */
 export function DeleteListingButton({
   id,
@@ -18,15 +18,9 @@ export function DeleteListingButton({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   async function suspend(): Promise<void> {
-    if (
-      !window.confirm(
-        "Suspend this listing? It'll be hidden from the public catalog. The row is preserved for audit.",
-      )
-    ) {
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
@@ -45,12 +39,29 @@ export function DeleteListingButton({
 
   return (
     <div className="space-y-2">
-      <Button onClick={suspend} disabled={busy} variant="destructive">
+      <Button
+        onClick={() => setPending(true)}
+        disabled={busy}
+        variant="destructive"
+      >
         {busy ? "Suspending…" : "Suspend listing"}
       </Button>
       {error !== null && (
         <p className="font-mono text-[11px] text-destructive">{error}</p>
       )}
+      <ConfirmDialog
+        open={pending}
+        title="Suspend this listing?"
+        body="It'll be hidden from the public catalog. The row is preserved for audit."
+        confirmLabel="Suspend"
+        variant="destructive"
+        disabled={busy}
+        onCancel={() => setPending(false)}
+        onConfirm={() => {
+          setPending(false);
+          void suspend();
+        }}
+      />
     </div>
   );
 }

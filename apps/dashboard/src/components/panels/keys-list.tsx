@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatRelativeTime } from "@/lib/utils";
 
@@ -53,15 +54,11 @@ export function KeysList(): React.JSX.Element {
   });
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingRevoke, setPendingRevoke] = useState<
+    { id: string; label: string } | null
+  >(null);
 
-  async function onRevoke(id: string, label: string): Promise<void> {
-    if (
-      !window.confirm(
-        `Revoke "${label}"? Settles already routed under this key keep working, but new requests using it will be rejected.`,
-      )
-    ) {
-      return;
-    }
+  async function performRevoke(id: string): Promise<void> {
     setError(null);
     setRevokingId(id);
     try {
@@ -156,7 +153,12 @@ export function KeysList(): React.JSX.Element {
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => onRevoke(k.resourceKeyId, k.label)}
+                      onClick={() =>
+                        setPendingRevoke({
+                          id: k.resourceKeyId,
+                          label: k.label,
+                        })
+                      }
                       disabled={revokingId === k.resourceKeyId}
                     >
                       {revokingId === k.resourceKeyId ? "Revoking…" : "Revoke"}
@@ -178,6 +180,28 @@ export function KeysList(): React.JSX.Element {
           {error}
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={pendingRevoke !== null}
+        title={`Revoke "${pendingRevoke?.label ?? ""}"?`}
+        body={
+          <>
+            Settles already routed under this key keep working, but new
+            requests using it will be rejected.
+          </>
+        }
+        confirmLabel="Revoke key"
+        variant="destructive"
+        disabled={revokingId !== null}
+        onCancel={() => setPendingRevoke(null)}
+        onConfirm={() => {
+          if (pendingRevoke) {
+            const id = pendingRevoke.id;
+            setPendingRevoke(null);
+            void performRevoke(id);
+          }
+        }}
+      />
     </div>
   );
 }

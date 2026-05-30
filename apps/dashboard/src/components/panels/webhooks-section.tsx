@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatRelativeTime } from "@/lib/utils";
@@ -109,6 +110,9 @@ export function WebhooksSection(): React.JSX.Element {
   const [view, setView] = useState<"list" | "create" | "drill">("list");
   const [drillEndpointId, setDrillEndpointId] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedEndpoint | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<
+    { id: string; label: string } | null
+  >(null);
 
   const { data: endpoints, isLoading, isError } = useQuery({
     queryKey: ["webhook-endpoints"],
@@ -178,20 +182,26 @@ export function WebhooksSection(): React.JSX.Element {
               setDrillEndpointId(id);
               setView("drill");
             }}
-            onDelete={async (id, label) => {
-              if (
-                !window.confirm(
-                  `Delete endpoint "${label}"? Past delivery history is dropped too. This cannot be undone.`,
-                )
-              ) {
-                return;
-              }
-              await deleteEndpoint(id);
-              await qc.invalidateQueries({ queryKey: ["webhook-endpoints"] });
-            }}
+            onDelete={(id, label) => setPendingDelete({ id, label })}
           />
         )}
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete endpoint "${pendingDelete?.label ?? ""}"?`}
+        body="Past delivery history is dropped too. This cannot be undone."
+        confirmLabel="Delete endpoint"
+        variant="destructive"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (!target) return;
+          await deleteEndpoint(target.id);
+          await qc.invalidateQueries({ queryKey: ["webhook-endpoints"] });
+        }}
+      />
     </div>
   );
 }
@@ -207,7 +217,7 @@ function EndpointsTable({
   isLoading: boolean;
   isError: boolean;
   onDrill: (id: string) => void;
-  onDelete: (id: string, label: string) => Promise<void>;
+  onDelete: (id: string, label: string) => void;
 }): React.JSX.Element {
   if (isLoading) {
     return (
@@ -276,7 +286,7 @@ function EndpointsTable({
                 size="sm"
                 variant="outline"
                 className="ml-2"
-                onClick={() => void onDelete(e.id, e.description || e.url)}
+                onClick={() => onDelete(e.id, e.description || e.url)}
               >
                 Delete
               </Button>
