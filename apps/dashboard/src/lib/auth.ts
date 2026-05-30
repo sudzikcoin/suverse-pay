@@ -3,6 +3,7 @@ import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { randomUUID } from "node:crypto";
 import { dbQuery } from "./db";
+import { extractProfile, type Provider } from "./auth-profile";
 
 /**
  * NextAuth.js v5 configuration for the customer dashboard.
@@ -42,10 +43,11 @@ interface UpsertResult {
  */
 async function upsertDashboardUser(args: {
   email: string;
-  provider: "google" | "github";
+  provider: Provider;
   providerId: string;
   displayName: string | null;
   avatarUrl: string | null;
+  profile: unknown;
 }): Promise<string> {
   // UUIDs generated app-side (Node crypto.randomUUID) rather than via
   // gen_random_uuid() in Postgres — the db package's pg-mem test
@@ -53,15 +55,27 @@ async function upsertDashboardUser(args: {
   // engine-agnostic this way. The ON CONFLICT branch ignores the
   // generated id and updates the existing row.
   const id = randomUUID();
+  const extra = extractProfile(args.provider, args.profile);
   const rows = await dbQuery<UpsertResult>(
     `
     INSERT INTO dashboard_users (
-      id, email, oauth_provider, oauth_provider_id, display_name, avatar_url
-    ) VALUES ($1, $2, $3, $4, $5, $6)
+      id, email, oauth_provider, oauth_provider_id,
+      display_name, avatar_url,
+      github_username, email_verified, locale, profile_url,
+      company, bio, location
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     ON CONFLICT (oauth_provider, oauth_provider_id) DO UPDATE
-      SET last_login_at = NOW(),
-          display_name = COALESCE(EXCLUDED.display_name, dashboard_users.display_name),
-          avatar_url   = COALESCE(EXCLUDED.avatar_url,   dashboard_users.avatar_url)
+      SET last_login_at   = NOW(),
+          login_count     = dashboard_users.login_count + 1,
+          display_name    = COALESCE(EXCLUDED.display_name,    dashboard_users.display_name),
+          avatar_url      = COALESCE(EXCLUDED.avatar_url,      dashboard_users.avatar_url),
+          github_username = COALESCE(EXCLUDED.github_username, dashboard_users.github_username),
+          email_verified  = COALESCE(EXCLUDED.email_verified,  dashboard_users.email_verified),
+          locale          = COALESCE(EXCLUDED.locale,          dashboard_users.locale),
+          profile_url     = COALESCE(EXCLUDED.profile_url,     dashboard_users.profile_url),
+          company         = COALESCE(EXCLUDED.company,         dashboard_users.company),
+          bio             = COALESCE(EXCLUDED.bio,             dashboard_users.bio),
+          location        = COALESCE(EXCLUDED.location,        dashboard_users.location)
     RETURNING id
     `,
     [
@@ -71,6 +85,13 @@ async function upsertDashboardUser(args: {
       args.providerId,
       args.displayName,
       args.avatarUrl,
+      extra.githubUsername,
+      extra.emailVerified,
+      extra.locale,
+      extra.profileUrl,
+      extra.company,
+      extra.bio,
+      extra.location,
     ],
   );
   // Race-resolution fallback: if the unique-email constraint fired
@@ -125,7 +146,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       // sub claim). Both surface on account.providerAccountId.
       const providerId = account.providerAccountId;
       if (!providerId) return false;
-      const provider =
+      const provider: Provider | null =
         account.provider === "google"
           ? "google"
           : account.provider === "github"
@@ -138,6 +159,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         providerId,
         displayName: user.name ?? profile?.name ?? null,
         avatarUrl: user.image ?? null,
+        profile,
       });
       // Stash on the user object so the jwt callback can pick it up.
       (user as { dashboardUserId?: string }).dashboardUserId = internalId;
