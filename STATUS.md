@@ -115,8 +115,9 @@ Build: **19/19 packages green**. Tests: **36/36 turbo tasks green**.
 | Block 4 Sub-task 2: Self-serve API key signup | ✓ shipped |
 | Block 4 Sub-task 3: Per-settle platform fee (accounting-only) | ✓ shipped |
 | Block 4 Sub-task 4: Outbound webhooks (BullMQ + HMAC) | ✓ shipped |
-| Block 4 Sub-task 4.5: Seller onboarding (configure UI + snippet + probe + facilitator subdomain + `@suverselabs/x402-server` pkg) | ✓ in this commit |
-| Block 4 Sub-task 5+: TBD (signers, smokes, …) | pending |
+| Block 4 Sub-task 4.5: Seller onboarding (configure UI + snippet + probe + facilitator subdomain + `@suverselabs/x402-server` pkg) | ✓ shipped |
+| Block 4 Sub-task 5: Buyer SDK `@suverselabs/x402-client` (4 VM families: EVM 21 chains + Solana + Cosmos Noble + TRON gasfree) | ✓ shipped — npm `0.1.0` published 2026-05-30 |
+| Block 4 Sub-task 6+: TBD (TRON wire-format e2e verification, BNB Permit2 path, Python SDK port, …) | pending |
 
 ### Sub-task 4.5 deliverables (this commit)
 - Migration `006_seller_configs.sql` — `resource_server_configs` table with per-namespace payTo, accepted_networks, default_price_atomic + range CHECK
