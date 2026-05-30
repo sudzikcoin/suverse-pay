@@ -73,6 +73,7 @@ export class CapabilityDiscoveryCron {
       network: Caip2;
       asset: string;
       scheme: string;
+      extra?: Record<string, unknown>;
     }>,
   ): Promise<void> {
     if (discovered.length === 0) {
@@ -84,15 +85,24 @@ export class CapabilityDiscoveryCron {
 
     const now = new Date();
     for (const cap of discovered) {
+      // extras_json is persisted as a JSONB column. We pass JSON text
+      // to pg's parameter binding — pg's default JSONB encoder accepts
+      // either a JS object or a pre-stringified JSON. We stringify to
+      // be explicit and to make the migration-008 ON CONFLICT path
+      // unambiguous on EXCLUDED.extras_json.
+      const extrasJson =
+        cap.extra !== undefined ? JSON.stringify(cap.extra) : null;
       await this.pool.query(
         `INSERT INTO provider_capabilities (
-           provider_id, network, asset, scheme, is_static, is_discovered, discovered_at
-         ) VALUES ($1, $2, $3, $4, FALSE, TRUE, $5)
+           provider_id, network, asset, scheme, is_static, is_discovered,
+           discovered_at, extras_json
+         ) VALUES ($1, $2, $3, $4, FALSE, TRUE, $5, $6)
          ON CONFLICT (provider_id, network, asset, scheme) DO UPDATE SET
            is_discovered = TRUE,
            discovered_at = $5,
-           superseded_at = NULL`,
-        [providerId, cap.network, cap.asset, cap.scheme, now],
+           superseded_at = NULL,
+           extras_json = EXCLUDED.extras_json`,
+        [providerId, cap.network, cap.asset, cap.scheme, now, extrasJson],
       );
     }
 

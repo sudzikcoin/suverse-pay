@@ -88,8 +88,16 @@ describe("PayAiAdapter — real API integration", () => {
       fetchImpl: async () => wrapped,
     });
     const caps = await adapter.discoverCapabilities();
-    expect(caps).toEqual([
-      { network: SOLANA_MAINNET, asset: SOLANA_USDC_MINT, scheme: "exact" },
-    ]);
+    // PR-A: Solana kind carries `extra.feePayer` from upstream so the
+    // buyer SDK can co-sign properly. Assert the address is present
+    // without pinning the exact value (PayAI can rotate it).
+    expect(caps).toHaveLength(1);
+    const sol = caps[0];
+    expect(sol?.network).toBe(SOLANA_MAINNET);
+    expect(sol?.asset).toBe(SOLANA_USDC_MINT);
+    expect(sol?.scheme).toBe("exact");
+    expect(typeof (sol?.extra as Record<string, unknown> | undefined)?.["feePayer"]).toBe(
+      "string",
+    );
   });
 });

@@ -24,6 +24,13 @@ export const ConfigSchema = z.object({
   rateLimitMaxPerMinute: z.coerce.number().int().positive().default(120),
 
   cosmosPayBaseUrl: NonEmpty.default("http://localhost:8402"),
+  // Public bech32 grantee address of the cosmos-pay facilitator (set in
+  // cosmos-pay's own `.env` as `X402_FACILITATOR_GRANTEE`). When supplied,
+  // the cosmos-pay adapter surfaces `extra.facilitator` per Cosmos kind
+  // through /facilitator/supported so sellers' x402-server middleware can
+  // auto-merge it into 402 challenges. Optional: when omitted, the
+  // adapter falls back to pre-PR-A behavior (sellers hardcode it).
+  cosmosGranteeAddress: z.string().optional(),
 
   coinbaseCdpApiKeyName: z.string().optional(),
   coinbaseCdpApiKeySecret: z.string().optional(),
@@ -154,6 +161,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     redisUrl: env.REDIS_URL,
     rateLimitMaxPerMinute: env.RATE_LIMIT_MAX_PER_MINUTE,
     cosmosPayBaseUrl: env.COSMOS_PAY_BASE_URL,
+    cosmosGranteeAddress: env.X402_COSMOS_GRANTEE,
     coinbaseCdpApiKeyName: env.COINBASE_CDP_API_KEY_NAME,
     coinbaseCdpApiKeySecret: env.COINBASE_CDP_API_KEY_SECRET,
     coinbaseCdpMonthlyHardCap: env.COINBASE_CDP_MONTHLY_HARD_CAP,

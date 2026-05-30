@@ -42,6 +42,10 @@ CREATE TABLE IF NOT EXISTS provider_capabilities (
   is_discovered   BOOLEAN NOT NULL DEFAULT FALSE,
   discovered_at   TIMESTAMPTZ,
   superseded_at   TIMESTAMPTZ,
+  -- Migration 008 (PR-A): per-kind extras flowing from
+  -- adapter.discoverCapabilities().extra → surfaced via
+  -- /facilitator/supported. Nullable.
+  extras_json     JSONB,
   PRIMARY KEY (provider_id, network, asset, scheme)
 );
 

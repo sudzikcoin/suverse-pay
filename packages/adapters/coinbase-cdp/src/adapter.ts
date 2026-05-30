@@ -385,11 +385,21 @@ export class CoinbaseCdpAdapter extends BaseAdapter {
         );
         continue;
       }
+      // CDP's upstream /supported publishes per-kind `extra` — EVM
+      // entries carry the EIP-712 USDC domain `{ name, version }` and
+      // Solana entries carry the facilitator's `{ feePayer }` co-signer
+      // pubkey. Pass through verbatim so the gateway's
+      // /facilitator/supported response surfaces them and sellers'
+      // x402-server middleware can auto-merge them into 402 challenges
+      // (PR-B and onwards). Empty objects are dropped to avoid noise.
       for (const cap of matches) {
         out.push({
           network: cap.network,
           asset: cap.asset,
           scheme: cap.scheme,
+          ...(kind.extra !== undefined && Object.keys(kind.extra).length > 0
+            ? { extra: kind.extra }
+            : {}),
         });
       }
     }

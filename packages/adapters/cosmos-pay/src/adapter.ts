@@ -48,6 +48,21 @@ export interface CosmosPayAdapterConfig {
   defaultTimeoutMs?: number;
   logger?: CosmosPayLogger;
   fetchImpl?: typeof globalThis.fetch;
+  /**
+   * Public bech32 address of the cosmos-pay facilitator's on-chain
+   * grantee. Buyers signing `exact_cosmos_authz` need this in their
+   * payment payload's `extra.facilitator` so the facilitator's
+   * `MsgGrant` lookup uses the right grantee. The upstream cosmos-pay
+   * binary's `/supported` does NOT publish it today, so the operator
+   * supplies it as adapter config (config-injection — single source of
+   * truth remains the cosmos-pay binary's env). When omitted, the
+   * adapter surfaces no Cosmos extras and sellers must continue to
+   * hardcode `extra.facilitator` in their `acceptedPayments` (the
+   * pre-PR-A behavior).
+   *
+   * Example: `"noble18jq3tgk39z8qk5jz304zqkhd02gs5zkhrj7sqt"`.
+   */
+  granteeAddress?: string;
 }
 
 export class CosmosPayAdapter extends BaseAdapter {
@@ -60,6 +75,7 @@ export class CosmosPayAdapter extends BaseAdapter {
   private readonly timeoutMs: number;
   private readonly logger: CosmosPayLogger | undefined;
   private readonly fetchImpl: typeof globalThis.fetch | undefined;
+  private readonly granteeAddress: string | undefined;
 
   constructor(config: CosmosPayAdapterConfig) {
     const staticCapabilities: StaticCapability[] = [];
@@ -79,6 +95,9 @@ export class CosmosPayAdapter extends BaseAdapter {
     this.timeoutMs = config.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS;
     if (config.logger !== undefined) this.logger = config.logger;
     if (config.fetchImpl !== undefined) this.fetchImpl = config.fetchImpl;
+    if (config.granteeAddress !== undefined && config.granteeAddress.length > 0) {
+      this.granteeAddress = config.granteeAddress;
+    }
   }
 
   /**
@@ -318,11 +337,34 @@ export class CosmosPayAdapter extends BaseAdapter {
         );
         continue;
       }
+      // Build the per-kind `extra` once per network. Buyer's
+      // `exact_cosmos_authz` signer needs:
+      //   - `facilitator` — grantee bech32 (from config-injection)
+      //   - `chainId`     — bare chain id (e.g. "noble-1")
+      //   - `decimals`    — denom decimals (6 for Noble bank tokens)
+      //   - `symbol`      — display symbol derived from denom
+      // We emit `extra` only when the operator supplied a grantee
+      // address. Without it we preserve the pre-PR-A behavior (no
+      // extras on the kind) so sellers' hardcoded `extra.facilitator`
+      // continues to flow through unchanged.
+      const chainId = pair.network.startsWith("cosmos:")
+        ? pair.network.slice("cosmos:".length)
+        : pair.network;
       for (const asset of assets) {
         out.push({
           network: pair.network as Caip2,
           asset,
           scheme: pair.scheme,
+          ...(this.granteeAddress !== undefined
+            ? {
+                extra: {
+                  facilitator: this.granteeAddress,
+                  chainId,
+                  decimals: 6,
+                  symbol: denomSymbol(asset),
+                },
+              }
+            : {}),
         });
       }
     }
@@ -360,6 +402,19 @@ function toCosmosPayRequest(req: VerifyRequest | SettleRequest): unknown {
 
 function trimTrailingSlash(url: string): string {
   return url.endsWith("/") ? url.slice(0, -1) : url;
+}
+
+/**
+ * Derive a human-readable token symbol from a Cosmos SDK bank denom.
+ * Noble bank denoms are `u<symbol>` lower-cased (e.g. `uusdc` → USDC,
+ * `uusdt` → USDT). Anything not matching the `u…` pattern is
+ * upper-cased verbatim so the resulting symbol is never empty.
+ */
+function denomSymbol(denom: string): string {
+  if (denom.length > 1 && denom.startsWith("u")) {
+    return denom.slice(1).toUpperCase();
+  }
+  return denom.toUpperCase();
 }
 
 function defaultWarn(message: string, context?: Record<string, unknown>): void {

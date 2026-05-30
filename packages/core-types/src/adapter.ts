@@ -121,6 +121,15 @@ export const DiscoveredCapabilitySchema = z.object({
   network: Caip2Schema,
   asset: z.string().min(1),
   scheme: z.string().min(1),
+  /**
+   * Per-kind extras the adapter wants surfaced via
+   * /facilitator/supported. Examples:
+   * - Solana: `{ feePayer: "<base58 pubkey>" }`
+   * - Cosmos: `{ facilitator: "<grantee bech32>", chainId, decimals, symbol }`
+   * - EVM: `{ name: "USD Coin", version: "2" }` (EIP-712 USDC domain)
+   * Persisted as `provider_capabilities.extras_json` (JSONB, nullable).
+   */
+  extra: z.record(z.string(), z.unknown()).optional(),
 });
 export type DiscoveredCapability = z.infer<typeof DiscoveredCapabilitySchema>;
 

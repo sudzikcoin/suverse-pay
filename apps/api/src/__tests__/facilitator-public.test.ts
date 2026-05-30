@@ -10,17 +10,20 @@ import {
 const SOLANA_MAINNET = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 const SOLANA_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
+// Cosmos was repointed from `cosmos:grand-1` testnet to `cosmos:noble-1`
+// mainnet on 2026-05-30 (routing-config.ts comment + commit 6f24e69).
+// These fixtures track the live route the facilitator advertises.
 function cosmosRequirements(): ReturnType<typeof paymentRequirements> {
   return {
     ...paymentRequirements(),
-    network: "cosmos:grand-1",
+    network: "cosmos:noble-1",
   };
 }
 
 function cosmosPayload(): ReturnType<typeof paymentPayload> {
   return {
     ...paymentPayload(),
-    network: "cosmos:grand-1",
+    network: "cosmos:noble-1",
   };
 }
 
@@ -58,7 +61,7 @@ describe("GET /facilitator/supported (open access — no auth)", () => {
     expect(res.json().kinds).toEqual([]);
   });
 
-  it("advertises cosmos:grand-1 when cosmos-pay is registered", async () => {
+  it("advertises cosmos:noble-1 when cosmos-pay is registered", async () => {
     handles = await makeTestServer({
       providers: [{ fake: makeFakeProvider({ id: "cosmos-pay" }) }],
     });
@@ -70,7 +73,7 @@ describe("GET /facilitator/supported (open access — no auth)", () => {
     expect(kinds).toContainEqual({
       x402Version: 2,
       scheme: "exact_cosmos_authz",
-      network: "cosmos:grand-1",
+      network: "cosmos:noble-1",
     });
   });
 

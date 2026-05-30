@@ -132,6 +132,81 @@ describe("CapabilityDiscoveryCron — happy path", () => {
     expect(grand?.is_discovered).toBe(true);
   });
 
+  it("persists extras_json when discovery emits it (PR-A)", async () => {
+    const reg = new ProviderRegistry(stack.pool);
+    await reg.register(
+      makeAdapter("payai", async () => [
+        {
+          network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          scheme: "exact",
+          extra: { feePayer: "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4" },
+        },
+      ]),
+      {
+        staticCapabilities: [
+          {
+            network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            scheme: "exact",
+          },
+        ],
+      },
+    );
+
+    const cron = new CapabilityDiscoveryCron(reg, stack.pool);
+    await cron.runOnce();
+
+    const rows = await stack.pool.query(
+      `SELECT extras_json FROM provider_capabilities WHERE provider_id = 'payai'`,
+    );
+    expect(rows.rows).toHaveLength(1);
+    expect(rows.rows[0]!.extras_json).toEqual({
+      feePayer: "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4",
+    });
+  });
+
+  it("updates extras_json on subsequent discovery (PR-A)", async () => {
+    const reg = new ProviderRegistry(stack.pool);
+    let nextFeePayer = "OriginalFeePayer111111111111111111111111111";
+    await reg.register(
+      makeAdapter("payai", async () => [
+        {
+          network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          scheme: "exact",
+          extra: { feePayer: nextFeePayer },
+        },
+      ]),
+      {
+        staticCapabilities: [
+          {
+            network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            scheme: "exact",
+          },
+        ],
+      },
+    );
+
+    const cron = new CapabilityDiscoveryCron(reg, stack.pool);
+    await cron.runOnce();
+
+    // Adapter rotates the feePayer (operational event upstream — e.g.
+    // PayAI ships a fresh key); cron's next tick must overwrite the
+    // stored extras_json, not append.
+    nextFeePayer = "RotatedFeePayer22222222222222222222222222222";
+    await cron.runOnce();
+
+    const rows = await stack.pool.query(
+      `SELECT extras_json FROM provider_capabilities WHERE provider_id = 'payai'`,
+    );
+    expect(rows.rows).toHaveLength(1);
+    expect(rows.rows[0]!.extras_json).toEqual({
+      feePayer: "RotatedFeePayer22222222222222222222222222222",
+    });
+  });
+
   it("marks static rows superseded when discovery omits them", async () => {
     const reg = new ProviderRegistry(stack.pool);
     await reg.register(

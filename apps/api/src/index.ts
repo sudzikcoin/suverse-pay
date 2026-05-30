@@ -67,6 +67,14 @@ async function main(): Promise<void> {
       "cosmos:noble-1": ["uusdc"],
     },
     estimatedFeeUsd: "0.0001",
+    // X402_COSMOS_GRANTEE in apps/api's .env — mirrors the upstream
+    // cosmos-pay binary's X402_FACILITATOR_GRANTEE. When unset, the
+    // adapter emits no Cosmos extras and the seller-side hardcode
+    // path continues to work (pre-PR-A behavior).
+    ...(config.cosmosGranteeAddress !== undefined &&
+    config.cosmosGranteeAddress.length > 0
+      ? { granteeAddress: config.cosmosGranteeAddress }
+      : {}),
   });
   await registry.register(cosmosPay, {
     config: { baseUrl: config.cosmosPayBaseUrl, estimatedFeeUsd: "0.0001" },

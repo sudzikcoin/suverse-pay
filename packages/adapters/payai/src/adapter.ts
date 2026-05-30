@@ -372,11 +372,22 @@ export class PayAiAdapter extends BaseAdapter {
         );
         continue;
       }
+      // PayAI's upstream /supported publishes per-kind `extra`. For
+      // Solana `exact` it's `{ feePayer: <base58 pubkey> }` — exactly
+      // what the buyer SDK needs to construct the partial-signed
+      // VersionedTransaction. We pass it through verbatim so it lands
+      // in provider_capabilities.extras_json and ultimately in our
+      // /facilitator/supported response per kind. (PayAI's EVM `upto`
+      // entries also have `extra.facilitatorAddress`, but we don't
+      // route the `upto` scheme — those matches won't fire.)
       for (const cap of matches) {
         out.push({
           network: cap.network,
           asset: cap.asset,
           scheme: cap.scheme,
+          ...(kind.extra !== undefined && Object.keys(kind.extra).length > 0
+            ? { extra: kind.extra }
+            : {}),
         });
       }
     }

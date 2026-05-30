@@ -393,7 +393,15 @@ describe("PayAiAdapter discoverCapabilities", () => {
     const a = makeAdapter({ fetch });
     const caps = await a.discoverCapabilities();
     expect(caps).toEqual([
-      { network: SOLANA_MAINNET, asset: SOLANA_USDC_MINT, scheme: "exact" },
+      {
+        network: SOLANA_MAINNET,
+        asset: SOLANA_USDC_MINT,
+        scheme: "exact",
+        // PR-A: per-kind extras now flow through from upstream — Solana
+        // entries carry `feePayer` which the buyer SDK needs to build the
+        // partial-signed VersionedTransaction.
+        extra: { feePayer: PAYAI_FEE_PAYER },
+      },
     ]);
   });
 

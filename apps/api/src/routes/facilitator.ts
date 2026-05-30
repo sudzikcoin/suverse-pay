@@ -47,7 +47,11 @@ export function registerFacilitatorRoutes(
 ): void {
   // ---- GET /facilitator/supported -----------------------------------
   app.get("/facilitator/supported", async () => {
-    return buildSupportedResponse(ctx.registry);
+    // ctx.pool may be absent in lightweight dev/test bootstraps —
+    // buildSupportedResponse falls back to the kinds-only shape when
+    // omitted (same as pre-PR-A behavior). In production apps/api
+    // always constructs a pool.
+    return buildSupportedResponse(ctx.registry, ctx.pool);
   });
 
   // ---- GET /facilitator/health --------------------------------------

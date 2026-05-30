@@ -441,6 +441,56 @@ describe("CosmosPayAdapter /supported (discoverCapabilities)", () => {
     );
   });
 
+  it("emits per-kind extras when granteeAddress is configured (PR-A)", async () => {
+    const { fetch } = makeFetch({
+      responses: [
+        jsonResponse({
+          kinds: [
+            { scheme: "exact_cosmos_authz", network: "cosmos:noble-1" },
+          ],
+        }),
+      ],
+    });
+    const adapter = new CosmosPayAdapter({
+      baseUrl: "https://cosmos-pay.test/",
+      networkAssets: { "cosmos:noble-1": ["uusdc"] },
+      estimatedFeeUsd: "0.0001",
+      granteeAddress: "noble18jq3tgk39z8qk5jz304zqkhd02gs5zkhrj7sqt",
+      fetchImpl: fetch,
+    });
+    const caps = await adapter.discoverCapabilities();
+    expect(caps).toEqual([
+      {
+        network: "cosmos:noble-1",
+        asset: "uusdc",
+        scheme: "exact_cosmos_authz",
+        extra: {
+          facilitator: "noble18jq3tgk39z8qk5jz304zqkhd02gs5zkhrj7sqt",
+          chainId: "noble-1",
+          decimals: 6,
+          symbol: "USDC",
+        },
+      },
+    ]);
+  });
+
+  it("omits per-kind extras when granteeAddress is NOT configured (backward compat)", async () => {
+    const { fetch } = makeFetch({
+      responses: [
+        jsonResponse({
+          kinds: [
+            { scheme: "exact_cosmos_authz", network: "cosmos:noble-1" },
+          ],
+        }),
+      ],
+    });
+    // Stock makeAdapter() — no granteeAddress.
+    const a = makeAdapter({ fetch });
+    const caps = await a.discoverCapabilities();
+    expect(caps).toHaveLength(1);
+    expect(caps[0]!.extra).toBeUndefined();
+  });
+
   it("throws on malformed /supported body", async () => {
     const { fetch } = makeFetch({
       responses: [jsonResponse({ wrong: "shape" })],
