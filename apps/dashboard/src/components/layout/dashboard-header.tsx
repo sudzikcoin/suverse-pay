@@ -73,7 +73,16 @@ export function DashboardHeader({
             })}
           </span>
         </nav>
-        {right ? <div className="flex-none">{right}</div> : null}
+        <div className="flex flex-none items-center gap-4">
+          <Link
+            href="/dashboard/help"
+            className="hidden text-xs text-muted-foreground transition-colors hover:text-foreground sm:inline"
+            title="Glossary, FAQ, and contact info"
+          >
+            Help
+          </Link>
+          {right}
+        </div>
       </div>
     </header>
   );
