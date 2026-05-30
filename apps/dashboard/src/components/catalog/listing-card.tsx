@@ -17,7 +17,7 @@ interface ListingCardProps {
 export function ListingCard({ listing }: ListingCardProps): React.JSX.Element {
   return (
     <Link
-      href={`/catalog/${listing.id}`}
+      href={`/catalog/${listing.slug}`}
       className="group block rounded-lg border border-border bg-card p-5 transition-colors hover:border-foreground/30"
     >
       <header className="mb-3 flex items-start justify-between gap-3">

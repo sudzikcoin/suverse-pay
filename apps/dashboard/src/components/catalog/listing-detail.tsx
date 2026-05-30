@@ -104,6 +104,8 @@ export function ListingDetail({ listing }: ListingDetailProps): React.JSX.Elemen
           </section>
         )}
 
+        <HowToUse listing={listing} />
+
         <section className="border-t border-border pt-6">
           <Button
             onClick={trackAndOpen}
@@ -232,6 +234,122 @@ function formatAtomic(atomic: string): string {
   } catch {
     return "$?";
   }
+}
+
+/**
+ * "How to use" section — renders the seller-supplied sample request
+ * + response if any, plus three code snippets (curl / JS fetch /
+ * Python requests) auto-generated from the endpoint URL. Each block
+ * has its own copy-to-clipboard button.
+ */
+function HowToUse({ listing }: { listing: CatalogListing }): React.JSX.Element {
+  type Lang = "curl" | "js" | "python";
+  const [lang, setLang] = useState<Lang>("curl");
+  const snippets: Record<Lang, string> = {
+    curl:
+      listing.sampleRequestCurl ??
+      `curl -X GET '${listing.endpointUrl}'`,
+    js: `// node 20+ — handles the 402 automatically with @suverselabs/x402-client
+import { SuverseClient } from "@suverselabs/x402-client";
+
+const client = new SuverseClient({
+  wallets: { evm: process.env.EVM_PRIVATE_KEY },
+});
+
+const { data, payment } = await client.fetch(
+  ${JSON.stringify(listing.endpointUrl)},
+);
+console.log(data, "paid", payment.amount, "on", payment.network);`,
+    python: `# Python 3.10+ — minimal 402 handler (or use the JS SDK from a subprocess)
+import requests
+
+r = requests.get("${listing.endpointUrl}")
+if r.status_code == 402:
+    # Sign + retry — see https://x402.org for the spec
+    challenge = r.json()
+    raise SystemExit("install @suverselabs/x402-client (Node) for auto-pay")
+print(r.json())`,
+  };
+
+  return (
+    <section className="space-y-3 border-t border-border pt-6">
+      <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        How to use
+      </h2>
+
+      {listing.sampleResponseJson ? (
+        <details className="rounded-md border border-border bg-card/40 p-3">
+          <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+            Sample response
+          </summary>
+          <CodeBlock language="json" code={listing.sampleResponseJson} />
+        </details>
+      ) : null}
+
+      <div className="rounded-lg border border-border bg-card">
+        <div
+          role="tablist"
+          aria-label="Code language"
+          className="flex items-center gap-px border-b border-border bg-secondary/30 px-2 py-1"
+        >
+          {(["curl", "js", "python"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={lang === k}
+              onClick={() => setLang(k)}
+              className={
+                "rounded px-3 py-1 text-xs font-medium transition-colors " +
+                (lang === k
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground")
+              }
+            >
+              {k === "curl" ? "curl" : k === "js" ? "JavaScript" : "Python"}
+            </button>
+          ))}
+        </div>
+        <CodeBlock
+          language={lang === "curl" ? "sh" : lang === "js" ? "ts" : "py"}
+          code={snippets[lang]}
+        />
+      </div>
+    </section>
+  );
+}
+
+function CodeBlock({
+  language,
+  code,
+}: {
+  language: string;
+  code: string;
+}): React.JSX.Element {
+  const [copied, setCopied] = useState(false);
+  async function copy(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  }
+  return (
+    <div className="relative">
+      <pre className="overflow-x-auto rounded-b-lg bg-background px-4 py-3 font-mono text-[11px] leading-relaxed text-foreground/90">
+        <code data-lang={language}>{code}</code>
+      </pre>
+      <button
+        type="button"
+        onClick={copy}
+        className="absolute right-2 top-2 rounded-md border border-border bg-card px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </div>
+  );
 }
 
 // Re-exported so the detail page can import label-formatting helpers

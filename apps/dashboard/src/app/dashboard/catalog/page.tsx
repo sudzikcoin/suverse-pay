@@ -80,7 +80,7 @@ export default async function DashboardCatalogPage(): Promise<React.JSX.Element>
                   >
                     <Td>
                       <Link
-                        href={`/catalog/${l.id}`}
+                        href={`/catalog/${l.slug}`}
                         className="font-medium text-foreground hover:text-amber-200"
                       >
                         {l.title}
