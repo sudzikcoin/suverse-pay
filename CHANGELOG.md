@@ -8,6 +8,22 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
+### Changed — MPP Phase 2 T1+T2 — adapter rename to generic shape
+
+The adapter formerly known as `@suverse-pay/adapter-mpp-stripe` /
+`StripeMppAdapter` has been renamed to the generic `@suverse-pay/adapter-mpp`
+/ `MppAdapter`. The interface previously named `MppAdapter` is now
+`MppFacilitatorAdapter` (parallels x402's `ProviderAdapter`). The
+adapter `id` field is now `"mpp"` (was `"mpp-stripe"`) and
+`displayName` is `"Machine Payments Protocol"` (was `"Stripe Machine
+Payments Protocol"`). Rationale: one adapter, multiple methods —
+`tempo` first (Phase 2 testnet via direct JSON-RPC), `stripe` later
+when Stripe publishes the REST surface. Workspace consumer
+(`apps/api`) updated. No behavior changes beyond the rename — the
+adapter still advertises capabilities + reports health; verify/settle
+still return the structured "endpoint not yet wired" result until
+Phase 2 T6 lands the direct-RPC settle path for Tempo Moderato.
+
 ## [packages/x402-server-node 0.2.0] — 2026-05-30 — Coinbase v2 ecosystem interop
 
 Published to npm as

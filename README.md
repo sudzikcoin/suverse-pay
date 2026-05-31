@@ -25,7 +25,7 @@ facilitator adapters.
 | Protocol | Wire | Adapters |
 | --- | --- | --- |
 | **x402** (Coinbase) | HTTP 402 + `X-PAYMENT` body | cosmos-pay, coinbase-cdp, payai, thirdweb-x402, binance-x402, bofai-x402 |
-| **MPP** (Stripe + Tempo) | HTTP 402 + `WWW-Authenticate: Payment` headers | mpp-stripe |
+| **MPP** (Stripe + Tempo) | HTTP 402 + `WWW-Authenticate: Payment` headers | mpp |
 | **t402** (universal USDT) | x402 with `t402Version` field rename | t402-io |
 
 ### Network coverage (11 namespaces)
@@ -61,8 +61,10 @@ Wired against documented spec; real on-chain smoke deferred to Phase 5:
   onboarding
 - **bofai-x402** — TRON + BSC; open access on `/supported` + `/health`;
   forwarder-only until native `signer-tron` lands
-- **mpp-stripe** — Tempo USDC + Stripe SPT capabilities advertised;
-  HTTP `/mpp/*` routes deferred until Stripe publishes the REST surface
+- **mpp** — Tempo USDC + Stripe SPT capabilities advertised; HTTP
+  `/mpp/*` routes land in Phase 5 Phase 2 T8 for Tempo Moderato
+  testnet via direct JSON-RPC. Mainnet stays deferred until Stripe
+  publishes the REST surface.
 - **t402-io** — Capability advertising live (77 `(network, scheme)`
   tuples); `/verify`+`/settle` gated on `X-API-Key` with no public
   signup flow as of 2026-05-29. `/health` reports `version: "dev"` —

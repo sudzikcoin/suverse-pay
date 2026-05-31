@@ -3,8 +3,8 @@ import { CosmosPayAdapter } from "@suverse-pay/adapter-cosmos-pay";
 import { BinanceX402Adapter } from "@suverse-pay/adapter-binance-x402";
 import { BofaiX402Adapter } from "@suverse-pay/adapter-bofai-x402";
 import {
-  StripeMppAdapter,
-  type MppAdapter,
+  MppAdapter,
+  type MppFacilitatorAdapter,
 } from "@suverse-pay/adapter-mpp";
 import { PayAiAdapter } from "@suverse-pay/adapter-payai";
 import { T402IoAdapter } from "@suverse-pay/adapter-t402-io";
@@ -481,9 +481,9 @@ async function main(): Promise<void> {
   // exercised at boot + the operator sees a clear status line, but
   // HTTP-facing /mpp/* routes wait on Phase 5 (Stripe's REST surface
   // for MPP verify/settle is not yet publicly documented).
-  let mppStripeAdapter: MppAdapter | undefined;
+  let mppAdapter: MppFacilitatorAdapter | undefined;
   if (config.stripeMppEnabled) {
-    mppStripeAdapter = new StripeMppAdapter({
+    mppAdapter = new MppAdapter({
       ...(config.stripeMppBaseUrl !== undefined &&
       config.stripeMppBaseUrl.length > 0
         ? { baseUrl: config.stripeMppBaseUrl }
@@ -497,7 +497,7 @@ async function main(): Promise<void> {
         ? { secretKey: config.stripeMppSecretKey }
         : {}),
     });
-    const caps = mppStripeAdapter.getCapabilities();
+    const caps = mppAdapter.getCapabilities();
     logger.info(
       {
         capabilities: caps.length,
@@ -505,14 +505,14 @@ async function main(): Promise<void> {
           config.stripeMppSecretKey !== undefined &&
           config.stripeMppSecretKey.length > 0,
       },
-      "Stripe MPP adapter ready (Phase 4 — capability advertising + wire primitives; HTTP /mpp/* routes deferred to Phase 5)",
+      "MPP adapter ready (Phase 4 — capability advertising + wire primitives; HTTP /mpp/* routes deferred to Phase 5)",
     );
     if (
       config.stripeMppSecretKey === undefined ||
       config.stripeMppSecretKey.length === 0
     ) {
       logger.warn(
-        "STRIPE_MPP_SECRET_KEY not set — MPP adapter advertises capabilities but verify/settle will throw unauthorized until a sk_live_... / sk_test_... key is supplied",
+        "STRIPE_MPP_SECRET_KEY not set — MPP adapter advertises capabilities but Stripe-facilitated verify/settle will throw unauthorized until a sk_live_... / sk_test_... key is supplied",
       );
     }
   } else {
@@ -520,11 +520,11 @@ async function main(): Promise<void> {
       "STRIPE_MPP_ENABLED=false — skipping MPP adapter registration",
     );
   }
-  // mppStripeAdapter is intentionally NOT attached to ServerContext
-  // — no HTTP routes consume it yet. Phase 5 will wire /mpp/* with
+  // mppAdapter is intentionally NOT attached to ServerContext yet —
+  // no HTTP routes consume it. Phase 2 T8 will wire /mpp/charge with
   // the adapter as a dependency. Hold the reference to keep the
   // package live and stop linters from flagging it.
-  void mppStripeAdapter;
+  void mppAdapter;
 
   // ---- t402-io universal USDT facilitator (Sub-task 10) -------------
   // Capability advertising via the open /supported endpoint. Verify

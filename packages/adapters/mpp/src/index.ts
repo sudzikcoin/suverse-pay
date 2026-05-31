@@ -1,10 +1,10 @@
 export {
-  StripeMppAdapter,
+  MppAdapter,
   TEMPO_MAINNET_CAIP2,
   TEMPO_MAINNET_USDC,
   TEMPO_MODERATO_CAIP2,
-  type MppAdapter,
-  type StripeMppAdapterConfig,
+  type MppAdapterConfig,
+  type MppFacilitatorAdapter,
 } from "./adapter.js";
 export {
   base64urlDecode,

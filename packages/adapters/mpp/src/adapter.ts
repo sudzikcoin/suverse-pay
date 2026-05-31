@@ -9,9 +9,9 @@ import type {
 } from "./types.js";
 
 /**
- * MppAdapter — the new interface this sub-task introduces, parallel
- * to `FacilitatorAdapter` for the x402 protocol. Phase 4 Block 2
- * Sub-task 9.
+ * MppFacilitatorAdapter — interface for MPP facilitators, parallel
+ * to `ProviderAdapter` for the x402 protocol. Introduced Phase 4
+ * Block 2 Sub-task 9; renamed Phase 5 Phase 2 T2 (was `MppAdapter`).
  *
  * MPP and x402 share the "402-then-retry" challenge-response shape
  * but the wire format differs: x402 puts the challenge in the
@@ -19,18 +19,8 @@ import type {
  * `WWW-Authenticate: Payment ...` headers. The semantics — verify a
  * credential, then settle on-chain or via a payment processor — map
  * one-to-one.
- *
- * Methods kept intentionally small. The Stripe MPP API surface in
- * particular is merchant-onboarding-gated (sk_live/sk_test keys
- * required) — the adapter is internally callable today; HTTP-facing
- * `/mpp/*` routes inside `apps/api` are out of scope for this
- * sub-task (the user's prompt described session-lifecycle endpoints
- * but the actual MPP spec uses single-shot 402 challenges, not
- * persistent server-side sessions). Phase 5 can wire HTTP surfaces
- * once Stripe's subscription/session intent API stabilizes
- * publicly.
  */
-export interface MppAdapter {
+export interface MppFacilitatorAdapter {
   readonly id: string;
   readonly displayName: string;
 
@@ -69,10 +59,10 @@ export interface MppAdapter {
   getHealthStatus(): Promise<HealthStatus>;
 }
 
-/* --- Stripe MPP adapter implementation --- */
+/* --- MPP adapter implementation --- */
 
-const ADAPTER_ID = "mpp-stripe";
-const DEFAULT_DISPLAY_NAME = "Stripe Machine Payments Protocol";
+const ADAPTER_ID = "mpp";
+const DEFAULT_DISPLAY_NAME = "Machine Payments Protocol";
 
 /**
  * Default Stripe MPP base URL. Stripe's MPP entrypoint lives on the
@@ -98,7 +88,7 @@ export const TEMPO_MODERATO_CAIP2 = "eip155:42431" as const;
  */
 export const TEMPO_MAINNET_USDC = "0x20C000000000000000000000b9537d11c60E8b50" as const;
 
-export interface StripeMppAdapterConfig {
+export interface MppAdapterConfig {
   /** Defaults to `https://api.stripe.com`. */
   baseUrl?: string;
   /** Defaults to `2026-03-04.preview`. */
@@ -124,22 +114,23 @@ export interface StripeMppAdapterConfig {
 }
 
 /**
- * Stripe MPP-backed implementation. Wraps Stripe's MPP entrypoint:
- *   - POST /v1/payment_intents/x402_or_mpp (path TBD when Stripe
- *     publishes the production endpoint; the docs show usage via
- *     their Node SDK without exposing the underlying REST path).
- *   - GET  /v1/payment_intents/{id} for status reads.
+ * MPP adapter. One adapter, multiple methods — dispatches by
+ * `(method, intent, network)` tuple at verify/settle time:
+ *   - tempo + charge + eip155:42431 (Tempo Moderato testnet):
+ *     Phase 2 T6 wires direct JSON-RPC settle.
+ *   - tempo + charge + eip155:4217 (Tempo mainnet):
+ *     stays endpoint-not-wired until Stripe publishes the MPP
+ *     REST surface (Stripe-facilitated mainnet path).
+ *   - stripe + charge (fiat via SPT): not in v1; returns when
+ *     Stripe publishes the REST surface.
  *
- * Auth: `Authorization: Bearer <secretKey>` + `Stripe-Version`
- * header. Idempotency-Key forwarded on settle.
- *
- * No real HTTP path constants are hard-coded for verify/settle
- * because Stripe has not published the REST path for MPP yet (as of
- * 2026-05-29). The adapter exposes `verifyCredential` /
+ * No HTTP path constants are hard-coded for the Stripe-facilitated
+ * track because Stripe has not published REST endpoints for MPP
+ * yet (as of 2026-05-29). The adapter exposes `verifyCredential` /
  * `settleCredential` against a configurable path prefix via env so
  * the production path can be wired without a code change.
  */
-export class StripeMppAdapter implements MppAdapter {
+export class MppAdapter implements MppFacilitatorAdapter {
   readonly id = ADAPTER_ID;
   readonly displayName: string;
 
@@ -150,7 +141,7 @@ export class StripeMppAdapter implements MppAdapter {
   private readonly fetchImpl: typeof globalThis.fetch | undefined;
   private readonly timeoutMs: number;
 
-  constructor(config: StripeMppAdapterConfig = {}) {
+  constructor(config: MppAdapterConfig = {}) {
     this.displayName = config.displayName ?? DEFAULT_DISPLAY_NAME;
     this.baseUrl = trimTrailingSlash(config.baseUrl ?? DEFAULT_BASE_URL);
     this.apiVersion = config.apiVersion ?? DEFAULT_API_VERSION;
@@ -251,9 +242,9 @@ export class StripeMppAdapter implements MppAdapter {
 }
 
 /**
- * Default capability set the StripeMppAdapter advertises out of the
- * box: tempo+charge on mainnet for Bridged USDC, plus stripe+charge
- * for fiat via SPT. Sessions + subscriptions deferred until Stripe
+ * Default capability set the MppAdapter advertises out of the box:
+ * tempo+charge on mainnet for Bridged USDC, plus stripe+charge for
+ * fiat via SPT. Sessions + subscriptions deferred until Stripe
  * publishes the REST surface.
  */
 function defaultCapabilities(): MppCapability[] {

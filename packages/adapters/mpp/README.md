@@ -1,9 +1,15 @@
 # @suverse-pay/adapter-mpp
 
-Adapter wrapping Stripe's **Machine Payments Protocol (MPP)** —
-a 402-protocol payment standard launched by Stripe + Tempo in
-March 2026 and extended at Stripe Sessions 2026 (April–May 2026).
-Phase 4 Block 2 Sub-task 9.
+Adapter for the **Machine Payments Protocol (MPP)** — a 402-protocol
+payment standard launched by Stripe + Tempo in March 2026 and
+extended at Stripe Sessions 2026 (April–May 2026). One adapter,
+multiple methods; the adapter dispatches by `(method, intent,
+network)` tuple at verify/settle time.
+
+Shipped Phase 4 Block 2 Sub-task 9 as `mpp-stripe` /
+`StripeMppAdapter`. Renamed in Phase 5 Phase 2 T1+T2 to the generic
+`mpp` / `MppAdapter` shape — one adapter, multiple methods (tempo
+now, stripe later when REST opens).
 
 ## What MPP actually is
 
@@ -32,8 +38,8 @@ client-signed retries. The differences:
 
 | Surface | Status |
 |---|---|
-| `MppAdapter` interface (new, alongside `FacilitatorAdapter`) | ✓ |
-| `StripeMppAdapter` implementation | ✓ — health check + capability advertising |
+| `MppFacilitatorAdapter` interface (new, alongside x402's `ProviderAdapter`) | ✓ (renamed from `MppAdapter` in Phase 5 Phase 2 T2) |
+| `MppAdapter` implementation | ✓ — health check + capability advertising (renamed from `StripeMppAdapter` in Phase 5 Phase 2 T2) |
 | Tempo USDC entry in `signer-evm/domains.ts` (`eip155:4217`) | ✓ — Tempo is EVM-compatible, slots into the existing namespace |
 | Wire-format primitives — `challengeToHeaderLine` / `credentialFromHeaderLine` etc. | ✓ — RFC-7235-flavored, base64url JSON |
 | Types: `MppChallenge`, `MppCredential`, `MppCapability` (mirrors wevm/mppx's `Challenge.Schema`) | ✓ |
@@ -43,10 +49,11 @@ client-signed retries. The differences:
 | Real on-chain Tempo smoke | ✗ Phase 5 — needs `STRIPE_MPP_SECRET_KEY` (merchant onboarding required) |
 
 The adapter is internally callable today — application code that
-speaks MPP can pull `StripeMppAdapter` from this package and use the
+speaks MPP can pull `MppAdapter` from this package and use the
 wire-translation primitives + capability advertising. First-party
-gateway-side `/mpp/*` routes wait on Stripe publishing the REST
-surface.
+gateway-side `/mpp/*` routes land in Phase 5 Phase 2 T8 (Tempo
+Moderato testnet via direct JSON-RPC) and stay deferred for mainnet
+until Stripe publishes the REST surface.
 
 ## Tempo network
 

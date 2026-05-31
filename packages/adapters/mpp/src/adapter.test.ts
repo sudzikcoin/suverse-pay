@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  StripeMppAdapter,
+  MppAdapter,
   TEMPO_MAINNET_CAIP2,
   TEMPO_MAINNET_USDC,
   TEMPO_MODERATO_CAIP2,
@@ -30,7 +30,7 @@ const SAMPLE_CREDENTIAL: MppCredential = {
   payload: { type: "transaction", signature: "0x" + "ab".repeat(65) },
 };
 
-describe("StripeMppAdapter constants", () => {
+describe("MppAdapter constants", () => {
   it("Tempo mainnet uses EIP-155 chainId 4217", () => {
     expect(TEMPO_MAINNET_CAIP2).toBe("eip155:4217");
   });
@@ -44,15 +44,15 @@ describe("StripeMppAdapter constants", () => {
   });
 });
 
-describe("StripeMppAdapter basics", () => {
+describe("MppAdapter basics", () => {
   it("exposes id + default display name", () => {
-    const a = new StripeMppAdapter();
-    expect(a.id).toBe("mpp-stripe");
-    expect(a.displayName).toBe("Stripe Machine Payments Protocol");
+    const a = new MppAdapter();
+    expect(a.id).toBe("mpp");
+    expect(a.displayName).toBe("Machine Payments Protocol");
   });
 
   it("getCapabilities returns Tempo (mainnet + Moderato) + Stripe SPT entries by default", () => {
-    const a = new StripeMppAdapter();
+    const a = new MppAdapter();
     const caps = a.getCapabilities();
     expect(caps.length).toBeGreaterThanOrEqual(3);
     const tempoMainCharge = caps.find(
@@ -73,14 +73,14 @@ describe("StripeMppAdapter basics", () => {
     const customCaps: MppCapability[] = [
       { method: "lightning", intent: "charge", asset: "BTC" },
     ];
-    const a = new StripeMppAdapter({ capabilities: customCaps });
+    const a = new MppAdapter({ capabilities: customCaps });
     expect(a.getCapabilities()).toEqual(customCaps);
   });
 });
 
-describe("StripeMppAdapter credential gating", () => {
+describe("MppAdapter credential gating", () => {
   it("verifyCredential throws unauthorized without a secret key", async () => {
-    const a = new StripeMppAdapter();
+    const a = new MppAdapter();
     await expect(
       a.verifyCredential({
         challenge: SAMPLE_CHALLENGE,
@@ -89,12 +89,12 @@ describe("StripeMppAdapter credential gating", () => {
     ).rejects.toMatchObject({
       name: "ProviderError",
       code: "unauthorized",
-      providerId: "mpp-stripe",
+      providerId: "mpp",
     });
   });
 
   it("settleCredential throws unauthorized without a secret key", async () => {
-    const a = new StripeMppAdapter();
+    const a = new MppAdapter();
     await expect(
       a.settleCredential({
         challenge: SAMPLE_CHALLENGE,
@@ -106,7 +106,7 @@ describe("StripeMppAdapter credential gating", () => {
   });
 });
 
-describe("StripeMppAdapter verifyCredential / settleCredential (with secret)", () => {
+describe("MppAdapter verifyCredential / settleCredential (with secret)", () => {
   // Stripe has not published REST paths for MPP verify/settle yet
   // (as of 2026-05-29). The adapter returns a structured
   // "endpoint-not-wired" result that surfaces a clear error code +
@@ -114,7 +114,7 @@ describe("StripeMppAdapter verifyCredential / settleCredential (with secret)", (
   // behavior — when REST paths are published, the implementation
   // changes here and these tests update.
   it("verifyCredential returns valid=false + unsupported_scheme until REST path is wired", async () => {
-    const a = new StripeMppAdapter({ secretKey: "sk_test_dummy" });
+    const a = new MppAdapter({ secretKey: "sk_test_dummy" });
     const r = await a.verifyCredential({
       challenge: SAMPLE_CHALLENGE,
       credential: SAMPLE_CREDENTIAL,
@@ -125,7 +125,7 @@ describe("StripeMppAdapter verifyCredential / settleCredential (with secret)", (
   });
 
   it("settleCredential returns settled=false until REST path is wired", async () => {
-    const a = new StripeMppAdapter({ secretKey: "sk_test_dummy" });
+    const a = new MppAdapter({ secretKey: "sk_test_dummy" });
     const r = await a.settleCredential({
       challenge: SAMPLE_CHALLENGE,
       credential: SAMPLE_CREDENTIAL,
@@ -135,9 +135,9 @@ describe("StripeMppAdapter verifyCredential / settleCredential (with secret)", (
   });
 });
 
-describe("StripeMppAdapter getHealthStatus", () => {
+describe("MppAdapter getHealthStatus", () => {
   it("returns healthy on 2xx from api.stripe.com/v1", async () => {
-    const a = new StripeMppAdapter({
+    const a = new MppAdapter({
       fetchImpl: async () => jsonResponse({ ok: true }, 200),
     });
     const h = await a.getHealthStatus();
@@ -145,7 +145,7 @@ describe("StripeMppAdapter getHealthStatus", () => {
   });
 
   it("treats 4xx as healthy (host is reachable; auth would fail but that's not a liveness concern)", async () => {
-    const a = new StripeMppAdapter({
+    const a = new MppAdapter({
       fetchImpl: async () => jsonResponse({ error: "auth" }, 401),
     });
     const h = await a.getHealthStatus();
@@ -153,7 +153,7 @@ describe("StripeMppAdapter getHealthStatus", () => {
   });
 
   it("returns down on 5xx", async () => {
-    const a = new StripeMppAdapter({
+    const a = new MppAdapter({
       fetchImpl: async () => jsonResponse({ error: "internal" }, 502),
     });
     const h = await a.getHealthStatus();
@@ -162,7 +162,7 @@ describe("StripeMppAdapter getHealthStatus", () => {
   });
 
   it("returns down on network error", async () => {
-    const a = new StripeMppAdapter({
+    const a = new MppAdapter({
       fetchImpl: async () => {
         throw new Error("ECONNREFUSED");
       },
