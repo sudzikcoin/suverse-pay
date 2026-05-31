@@ -162,6 +162,10 @@ export class MppAdapter implements MppFacilitatorAdapter {
     challenge: MppChallenge;
     credential: MppCredential;
   }): Promise<MppVerifyResult> {
+    const intentGuard = guardChargeIntent(args.credential.intent);
+    if (intentGuard !== null) {
+      return { valid: false, verifiedAt: new Date().toISOString(), ...intentGuard };
+    }
     this.requireSecret("verifyCredential");
     const verifiedAt = new Date().toISOString();
     // Stripe's MPP verify endpoint is not yet documented as a REST
@@ -183,6 +187,10 @@ export class MppAdapter implements MppFacilitatorAdapter {
     credential: MppCredential;
     idempotencyKey?: string;
   }): Promise<MppSettleResult> {
+    const intentGuard = guardChargeIntent(args.credential.intent);
+    if (intentGuard !== null) {
+      return { settled: false, settledAt: new Date().toISOString(), ...intentGuard };
+    }
     this.requireSecret("settleCredential");
     const settledAt = new Date().toISOString();
     return {
@@ -279,4 +287,23 @@ function defaultCapabilities(): MppCapability[] {
 
 function trimTrailingSlash(url: string): string {
   return url.endsWith("/") ? url.slice(0, -1) : url;
+}
+
+/**
+ * v1 only supports `intent: "charge"`. The MPP spec's
+ * `intent: "subscription"` (recurring) and `intent: "session"`
+ * (pay-as-you-go) flows lack a published REST surface from Stripe
+ * as of 2026-05-29, so verify/settle would have nothing to call.
+ * Return a structured rejection (same shape as `unsupported_scheme`)
+ * rather than throwing — keeps the dispatcher contract uniform.
+ * Returns null when the intent is allowed.
+ */
+function guardChargeIntent(
+  intent: string,
+): { errorCode: string; errorMessage: string } | null {
+  if (intent === "charge") return null;
+  return {
+    errorCode: "unsupported_intent",
+    errorMessage: `MPP v1 only supports intent="charge"; got intent="${intent}". The "subscription" and "session" intents land when Stripe publishes the REST surface for them.`,
+  };
 }

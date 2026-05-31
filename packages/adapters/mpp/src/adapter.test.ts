@@ -139,6 +139,77 @@ describe("MppAdapter verifyCredential / settleCredential (with secret)", () => {
   });
 });
 
+describe("MppAdapter intent guard (Phase 2 T4 — v1 charge-only)", () => {
+  // v1 only handles intent="charge". The MPP spec's "subscription"
+  // and "session" intents require Stripe REST endpoints that aren't
+  // public, so the adapter rejects them at the dispatch boundary —
+  // before any secret-key check — with a structured result (no throw).
+  const subscriptionCred: MppCredential = {
+    ...SAMPLE_CREDENTIAL,
+    intent: "subscription",
+  };
+  const sessionCred: MppCredential = {
+    ...SAMPLE_CREDENTIAL,
+    intent: "session",
+  };
+
+  it("verifyCredential rejects intent=subscription with unsupported_intent (no secret needed)", async () => {
+    const a = new MppAdapter(); // no secretKey
+    const r = await a.verifyCredential({
+      challenge: SAMPLE_CHALLENGE,
+      credential: subscriptionCred,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("unsupported_intent");
+    expect(r.errorMessage).toContain("charge");
+    expect(r.errorMessage).toContain("subscription");
+  });
+
+  it("verifyCredential rejects intent=session with unsupported_intent (no secret needed)", async () => {
+    const a = new MppAdapter();
+    const r = await a.verifyCredential({
+      challenge: SAMPLE_CHALLENGE,
+      credential: sessionCred,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("unsupported_intent");
+    expect(r.errorMessage).toContain("session");
+  });
+
+  it("settleCredential rejects intent=subscription with unsupported_intent (no secret needed)", async () => {
+    const a = new MppAdapter();
+    const r = await a.settleCredential({
+      challenge: SAMPLE_CHALLENGE,
+      credential: subscriptionCred,
+    });
+    expect(r.settled).toBe(false);
+    expect(r.errorCode).toBe("unsupported_intent");
+  });
+
+  it("settleCredential rejects intent=session with unsupported_intent (no secret needed)", async () => {
+    const a = new MppAdapter();
+    const r = await a.settleCredential({
+      challenge: SAMPLE_CHALLENGE,
+      credential: sessionCred,
+    });
+    expect(r.settled).toBe(false);
+    expect(r.errorCode).toBe("unsupported_intent");
+  });
+
+  it("intent guard runs BEFORE the secret-key check (subscription returns structured, not throw)", async () => {
+    // Without the guard, this would throw ProviderError("unauthorized")
+    // because no secretKey is configured. With the guard, the result
+    // is structured.
+    const a = new MppAdapter();
+    await expect(
+      a.verifyCredential({
+        challenge: SAMPLE_CHALLENGE,
+        credential: subscriptionCred,
+      }),
+    ).resolves.toMatchObject({ errorCode: "unsupported_intent" });
+  });
+});
+
 describe("MppAdapter getHealthStatus", () => {
   it("returns healthy on 2xx from api.stripe.com/v1", async () => {
     const a = new MppAdapter({
