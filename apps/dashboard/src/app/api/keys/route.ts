@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { isAdminEmail } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 import {
   CREATE_COOLDOWN_MS,
@@ -73,11 +74,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
+  // Admin emails (ADMIN_EMAILS allowlist) bypass both the per-user
+  // cap and the per-hour cooldown — operator-side tooling needs to
+  // churn through keys without waiting.
+  const bypass = isAdminEmail(session.user.email);
+
   // Rate limit BEFORE generating any secret — the order matters
   // because the only way to fail later is a DB write error, and
   // returning "rate-limited" after we already minted a plaintext
   // would surface a wasted secret if the user retried.
-  const limit = await checkCreateKeyRateLimit(session.user.id);
+  const limit = bypass
+    ? ({ ok: true } as const)
+    : await checkCreateKeyRateLimit(session.user.id);
   if (!limit.ok) {
     const message =
       limit.reason === "max-keys-reached"

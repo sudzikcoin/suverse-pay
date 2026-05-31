@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { isAdminEmail } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 import { dbQuery } from "@/lib/db";
 import { probeResourceServer } from "@/lib/probe";
@@ -76,7 +77,10 @@ export async function POST(
   // restart — abuse the probe path that hard, the dev rate-limits
   // you. The dashboard runs as a single pm2 process so the in-process
   // map is the canonical source.
-  const allowed = takeProbeToken(session.user.id);
+  // Admin emails (ADMIN_EMAILS allowlist) skip the probe limiter.
+  const allowed = isAdminEmail(session.user.email)
+    ? ({ ok: true } as const)
+    : takeProbeToken(session.user.id);
   if (!allowed.ok) {
     return NextResponse.json(
       {
