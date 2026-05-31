@@ -10,6 +10,7 @@ import { registerFacilitatorRoutes } from "./routes/facilitator.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerMetricsRoute } from "./routes/metrics.js";
 import { registerPromMetricsRoute } from "./routes/metrics-prom.js";
+import { registerMppRoutes } from "./routes/mpp.js";
 import { registerPaymentsRoute } from "./routes/payments.js";
 import { registerProvidersRoute } from "./routes/providers.js";
 import { registerQuoteRoute } from "./routes/quote.js";
@@ -65,6 +66,7 @@ export async function buildServer(
   registerMetricsRoute(app, opts.ctx);
   registerPromMetricsRoute(app);
   registerFacilitatorRoutes(app, opts.ctx);
+  registerMppRoutes(app, opts.ctx);
 
   return app;
 }

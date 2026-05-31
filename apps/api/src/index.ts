@@ -521,11 +521,10 @@ async function main(): Promise<void> {
       "STRIPE_MPP_ENABLED=false — skipping MPP adapter registration",
     );
   }
-  // mppAdapter is intentionally NOT attached to ServerContext yet —
-  // no HTTP routes consume it. Phase 2 T8 will wire /mpp/charge with
-  // the adapter as a dependency. Hold the reference to keep the
-  // package live and stop linters from flagging it.
-  void mppAdapter;
+  // mppAdapter is attached to ServerContext below so the /mpp/charge
+  // route (Phase 2 T8) can drive it. May still be undefined when
+  // STRIPE_MPP_ENABLED=false — the route then returns
+  // 503 service_unavailable rather than 404.
 
   // ---- t402-io universal USDT facilitator (Sub-task 10) -------------
   // Capability advertising via the open /supported endpoint. Verify
@@ -685,6 +684,7 @@ async function main(): Promise<void> {
     loadHealthSummaries: (providerIds) =>
       loadHealthSummariesFromDb(pool, providerIds),
     loadMetrics: () => loadMetricsFromDb(pool),
+    ...(mppAdapter !== undefined ? { mppAdapter } : {}),
   };
 
   const app = await buildServer({ ctx, redis });

@@ -1,3 +1,4 @@
+import type { MppFacilitatorAdapter } from "@suverse-pay/adapter-mpp";
 import type { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
 import type {
   PaymentLedger,
@@ -55,6 +56,12 @@ export interface ServerContext {
    * `index.ts` is a small SQL roll-up; tests supply a stub object.
    */
   loadMetrics: () => Promise<MetricsSummary>;
+  /**
+   * MPP facilitator adapter — drives POST /mpp/charge. Optional so
+   * tests + the v1 minimal config can run without it; when undefined
+   * the /mpp/* routes return 503 service_unavailable.
+   */
+  mppAdapter?: MppFacilitatorAdapter;
   /** Override for deterministic tests. */
   now?: () => Date;
 }

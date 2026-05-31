@@ -243,8 +243,22 @@ export class FakeLedger {
       recipient: string;
       resource?: string;
       requestBody: unknown;
+      protocol?: "x402" | "mpp";
+      mppMethod?: string;
+      mppIntent?: string;
     };
   }): Promise<CreateOrFetchResult> {
+    const protocol = input.initialRow.protocol ?? "x402";
+    if (protocol === "mpp") {
+      if (
+        input.initialRow.mppMethod === undefined ||
+        input.initialRow.mppIntent === undefined
+      ) {
+        throw new Error(
+          "FakeLedger: protocol=mpp rows require mppMethod + mppIntent (mirrors real PaymentLedger invariant)",
+        );
+      }
+    }
     if (input.idempotencyKey !== undefined) {
       const k = `${input.apiKeyId}:${input.idempotencyKey}`;
       const existing = this.paymentsByIdem.get(k);
@@ -260,6 +274,7 @@ export class FakeLedger {
       const row: PaymentRecord = {
         paymentId,
         apiKeyId: input.apiKeyId,
+        protocol,
         idempotencyKey: input.idempotencyKey,
         status: "pending",
         network: input.initialRow.network as PaymentRecord["network"],
@@ -268,6 +283,12 @@ export class FakeLedger {
         recipient: input.initialRow.recipient,
         ...(input.initialRow.resource !== undefined
           ? { resource: input.initialRow.resource }
+          : {}),
+        ...(input.initialRow.mppMethod !== undefined
+          ? { mppMethod: input.initialRow.mppMethod }
+          : {}),
+        ...(input.initialRow.mppIntent !== undefined
+          ? { mppIntent: input.initialRow.mppIntent }
           : {}),
         createdAt: new Date("2026-05-26T12:00:00Z"),
       };
@@ -279,11 +300,18 @@ export class FakeLedger {
     const row: PaymentRecord = {
       paymentId,
       apiKeyId: input.apiKeyId,
+      protocol,
       status: "pending",
       network: input.initialRow.network as PaymentRecord["network"],
       asset: input.initialRow.asset,
       amount: input.initialRow.amount,
       recipient: input.initialRow.recipient,
+      ...(input.initialRow.mppMethod !== undefined
+        ? { mppMethod: input.initialRow.mppMethod }
+        : {}),
+      ...(input.initialRow.mppIntent !== undefined
+        ? { mppIntent: input.initialRow.mppIntent }
+        : {}),
       createdAt: new Date("2026-05-26T12:00:00Z"),
     };
     this.payments.set(paymentId, row);
