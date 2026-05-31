@@ -645,11 +645,15 @@ describe("CoinbaseCdpAdapter Solana support", () => {
 
     // The body sent to CDP must preserve the SVM payload shape — in
     // particular, payload.transaction (base64) survives the forward.
+    // Top-level scheme/network were dropped in the rewrite that ships
+    // the v2-clean shape CDP's bazaar crawler indexes by; the network +
+    // scheme now ride inside `accepted` instead.
     const body = calls[0]!.body as Record<string, unknown>;
     const pp = body.paymentPayload as Record<string, unknown>;
-    expect(pp.network).toBe(SOLANA_MAINNET);
-    expect(pp.scheme).toBe("exact");
     expect((pp.payload as Record<string, unknown>).transaction).toBe("AAAA");
+    const ppAccepted = pp.accepted as Record<string, unknown>;
+    expect(ppAccepted.network).toBe(SOLANA_MAINNET);
+    expect(ppAccepted.scheme).toBe("exact");
     // ... and so does paymentRequirements.extra.feePayer (which CDP
     // needs to verify the fee-payer safety rules against the proposed
     // transaction).

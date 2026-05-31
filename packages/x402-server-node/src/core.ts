@@ -58,6 +58,12 @@ export interface ChallengeBody {
   readonly resource: ChallengeResource;
   readonly accepts: ReadonlyArray<ChallengeAccept>;
   readonly error?: string;
+  /**
+   * Top-level discovery extensions forwarded verbatim from
+   * `opts.extensions`. Ecosystem crawlers (Coinbase Bazaar) read
+   * the bazaar block from the live 402.
+   */
+  readonly extensions?: Record<string, unknown>;
 }
 
 /** Default per-accept timeout when the seller didn't override it. */
@@ -133,6 +139,7 @@ export async function buildChallenge(
       };
     }),
     ...(errorHint !== undefined ? { error: errorHint } : {}),
+    ...(opts.extensions !== undefined ? { extensions: opts.extensions } : {}),
   };
 }
 
@@ -340,6 +347,15 @@ async function callFacilitator(
   };
   if (rawObj["accepted"] !== undefined) flatPaymentPayload["accepted"] = rawObj["accepted"];
   if (rawObj["resource"] !== undefined) flatPaymentPayload["resource"] = rawObj["resource"];
+  // Discovery extensions (e.g. bazaar) — the seller's challenge advertised
+  // them via `opts.extensions`, but the buyer's signed payload only echoes
+  // back `accepted`. Re-inject them on the outbound /verify and /settle
+  // envelope so downstream facilitators that index by payload extensions
+  // (Coinbase CDP's bazaar crawler) see them. Buyer signature covers only
+  // the inner `payload.authorization`, so adding outer fields is safe.
+  if (opts.extensions !== undefined) {
+    flatPaymentPayload["extensions"] = opts.extensions;
+  }
   // Merge facilitator-published + seller-provided extras the same
   // way buildChallenge did when emitting the 402. Without this, the
   // buyer's signature (which the buyer constructed against the merged

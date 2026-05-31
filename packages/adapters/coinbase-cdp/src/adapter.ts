@@ -202,7 +202,12 @@ export class CoinbaseCdpAdapter extends BaseAdapter {
       providerId: this.id,
       ...(this.fetchImpl !== undefined ? { fetchImpl: this.fetchImpl } : {}),
     };
-    const { data } = await httpJson<unknown>(`${this.baseUrl}/verify`, httpOpts);
+    const { data, headers: respHeaders } = await httpJson<unknown>(`${this.baseUrl}/verify`, httpOpts);
+    try {
+      const hdrs = Object.fromEntries(respHeaders.entries());
+      console.log(`[CDP-VERIFY-HEADERS] ${JSON.stringify(hdrs)}`);
+      console.log(`[CDP-VERIFY-BODY] ${JSON.stringify(data)}`);
+    } catch (e) { console.log("[CDP-VERIFY-HEADERS-ERR]", String(e)); }
     const parsed = CdpVerifyResponseSchema.safeParse(data);
     if (!parsed.success) {
       throw new ProviderError(
@@ -270,7 +275,12 @@ export class CoinbaseCdpAdapter extends BaseAdapter {
         : {}),
       ...(this.fetchImpl !== undefined ? { fetchImpl: this.fetchImpl } : {}),
     };
-    const { data } = await httpJson<unknown>(`${this.baseUrl}/settle`, httpOpts);
+    const { data, headers: respHeaders } = await httpJson<unknown>(`${this.baseUrl}/settle`, httpOpts);
+    try {
+      const hdrs = Object.fromEntries(respHeaders.entries());
+      console.log(`[CDP-SETTLE-HEADERS] ${JSON.stringify(hdrs)}`);
+      console.log(`[CDP-SETTLE-BODY] ${JSON.stringify(data)}`);
+    } catch (e) { console.log("[CDP-SETTLE-HEADERS-ERR]", String(e)); }
     const parsed = CdpSettleResponseSchema.safeParse(data);
     if (!parsed.success) {
       throw new ProviderError(
@@ -465,9 +475,11 @@ export class CoinbaseCdpAdapter extends BaseAdapter {
 }
 
 function toCdpRequest(req: VerifyRequest | SettleRequest): unknown {
-  const payload = req.paymentPayload;
+  const payload = req.paymentPayload as Record<string, unknown>;
   const x402Version =
-    typeof payload.x402Version === "number" ? payload.x402Version : 2;
+    typeof payload["x402Version"] === "number"
+      ? (payload["x402Version"] as number)
+      : 2;
   // CDP's hosted facilitator implements x402V2PaymentRequirements with
   // `amount` rather than the spec's `maxAmountRequired`, AND requires
   // an `accepted` field embedded inside the paymentPayload (the
@@ -479,9 +491,62 @@ function toCdpRequest(req: VerifyRequest | SettleRequest): unknown {
   // with `must match one of [x402V2PaymentPayload, x402V1PaymentPayload].
   // x402V2PaymentPayload requires 'accepted'`.
   const cdpRequirements = toCdpRequirements(req.paymentRequirements);
+  // Build a clean v2 paymentPayload matching the shape CDP's bazaar
+  // crawler indexes by (mirrors what GovHub's Python facilitator sends
+  // verbatim — proven to index in ~7s on api.suverse.io). Three deltas
+  // vs the prior naive spread:
+  //   1) keep `payload` (inner signed authorization) only; drop the
+  //      v1-flat `scheme`/`network` top-levels our gateway middleware
+  //      added — CDP ignores them in v2 but they clutter the envelope.
+  //   2) lift any flattened `resource`/`description`/`mimeType` fields
+  //      out of `accepted` into a top-level `resource` object.
+  //   3) preserve `extensions` (e.g. `extensions.bazaar`) — the gateway
+  //      now forwards them via the `extensions` field on paymentPayload;
+  //      without this the bazaar discovery hint never reaches CDP and
+  //      the URL is never indexed.
+  const v2Payload: Record<string, unknown> = {
+    x402Version,
+    payload: payload["payload"],
+    accepted: cdpRequirements,
+  };
+  // Resource object: prefer an explicit `resource` object on the inbound
+  // payload, else reconstruct from flattened fields in `accepted`/the
+  // requirement (resource URL is `paymentRequirements.resource` per spec).
+  const inboundResource = payload["resource"];
+  if (
+    inboundResource !== undefined &&
+    typeof inboundResource === "object" &&
+    inboundResource !== null
+  ) {
+    v2Payload["resource"] = inboundResource;
+  } else {
+    const reqs = req.paymentRequirements as Record<string, unknown>;
+    const url = reqs["resource"];
+    if (typeof url === "string" && url !== "") {
+      v2Payload["resource"] = {
+        url,
+        ...(typeof reqs["description"] === "string"
+          ? { description: reqs["description"] }
+          : {}),
+        ...(typeof reqs["mimeType"] === "string"
+          ? { mimeType: reqs["mimeType"] }
+          : {}),
+      };
+    }
+  }
+  // Extensions: the gateway forwards opts.extensions on the inbound
+  // /verify, /settle envelope; the orchestrator's PaymentPayloadSchema
+  // preserves it (passthrough field). Pass through verbatim to CDP.
+  if (
+    payload["extensions"] !== undefined &&
+    typeof payload["extensions"] === "object" &&
+    payload["extensions"] !== null
+  ) {
+    v2Payload["extensions"] = payload["extensions"];
+  }
   return {
     x402Version,
-    paymentPayload: { ...payload, accepted: cdpRequirements },
+    paymentPayload: v2Payload,
     paymentRequirements: cdpRequirements,
   };
 }
