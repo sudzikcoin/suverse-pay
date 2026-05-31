@@ -35,9 +35,9 @@ importers:
       '@suverse-pay/adapter-cosmos-pay':
         specifier: workspace:*
         version: link:../../packages/adapters/cosmos-pay
-      '@suverse-pay/adapter-mpp-stripe':
+      '@suverse-pay/adapter-mpp':
         specifier: workspace:*
-        version: link:../../packages/adapters/mpp-stripe
+        version: link:../../packages/adapters/mpp
       '@suverse-pay/adapter-payai':
         specifier: workspace:*
         version: link:../../packages/adapters/payai
@@ -369,7 +369,7 @@ importers:
         specifier: ^20.11.0
         version: 20.19.41
 
-  packages/adapters/mpp-stripe:
+  packages/adapters/mpp:
     dependencies:
       '@suverse-pay/core-types':
         specifier: workspace:*

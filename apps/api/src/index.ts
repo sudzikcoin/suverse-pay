@@ -5,7 +5,7 @@ import { BofaiX402Adapter } from "@suverse-pay/adapter-bofai-x402";
 import {
   StripeMppAdapter,
   type MppAdapter,
-} from "@suverse-pay/adapter-mpp-stripe";
+} from "@suverse-pay/adapter-mpp";
 import { PayAiAdapter } from "@suverse-pay/adapter-payai";
 import { T402IoAdapter } from "@suverse-pay/adapter-t402-io";
 import { ThirdwebX402Adapter } from "@suverse-pay/adapter-thirdweb-x402";

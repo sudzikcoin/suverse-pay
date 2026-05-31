@@ -1,8 +1,8 @@
 {
-  "name": "@suverse-pay/adapter-mpp-stripe",
+  "name": "@suverse-pay/adapter-mpp",
   "version": "0.0.0",
   "private": true,
-  "description": "Adapter wrapping Stripe's Machine Payments Protocol (MPP) — 402-protocol payments via Tempo USDC and Stripe SPT fiat tracks.",
+  "description": "Adapter for the Machine Payments Protocol (MPP) — 402-protocol payments. v1 ships the tempo method on Tempo Moderato testnet via direct JSON-RPC; stripe method + session/subscription intents arrive in v2 when Stripe publishes the REST surface.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",

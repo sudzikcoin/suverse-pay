@@ -1,4 +1,4 @@
-# @suverse-pay/adapter-mpp-stripe
+# @suverse-pay/adapter-mpp
 
 Adapter wrapping Stripe's **Machine Payments Protocol (MPP)** —
 a 402-protocol payment standard launched by Stripe + Tempo in
@@ -78,7 +78,7 @@ import {
   challengeFromHeaderLine,
   credentialToHeaderLine,
   credentialFromHeaderLine,
-} from "@suverse-pay/adapter-mpp-stripe";
+} from "@suverse-pay/adapter-mpp";
 
 // Server side — emit a 402.
 const headerValue = challengeToHeaderLine({
