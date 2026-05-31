@@ -162,8 +162,11 @@ function UserChip({
 }
 
 function SignOutButton(): React.JSX.Element {
+  // Hidden on mobile — the same action lives in the MobileNavDrawer
+  // footer, no need to crowd the header on narrow screens.
   return (
     <form
+      className="hidden md:block"
       action={async () => {
         "use server";
         await signOut({ redirectTo: "/" });

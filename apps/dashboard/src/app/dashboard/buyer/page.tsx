@@ -69,8 +69,10 @@ export default async function BuyerLandingPage(): Promise<React.JSX.Element> {
 }
 
 function SignOutButton(): React.JSX.Element {
+  // Hidden on mobile — same action lives in the MobileNavDrawer footer.
   return (
     <form
+      className="hidden md:block"
       action={async () => {
         "use server";
         await signOut({ redirectTo: "/" });
