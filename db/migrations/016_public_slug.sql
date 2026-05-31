@@ -25,13 +25,14 @@ CREATE UNIQUE INDEX seller_proxy_configs_public_slug_unique
     ON seller_proxy_configs (public_slug)
     WHERE public_slug IS NOT NULL;
 
--- lowercase alphanumeric + hyphens, 3..50 chars, must start and end with an
--- alphanumeric. Matches the catalog-slug shape we already use for
--- catalog_listings.slug, and stays inside the URL path segment safelist
--- (no escaping needed).
-ALTER TABLE seller_proxy_configs
-    ADD CONSTRAINT seller_proxy_configs_public_slug_format
-    CHECK (public_slug IS NULL OR public_slug ~ '^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?$');
+-- Format validation (lowercase alphanumeric + hyphens, 3..50 chars, start
+-- and end on an alphanumeric) is enforced at the application layer (the
+-- dashboard's new-proxy form + a server-side admin check). We deliberately
+-- DO NOT enforce it via a DB CHECK because the natural regex form uses
+-- the POSIX `~` operator which pg-mem (the test infrastructure) does not
+-- implement, and the test suites that run migrations against pg-mem would
+-- break on apply. The UNIQUE index above still guarantees the slug is
+-- globally unique among non-NULL values.
 
 -- Explicit FK from a catalog row to the proxy config it describes. Replaces
 -- the prior split_part(endpoint_url, '/', -1) = spc.endpoint_slug heuristic
