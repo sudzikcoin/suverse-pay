@@ -23,6 +23,8 @@ export interface BuildServerArgs {
   store?: ProxyConfigStore;
   /** Injection seam for tests — replaces global fetch. */
   fetchImpl?: typeof fetch;
+  /** Pre-charge upstream health probe budget (ms). Default 3000. */
+  healthCheckTimeoutMs?: number;
 }
 
 export async function buildServer(
@@ -51,6 +53,9 @@ export async function buildServer(
     facilitatorUrl: args.facilitatorUrl,
     facilitatorApiKey: args.facilitatorApiKey,
     ...(args.fetchImpl ? { fetchImpl: args.fetchImpl } : {}),
+    ...(args.healthCheckTimeoutMs !== undefined
+      ? { healthCheckTimeoutMs: args.healthCheckTimeoutMs }
+      : {}),
     logger: app.log as unknown as HandleDeps["logger"],
   };
 

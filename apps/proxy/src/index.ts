@@ -13,11 +13,13 @@
  *                             as any seller's key, just owned by the
  *                             proxy operator)
  * Optional env:
- *   - PORT                  default 3003
- *   - HOST                  default 0.0.0.0
- *   - REDIS_URL             enables shared rate-limit state
- *   - RATE_LIMIT_PER_MIN    default 120
- *   - LOG_LEVEL             default info
+ *   - PORT                       default 3003
+ *   - HOST                       default 0.0.0.0
+ *   - REDIS_URL                  enables shared rate-limit state
+ *   - RATE_LIMIT_PER_MIN         default 120
+ *   - LOG_LEVEL                  default info
+ *   - HEALTH_CHECK_TIMEOUT_MS    pre-charge upstream probe budget,
+ *                                default 3000
  */
 
 import pg from "pg";
@@ -36,6 +38,10 @@ async function main(): Promise<void> {
     idleTimeoutMillis: 30_000,
   });
 
+  const healthCheckTimeoutMs = parsePositiveInt(
+    process.env["HEALTH_CHECK_TIMEOUT_MS"],
+  );
+
   const app = await buildServer({
     pool,
     masterKey,
@@ -45,6 +51,7 @@ async function main(): Promise<void> {
       ? { redisUrl: process.env["REDIS_URL"] }
       : {}),
     rateLimitPerMin: Number(process.env["RATE_LIMIT_PER_MIN"] ?? 120),
+    ...(healthCheckTimeoutMs !== undefined ? { healthCheckTimeoutMs } : {}),
   });
 
   const port = Number(process.env["PORT"] ?? 3003);
@@ -69,6 +76,14 @@ function required(name: string): string {
     throw new Error(`Missing required env var: ${name}`);
   }
   return v;
+}
+
+/** Parse an optional positive integer env var; return undefined on absence or junk. */
+function parsePositiveInt(raw: string | undefined): number | undefined {
+  if (raw === undefined || raw.trim() === "") return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) return undefined;
+  return n;
 }
 
 main().catch((err: unknown) => {
