@@ -8,6 +8,39 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
+### Added — Financial-data catalog batch (2026-05-31)
+
+Four new public proxies under the same resource key as the CoinGecko
+milestone (`reskey_1166628d`, owner `sudzikgroup@gmail.com`),
+inserted directly into `seller_proxy_configs` + `catalog_listings`
+with `status='approved'`. Same three networks accepted as CoinGecko
+(Base, Solana, Cosmos noble-1); same payTo addresses. Each verified
+with one real paid Base mainnet settle through the published
+`@suverselabs/x402-client@0.1.0` (block-confirmed, 30 bps platform
+fee withheld in `facilitator_payments`):
+
+| Endpoint | Slug | Price | Base tx | Block |
+| --- | --- | --- | --- | --- |
+| DeFiLlama All Protocols TVL | `tvl` | $0.005 | [`0x33cdb010…3590c9`](https://basescan.org/tx/0x33cdb0107c9b4565fa08a8a4eaa97e70d6e6a0f7dffb12ab2662a32a413590c9) | 46711182 |
+| Binance BTC/USDT Spot Price | `btc-spot` | $0.001 | [`0xf02b783a…8832e6`](https://basescan.org/tx/0xf02b783a49bc44c0609369984cf752461bc56cfd5e29a74db3b83d86ac8832e6) | 46711185 |
+| Coinbase BTC/USD Spot Price | `coinbase-btc` | $0.001 | [`0x3be1eeb0…febdd`](https://basescan.org/tx/0x3be1eeb074b8cffe50e69ed54182b17f03ee135916c2b9f40f795cde198febdd) | 46711187 |
+| GeckoTerminal Ethereum DEX Pools | `eth-pools` | $0.01 | [`0x83ce3755…ec93c80`](https://basescan.org/tx/0x83ce375555dfc302830e69e976416f31c8e677cb9a5a1e1080944adf2ec93c80) | 46711188 |
+
+All five listings (CoinGecko + 4 new) now show up in:
+
+- `/api/catalog/listings.json` (the source the published
+  `@suverselabs/x402-mcp@0.0.1` stdio MCP reads from)
+- `/.well-known/x402` (passive discovery channel for the CDP Bazaar
+  mirror — there is no manual submit API)
+- the public `/catalog` HTML index + per-slug detail pages
+
+**Known gap (pre-existing):** `sitemap.xml` is still the static
+three-URL list it was before this batch and does not surface
+per-listing pages — a follow-up should swap it for a dynamic
+`sitemap.ts` rendering from `/api/catalog/listings.json` so search
+consoles index the listings too. Not a blocker for x402 ecosystem
+discovery.
+
 ### Milestone — First MULTICHAIN customer-facing x402 settle LIVE (2026-05-31)
 
 CoinGecko BTC/ETH price feed
