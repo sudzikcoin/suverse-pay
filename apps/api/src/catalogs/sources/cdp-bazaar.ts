@@ -32,6 +32,9 @@ interface CdpResourceEntry {
 }
 
 interface CdpPage {
+  // CDP returns `items` on /discovery/resources but `resources` on /merchant
+  // and /search. We accept either to keep the parser source-uniform.
+  readonly items?: ReadonlyArray<CdpResourceEntry>;
   readonly resources?: ReadonlyArray<CdpResourceEntry>;
   readonly pagination?: { readonly total?: number; readonly offset?: number };
 }
@@ -68,7 +71,7 @@ export async function fetchCdpBazaar(
       break;
     }
 
-    const resources = body.resources ?? [];
+    const resources = body.items ?? body.resources ?? [];
     for (const entry of resources) {
       const normalised = normaliseCdpEntry(entry);
       if (normalised !== null) out.push(normalised);

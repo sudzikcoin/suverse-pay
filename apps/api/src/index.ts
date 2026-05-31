@@ -25,6 +25,7 @@ import pino from "pino";
 import { loadConfig } from "./config.js";
 import type { MetricsSummary, ServerContext } from "./context.js";
 import { MetricsRefresher } from "./lib/metrics-refresher.js";
+import { CatalogSyncer } from "./catalogs/sync.js";
 import { sha256Hex, ADMIN_API_KEY_ID } from "./plugins/auth.js";
 import { buildServer } from "./server.js";
 
@@ -649,6 +650,18 @@ async function main(): Promise<void> {
   });
   const stopMetricsRefresher = metricsRefresher.start();
 
+  // External-catalog mirror sync (phase 2). Refreshes external_endpoints
+  // from CDP Bazaar (+ future sources) on a tick so the unified-search
+  // surface reads our local mirror. Defaults to hourly; the initial tick
+  // is fired at boot so a freshly-deployed instance has data within ~1 min.
+  const catalogSyncer = new CatalogSyncer({
+    pool,
+    intervalMs: config.catalogSyncIntervalMs,
+    logger: orchLogger,
+    runOnStart: true,
+  });
+  const stopCatalogSyncer = catalogSyncer.start();
+
   // ---- ServerContext glue ---------------------------------------------
   const facilitatorRateLimiter = new FacilitatorRateLimiter({ redis });
 
@@ -702,6 +715,7 @@ async function main(): Promise<void> {
     discoveryCron.stop();
     healthCron.stop();
     await stopMetricsRefresher();
+    stopCatalogSyncer();
     await app.close();
     await webhookWorker.close();
     await webhookQueue.close();

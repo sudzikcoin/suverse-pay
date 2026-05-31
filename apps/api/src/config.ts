@@ -142,6 +142,12 @@ export const ConfigSchema = z.object({
   // value within a tick. Raise on busy deploys to reduce DB load.
   metricsRefreshIntervalMs: z.coerce.number().int().positive().default(15_000),
 
+  // Phase 2 (unified-catalog) — interval between external_endpoints
+  // syncs from CDP Bazaar (+ future sources). Defaults to 1 hour;
+  // CDP indexes newly-settled URLs in seconds but the long tail
+  // (deindexes, quality updates) churns on the order of hours.
+  catalogSyncIntervalMs: z.coerce.number().int().positive().default(60 * 60 * 1000),
+
   // Phase 5 Block 4 Sub-task 3 — platform fee accounting layer.
   // Default 30 bps (= 0.3%) is the operator-chosen starting point;
   // override via PLATFORM_FEE_BPS. Per-key override is in
@@ -202,6 +208,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     capabilityDiscoveryIntervalMs: env.CAPABILITY_DISCOVERY_INTERVAL_MS,
     healthCheckIntervalMs: env.HEALTH_CHECK_INTERVAL_MS,
     metricsRefreshIntervalMs: env.METRICS_REFRESH_INTERVAL_MS,
+    catalogSyncIntervalMs: env.CATALOG_SYNC_INTERVAL_MS,
     platformFeeBps: env.PLATFORM_FEE_BPS,
     platformFeePayoutAddress: env.PLATFORM_FEE_PAYOUT_ADDRESS,
   });

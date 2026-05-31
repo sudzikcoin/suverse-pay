@@ -16,6 +16,7 @@ import { registerProvidersRoute } from "./routes/providers.js";
 import { registerQuoteRoute } from "./routes/quote.js";
 import { registerSettleRoute } from "./routes/settle.js";
 import { registerVerifyRoute } from "./routes/verify.js";
+import { registerAdminCatalogRoutes } from "./routes/admin-catalog.js";
 
 export interface BuildServerOptions {
   ctx: ServerContext;
@@ -67,6 +68,12 @@ export async function buildServer(
   registerPromMetricsRoute(app);
   registerFacilitatorRoutes(app, opts.ctx);
   registerMppRoutes(app, opts.ctx);
+  // Admin catalog routes need a real Postgres pool to query
+  // external_endpoints / external_catalog_runs. Skipped when the
+  // context omits the pool (test setups, mock-mode boots).
+  if (opts.ctx.pool !== undefined) {
+    registerAdminCatalogRoutes(app, opts.ctx);
+  }
 
   return app;
 }
