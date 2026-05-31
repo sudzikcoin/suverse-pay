@@ -35,6 +35,7 @@ import {
   type ProxyConfigStore,
   type ProxyOutcome,
 } from "./store.js";
+import { checkUpstreamHealth } from "./upstream-health.js";
 
 /** Headers we never forward to the upstream — they belong to the proxy. */
 const HOP_BY_HOP = new Set([
@@ -99,6 +100,13 @@ export interface HandleDeps {
   fetchImpl?: typeof fetch;
   /** Optional log sink — pino logger or console. */
   logger?: Pick<Console, "info" | "warn" | "error">;
+  /**
+   * Upstream health probe budget (ms). Only used when the incoming
+   * request carries no X-Payment header — once a buyer has decided
+   * to pay, we let the upstream call surface its own error rather
+   * than blocking on a probe.
+   */
+  healthCheckTimeoutMs?: number;
 }
 
 /** Result returned to the Fastify adapter — flattened for clarity. */
@@ -164,6 +172,39 @@ export async function handle(
       headers: { "content-type": "application/json" },
       outcome: "invalid_config",
     };
+  }
+
+  // Pre-charge upstream health probe. Only runs when the buyer
+  // hasn't sent payment yet — i.e. the request that would otherwise
+  // get a 402 challenge. If the buyer is already paying, we let
+  // runProtocol + the upstream call play out so they see real
+  // upstream errors (and the existing `outcome: "upstream_error"`
+  // logging) rather than getting blocked by a probe. HC3 will use
+  // this verdict to short-circuit to 503; for now we only log so
+  // operators can see probe results before behavior changes.
+  const noPaymentHeader =
+    args.paymentHeader === undefined || args.paymentHeader.trim() === "";
+  if (noPaymentHeader) {
+    const probe = await checkUpstreamHealth({
+      url: config.originalUrl,
+      fetchImpl,
+      ...(deps.healthCheckTimeoutMs !== undefined
+        ? { timeoutMs: deps.healthCheckTimeoutMs }
+        : {}),
+      ...(deps.logger ? { logger: deps.logger } : {}),
+    });
+    if (!probe.ok) {
+      deps.logger?.warn?.(
+        `proxy: upstream health probe failed config=${config.id} ` +
+          `url=${config.originalUrl} reason=${probe.reason ?? "?"} ` +
+          `status=${probe.status ?? "?"} latencyMs=${probe.latencyMs}`,
+      );
+    } else {
+      deps.logger?.info?.(
+        `proxy: upstream health ok config=${config.id} ` +
+          `status=${probe.status} method=${probe.method} latencyMs=${probe.latencyMs}`,
+      );
+    }
   }
 
   const middlewareOpts: MiddlewareOptions = {
