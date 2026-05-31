@@ -86,12 +86,12 @@ export function SettlesTable({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="px-6 py-3 text-left font-medium">When</th>
-                <th className="px-6 py-3 text-left font-medium">Network</th>
-                <th className="px-6 py-3 text-right font-medium">Amount</th>
-                <th className="px-6 py-3 text-right font-medium">Fee</th>
-                <th className="px-6 py-3 text-left font-medium">Status</th>
-                <th className="px-6 py-3 text-left font-medium">Tx</th>
+                <th className="px-3 py-3 text-left font-medium sm:px-6">When</th>
+                <th className="hidden px-3 py-3 text-left font-medium sm:table-cell sm:px-6">Network</th>
+                <th className="px-3 py-3 text-right font-medium sm:px-6">Amount</th>
+                <th className="hidden px-3 py-3 text-right font-medium md:table-cell md:px-6">Fee</th>
+                <th className="px-3 py-3 text-left font-medium sm:px-6">Status</th>
+                <th className="hidden px-3 py-3 text-left font-medium lg:table-cell lg:px-6">Tx</th>
               </tr>
             </thead>
             <tbody>
@@ -114,23 +114,28 @@ function SettleTr({ row }: { row: SettleRow }): React.JSX.Element {
   // un-scaled — Phase 5 carry-over to extend the payment row).
   return (
     <tr className="border-t border-border/50 transition-colors hover:bg-secondary/40">
-      <td className="px-6 py-3 text-muted-foreground">
-        {formatRelativeTime(new Date(row.createdAt))}
+      <td className="px-3 py-3 text-muted-foreground sm:px-6">
+        <div>{formatRelativeTime(new Date(row.createdAt))}</div>
+        {/* Mobile-only inline network label — surfaces the network
+            when the dedicated column is hidden on small screens. */}
+        <div className="mt-0.5 text-[10px] text-muted-foreground/80 sm:hidden">
+          {networkLabel(row.network)}
+        </div>
       </td>
-      <td className="px-6 py-3">{networkLabel(row.network)}</td>
-      <td className="px-6 py-3 text-right font-mono text-foreground">
+      <td className="hidden px-3 py-3 sm:table-cell sm:px-6">{networkLabel(row.network)}</td>
+      <td className="px-3 py-3 text-right font-mono text-foreground sm:px-6">
         {formatUsd(row.amount, 6)}
       </td>
       <td
-        className="px-6 py-3 text-right font-mono text-xs text-muted-foreground"
+        className="hidden px-3 py-3 text-right font-mono text-xs text-muted-foreground md:table-cell md:px-6"
         title="Platform fee withheld at accounting level (out-of-band collection — see invoice export)"
       >
         {row.feeAmount === "0" ? "—" : formatUsd(row.feeAmount, 6)}
       </td>
-      <td className="px-6 py-3">
+      <td className="px-3 py-3 sm:px-6">
         <StatusBadge status={row.status} />
       </td>
-      <td className="px-6 py-3 font-mono text-xs text-muted-foreground">
+      <td className="hidden px-3 py-3 font-mono text-xs text-muted-foreground lg:table-cell lg:px-6">
         {row.txHash ? (
           url ? (
             <a
