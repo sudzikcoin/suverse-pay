@@ -284,4 +284,180 @@ describe("handle", () => {
     // Body forwarded verbatim.
     expect(upstreamInit).toMatchObject({ method: "POST" });
   });
+
+  it("returns 503 upstream_unavailable when probe sees HEAD 503", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        return new Response(null, { status: 503 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({ fetchImpl: fetchMock });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(503);
+    expect(result.outcome).toBe("upstream_error");
+    const body = result.body as { error: string; reason: string; upstreamStatus?: number };
+    expect(body.error).toBe("upstream_unavailable");
+    expect(body.reason).toBe("upstream_5xx");
+    expect(body.upstreamStatus).toBe(503);
+    expect(result.headers["retry-after"]).toBe("30");
+    // The facilitator's /supported endpoint must NOT have been called —
+    // we short-circuit before runProtocol when the probe fails.
+    expect(
+      fetchMock.mock.calls.some(([u]) => String(u).endsWith("/facilitator/supported")),
+    ).toBe(false);
+  });
+
+  it("returns 503 upstream_unavailable when probe hits a network error", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        throw new TypeError("fetch failed");
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({ fetchImpl: fetchMock });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(503);
+    expect(result.outcome).toBe("upstream_error");
+    const body = result.body as { reason: string };
+    expect(body.reason).toBe("network_error");
+  });
+
+  it("emits 402 (not 503) when probe sees HEAD 404 — endpoint gated, server alive", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        return new Response(null, { status: 404 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({ fetchImpl: fetchMock });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(402);
+    expect(result.outcome).toBe("challenge");
+  });
+
+  it("skips the probe entirely when X-Payment is present", async () => {
+    // No HEAD handler in the mock — if the probe ran, the test would
+    // throw "unexpected fetch: HEAD ...".
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: false, invalidReason: "test_only" }),
+          { status: 200 },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({ fetchImpl: fetchMock });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "test-idem-skip",
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    // The verify mock rejects, so the protocol comes back as "rejected"
+    // → 402, not 503. The key assertion is that no HEAD probe fired.
+    expect(result.status).toBe(402);
+    const headCalls = fetchMock.mock.calls.filter(
+      ([_url, init]) => (init as { method?: string } | undefined)?.method === "HEAD",
+    );
+    expect(headCalls.length).toBe(0);
+  });
+
+  it("respects healthCheckTimeoutMs from deps", async () => {
+    // Slow upstream HEAD that resolves after 200ms; budget is 50ms.
+    const fetchMock = vi.fn().mockImplementation(
+      (_url: string, init: { signal?: AbortSignal; method?: string }) => {
+        if (init.method !== "HEAD") throw new Error("unexpected method");
+        return new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => {
+            const e = new Error("aborted");
+            e.name = "AbortError";
+            reject(e);
+          });
+        });
+      },
+    );
+    const deps = makeDeps({ fetchImpl: fetchMock, healthCheckTimeoutMs: 50 });
+    const t0 = Date.now();
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    const elapsed = Date.now() - t0;
+    expect(result.status).toBe(503);
+    expect((result.body as { reason: string }).reason).toBe("timeout");
+    // Must not have waited the default 3s.
+    expect(elapsed).toBeLessThan(2_000);
+  });
 });
