@@ -93,6 +93,33 @@ describe("buildChallenge", () => {
     const body = await buildChallenge(BASE_OPTS, "https://x", "bad_sig");
     expect(body.error).toBe("bad_sig");
   });
+  it("passes arbitrary EVM CAIP-2 networks through unchanged (e.g. SKALE Base)", async () => {
+    // Pins the contract: the middleware is network-agnostic and never
+    // whitelists a hardcoded set of CAIP-2 ids. Adding a chain anywhere
+    // upstream (signer-evm domains.ts, facilitator routing) must NOT
+    // require a code change here.
+    const body = await buildChallenge(
+      {
+        ...BASE_OPTS,
+        acceptedPayments: [
+          {
+            scheme: "exact",
+            network: "eip155:1187947933", // SKALE Base mainnet
+            asset: "0x85889c8c714505E0c94b30fcfcF64fE3Ac8FCb20",
+            payTo: "0x260fbe1ec46968ee02e5b972507d7bb7f09f82b0",
+            maxAmountRequired: "70000",
+          },
+        ],
+      },
+      "https://api.example/paid",
+    );
+    expect(body.accepts).toHaveLength(1);
+    expect(body.accepts[0]!.network).toBe("eip155:1187947933");
+    expect(body.accepts[0]!.asset).toBe(
+      "0x85889c8c714505E0c94b30fcfcF64fE3Ac8FCb20",
+    );
+    expect(body.accepts[0]!.amount).toBe("70000");
+  });
   it("honours an explicit x402Version=1", async () => {
     const body = await buildChallenge(
       { ...BASE_OPTS, x402Version: 1 },
