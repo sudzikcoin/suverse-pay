@@ -291,6 +291,45 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
       verifyingContract: "0x176211869cA2b568f2A7D4EE941E073a821EE1ff",
       decimals: 6,
     },
+    // ---- Phase 5 Sub-task 7: SKALE Base ------------------------------
+    // SKALE Base is the SKALE L3 deployed atop Coinbase Base L2. Bridged
+    // USDC reaches it via the SKALE Bridge (a.k.a. IMA — Interchain
+    // Messaging Agent), so the on-chain name() returns "Bridged USDC
+    // (SKALE Bridge)" — the parens and inner words are part of the
+    // EIP-712 domain string. Verified 2026-05-31 via eth_call against
+    // https://skale-base.skalenodes.com/v1/base:
+    //   name()    → "Bridged USDC (SKALE Bridge)"
+    //   symbol()  → "USDC.e"
+    //   version() → "2"
+    //   decimals()→ 6
+    //   TRANSFER_WITH_AUTHORIZATION_TYPEHASH() returns the canonical
+    //   EIP-3009 typehash; authorizationState(addr,nonce) is callable.
+    // Gas on this L3 is CREDIT (operator pre-pays in USDC or SKL),
+    // settlement is fully gasless for sellers. Routed through PayAI
+    // — see services/facilitator/src/routing-config.ts. BITE V2 is the
+    // chain's encryption protocol layer, not a separate chain.
+    {
+      symbol: "USDC.e",
+      name: "Bridged USDC (SKALE Bridge)",
+      version: "2",
+      chainId: 1187947933,
+      verifyingContract: "0x85889c8c714505E0c94b30fcfcF64fE3Ac8FCb20",
+      decimals: 6,
+    },
+    // SKALE Base Sepolia (testnet) — chainId 324705682. Same on-chain
+    // shape as mainnet ("Bridged USDC (SKALE Bridge)" / version "2"),
+    // verified via eth_call against base-sepolia-testnet.skalenodes.com.
+    // Faucet at https://base-sepolia-faucet.skale.space drips CREDIT
+    // for gas; test USDC.e is minted via the SKALE Bridge testnet UI.
+    {
+      symbol: "USDC.e",
+      name: "Bridged USDC (SKALE Bridge)",
+      version: "2",
+      chainId: 324705682,
+      verifyingContract: "0x2e08028E3C4c2356572E096d8EF835cD5C6030bD",
+      decimals: 6,
+    },
+
     // ---- Sub-task 9: Tempo (Stripe's payments-focused L1) ----------
     // Tempo is the canonical settlement chain for Stripe's Machine
     // Payments Protocol (MPP). EVM-compatible, EIP-155 chainId 4217
@@ -336,27 +375,29 @@ const DOMAIN_TABLE: Record<DomainKey, EvmTokenDomain> = (() => {
 })();
 
 export const SUPPORTED_CHAIN_IDS = [
-  1,       // Ethereum mainnet
-  10,      // Optimism mainnet
-  50,      // XDC
-  137,     // Polygon
-  143,     // Monad mainnet
-  146,     // Sonic
-  480,     // World Chain mainnet
-  1329,    // Sei mainnet
-  2741,    // Abstract (Bridged USDC Stargate)
-  4689,    // IoTeX (Bridged USDC)
-  4801,    // World Sepolia
-  8453,    // Base mainnet
-  42161,   // Arbitrum mainnet
-  42220,   // Celo
-  43113,   // Avalanche Fuji
-  43114,   // Avalanche C-Chain mainnet
-  4217,    // Tempo mainnet (Sub-task 9)
-  57073,   // Ink
-  59144,   // Linea
-  84532,   // Base Sepolia
-  421614,  // Arbitrum Sepolia
+  1,           // Ethereum mainnet
+  10,          // Optimism mainnet
+  50,          // XDC
+  137,         // Polygon
+  143,         // Monad mainnet
+  146,         // Sonic
+  480,         // World Chain mainnet
+  1329,        // Sei mainnet
+  2741,        // Abstract (Bridged USDC Stargate)
+  4689,        // IoTeX (Bridged USDC)
+  4801,        // World Sepolia
+  8453,        // Base mainnet (Coinbase L2)
+  42161,       // Arbitrum mainnet
+  42220,       // Celo
+  43113,       // Avalanche Fuji
+  43114,       // Avalanche C-Chain mainnet
+  4217,        // Tempo mainnet (Sub-task 9)
+  57073,       // Ink
+  59144,       // Linea
+  84532,       // Base Sepolia
+  324705682,   // SKALE Base Sepolia (testnet)
+  421614,      // Arbitrum Sepolia
+  1187947933,  // SKALE Base mainnet (L3 on Coinbase Base)
 ] as const;
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
 

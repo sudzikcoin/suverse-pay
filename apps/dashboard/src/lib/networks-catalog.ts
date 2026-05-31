@@ -54,12 +54,25 @@ export const NETWORKS_CATALOG: readonly NetworkEntry[] = [
   // ---- EVM mainnets ------------------------------------------------
   {
     caip2: "eip155:8453",
-    label: "Base",
+    label: "Base (Coinbase L2)",
     namespace: "evm",
     usdcAsset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     usdcDecimals: 6,
     recommended: true,
     hint: "cheapest gas, sponsored by CDP",
+  },
+  // SKALE Base — Phase 5 Sub-task 7. L3 chain on top of Coinbase Base
+  // (eip155:8453 above); different chain entirely. USDC.e is the SKALE
+  // Bridge-issued USDC. End-user UX is gasless (the L3 uses a CREDIT
+  // model where the facilitator pre-pays compute). Routed via PayAI
+  // only — no failover until another facilitator picks up SKALE Base.
+  {
+    caip2: "eip155:1187947933",
+    label: "SKALE Base",
+    namespace: "evm",
+    usdcAsset: "0x85889c8c714505E0c94b30fcfcF64fE3Ac8FCb20",
+    usdcDecimals: 6,
+    hint: "zero gas fees — gasless UX via SKALE L3",
   },
   {
     caip2: "eip155:137",
@@ -135,6 +148,15 @@ export const NETWORKS_CATALOG: readonly NetworkEntry[] = [
     usdcDecimals: 6,
     testnet: true,
     hint: "for testing — CDP minimum 1000 atomic ($0.001)",
+  },
+  {
+    caip2: "eip155:324705682",
+    label: "SKALE Base Sepolia",
+    namespace: "evm",
+    usdcAsset: "0x2e08028E3C4c2356572E096d8EF835cD5C6030bD",
+    usdcDecimals: 6,
+    testnet: true,
+    hint: "faucet: base-sepolia-faucet.skale.space",
   },
 
   // ---- Non-EVM mainnets --------------------------------------------
