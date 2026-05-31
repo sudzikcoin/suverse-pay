@@ -242,10 +242,24 @@ export class MppAdapter implements MppFacilitatorAdapter {
 }
 
 /**
- * Default capability set the MppAdapter advertises out of the box:
- * tempo+charge on mainnet for Bridged USDC, plus stripe+charge for
- * fiat via SPT. Sessions + subscriptions deferred until Stripe
- * publishes the REST surface.
+ * Default capability set the MppAdapter advertises out of the box.
+ *
+ * v1 (Phase 2): tempo+charge on Tempo mainnet (Bridged USDC) and
+ * Tempo Moderato testnet. The Moderato entry is the one Phase 2 T6
+ * actually wires verify/settle for, via direct JSON-RPC. Mainnet
+ * advertises because the wire format is valid and Phase 5 will wire
+ * settle through Stripe's REST surface when it's published.
+ *
+ * NOT in v1:
+ *   - `method: "stripe"` (fiat via SPT) — Stripe has not published
+ *     the REST surface for MPP yet (as of 2026-05-29). Restore the
+ *     entry when Stripe opens the API.
+ *   - `intent: "subscription"` / `intent: "session"` — same blocker;
+ *     Phase 2 T4 also guards verify/settle against non-charge intents.
+ *
+ * The `MPP_METHODS` / `MPP_INTENTS` constants in `./types.ts` keep
+ * the full spec values for forward-compat parsing of challenges
+ * emitted by other facilitators.
  */
 function defaultCapabilities(): MppCapability[] {
   return [
@@ -259,13 +273,6 @@ function defaultCapabilities(): MppCapability[] {
       method: "tempo",
       intent: "charge",
       network: TEMPO_MODERATO_CAIP2,
-    },
-    {
-      method: "stripe",
-      intent: "charge",
-      // Stripe's fiat track — the asset is not a CAIP-2 address but a
-      // currency code; we leave both undefined to signal "Stripe
-      // routes via SPT, see the credential payload".
     },
   ];
 }

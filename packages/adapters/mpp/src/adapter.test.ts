@@ -51,10 +51,10 @@ describe("MppAdapter basics", () => {
     expect(a.displayName).toBe("Machine Payments Protocol");
   });
 
-  it("getCapabilities returns Tempo (mainnet + Moderato) + Stripe SPT entries by default", () => {
+  it("getCapabilities returns Tempo mainnet + Moderato entries by default; no stripe in v1", () => {
     const a = new MppAdapter();
     const caps = a.getCapabilities();
-    expect(caps.length).toBeGreaterThanOrEqual(3);
+    expect(caps).toHaveLength(2);
     const tempoMainCharge = caps.find(
       (c) => c.method === "tempo" && c.intent === "charge" && c.network === TEMPO_MAINNET_CAIP2,
     );
@@ -63,10 +63,14 @@ describe("MppAdapter basics", () => {
       (c) => c.method === "tempo" && c.intent === "charge" && c.network === TEMPO_MODERATO_CAIP2,
     );
     expect(tempoModerato).toBeDefined();
+    // Phase 2 T3: stripe method dropped from v1 default capabilities —
+    // Stripe has not published the MPP REST surface, so advertising
+    // stripe+charge would route into the endpoint-not-wired error path.
+    // Restore when Stripe opens the API.
     const stripeSpt = caps.find(
       (c) => c.method === "stripe" && c.intent === "charge",
     );
-    expect(stripeSpt).toBeDefined();
+    expect(stripeSpt).toBeUndefined();
   });
 
   it("accepts a custom capability list", () => {
