@@ -163,10 +163,14 @@ describe("handle", () => {
   it("emits a 402 challenge when no payment header present", async () => {
     // Inject a fetchImpl that the facilitator's discover-extras call
     // sees first. Return an empty `accepts` so buildChallenge skips
-    // the merge.
-    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+    // the merge. Also satisfy the pre-charge upstream health probe
+    // with a HEAD 200 from the upstream URL.
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
       if (url.endsWith("/facilitator/supported")) {
         return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        return new Response(null, { status: 200 });
       }
       throw new Error(`unexpected fetch: ${url}`);
     });

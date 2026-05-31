@@ -179,9 +179,7 @@ export async function handle(
   // get a 402 challenge. If the buyer is already paying, we let
   // runProtocol + the upstream call play out so they see real
   // upstream errors (and the existing `outcome: "upstream_error"`
-  // logging) rather than getting blocked by a probe. HC3 will use
-  // this verdict to short-circuit to 503; for now we only log so
-  // operators can see probe results before behavior changes.
+  // logging) rather than getting blocked by a probe.
   const noPaymentHeader =
     args.paymentHeader === undefined || args.paymentHeader.trim() === "";
   if (noPaymentHeader) {
@@ -199,12 +197,33 @@ export async function handle(
           `url=${config.originalUrl} reason=${probe.reason ?? "?"} ` +
           `status=${probe.status ?? "?"} latencyMs=${probe.latencyMs}`,
       );
-    } else {
-      deps.logger?.info?.(
-        `proxy: upstream health ok config=${config.id} ` +
-          `status=${probe.status} method=${probe.method} latencyMs=${probe.latencyMs}`,
-      );
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "upstream_error",
+        upstreamStatus: probe.status ?? null,
+        upstreamLatencyMs: probe.latencyMs,
+        errorCode: `upstream_health_${probe.reason ?? "unknown"}`,
+        ipHash,
+      });
+      return {
+        status: 503,
+        body: {
+          error: "upstream_unavailable",
+          reason: probe.reason ?? "unknown",
+          ...(probe.status !== undefined ? { upstreamStatus: probe.status } : {}),
+        },
+        headers: {
+          "content-type": "application/json",
+          "retry-after": "30",
+        },
+        outcome: "upstream_error",
+      };
     }
+    deps.logger?.info?.(
+      `proxy: upstream health ok config=${config.id} ` +
+        `status=${probe.status} method=${probe.method} latencyMs=${probe.latencyMs}`,
+    );
   }
 
   const middlewareOpts: MiddlewareOptions = {
