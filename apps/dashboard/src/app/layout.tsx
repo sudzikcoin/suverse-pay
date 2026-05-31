@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import "./globals.css";
 
 const inter = Inter_Tight({
@@ -58,6 +59,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${jbm.variable} dark`}>
       <body className="min-h-screen bg-background font-sans text-foreground grain">
         <Providers>{children}</Providers>
+        <MobileBottomNav />
       </body>
     </html>
   );

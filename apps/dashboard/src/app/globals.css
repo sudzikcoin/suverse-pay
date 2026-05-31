@@ -72,6 +72,29 @@
 }
 
 @layer components {
+  /* PWA-only bottom-nav gate. Display-mode media query is the
+     canonical way to detect "Add to Home Screen" / standalone mode —
+     no JS sniffing required. Hidden by default; revealed when the
+     UA reports standalone (iOS Safari, Chrome PWA, etc).
+     Visibility for the in-browser case is also gated by Tailwind
+     `md:hidden` at the call site. */
+  .pwa-standalone-only {
+    display: none;
+  }
+  @media (display-mode: standalone) {
+    .pwa-standalone-only {
+      display: block;
+    }
+  }
+  /* When the bottom nav is visible, push page content above it so
+     scrollable surfaces aren't clipped by the bar. 56px nav + safe
+     area bottom inset; iOS draws home-indicator inside the inset. */
+  @media (display-mode: standalone) {
+    body {
+      padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    }
+  }
+
   /* Subtle grain overlay on dark mode — adds depth without theatre. */
   .grain::before {
     content: "";
