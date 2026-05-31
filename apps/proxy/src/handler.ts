@@ -380,6 +380,31 @@ export async function handle(
   };
 }
 
+// Per-VM `scheme` declaration the proxy emits in 402 challenges.
+// Cosmos pays through an authz Exec dispatched by the facilitator's
+// grantee — the only x402 scheme cosmos-pay routes today is
+// `exact_cosmos_authz`, and both the buyer SDK's Cosmos signer and the
+// facilitator's routing table reject any other value. EVM, Solana,
+// and TRON all use the plain `exact` scheme.
+//
+// `AcceptedPayment.scheme` from `@suverselabs/x402-server` is typed as
+// the literal `"exact"` in the published v1 (the middleware itself
+// never branches on scheme; it just round-trips the string into the
+// 402 body and the facilitator routes on the resulting tuple). Cast
+// the per-VM values to that narrower type at the boundary instead of
+// widening the published library — the cast is invisible at runtime
+// and surfaces the constraint in one place if we ever bump the lib's
+// scheme union.
+const SCHEME_BY_NAMESPACE: Record<
+  "evm" | "solana" | "cosmos" | "tron",
+  AcceptedPayment["scheme"]
+> = {
+  evm: "exact",
+  solana: "exact",
+  cosmos: "exact_cosmos_authz" as AcceptedPayment["scheme"],
+  tron: "exact",
+};
+
 function buildAcceptedPayments(config: ProxyConfigRow): AcceptedPayment[] {
   const out: AcceptedPayment[] = [];
   for (const caip2 of config.acceptedNetworks) {
@@ -397,7 +422,7 @@ function buildAcceptedPayments(config: ProxyConfigRow): AcceptedPayment[] {
         : null;
     if (!payTo) continue;
     out.push({
-      scheme: "exact",
+      scheme: SCHEME_BY_NAMESPACE[entry.namespace],
       network: entry.caip2,
       asset: entry.usdcAsset,
       payTo,

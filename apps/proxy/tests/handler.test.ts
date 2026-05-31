@@ -197,6 +197,51 @@ describe("handle", () => {
     expect(result.headers["payment-required"]).toMatch(/^[A-Za-z0-9+/=]+$/);
   });
 
+  it("emits Cosmos challenges with scheme exact_cosmos_authz, EVM with exact", async () => {
+    // The proxy used to hardcode scheme="exact" for every accept.
+    // Cosmos verify/settle through cosmos-pay only routes
+    // "exact_cosmos_authz" — sellers configuring a Cosmos network on
+    // their proxy hit a dead-end facilitator route until the per-VM
+    // mapping landed. Buyer SDK Cosmos signer also rejects "exact".
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        return new Response(null, { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({
+      store: makeStore(
+        makeConfig({
+          acceptedNetworks: ["eip155:8453", "cosmos:noble-1"],
+          payToCosmos: "noble1z5g7vts3pfjsgschfjrhq5s3ze6etxjl5lj2rj",
+        }),
+      ),
+      fetchImpl: fetchMock,
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(402);
+    const body = result.body as { accepts: Array<{ scheme: string; network: string }> };
+    const byNet = Object.fromEntries(body.accepts.map((a) => [a.network, a.scheme]));
+    expect(byNet["eip155:8453"]).toBe("exact");
+    expect(byNet["cosmos:noble-1"]).toBe("exact_cosmos_authz");
+  });
+
   it("forwards upstream + attaches PAYMENT-RESPONSE on settled", async () => {
     // Stub facilitator: discover-extras → no extras; verify → isValid;
     // settle → success with a tx hash.
