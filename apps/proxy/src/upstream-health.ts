@@ -53,6 +53,24 @@ const DEFAULT_TIMEOUT_MS = 3_000;
 /** Statuses that mean "this upstream doesn't speak HEAD — try GET". */
 const HEAD_REFUSED_STATUSES = new Set([405, 501]);
 
+/**
+ * Policy: 4xx responses count as healthy.
+ *
+ * The probe is an unauthenticated HEAD against the seller's
+ * configured upstream URL. Real buyer calls carry the seller's
+ * encrypted forward-headers (API key, signed JWT, …) which the probe
+ * doesn't have. So a 401/403/404 against the bare URL is the
+ * *expected* response from a live, gated endpoint. Promoting any of
+ * those to "down" would block payments for every API that gates
+ * authentication at the door — i.e. almost all of them.
+ *
+ * 5xx is the only status range we treat as unhealthy. 1xx/2xx/3xx
+ * obviously pass.
+ */
+export function isHealthyStatus(status: number): boolean {
+  return status < 500 || status > 599;
+}
+
 export async function checkUpstreamHealth(
   args: CheckUpstreamHealthArgs,
 ): Promise<HealthCheckResult> {
@@ -97,7 +115,7 @@ export async function checkUpstreamHealth(
     await drainBody(response);
 
     const latencyMs = Date.now() - start;
-    if (response.status >= 500 && response.status <= 599) {
+    if (!isHealthyStatus(response.status)) {
       args.logger?.warn?.(
         `proxy: upstream health 5xx url=${args.url} status=${response.status}`,
       );
