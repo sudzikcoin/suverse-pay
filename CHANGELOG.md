@@ -8,6 +8,74 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
+### Milestone — First customer-facing x402 settle LIVE (2026-05-31)
+
+CoinGecko BTC/ETH price feed
+(`https://proxy.suverse.io/v1/proxy/reskey_1166628d/prices`) is the
+first real third-party API running behind the self-serve proxy.
+End-to-end demonstrated via the published
+`@suverselabs/x402-client@0.1.0` buyer SDK against a Base test
+wallet: **8 real on-chain settles** during the e2e run, all
+`status=settled` in `facilitator_payments`, all via the
+`coinbase-cdp` adapter, 30 bps platform fee withheld on each row.
+Sample tx `0x8545493152fa96690f1e8820b0bd2e8c1820965be7f8476afda3e650214066b4`
+on Base block 46709749. The same run surfaced + fixed two header
+bugs in the proxy and one persistence bug in the CDP adapter,
+documented in the next two entries.
+
+### Fixed — Proxy header hygiene on upstream + downstream
+
+Two header bugs found together during the CoinGecko milestone test,
+both rooted in headers that were correct at one hop but wrong at
+the next:
+
+- **Upstream request**: nginx adds `x-forwarded-for`,
+  `x-forwarded-proto`, `x-forwarded-host`, and `x-real-ip` on every
+  inbound request and `apps/proxy` was forwarding them verbatim to
+  the upstream API. Cloudflare-fronted APIs (CoinGecko among them)
+  read those headers as a "double-proxied" bot signal and return
+  403 with no body. All four now terminate at the proxy edge via
+  `HOP_BY_HOP`.
+- **Downstream response**: undici's `Response.arrayBuffer()` returns
+  the *decoded* body, so by the time `apps/proxy` shipped it the
+  upstream's `Content-Encoding` (`br` from CoinGecko) was a lie.
+  The buyer's undici client tried a second round of gunzip on plain
+  bytes, failed, and aborted the socket with the bare error
+  `terminated`. New `RESPONSE_STRIP` set drops `content-encoding` +
+  `content-length` (Fastify recomputes the latter from the actual
+  Buffer).
+
+Two new vitest cases in `apps/proxy/tests/handler.test.ts` pin each
+fix. 60/60 proxy tests green.
+
+### Fixed — `coinbase-cdp` adapter persists EIP-712 USDC extras
+
+The deeper bug behind the first CoinGecko-milestone reproducer
+(`502 Bad Gateway` → CDP responded `missing EIP-712 domain
+name/version in requirements.extra`). The adapter's
+`discoverCapabilities()` already passed CDP's per-kind `extra`
+through when CDP supplied it, but CDP's `/supported` response often
+omits `extra` for the EVM kinds. The adapter then persisted
+`extras_json = NULL` to `provider_capabilities`, the gateway's
+`/facilitator/supported` surfaced the kind without extras, the
+seller's `@suverselabs/x402-server@0.3.1` autodiscovery cached an
+empty value, and the buyer's 402 challenge for Base never carried
+the EIP-712 domain it needed to declare. The next paid request
+deadlocked at verify.
+
+New `EVM_USDC_EIP712_DOMAINS` lookup inside the adapter, keyed by
+`${caip2}|${assetLowercase}` for every Circle USDC contract the
+adapter declares statically — Base, Polygon, Arbitrum, Arbitrum
+Sepolia, Base Sepolia, World, World Sepolia. Values cross-checked
+against `packages/x402-client/src/network/chains.ts` (the
+buyer-side source of truth the buyer signs against; drift between
+the two would silently invalidate signatures). CDP-provided
+`extra` still wins when present — forward-compat for any future
+domain bump CDP announces. Restarting `apps/api` after deploy ran
+a fresh discovery and populated all 6 live EVM USDC rows with
+their correct `{name, version}`; self-healing on every restart
+from here. 59/59 CDP adapter tests + 59/59 apps/api tests green.
+
 ### Added — SKALE Base routing scaffolding (pending acceptance gate)
 
 End-to-end scaffolding for SKALE Base (`eip155:1187947933`) and
