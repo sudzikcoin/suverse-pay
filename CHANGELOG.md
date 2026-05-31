@@ -8,6 +8,22 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
+### Added — Self-serve proxy: pre-charge upstream health check
+
+Before the self-serve proxy hands a buyer a 402 challenge, it now
+probes the configured upstream URL with an unauthenticated `HEAD`
+(falling back to `GET` if the upstream returns 405 / 501). 1xx /
+2xx / 3xx / 4xx all count as healthy — a 401 / 403 / 404 just
+means the endpoint is auth-gated, not down. 5xx, network errors,
+DNS failures, and timeouts return `503 upstream_unavailable` with
+`retry-after: 30` and a structured body identifying the failure
+mode (`upstream_5xx`, `network_error`, `timeout`). Requests that
+already carry an `X-Payment` header skip the probe entirely so the
+real settlement attempt isn't blocked by a flake. Tunable via
+`HEALTH_CHECK_TIMEOUT_MS` env (default 3000ms). The new
+`@suverse-pay/proxy` README (`apps/proxy/README.md`) documents the
+full request flow and the status-policy table.
+
 ### Changed — MPP Phase 2 T1+T2 — adapter rename to generic shape
 
 The adapter formerly known as `@suverse-pay/adapter-mpp-stripe` /
