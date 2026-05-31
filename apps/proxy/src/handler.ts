@@ -27,10 +27,12 @@ import type {
   MiddlewareOptions,
 } from "@suverselabs/x402-server";
 import type { Pool } from "pg";
+import { buildBazaarExtension } from "./bazaar.js";
 import { decryptHeaders } from "./crypto.js";
 import { lookupNetwork } from "./networks.js";
 import {
   logProxyRequest,
+  type CatalogBazaarStore,
   type ProxyConfigRow,
   type ProxyConfigStore,
   type ProxyOutcome,
@@ -101,6 +103,13 @@ export interface HandleResult {
 
 export interface HandleDeps {
   store: ProxyConfigStore;
+  /**
+   * Catalog metadata lookup for the bazaar discovery extension.
+   * Optional — when absent, the 402 challenge omits
+   * `extensions.bazaar` entirely (CDP's crawler then skips the
+   * route, which is the right outcome for an un-cataloged proxy).
+   */
+  catalogStore?: CatalogBazaarStore;
   pool: Pool;
   masterKey: Buffer;
   facilitatorUrl: string;
@@ -236,6 +245,26 @@ export async function handle(
     );
   }
 
+  // Bazaar discovery extension — read from the catalog listing if
+  // this proxy has an approved one. Cached in-process; one DB hit
+  // per 60s per endpoint URL. Failure is non-fatal: the 402 is still
+  // served, CDP's crawler just won't catalog the route.
+  let bazaarExtension: Record<string, unknown> | undefined;
+  if (deps.catalogStore) {
+    try {
+      const catalogRow = await deps.catalogStore.lookup(args.resourceUrl);
+      if (catalogRow) {
+        const ext = buildBazaarExtension(catalogRow);
+        if (ext) bazaarExtension = ext;
+      }
+    } catch (err) {
+      deps.logger?.warn?.(
+        `proxy: catalog bazaar lookup failed for ${args.resourceUrl}`,
+        err,
+      );
+    }
+  }
+
   const middlewareOpts: MiddlewareOptions = {
     apiKey: deps.facilitatorApiKey,
     facilitator: deps.facilitatorUrl,
@@ -245,6 +274,7 @@ export async function handle(
     settle: true,
     fetchImpl,
     logger: deps.logger,
+    ...(bazaarExtension !== undefined ? { extensions: bazaarExtension } : {}),
   };
 
   const protocol = await runProtocol({

@@ -650,4 +650,90 @@ describe("handle", () => {
     // Must not have waited the default 3s.
     expect(elapsed).toBeLessThan(2_000);
   });
+
+  it("attaches extensions.bazaar to the 402 when catalog lookup returns a row", async () => {
+    // Pins the wiring from CatalogBazaarStore → buildBazaarExtension →
+    // MiddlewareOptions.extensions → ChallengeBody.extensions. Without
+    // this, the Coinbase Bazaar crawler can't catalog the proxy URL.
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        return new Response(null, { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const fakeCatalogStore = {
+      lookup: vi.fn().mockResolvedValue({
+        description: "Weather for NYC",
+        tags: ["weather", "forecast"],
+        outputExample: { temp_f: 72 },
+        method: "GET" as const,
+      }),
+      invalidate: vi.fn(),
+    } as unknown as HandleDeps["catalogStore"];
+    const deps = makeDeps({
+      store: makeStore(makeConfig({ originalMethod: "GET" })),
+      catalogStore: fakeCatalogStore,
+      fetchImpl: fetchMock,
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "GET",
+        resourceUrl: "https://proxy.suverse.io/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(402);
+    const body = result.body as { extensions?: { bazaar?: { info: unknown; schema: unknown } } };
+    expect(body.extensions).toBeDefined();
+    expect(body.extensions?.bazaar).toBeDefined();
+    expect(body.extensions?.bazaar?.info).toBeDefined();
+    expect(body.extensions?.bazaar?.schema).toBeDefined();
+  });
+
+  it("omits extensions when no catalog row matches (un-approved proxy)", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        return new Response(null, { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const fakeCatalogStore = {
+      lookup: vi.fn().mockResolvedValue(null),
+      invalidate: vi.fn(),
+    } as unknown as HandleDeps["catalogStore"];
+    const deps = makeDeps({
+      catalogStore: fakeCatalogStore,
+      fetchImpl: fetchMock,
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy.suverse.io/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(402);
+    const body = result.body as { extensions?: unknown };
+    expect(body.extensions).toBeUndefined();
+  });
 });
