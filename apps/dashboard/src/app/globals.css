@@ -71,6 +71,47 @@
   }
 }
 
+@layer base {
+  /* iOS Safari behaviour polish.
+   *
+   * scroll-behavior: smooth — in-page anchor jumps glide rather
+   *   than snap. Honoured by Safari iOS 15.4+.
+   *
+   * overscroll-behavior: none — kills the rubber-band overscroll
+   *   on the root scroller so the page edges feel like a native
+   *   app instead of a browser document. Per-scroll-container
+   *   surfaces (e.g. tables w/ horizontal scroll) keep their
+   *   default `auto` so users can still flick within them.
+   *
+   * -webkit-text-size-adjust: 100% — stops mobile Safari from
+   *   silently enlarging body text on orientation change. Combined
+   *   with our 16px body font this prevents iOS from prompting a
+   *   "tap to zoom" on input focus.
+   *
+   * -webkit-tap-highlight-color — replaces the default grey flash
+   *   on tap with a subtle amber tint matching our brand. The
+   *   foreground link colour pops without the harsh blue overlay.
+   */
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  html, body {
+    overscroll-behavior: none;
+  }
+  body {
+    -webkit-tap-highlight-color: rgba(251, 191, 36, 0.15);
+  }
+  /* Safe-area padding on the body — keeps top-of-page chrome below
+   * the iOS notch + status bar in standalone mode. No-op when env()
+   * is unavailable (most desktop browsers). Combined with the
+   * standalone-mode bottom padding above so notch + home indicator
+   * are both respected. */
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
 @layer components {
   /* PWA-only bottom-nav gate. Display-mode media query is the
      canonical way to detect "Add to Home Screen" / standalone mode —
