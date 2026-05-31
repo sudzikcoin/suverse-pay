@@ -8,34 +8,70 @@ import { cn } from "@/lib/utils";
 
 /**
  * Slide-in right-side drawer for mobile navigation. Hamburger trigger
- * lives in DashboardHeader (rendered only via Tailwind `md:hidden`),
- * the panel itself is a fixed-position fly-out so it covers content
- * without affecting layout.
+ * lives inside DashboardHeader (rendered only via Tailwind `md:hidden`).
+ * Panel is fixed-position so it covers content without affecting
+ * layout.
  *
  * Built CSS-first — no @radix-ui/dialog or other library. Escape +
  * backdrop click close. Body scroll is locked while open to match
  * native mobile patterns.
  *
- * Items are passed in from the server header so admin / mode state
- * gets computed once per request rather than re-fetched client-side.
+ * Nav-state fetch is LAZY (first open) — avoids a per-page GET when
+ * the user is on desktop. Fetch hits `/api/user/nav-state` which
+ * returns `{ isAdmin, mode }`. Server-only `auth()` lives there,
+ * NOT in DashboardHeader — the header must stay importable from
+ * `"use client"` files without dragging pg into the client bundle.
  */
 
-export interface NavItem {
-  href: string;
-  label: string;
-  /**
-   * Optional. When present, the item only shows up if the predicate
-   * evaluates truthy — used for the admin-only entry today.
-   */
-  show?: boolean;
+interface NavState {
+  isAdmin: boolean;
+  mode: "seller" | "buyer";
 }
 
-export function MobileNavDrawer({
-  items,
-}: {
-  items: ReadonlyArray<NavItem>;
-}): React.JSX.Element {
+interface NavItem {
+  href: string;
+  label: string;
+}
+
+function buildItems(state: NavState | null): ReadonlyArray<NavItem> {
+  // Default item set when nav-state hasn't loaded yet OR the user is
+  // anonymous (401 from /api/user/nav-state). Keeps the drawer
+  // useful even before the fetch resolves.
+  const base: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard/proxies", label: "Proxies" },
+    { href: "/dashboard/catalog", label: "Catalog" },
+    { href: "/dashboard/help", label: "Help" },
+  ];
+  if (!state) return base;
+  const out: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard/proxies", label: "Proxies" },
+    { href: "/dashboard/catalog", label: "Catalog" },
+  ];
+  if (state.mode === "buyer") {
+    out.push(
+      { href: "/dashboard/buyer", label: "Buyer · Overview" },
+      { href: "/dashboard/buyer/payments", label: "Buyer · Payments" },
+      { href: "/dashboard/buyer/wallets", label: "Buyer · Wallets" },
+      { href: "/dashboard/buyer/agent-keys", label: "Buyer · Agent keys" },
+      { href: "/dashboard/buyer/limits", label: "Buyer · Limits" },
+    );
+  }
+  out.push({ href: "/dashboard/help", label: "Help" });
+  if (state.isAdmin) {
+    out.push({
+      href: "/dashboard/admin/catalog",
+      label: "Admin · Catalog moderation",
+    });
+  }
+  return out;
+}
+
+export function MobileNavDrawer(): React.JSX.Element {
   const [open, setOpen] = useState(false);
+  const [state, setState] = useState<NavState | null>(null);
+  const [fetched, setFetched] = useState(false);
   const pathname = usePathname();
 
   // Close the drawer when navigating to a new route — otherwise the
@@ -60,7 +96,26 @@ export function MobileNavDrawer({
     };
   }, [open]);
 
-  const visible = items.filter((it) => it.show !== false);
+  // Lazy-fetch nav state on first open. Avoids a per-page GET on
+  // desktop where the drawer is never shown. Anonymous (401) falls
+  // back to the default item set.
+  useEffect(() => {
+    if (!open || fetched) return;
+    setFetched(true);
+    void (async (): Promise<void> => {
+      try {
+        const res = await fetch("/api/user/nav-state");
+        if (res.ok) {
+          const body = (await res.json()) as NavState;
+          setState(body);
+        }
+      } catch {
+        // Network blip — leave state null, default items shown.
+      }
+    })();
+  }, [open, fetched]);
+
+  const items = buildItems(state);
 
   return (
     <>
@@ -146,7 +201,7 @@ export function MobileNavDrawer({
 
         <nav className="flex-1 overflow-y-auto py-2">
           <ul>
-            {visible.map((item) => {
+            {items.map((item) => {
               const active =
                 pathname === item.href ||
                 (item.href !== "/dashboard" &&

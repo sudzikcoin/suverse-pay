@@ -1,32 +1,28 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin";
-import { getUserMode } from "@/lib/buyer";
-import { MobileNavDrawer, type NavItem } from "./mobile-nav-drawer";
+import { MobileNavDrawer } from "./mobile-nav-drawer";
 
 /**
  * Shared dashboard chrome header. Every internal page renders this
  * so the wordmark stays a guaranteed "back to /dashboard" affordance
  * and the breadcrumb tells the user where they are.
  *
- * Now an async server component — calls `auth()` itself to compute
- * the mobile-nav item list (admin link only when ADMIN_EMAILS matches,
- * buyer/seller-specific links by `preferred_mode`). Anonymous renders
- * are safe — the page that mounts the header would already have
- * redirected before getting here.
+ * Pure pass-through component — NO server-only imports. It's safe to
+ * import from `"use client"` files (e.g. /dashboard/keys/[id]/
+ * configure/view.tsx). Admin / buyer-mode state for the mobile nav
+ * drawer is fetched client-side by MobileNavDrawer itself via
+ * /api/user/nav-state — keeps the server/client boundary clean and
+ * avoids dragging `pg` (transitive via @/lib/auth → @/lib/db) into
+ * the client bundle.
  *
  * Layout:
- *   [wordmark] [breadcrumb — hidden <sm] ........ [right slot] [hamburger md:hidden]
- *
- * The hamburger reveals MobileNavDrawer which carries the same routes
- * the right-slot would have shown on desktop, plus Sign out.
+ *   [wordmark] [breadcrumb — hidden <sm] ........ [Help md+] [right slot] [hamburger md:hidden]
  */
 export interface BreadcrumbItem {
   label: string;
   href?: string;
 }
 
-export async function DashboardHeader({
+export function DashboardHeader({
   breadcrumb,
   right,
   sticky = false,
@@ -35,26 +31,7 @@ export async function DashboardHeader({
   right?: React.ReactNode;
   /** Sticky header — used on the long /configure form. */
   sticky?: boolean;
-}): Promise<React.JSX.Element> {
-  const session = await auth();
-  const email = session?.user?.email ?? null;
-  const userId = session?.user?.id ?? null;
-  const mode = userId ? await getUserMode(userId) : "seller";
-  const admin = isAdminEmail(email);
-
-  const navItems: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/dashboard/proxies", label: "Proxies" },
-    { href: "/dashboard/catalog", label: "Catalog" },
-    { href: "/dashboard/buyer", label: "Buyer", show: mode === "buyer" },
-    { href: "/dashboard/buyer/payments", label: "Buyer · Payments", show: mode === "buyer" },
-    { href: "/dashboard/buyer/wallets", label: "Buyer · Wallets", show: mode === "buyer" },
-    { href: "/dashboard/buyer/agent-keys", label: "Buyer · Agent keys", show: mode === "buyer" },
-    { href: "/dashboard/buyer/limits", label: "Buyer · Limits", show: mode === "buyer" },
-    { href: "/dashboard/help", label: "Help" },
-    { href: "/dashboard/admin/catalog", label: "Admin · Catalog moderation", show: admin },
-  ];
-
+}): React.JSX.Element {
   return (
     <header
       className={
@@ -108,12 +85,8 @@ export async function DashboardHeader({
           >
             Help
           </Link>
-          {/* Right-slot still rendered on md+ for desktop affordances
-              (ModeToggle, sign-out, per-page nav). On mobile we wrap
-              it in a flex so the ModeToggle (always present on the
-              dashboard landing) stays visible alongside the hamburger. */}
           {right}
-          <MobileNavDrawer items={navItems} />
+          <MobileNavDrawer />
         </div>
       </div>
     </header>
