@@ -479,6 +479,11 @@ describe("CoinbaseCdpAdapter healthCheck", () => {
 
 describe("CoinbaseCdpAdapter discoverCapabilities", () => {
   it("cross-joins discovered (scheme, network) pairs with configured assets", async () => {
+    // CDP omits per-kind `extra` here, so the adapter fills in the
+    // EIP-712 USDC DOMAIN from the on-chain values it knows for these
+    // exact (network, asset) pairs. Without that fallback, CDP itself
+    // would 400 the next verify with `missing EIP-712 domain
+    // name/version in requirements.extra`.
     const { fetch } = makeFetch([
       jsonResponse({
         kinds: [
@@ -490,8 +495,46 @@ describe("CoinbaseCdpAdapter discoverCapabilities", () => {
     const a = makeAdapter({ fetch });
     const caps = await a.discoverCapabilities();
     expect(caps).toEqual([
-      { network: "eip155:8453", asset: BASE_USDC_EVM, scheme: "exact" },
-      { network: "eip155:137", asset: POLYGON_USDC_EVM, scheme: "exact" },
+      {
+        network: "eip155:8453",
+        asset: BASE_USDC_EVM,
+        scheme: "exact",
+        extra: { name: "USD Coin", version: "2" },
+      },
+      {
+        network: "eip155:137",
+        asset: POLYGON_USDC_EVM,
+        scheme: "exact",
+        extra: { name: "USD Coin", version: "2" },
+      },
+    ]);
+  });
+
+  it("CDP-provided extra wins over the static EVM fallback", async () => {
+    // If CDP ever changes its mind about which EIP-712 domain to use
+    // (e.g. a contract upgrade bumps the version), trust the upstream
+    // value — that's the whole point of running discovery. The static
+    // map is the floor when CDP says nothing, not a ceiling.
+    const { fetch } = makeFetch([
+      jsonResponse({
+        kinds: [
+          {
+            scheme: "exact",
+            network: "eip155:8453",
+            extra: { name: "Some Future USDC Brand", version: "9" },
+          },
+        ],
+      }),
+    ]);
+    const a = makeAdapter({ fetch });
+    const caps = await a.discoverCapabilities();
+    expect(caps).toEqual([
+      {
+        network: "eip155:8453",
+        asset: BASE_USDC_EVM,
+        scheme: "exact",
+        extra: { name: "Some Future USDC Brand", version: "9" },
+      },
     ]);
   });
 
@@ -509,7 +552,12 @@ describe("CoinbaseCdpAdapter discoverCapabilities", () => {
     const a = makeAdapter({ fetch, logger: { warn } });
     const caps = await a.discoverCapabilities();
     expect(caps).toEqual([
-      { network: "eip155:8453", asset: BASE_USDC_EVM, scheme: "exact" },
+      {
+        network: "eip155:8453",
+        asset: BASE_USDC_EVM,
+        scheme: "exact",
+        extra: { name: "USD Coin", version: "2" },
+      },
     ]);
     expect(warn).toHaveBeenCalledTimes(2);
   });

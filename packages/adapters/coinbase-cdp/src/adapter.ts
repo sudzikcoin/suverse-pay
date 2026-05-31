@@ -32,6 +32,50 @@ const HEALTHCHECK_TIMEOUT_MS = 5_000;
 const DEFAULT_BASE_URL = "https://api.cdp.coinbase.com/platform/v2/x402";
 const DEFAULT_MONTHLY_HARD_CAP = 5_000;
 
+/**
+ * CDP's hosted facilitator requires the EIP-712 USDC `{name, version}`
+ * tuple to be set on `paymentRequirements.extra` for every EVM verify
+ * — without it CDP returns 400 `missing EIP-712 domain name/version in
+ * requirements.extra` and the seller's settle path dead-ends.
+ *
+ * CDP's own `/supported` response sometimes omits the per-kind `extra`
+ * for these networks. When that happens the adapter's discovery would
+ * persist `extras_json = NULL`, which propagates all the way through
+ * `/facilitator/supported` to the seller's middleware and the buyer's
+ * 402 challenge, and the next paid request fails verify. This map is
+ * the adapter-side fallback: keyed by `${caip2}|${assetLowercase}` for
+ * Circle (native + bridged) USDC, value is the on-chain DOMAIN
+ * separator the seller needs to declare.
+ *
+ * Values cross-checked against `packages/x402-client/src/network/chains.ts`
+ * — that file is the buyer-side source of truth and the buyer signs
+ * against these exact strings. Drift between the two would silently
+ * invalidate signatures, so add new chains in both files.
+ */
+const EVM_USDC_EIP712_DOMAINS: Readonly<Record<string, { name: string; version: string }>> = {
+  // Base mainnet — Circle native USDC
+  "eip155:8453|0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": { name: "USD Coin", version: "2" },
+  // Polygon mainnet — Circle native USDC
+  "eip155:137|0x3c499c542cef5e3811e1192ce70d8cc03d5c3359": { name: "USD Coin", version: "2" },
+  // Arbitrum One mainnet — Circle native USDC
+  "eip155:42161|0xaf88d065e77c8cc2239327c5edb3a432268e5831": { name: "USD Coin", version: "2" },
+  // Arbitrum Sepolia — Circle test USDC
+  "eip155:421614|0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d": { name: "USD Coin", version: "2" },
+  // Base Sepolia — Circle test USDC (different on-chain name than mainnet)
+  "eip155:84532|0x036cbd53842c5426634e7929541ec2318f3dcf7e": { name: "USDC", version: "2" },
+  // World Chain mainnet — bridged Circle USDC (same domain shape as Base Sepolia)
+  "eip155:480|0x79a02482a880bce3f13e09da970dc34db4cd24d1": { name: "USDC", version: "2" },
+  // World Chain Sepolia — bridged test USDC
+  "eip155:4801|0x66145f38cbac35ca6f1dfb4914df98f1614aea88": { name: "USDC", version: "2" },
+};
+
+function lookupEvmUsdcDomain(
+  network: string,
+  asset: string,
+): { name: string; version: string } | undefined {
+  return EVM_USDC_EIP712_DOMAINS[`${network}|${asset.toLowerCase()}`];
+}
+
 export interface CdpCapabilityConfig {
   /** CAIP-2 identifier, e.g. `eip155:8453`. */
   network: Caip2;
@@ -392,14 +436,27 @@ export class CoinbaseCdpAdapter extends BaseAdapter {
       // /facilitator/supported response surfaces them and sellers'
       // x402-server middleware can auto-merge them into 402 challenges
       // (PR-B and onwards). Empty objects are dropped to avoid noise.
+      //
+      // When CDP omits the per-kind `extra` for an EVM USDC kind we
+      // already know the on-chain DOMAIN for, fall back to a static
+      // adapter-side lookup. This is the load-bearing fallback CDP
+      // requires to verify EVM payments — without it /verify dead-ends
+      // with "missing EIP-712 domain name/version in requirements.extra"
+      // even when the buyer's signature is mathematically valid.
       for (const cap of matches) {
+        const cdpExtra =
+          kind.extra !== undefined && Object.keys(kind.extra).length > 0
+            ? kind.extra
+            : undefined;
+        const fallback = cdpExtra === undefined
+          ? lookupEvmUsdcDomain(cap.network, cap.asset)
+          : undefined;
+        const extra = cdpExtra ?? fallback;
         out.push({
           network: cap.network,
           asset: cap.asset,
           scheme: cap.scheme,
-          ...(kind.extra !== undefined && Object.keys(kind.extra).length > 0
-            ? { extra: kind.extra }
-            : {}),
+          ...(extra !== undefined ? { extra } : {}),
         });
       }
     }
