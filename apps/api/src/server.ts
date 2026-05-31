@@ -17,6 +17,7 @@ import { registerQuoteRoute } from "./routes/quote.js";
 import { registerSettleRoute } from "./routes/settle.js";
 import { registerVerifyRoute } from "./routes/verify.js";
 import { registerAdminCatalogRoutes } from "./routes/admin-catalog.js";
+import { registerSearchRoute } from "./routes/search.js";
 
 export interface BuildServerOptions {
   ctx: ServerContext;
@@ -55,7 +56,11 @@ export async function buildServer(
   registerErrorHandler(app);
   registerIdempotency(app);
   registerResourceKeyAuth(app);
-  registerAuth(app, { config: opts.ctx.config });
+  registerAuth(app, {
+    config: opts.ctx.config,
+    // /v1/search is intentionally public (unified-catalog browse).
+    exempt: new Set(["/health", "/metrics", "/v1/search"]),
+  });
   await registerRateLimit(app, { config: opts.ctx.config, redis: opts.redis });
 
   registerHealthRoute(app);
@@ -73,6 +78,7 @@ export async function buildServer(
   // context omits the pool (test setups, mock-mode boots).
   if (opts.ctx.pool !== undefined) {
     registerAdminCatalogRoutes(app, opts.ctx);
+    registerSearchRoute(app, opts.ctx);
   }
 
   return app;

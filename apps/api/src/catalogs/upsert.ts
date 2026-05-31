@@ -31,12 +31,21 @@ export async function upsertEndpoints(
   let upserted = 0;
   for (const ep of endpoints) {
     try {
+      // search_text mirrors the dashboard-search lowercased concat —
+      // migration 020 maintains the column shape; upsert keeps it fresh
+      // on every refresh so a renamed/redescribed endpoint becomes
+      // searchable within one sync tick.
+      const searchText = (
+        (ep.description ?? "") +
+        " " +
+        ep.resource
+      ).toLowerCase();
       await pool.query(
         `INSERT INTO external_endpoints
           (id, source, resource_url, pay_to, x402_version, description,
-           accepts, extensions, quality_signals, raw_payload,
+           accepts, extensions, quality_signals, raw_payload, search_text,
            first_seen_at, last_seen_at, archived_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW(), NULL)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), NULL)
          ON CONFLICT (resource_url, pay_to) DO UPDATE SET
            source = EXCLUDED.source,
            x402_version = EXCLUDED.x402_version,
@@ -45,6 +54,7 @@ export async function upsertEndpoints(
            extensions = EXCLUDED.extensions,
            quality_signals = EXCLUDED.quality_signals,
            raw_payload = EXCLUDED.raw_payload,
+           search_text = EXCLUDED.search_text,
            last_seen_at = NOW(),
            archived_at = NULL`,
         [
@@ -58,6 +68,7 @@ export async function upsertEndpoints(
           ep.extensions !== undefined ? JSON.stringify(ep.extensions) : null,
           ep.quality !== undefined ? JSON.stringify(ep.quality) : null,
           JSON.stringify(ep.raw),
+          searchText,
         ],
       );
       upserted++;
