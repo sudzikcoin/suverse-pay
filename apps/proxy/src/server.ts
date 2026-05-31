@@ -8,7 +8,7 @@ import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import { handle, type HandleDeps } from "./handler.js";
-import { ProxyConfigStore } from "./store.js";
+import { CatalogBazaarStore, ProxyConfigStore } from "./store.js";
 
 export interface BuildServerArgs {
   pool: Pool;
@@ -21,6 +21,13 @@ export interface BuildServerArgs {
   rateLimitPerMin?: number;
   /** Allow tests to inject a config store with a custom TTL. */
   store?: ProxyConfigStore;
+  /**
+   * Catalog metadata store for the bazaar discovery extension.
+   * Optional — tests may omit it to keep the 402 challenge
+   * extension-free, matching the behavior when no approved listing
+   * exists for the endpoint URL.
+   */
+  catalogStore?: CatalogBazaarStore;
   /** Injection seam for tests — replaces global fetch. */
   fetchImpl?: typeof fetch;
   /** Pre-charge upstream health probe budget (ms). Default 3000. */
@@ -46,8 +53,10 @@ export async function buildServer(
   );
 
   const store = args.store ?? new ProxyConfigStore(args.pool);
+  const catalogStore = args.catalogStore ?? new CatalogBazaarStore(args.pool);
   const deps: HandleDeps = {
     store,
+    catalogStore,
     pool: args.pool,
     masterKey: args.masterKey,
     facilitatorUrl: args.facilitatorUrl,
@@ -65,9 +74,18 @@ export async function buildServer(
     timeWindow: "1 minute",
     keyGenerator: (req) => {
       // Bucket per (slug, IP) — one noisy IP on slug A doesn't
-      // throttle slug B for everyone else on that IP.
-      const params = req.params as { resourceKeyId?: string; slug?: string };
-      const slugPart = `${params.resourceKeyId ?? "_"}/${params.slug ?? "_"}`;
+      // throttle slug B for everyone else on that IP. Covers both
+      // legacy /v1/proxy/<reskey>/<slug> (resourceKeyId+slug) and
+      // /v1/data/<public_slug> (publicSlug) param shapes.
+      const params = req.params as {
+        resourceKeyId?: string;
+        slug?: string;
+        publicSlug?: string;
+      };
+      const slugPart =
+        params.publicSlug !== undefined
+          ? `pub/${params.publicSlug}`
+          : `${params.resourceKeyId ?? "_"}/${params.slug ?? "_"}`;
       return `${slugPart}::${req.ip}`;
     },
     errorResponseBuilder: (_req, ctx) => ({
@@ -119,6 +137,45 @@ export async function buildServer(
     });
   }
 
+  // /v1/data/<public_slug> — the CDP-friendly clean URL. Resolves the
+  // public_slug to the spc row, then runs the same handle() pipeline as
+  // the legacy /v1/proxy/<reskey>/<slug>. 404 if no row matches.
+  for (const method of ["GET", "POST", "PUT", "DELETE", "PATCH"] as const) {
+    app.route({
+      method,
+      url: "/v1/data/:publicSlug",
+      handler: async (req, reply) => {
+        const params = req.params as { publicSlug: string };
+        const config = await deps.store.lookupByPublicSlug(params.publicSlug);
+        if (config === null || !config.isActive) {
+          return reply.code(404).send({ error: "unknown_endpoint" });
+        }
+        const headers = flattenHeaders(req.headers);
+        const paymentHeader =
+          headers["payment-signature"] ?? headers["x-payment"];
+        const idempotencyKey = headers["idempotency-key"];
+        const result = await handle(
+          {
+            resourceKeyId: config.resourceKeyId,
+            slug: config.endpointSlug,
+            method,
+            resourceUrl: buildResourceUrl(req as unknown as RequestLike),
+            paymentHeader,
+            idempotencyKey,
+            incomingHeaders: headers,
+            body: Buffer.isBuffer(req.body) ? req.body : null,
+            clientIp: req.ip ?? null,
+          },
+          deps,
+        );
+        for (const [name, value] of Object.entries(result.headers)) {
+          reply.header(name, value);
+        }
+        return reply.code(result.status).send(result.body);
+      },
+    });
+  }
+
   return app;
 }
 
@@ -140,10 +197,30 @@ interface RequestLike {
 }
 
 function buildResourceUrl(req: RequestLike): string {
-  const proto = req.protocol || "https";
+  // Highest precedence: explicit X-Original-URL set by an upstream
+  // reverse-proxy that's fronting a "clean" URL (no query-string
+  // tokens, no internal /v1/proxy/<reskey>/<slug> shape that CDP's
+  // bazaar crawler may filter out as session-token-looking).
+  const xou = req.headers["x-original-url"];
+  const original =
+    typeof xou === "string" ? xou : Array.isArray(xou) ? xou[0] : undefined;
+  if (original && /^https?:\/\//.test(original)) return original;
+
+  const xfProto = req.headers["x-forwarded-proto"];
+  const proto =
+    (typeof xfProto === "string" ? xfProto : Array.isArray(xfProto) ? xfProto[0] : undefined) ||
+    req.protocol ||
+    "https";
+  const xfHost = req.headers["x-forwarded-host"];
   const host =
-    (req.headers["host"] as string | undefined) ?? "proxy.suverse.io";
-  return `${proto}://${host}${req.url}`;
+    (typeof xfHost === "string" ? xfHost : Array.isArray(xfHost) ? xfHost[0] : undefined) ||
+    (req.headers["host"] as string | undefined) ||
+    "proxy.suverse.io";
+  let url = req.url || "";
+  if (host === "api.suverse.io" && url.startsWith("/v1/proxy/")) {
+    url = `/x402${url.slice("/v1/proxy".length)}`;
+  }
+  return `${proto}://${host}${url}`;
 }
 
 /**
