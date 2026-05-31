@@ -119,12 +119,30 @@ export interface PaymentInitialFields {
   recipient: string;
   resource?: string;
   requestBody: unknown;
+  /**
+   * Phase 5 Phase 2 T7 — protocol family this payment belongs to.
+   * Defaults to "x402" when omitted (the prior behavior + every
+   * existing /facilitator/settle call site). MPP writes from
+   * apps/api/src/routes/mpp.ts (T8) pass "mpp" explicitly together
+   * with mppMethod + mppIntent.
+   */
+  protocol?: "x402" | "mpp";
+  /** MPP method (e.g. "tempo"). Required iff protocol="mpp". */
+  mppMethod?: string;
+  /** MPP intent (e.g. "charge"). Required iff protocol="mpp". */
+  mppIntent?: string;
 }
 
 /** Materialized payment row, used for /payments/:id responses + idempotent replays. */
 export interface PaymentRecord {
   paymentId: string;
   apiKeyId: string;
+  /** Phase 5 Phase 2 T7 — always populated from the DB row. */
+  protocol: "x402" | "mpp";
+  /** MPP method (e.g. "tempo"). Populated iff protocol="mpp". */
+  mppMethod?: string;
+  /** MPP intent (e.g. "charge"). Populated iff protocol="mpp". */
+  mppIntent?: string;
   idempotencyKey?: string;
   status: PaymentStatus;
   network: Caip2;

@@ -75,7 +75,10 @@ CREATE TABLE IF NOT EXISTS payments (
   error_code          TEXT,
   error_message       TEXT,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  settled_at          TIMESTAMPTZ
+  settled_at          TIMESTAMPTZ,
+  protocol            TEXT NOT NULL DEFAULT 'x402',
+  mpp_method          TEXT,
+  mpp_intent          TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS payments_idempotency_idx

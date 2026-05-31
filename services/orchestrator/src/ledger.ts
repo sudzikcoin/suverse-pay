@@ -83,12 +83,31 @@ export class PaymentLedger implements FallbackLedgerHooks {
       }
     }
 
+    const protocol = input.initialRow.protocol ?? "x402";
+    if (protocol === "mpp") {
+      if (
+        input.initialRow.mppMethod === undefined ||
+        input.initialRow.mppIntent === undefined
+      ) {
+        throw new Error(
+          "PaymentLedger: protocol=mpp rows must include mppMethod + mppIntent (T7 invariant).",
+        );
+      }
+    } else if (
+      input.initialRow.mppMethod !== undefined ||
+      input.initialRow.mppIntent !== undefined
+    ) {
+      throw new Error(
+        "PaymentLedger: mppMethod/mppIntent are reserved for protocol=mpp rows.",
+      );
+    }
     try {
       const result = await this.pool.query<RawPaymentRow>(
         `INSERT INTO payments (
           id, idempotency_key, api_key_id, status, network, asset, amount,
-          recipient, resource, request_body, created_at
-        ) VALUES ($1, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, NOW())
+          recipient, resource, request_body, protocol, mpp_method, mpp_intent,
+          created_at
+        ) VALUES ($1, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
         RETURNING *`,
         [
           paymentId,
@@ -100,6 +119,9 @@ export class PaymentLedger implements FallbackLedgerHooks {
           input.initialRow.recipient,
           input.initialRow.resource ?? null,
           JSON.stringify(input.initialRow.requestBody),
+          protocol,
+          input.initialRow.mppMethod ?? null,
+          input.initialRow.mppIntent ?? null,
         ],
       );
       return {
@@ -283,6 +305,9 @@ interface RawPaymentRow {
   error_message: string | null;
   created_at: Date;
   settled_at: Date | null;
+  protocol: string;
+  mpp_method: string | null;
+  mpp_intent: string | null;
 }
 
 interface RawAttemptRow {
@@ -297,9 +322,11 @@ interface RawAttemptRow {
 }
 
 function rowToPayment(row: RawPaymentRow): PaymentRecord {
+  const protocol = row.protocol === "mpp" ? "mpp" : "x402";
   const out: PaymentRecord = {
     paymentId: row.id,
     apiKeyId: row.api_key_id,
+    protocol,
     status: row.status as PaymentStatus,
     network: row.network as Caip2,
     asset: row.asset,
@@ -317,6 +344,8 @@ function rowToPayment(row: RawPaymentRow): PaymentRecord {
   if (row.error_code !== null) out.errorCode = row.error_code as ErrorCode;
   if (row.error_message !== null) out.errorMessage = row.error_message;
   if (row.settled_at !== null) out.settledAt = row.settled_at;
+  if (row.mpp_method !== null) out.mppMethod = row.mpp_method;
+  if (row.mpp_intent !== null) out.mppIntent = row.mpp_intent;
   return out;
 }
 

@@ -251,6 +251,68 @@ describe("PaymentLedger.finalizePayment", () => {
   });
 });
 
+describe("PaymentLedger — protocol field (Phase 2 T7)", () => {
+  // x402 is the default protocol; existing call sites that omit
+  // `protocol` keep working unchanged. MPP writes opt in via
+  // protocol="mpp" together with mppMethod + mppIntent.
+
+  it("defaults protocol to x402 when omitted from initialRow", async () => {
+    const result = await ledger.createOrFetchPayment({
+      apiKeyId: stack.apiKeyId,
+      initialRow: INITIAL,
+    });
+    expect(result.payment.protocol).toBe("x402");
+    expect(result.payment.mppMethod).toBeUndefined();
+    expect(result.payment.mppIntent).toBeUndefined();
+  });
+
+  it("persists protocol=mpp + mppMethod + mppIntent and reads them back via findById", async () => {
+    const result = await ledger.createOrFetchPayment({
+      apiKeyId: stack.apiKeyId,
+      initialRow: {
+        ...INITIAL,
+        protocol: "mpp",
+        mppMethod: "tempo",
+        mppIntent: "charge",
+        network: "eip155:42431",
+        asset: "0x20c0000000000000000000000000000000000000",
+      },
+    });
+    expect(result.payment.protocol).toBe("mpp");
+    expect(result.payment.mppMethod).toBe("tempo");
+    expect(result.payment.mppIntent).toBe("charge");
+    const refetched = await ledger.findById(result.payment.paymentId);
+    expect(refetched?.protocol).toBe("mpp");
+    expect(refetched?.mppMethod).toBe("tempo");
+    expect(refetched?.mppIntent).toBe("charge");
+  });
+
+  it("rejects protocol=mpp rows that omit mppMethod (invariant guard)", async () => {
+    await expect(
+      ledger.createOrFetchPayment({
+        apiKeyId: stack.apiKeyId,
+        initialRow: {
+          ...INITIAL,
+          protocol: "mpp",
+          mppIntent: "charge",
+        },
+      }),
+    ).rejects.toThrow(/mppMethod \+ mppIntent/);
+  });
+
+  it("rejects x402 rows that include MPP fields (invariant guard)", async () => {
+    await expect(
+      ledger.createOrFetchPayment({
+        apiKeyId: stack.apiKeyId,
+        initialRow: {
+          ...INITIAL,
+          mppMethod: "tempo",
+        },
+      }),
+    ).rejects.toThrow(/reserved for protocol=mpp/);
+  });
+});
+
 describe("PaymentLedger.recordRoutingDecision", () => {
   it("inserts a routing_decisions row capturing candidate + scores", async () => {
     const p = await ledger.createOrFetchPayment({

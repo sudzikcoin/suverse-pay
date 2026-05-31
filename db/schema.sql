@@ -75,7 +75,15 @@ CREATE TABLE IF NOT EXISTS payments (
   error_code          TEXT,
   error_message       TEXT,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  settled_at          TIMESTAMPTZ
+  settled_at          TIMESTAMPTZ,
+  -- Phase 5 Phase 2 T7 — second protocol family. Defaults to 'x402'
+  -- so the column lands non-breaking; /mpp/* writes emit 'mpp'
+  -- explicitly. mpp_method/mpp_intent are populated only when
+  -- protocol='mpp'; the application enforces that invariant
+  -- (services/orchestrator/src/ledger.ts).
+  protocol            TEXT NOT NULL DEFAULT 'x402',
+  mpp_method          TEXT,
+  mpp_intent          TEXT
 );
 
 -- Partial unique index — clients that don't pass an Idempotency-Key
@@ -88,6 +96,9 @@ CREATE INDEX IF NOT EXISTS payments_by_status_recent_idx
   ON payments (status, created_at DESC);
 CREATE INDEX IF NOT EXISTS payments_by_final_provider_idx
   ON payments (final_provider_id, settled_at DESC);
+CREATE INDEX IF NOT EXISTS payments_by_mpp_idx
+  ON payments (mpp_method, mpp_intent)
+  WHERE protocol = 'mpp';
 
 CREATE TABLE IF NOT EXISTS payment_attempts (
   id                BIGSERIAL PRIMARY KEY,
