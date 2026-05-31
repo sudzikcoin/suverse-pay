@@ -4,6 +4,7 @@ import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,6 +12,14 @@ import { cn } from "@/lib/utils";
  * lives inside DashboardHeader (rendered only via Tailwind `md:hidden`).
  * Panel is fixed-position so it covers content without affecting
  * layout.
+ *
+ * The panel + backdrop are rendered via createPortal into document.body
+ * so they escape DashboardHeader's containing block. DashboardHeader
+ * uses `backdrop-blur`, and per the CSS Filter Effects spec any
+ * backdrop-filter value establishes a containing block for fixed
+ * descendants — without the portal the panel's `h-full` resolved to
+ * the 64px header height and squeezed the nav list to zero, which is
+ * what produced the empty-drawer regression on mobile portrait.
  *
  * Built CSS-first — no @radix-ui/dialog or other library. Escape +
  * backdrop click close. Body scroll is locked while open to match
@@ -72,7 +81,14 @@ export function MobileNavDrawer(): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<NavState | null>(null);
   const [fetched, setFetched] = useState(false);
+  // Portal target is document.body, which doesn't exist during SSR.
+  // Gate the portal render until after first client mount.
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close the drawer when navigating to a new route — otherwise the
   // panel stays open over the new page after tapping a link.
@@ -117,43 +133,13 @@ export function MobileNavDrawer(): React.JSX.Element {
 
   const items = buildItems(state);
 
-  return (
+  // Backdrop + panel are portaled into document.body so they aren't
+  // descendants of DashboardHeader. DashboardHeader uses
+  // `backdrop-blur` which establishes a containing block for fixed
+  // descendants — leaving the panel inline collapsed `h-full` to the
+  // header's 64px and squeezed the nav list out of view on portrait.
+  const overlay = (
     <>
-      <button
-        type="button"
-        aria-label={open ? "Close menu" : "Open menu"}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-11 w-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-secondary md:hidden"
-      >
-        {/* Inline SVG — keeps us out of an icon-library dep. 44×44 touch target via the outer button. */}
-        {open ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <path d="M4 4l12 12M16 4L4 16" />
-          </svg>
-        ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <path d="M3 6h14M3 10h14M3 14h14" />
-          </svg>
-        )}
-      </button>
-
       {/* Backdrop. Touchable only when open; pointer-events-none
           when closed so the desktop layout isn't blocked. */}
       <div
@@ -237,6 +223,46 @@ export function MobileNavDrawer(): React.JSX.Element {
           </button>
         </footer>
       </aside>
+    </>
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-11 w-11 items-center justify-center rounded-md text-foreground transition-colors hover:bg-secondary md:hidden"
+      >
+        {/* Inline SVG — keeps us out of an icon-library dep. 44×44 touch target via the outer button. */}
+        {open ? (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M4 4l12 12M16 4L4 16" />
+          </svg>
+        ) : (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M3 6h14M3 10h14M3 14h14" />
+          </svg>
+        )}
+      </button>
+      {mounted ? createPortal(overlay, document.body) : null}
     </>
   );
 }
