@@ -115,6 +115,28 @@ export interface MiddlewareOptions {
    * Ignored when `disableAutoDiscover` is true.
    */
   readonly facilitatorExtrasCacheTtlMs?: number;
+  /**
+   * Optional top-level extensions block attached to every 402
+   * challenge body. Forwarded verbatim — the middleware does NOT
+   * validate the inner shape. Use this to advertise discovery
+   * metadata that ecosystem crawlers read off the live 402, such
+   * as the Coinbase Bazaar `extensions.bazaar` block built with
+   * `@x402/extensions/bazaar`'s `declareDiscoveryExtension()`.
+   *
+   * Example:
+   *   import { declareDiscoveryExtension }
+   *     from "@x402/extensions/bazaar";
+   *   const extensions = declareDiscoveryExtension({
+   *     method: "GET",
+   *     output: { example: { foo: "bar" } },
+   *   });
+   *
+   * Per-route content: if you have multiple endpoints behind one
+   * middleware, build the block per request and pass it through
+   * a thin wrapper rather than baking it into a long-lived options
+   * object.
+   */
+  readonly extensions?: Record<string, unknown>;
 }
 
 /**

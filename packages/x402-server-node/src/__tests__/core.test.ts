@@ -142,6 +142,28 @@ describe("buildChallenge", () => {
     );
     expect(body.accepts[0]!.extra).toEqual({ name: "USD Coin", version: "2" });
   });
+
+  it("forwards opts.extensions verbatim into the challenge body (v0.3.2 bazaar)", async () => {
+    const bazaar = {
+      bazaar: {
+        info: {
+          input: { type: "http" as const, method: "GET" as const },
+          output: { example: { temperature: 18 } },
+        },
+        schema: { $schema: "x", type: "object" as const },
+      },
+    };
+    const body = await buildChallenge(
+      { ...BASE_OPTS, extensions: bazaar },
+      "https://api.example/weather",
+    );
+    expect(body.extensions).toEqual(bazaar);
+  });
+
+  it("omits `extensions` from the body when opts.extensions is undefined", async () => {
+    const body = await buildChallenge(BASE_OPTS, "https://x");
+    expect("extensions" in body).toBe(false);
+  });
 });
 
 describe("buildChallenge — ecosystem compatibility", () => {
