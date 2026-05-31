@@ -121,6 +121,32 @@ fast if either is missing.
 |---|---|---|---|
 | Base Sepolia (84532) | `https://sepolia.base.org` | `https://sepolia.basescan.org` | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
 | World Sepolia (4801) | `https://worldchain-sepolia.g.alchemy.com/public` | `https://sepolia.worldscan.org` | `0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88` |
+| SKALE Base Sepolia (324705682) | `https://base-sepolia-testnet.skalenodes.com/v1/jubilant-horrible-ancha` | `https://skale-base-sepolia-explorer.skalenodes.com` | `0x2e08028E3C4c2356572E096d8EF835cD5C6030bD` |
+
+### SKALE Base Sepolia funding (Phase 5 Sub-task 7)
+
+SKALE Base is an L3 with a CREDIT-prepay gas model, so the smoke
+buyer wallet only needs **USDC.e** balance — gas is paid by the
+facilitator (PayAI in our case) out of pre-funded operator CREDIT.
+
+1. **Faucet URL:** [`base-sepolia-faucet.skale.space`](https://base-sepolia-faucet.skale.space)
+   — paste the test wallet address into the form. The faucet drips
+   a small amount of CREDIT (handy for direct contract reads;
+   x402 buyers do not need it). The faucet uses a manual web
+   captcha — there is no programmatic POST endpoint we can rely
+   on. If automation ever becomes necessary,
+   `POST /api/faucet { address }` is the route the page wires to.
+2. **Test USDC.e:** bridge a small balance from Base Sepolia
+   (eip155:84532) into SKALE Base Sepolia via the SKALE bridge UI
+   at `https://base-sepolia.skalenodes.com/chains/base`. Allow
+   a couple of minutes for IMA confirmation.
+
+Note that CDP does NOT advertise SKALE Base on `/supported` — the
+default 04-settle / 06-facilitator-settle steps target the CDP
+adapter and will fail closed for `eip155:1187947933` until a
+PayAI-backed smoke variant lands alongside S7. For now, this row
+documents the network surface; the actual end-to-end script
+arrives with the PayAI testnet smoke in Sub-task 7.
 
 Mainnet networks (Base 8453, Polygon 137, Arbitrum 42161, World
 Chain 480) can be parametrized the same way but each settle moves
