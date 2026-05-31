@@ -1,0 +1,4 @@
+# Force textual diff for store.ts — it contains literal NUL bytes used
+# as cache-key separators in ProxyConfigStore, which triggers git's
+# binary auto-detection and hides real changes behind `Bin a -> b`.
+apps/proxy/src/store.ts diff
