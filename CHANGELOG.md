@@ -8,6 +8,65 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
+### Fixed — SVM idempotency-key collision (free-call billing hole)
+
+`services/facilitator/src/idempotency-key.ts:extractPayloadNonce` was
+deriving the SVM payload nonce from `transaction.slice(0, 32)` — the
+first 32 chars of the buyer's base64-encoded partial transaction.
+Solana wire format begins with `[u16 sig-count] + [N×64-byte signature
+slots]`; the buyer SDK fills only the buyer's slot, leaving the
+feePayer slot as 64 zero bytes until the facilitator co-signs. Base64
+of the first 24 raw bytes is therefore `"AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"`
+regardless of memo or blockhash, so two distinct signings from the
+same payer collapsed onto the same `deriveFacilitatorIdempotencyKey`
+output for the hour-bucket. `createOrFetchFacilitatorPayment` then
+hit `ON CONFLICT DO NOTHING` and returned the prior settled row —
+the proxy treated the call as paid, forwarded to upstream, returned
+200 to the buyer, but **no second on-chain settle happened**. Net
+effect: one paid Solana settle bought ~1 hour of free upstream calls
+across every endpoint under the same resource key.
+
+Surfaced today (2026-05-31) while running a 4-endpoint Solana settle
+sweep against the financial-data catalog batch — the first call
+landed, the next three returned upstream data without paying. Fix:
+hash the whole base64 blob (`sha256(transaction).hex.slice(0, 32)`),
+so memo + buyer-signature entropy actually flows through. Reproducer
+pinned in `idempotency-key.test.ts` constructs two transactions
+sharing the leading-signatures prefix and asserts the derived nonces
+differ. 96/96 facilitator tests green.
+
+EVM (Base) and Cosmos (Noble) payloads were never affected — both
+read a real hex nonce out of `authorization.nonce`. Production fix
+deployed via the running `tsx watch` instance after `pnpm --filter
+@suverse-pay/facilitator build`; no schema change.
+
+### Added — Solana mainnet settles for the financial-data catalog (2026-05-31)
+
+Same four proxies that landed Base settles earlier today
+(`tvl`/`btc-spot`/`coinbase-btc`/`eth-pools` under `reskey_1166628d`),
+exercised through the published `@suverselabs/x402-client@0.1.0` on
+Solana mainnet beta. Same payer wallet as the multichain CoinGecko
+milestone (`8Hy7D9NAi…YYai6`); CDP acts as feePayer so the buyer's SOL
+balance stays untouched. All four signatures finalized on-chain (no
+errors) and recorded as `settled` rows in `facilitator_payments` with
+the canonical 30 bps platform fee withheld:
+
+| Endpoint | Slug | Price | Solana tx | Slot |
+| --- | --- | --- | --- | --- |
+| DeFiLlama All Protocols TVL | `tvl` | $0.005 | [`8V46oKs1…PDMSA`](https://solscan.io/tx/8V46oKs1WsZ5HvCp1S8LvBnScMzFZVyMaREEFGSYAvQ71p9yfbnQ6BwMyxqCkUmDPEjZEt5XxSJ7Pw5syjPDMSA) | 423331084 |
+| Binance BTC/USDT Spot Price | `btc-spot` | $0.001 | [`tQVdH17p…YkKA2f`](https://solscan.io/tx/tQVdH17pFRBk8QKMRNUjoZ688XQWedCBWAyASLTEg7zBRAaAFiFM65HaH6xMi93LGky4egArWWw8qn2XjYkKA2f) | 423331093 |
+| Coinbase BTC/USD Spot Price | `coinbase-btc` | $0.001 | [`5Uxp8pEk…UXJvX`](https://solscan.io/tx/5Uxp8pEkuFqEjzZPB5QYa717S6XuNkNUHsRVzt124HDDSc1roNxQqr7DUXB7La3SNiGzxsRYLaiwnGaPRntUXJvX) | 423331103 |
+| GeckoTerminal Ethereum DEX Pools | `eth-pools` | $0.01 | [`3f7pdq9m…Qy2GRRH`](https://solscan.io/tx/3f7pdq9mDUAkkF4iDi14PYj3VfmXt6JPgg2tHQMwB1kgoMkR6EMzLUfpBmrBgyvh3Q1uKgo7Na9FmdRZoQy2GRRH) | 423331109 |
+
+Smoke harness at `scripts/smoke/test-4-proxies-solana.mts` (sibling
+of the Base sweep). Payer USDC balance moved 1.4 → 1.378 (−$0.022 =
+the four post-fix settles totalling $0.017 plus the $0.005 pre-fix
+`tvl` settle that surfaced the collision — only one row landed before
+the fix). With Base (4 settles earlier today) + Solana (4 settles
+above) + the multichain CoinGecko run, the financial-data catalog now
+has nine real on-chain settles plus the prior CoinGecko nine, for
+**17 real settles total** across the customer-facing surface.
+
 ### Added — Financial-data catalog batch (2026-05-31)
 
 Four new public proxies under the same resource key as the CoinGecko

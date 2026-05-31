@@ -13,9 +13,10 @@ import { createHash } from "node:crypto";
  *   - resourceKeyId — distinguishes tenants
  *   - payerAddress  — fingerprint of "who is paying"
  *   - payloadNonce  — the per-payment nonce (EVM EIP-3009 nonce hex,
- *                     Cosmos ADR-036 nonce hex, or for SVM where the
- *                     transaction blob IS the nonce we use the first
- *                     32 chars of the base64 blob)
+ *                     Cosmos ADR-036 nonce hex, or for SVM a sha256
+ *                     of the full base64 transaction blob — see
+ *                     `extractPayloadNonce` for why a prefix slice
+ *                     is unsafe)
  *   - hourBucket    — floor(now / 3_600_000), so an honest retry an
  *                     hour later mints a fresh idempotency record
  *                     instead of being shadowed by an old failure
@@ -66,12 +67,20 @@ export function extractPayloadNonce(paymentPayload: unknown): string {
     const a = auth as Record<string, unknown>;
     if (typeof a.nonce === "string" && a.nonce.length > 0) return a.nonce;
   }
-  // SVM exact: the base64-encoded transaction. Take a stable prefix
-  // — it's enough entropy because the SVM scheme requires a fresh
-  // 16-byte memo per signing, so two distinct signs produce
-  // different transaction bytes.
+  // SVM exact: the base64-encoded transaction. Hash the whole blob —
+  // a prefix slice is unsafe because Solana's wire format starts with
+  // a u16 sig-count + N×64-byte signature slots, and the SDK only
+  // fills the buyer's slot (the facilitator co-signs the feePayer
+  // slot later). So the leading ~88 chars of the base64 are
+  // dominated by the zero feePayer-signature placeholder and are
+  // identical across distinct signings — collapsing all of one
+  // payer's settles in one hour-bucket onto one idempotency row.
+  // sha256-of-full-blob keeps memo + buyer-signature entropy in.
   if (typeof innerObj.transaction === "string" && innerObj.transaction.length > 0) {
-    return innerObj.transaction.slice(0, 32);
+    return createHash("sha256")
+      .update(innerObj.transaction, "utf8")
+      .digest("hex")
+      .slice(0, 32);
   }
   return "";
 }
