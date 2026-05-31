@@ -8,6 +8,38 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
+### Added — SKALE Base routing scaffolding (pending acceptance gate)
+
+End-to-end scaffolding for SKALE Base (`eip155:1187947933`) and
+SKALE Base Sepolia (`eip155:324705682`) — the SKALE L3 deployed
+atop Coinbase Base, gasless for buyers via the chain's CREDIT
+pre-pay model:
+
+- `packages/signers/evm/src/domains.ts` — both networks with the
+  on-chain-verified Bridged USDC (SKALE Bridge) v2 EIP-712 domain.
+- `packages/x402-client/src/network/chains.ts` — buyer SDK
+  registry entries (nativeToken `CREDIT`, `eip3009Supported: true`).
+- `apps/api/src/index.ts` + `services/facilitator/src/routing-config.ts`
+  — PayAI advertises both networks on `/supported`; routing config
+  points `:exact` at PayAI as the sole adapter.
+- `apps/proxy/src/networks.ts` + `apps/dashboard/src/lib/networks-catalog.ts`
+  — picker entries for sellers; `eip155:8453` renamed in the
+  catalogs from `"Base"` to `"Base (Coinbase L2)"` so SKALE Base
+  reads unambiguously next to it.
+- `scripts/smoke/real-skale-base/` — single-file Node smoke that
+  signs an EIP-3009 payload + POSTs to PayAI testnet directly,
+  bypassing the gateway. **This is the acceptance gate**: SKALE
+  Base is NOT advertised as supported in any public material until
+  an operator runs this smoke and confirms a real explorer URL.
+
+**Known limitation**: PayAI is currently the only routable
+facilitator on SKALE Base — no failover. CREDIT depletion or
+PayAI downtime stalls the route. The proxy's pre-charge health
+probe (`HEALTH_CHECK_TIMEOUT_MS`) partly mitigates by returning
+`503 upstream_unavailable` rather than 402 when PayAI is down,
+but for hard redundancy a second facilitator needs to pick up the
+network.
+
 ### Added — Self-serve proxy: pre-charge upstream health check
 
 Before the self-serve proxy hands a buyer a 402 challenge, it now

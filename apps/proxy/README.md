@@ -94,3 +94,21 @@ Fastify. The upstream health probe is a standalone unit in
 [`src/upstream-health.ts`](src/upstream-health.ts) with its own
 test suite in
 [`tests/upstream-health.test.ts`](tests/upstream-health.test.ts).
+
+## Known limitations
+
+### SKALE Base has a single facilitator (PayAI)
+
+PayAI is the only adapter advertising `eip155:1187947933` (SKALE
+Base mainnet) and `eip155:324705682` (SKALE Base Sepolia) on
+`/supported` as of Phase 5 Sub-task 7. The routing config
+(`services/facilitator/src/routing-config.ts`) has no failover
+entry for these networks — if PayAI is degraded or runs out of
+CREDIT on the L3, every proxy 402 for a SKALE Base listing
+returns either `502 facilitator_unreachable` (PayAI HTTP error)
+or `503 upstream_unavailable` (the pre-charge probe catching a
+related 5xx from the seller's API). Sellers who can't tolerate
+that should ALSO accept a chain with redundant routing (e.g. Base
+on `eip155:8453` has CDP-primary + PayAI-failover) so the buyer
+has an alternative requirement to sign against. We re-add SKALE
+Base failover when a second facilitator picks up the network.
