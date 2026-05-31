@@ -19,8 +19,20 @@ export const CDP_BAZAAR_BASE =
   "https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources";
 export const CDP_BAZAAR_ID = "cdp-bazaar";
 const PAGE_SIZE = 1000;
-const DEFAULT_MAX_PAGES = 20;
+// Hard ceiling so a runaway pagination loop can't DoS our process or CDP.
+// 100 pages × 1000 = 100k entries; CDP's full catalog is ~40k as of
+// 2026-06-01, so this is comfortable headroom. Stop conditions inside
+// the loop (`out.length >= total` and `resources.length === 0`) will
+// fire well before the cap for a healthy upstream.
+const DEFAULT_MAX_PAGES = 100;
 const PAGE_SLEEP_MS = 1000;
+// Progress log cadence — every Nth page, plus the final page.
+const PROGRESS_EVERY = 10;
+// 429 backoff. Starts at 1s, doubles each retry, capped at 8s. After
+// 5 consecutive 429s we give up on this page and return the partial.
+const BACKOFF_INITIAL_MS = 1000;
+const BACKOFF_MAX_MS = 8000;
+const BACKOFF_MAX_RETRIES = 5;
 
 interface CdpResourceEntry {
   readonly resource?: string;
@@ -49,27 +61,8 @@ export async function fetchCdpBazaar(
   for (let page = 0; page < maxPages; page++) {
     const offset = page * PAGE_SIZE;
     const url = `${CDP_BAZAAR_BASE}?limit=${PAGE_SIZE}&offset=${offset}`;
-    let body: CdpPage;
-    try {
-      const res = await fetchImpl(url);
-      if (!res.ok) {
-        // CDP returns 429 with no body when rate-limiting; everything else is a
-        // surprise. Either way, return what we have so far rather than throwing
-        // away the partial result — caller logs `partial` status.
-        opts.logger?.warn(`cdp-bazaar: page ${page} returned HTTP ${res.status}`, {
-          page,
-          status: res.status,
-        });
-        break;
-      }
-      body = (await res.json()) as CdpPage;
-    } catch (err) {
-      opts.logger?.warn(`cdp-bazaar: page ${page} fetch threw`, {
-        page,
-        error: err instanceof Error ? err.message : String(err),
-      });
-      break;
-    }
+    const body = await fetchPageWithBackoff(fetchImpl, url, page, opts.logger);
+    if (body === null) break;
 
     const resources = body.items ?? body.resources ?? [];
     for (const entry of resources) {
@@ -78,6 +71,12 @@ export async function fetchCdpBazaar(
     }
 
     const total = body.pagination?.total ?? 0;
+    if ((page + 1) % PROGRESS_EVERY === 0 || page === maxPages - 1) {
+      opts.logger?.info(
+        `cdp-bazaar: page ${page + 1}/${maxPages} loaded, ${out.length}/${total} entries so far`,
+        { page: page + 1, total, loaded: out.length },
+      );
+    }
     if (out.length >= total) break;
     if (resources.length === 0) break;
 
@@ -85,6 +84,67 @@ export async function fetchCdpBazaar(
   }
 
   return out;
+}
+
+/**
+ * One-page fetch with 429 exponential backoff. Returns the parsed body on
+ * 200, or null to signal "stop pagination here" (404/5xx, network error,
+ * or backoff exhausted). The caller logs `partial` status when the pager
+ * stops short of pagination.total.
+ */
+async function fetchPageWithBackoff(
+  fetchImpl: typeof fetch,
+  url: string,
+  page: number,
+  logger: import("../types.js").SyncLogger | undefined,
+): Promise<CdpPage | null> {
+  let backoff = BACKOFF_INITIAL_MS;
+  for (let attempt = 0; attempt <= BACKOFF_MAX_RETRIES; attempt++) {
+    let res: Response;
+    try {
+      res = await fetchImpl(url);
+    } catch (err) {
+      logger?.warn(`cdp-bazaar: page ${page} fetch threw`, {
+        page,
+        attempt,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    }
+    if (res.status === 429) {
+      if (attempt === BACKOFF_MAX_RETRIES) {
+        logger?.warn(`cdp-bazaar: page ${page} still 429 after ${BACKOFF_MAX_RETRIES} retries; stopping`, {
+          page,
+        });
+        return null;
+      }
+      logger?.warn(`cdp-bazaar: page ${page} HTTP 429; backoff ${backoff}ms (attempt ${attempt + 1}/${BACKOFF_MAX_RETRIES})`, {
+        page,
+        attempt: attempt + 1,
+        backoffMs: backoff,
+      });
+      await sleep(backoff);
+      backoff = Math.min(backoff * 2, BACKOFF_MAX_MS);
+      continue;
+    }
+    if (!res.ok) {
+      logger?.warn(`cdp-bazaar: page ${page} returned HTTP ${res.status}; stopping`, {
+        page,
+        status: res.status,
+      });
+      return null;
+    }
+    try {
+      return (await res.json()) as CdpPage;
+    } catch (err) {
+      logger?.warn(`cdp-bazaar: page ${page} JSON parse failed`, {
+        page,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
