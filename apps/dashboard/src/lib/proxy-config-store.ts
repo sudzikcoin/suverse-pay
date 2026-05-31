@@ -257,12 +257,18 @@ export interface ProxyConfigRow {
   updatedAt: string;
 }
 
+// Qualify every column with the `c` alias so the same projection can
+// be reused by queries that JOIN `dashboard_user_resource_keys l` —
+// `id` and `resource_key_id` exist on both tables and Postgres rejects
+// the unqualified reference (42702). All three call sites use `c` as
+// the alias for `seller_proxy_configs` to keep this single source of
+// truth correct.
 const SELECT_COLUMNS = `
-  id, resource_key_id, endpoint_slug, original_url, original_method,
-  display_name, description, price_atomic::text AS price_atomic,
-  accepted_networks, pay_to_evm, pay_to_solana, pay_to_cosmos, pay_to_tron,
-  forward_headers_encrypted, is_active,
-  created_at::text AS created_at, updated_at::text AS updated_at
+  c.id, c.resource_key_id, c.endpoint_slug, c.original_url, c.original_method,
+  c.display_name, c.description, c.price_atomic::text AS price_atomic,
+  c.accepted_networks, c.pay_to_evm, c.pay_to_solana, c.pay_to_cosmos, c.pay_to_tron,
+  c.forward_headers_encrypted, c.is_active,
+  c.created_at::text AS created_at, c.updated_at::text AS updated_at
 `;
 
 interface DbRow {
@@ -388,7 +394,7 @@ export async function createProxy(args: {
     ],
   );
   const created = await dbQuery<DbRow>(
-    `SELECT ${SELECT_COLUMNS} FROM seller_proxy_configs WHERE id = $1`,
+    `SELECT ${SELECT_COLUMNS} FROM seller_proxy_configs c WHERE c.id = $1`,
     [id],
   );
   return rowTo(created[0]!);
