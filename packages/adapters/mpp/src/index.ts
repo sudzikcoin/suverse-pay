@@ -1,8 +1,10 @@
 export {
+  DEFAULT_TEMPO_MODERATO_RPC_URL,
   MppAdapter,
   TEMPO_MAINNET_CAIP2,
   TEMPO_MAINNET_USDC,
   TEMPO_MODERATO_CAIP2,
+  TEMPO_MODERATO_PATHUSD,
   type MppAdapterConfig,
   type MppFacilitatorAdapter,
 } from "./adapter.js";

@@ -88,6 +88,18 @@ export const TEMPO_MODERATO_CAIP2 = "eip155:42431" as const;
  */
 export const TEMPO_MAINNET_USDC = "0x20C000000000000000000000b9537d11c60E8b50" as const;
 
+/**
+ * pathUSD on Tempo Moderato testnet — the canonical test stablecoin
+ * per docs.tempo.xyz/quickstart/faucet. Pre-allocated at the first
+ * slot of Tempo's reserved stablecoin address space (`0x20c0...`);
+ * the faucet also dispenses AlphaUSD/BetaUSD/ThetaUSD at the next
+ * three slots, but v1 advertises pathUSD only (Phase 2 user decision
+ * — minimum surface; the other three land if/when needed without a
+ * breaking change). 6 decimals (matches Tempo mainnet USDC).
+ */
+export const TEMPO_MODERATO_PATHUSD =
+  "0x20c0000000000000000000000000000000000000" as const;
+
 export interface MppAdapterConfig {
   /** Defaults to `https://api.stripe.com`. */
   baseUrl?: string;
@@ -95,10 +107,10 @@ export interface MppAdapterConfig {
   apiVersion?: string;
   /**
    * Stripe API secret key (`sk_live_...` or `sk_test_...`). Required
-   * for `verifyCredential` and `settleCredential`. When unset, those
-   * methods throw `ProviderError("unauthorized")`. Capability
-   * advertising + healthCheck still work — the adapter registers
-   * cleanly so operators see it on the dashboard.
+   * for `verifyCredential` and `settleCredential` on the
+   * Stripe-facilitated track (Tempo mainnet + the future stripe
+   * method). Direct-JSON-RPC paths (Tempo Moderato testnet) do NOT
+   * require it. Capability advertising + healthCheck always work.
    */
   secretKey?: string;
   /**
@@ -111,7 +123,21 @@ export interface MppAdapterConfig {
   displayName?: string;
   fetchImpl?: typeof globalThis.fetch;
   defaultTimeoutMs?: number;
+  /**
+   * JSON-RPC endpoint for Tempo Moderato testnet (chain id 42431).
+   * Used by the direct-RPC settle path (Phase 2 T6) for
+   * `(method=tempo, intent=charge, network=eip155:42431)`. Falls back
+   * to the public Tempo-published default when undefined; operators
+   * with a private RPC mirror set this. The adapter never tries to
+   * derive the URL from chain id — pass it explicitly or accept the
+   * documented default.
+   */
+  tempoModeratoRpcUrl?: string;
 }
+
+/** Public default RPC for Tempo Moderato per docs.tempo.xyz. */
+export const DEFAULT_TEMPO_MODERATO_RPC_URL =
+  "https://rpc.moderato.tempo.xyz" as const;
 
 /**
  * MPP adapter. One adapter, multiple methods — dispatches by
@@ -140,6 +166,7 @@ export class MppAdapter implements MppFacilitatorAdapter {
   private readonly caps: ReadonlyArray<MppCapability>;
   private readonly fetchImpl: typeof globalThis.fetch | undefined;
   private readonly timeoutMs: number;
+  private readonly tempoModeratoRpcUrl: string;
 
   constructor(config: MppAdapterConfig = {}) {
     this.displayName = config.displayName ?? DEFAULT_DISPLAY_NAME;
@@ -152,6 +179,19 @@ export class MppAdapter implements MppFacilitatorAdapter {
     this.caps = config.capabilities ?? defaultCapabilities();
     this.timeoutMs = config.defaultTimeoutMs ?? 10_000;
     if (config.fetchImpl !== undefined) this.fetchImpl = config.fetchImpl;
+    this.tempoModeratoRpcUrl = trimTrailingSlash(
+      config.tempoModeratoRpcUrl ?? DEFAULT_TEMPO_MODERATO_RPC_URL,
+    );
+  }
+
+  /**
+   * Exposes the configured Tempo Moderato RPC URL for inspection
+   * (operator dashboard, route handlers in apps/api). The field
+   * itself stays private to keep call sites going through the
+   * dispatch in T6's settleCredential rather than reaching past it.
+   */
+  getTempoModeratoRpcUrl(): string {
+    return this.tempoModeratoRpcUrl;
   }
 
   getCapabilities(): ReadonlyArray<MppCapability> {
@@ -281,6 +321,7 @@ function defaultCapabilities(): MppCapability[] {
       method: "tempo",
       intent: "charge",
       network: TEMPO_MODERATO_CAIP2,
+      asset: TEMPO_MODERATO_PATHUSD,
     },
   ];
 }

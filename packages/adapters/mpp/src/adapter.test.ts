@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_TEMPO_MODERATO_RPC_URL,
   MppAdapter,
   TEMPO_MAINNET_CAIP2,
   TEMPO_MAINNET_USDC,
   TEMPO_MODERATO_CAIP2,
+  TEMPO_MODERATO_PATHUSD,
   type MppCapability,
   type MppChallenge,
   type MppCredential,
@@ -42,6 +44,18 @@ describe("MppAdapter constants", () => {
       "0x20C000000000000000000000b9537d11c60E8b50",
     );
   });
+  // Phase 2 T5 — Moderato test stablecoin published at
+  // docs.tempo.xyz/quickstart/faucet. v1 default is pathUSD only.
+  it("Tempo Moderato pathUSD address pins the documented faucet slot", () => {
+    expect(TEMPO_MODERATO_PATHUSD).toBe(
+      "0x20c0000000000000000000000000000000000000",
+    );
+  });
+  it("DEFAULT_TEMPO_MODERATO_RPC_URL matches Tempo's published endpoint", () => {
+    expect(DEFAULT_TEMPO_MODERATO_RPC_URL).toBe(
+      "https://rpc.moderato.tempo.xyz",
+    );
+  });
 });
 
 describe("MppAdapter basics", () => {
@@ -51,7 +65,7 @@ describe("MppAdapter basics", () => {
     expect(a.displayName).toBe("Machine Payments Protocol");
   });
 
-  it("getCapabilities returns Tempo mainnet + Moderato entries by default; no stripe in v1", () => {
+  it("getCapabilities returns Tempo mainnet (USDC) + Moderato (pathUSD); no stripe in v1", () => {
     const a = new MppAdapter();
     const caps = a.getCapabilities();
     expect(caps).toHaveLength(2);
@@ -63,6 +77,10 @@ describe("MppAdapter basics", () => {
       (c) => c.method === "tempo" && c.intent === "charge" && c.network === TEMPO_MODERATO_CAIP2,
     );
     expect(tempoModerato).toBeDefined();
+    // Phase 2 T5 — Moderato advertises pathUSD as the v1 default
+    // asset. AlphaUSD/BetaUSD/ThetaUSD remain available on the faucet
+    // but are not advertised here to keep the surface minimal.
+    expect(tempoModerato?.asset).toBe(TEMPO_MODERATO_PATHUSD);
     // Phase 2 T3: stripe method dropped from v1 default capabilities —
     // Stripe has not published the MPP REST surface, so advertising
     // stripe+charge would route into the endpoint-not-wired error path.
@@ -71,6 +89,29 @@ describe("MppAdapter basics", () => {
       (c) => c.method === "stripe" && c.intent === "charge",
     );
     expect(stripeSpt).toBeUndefined();
+  });
+
+  it("getTempoModeratoRpcUrl falls back to the public Tempo default", () => {
+    const a = new MppAdapter();
+    expect(a.getTempoModeratoRpcUrl()).toBe(DEFAULT_TEMPO_MODERATO_RPC_URL);
+  });
+
+  it("getTempoModeratoRpcUrl honors an operator override (private RPC mirror)", () => {
+    const a = new MppAdapter({
+      tempoModeratoRpcUrl: "https://rpc.internal.example/tempo-moderato",
+    });
+    expect(a.getTempoModeratoRpcUrl()).toBe(
+      "https://rpc.internal.example/tempo-moderato",
+    );
+  });
+
+  it("getTempoModeratoRpcUrl strips a trailing slash from the configured URL", () => {
+    const a = new MppAdapter({
+      tempoModeratoRpcUrl: "https://rpc.moderato.tempo.xyz/",
+    });
+    expect(a.getTempoModeratoRpcUrl()).toBe(
+      "https://rpc.moderato.tempo.xyz",
+    );
   });
 
   it("accepts a custom capability list", () => {

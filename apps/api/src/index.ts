@@ -496,6 +496,7 @@ async function main(): Promise<void> {
       config.stripeMppSecretKey.length > 0
         ? { secretKey: config.stripeMppSecretKey }
         : {}),
+      tempoModeratoRpcUrl: config.mppTempoModeratoRpcUrl,
     });
     const caps = mppAdapter.getCapabilities();
     logger.info(

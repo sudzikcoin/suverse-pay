@@ -107,6 +107,16 @@ export const ConfigSchema = z.object({
   stripeMppBaseUrl: z.string().optional(),
   stripeMppApiVersion: z.string().optional(),
   stripeMppSecretKey: z.string().optional(),
+  // Phase 5 Phase 2 T5 — Tempo Moderato testnet JSON-RPC endpoint.
+  // Used by the direct-RPC settle path (T6) for `(method=tempo,
+  // intent=charge, network=eip155:42431)`. Default points at the
+  // public Tempo Moderato RPC documented at
+  // docs.tempo.xyz/quickstart/connection-details. Override
+  // MPP_TEMPO_MODERATO_RPC_URL to point at a private RPC mirror.
+  mppTempoModeratoRpcUrl: z
+    .string()
+    .url()
+    .default("https://rpc.moderato.tempo.xyz"),
 
   // t402-io universal USDT facilitator (Phase 4 Block 2 Sub-task 10).
   // Hosted facilitator at https://facilitator.t402.io. /supported +
@@ -185,6 +195,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     stripeMppBaseUrl: env.STRIPE_MPP_BASE_URL,
     stripeMppApiVersion: env.STRIPE_MPP_API_VERSION,
     stripeMppSecretKey: env.STRIPE_MPP_SECRET_KEY,
+    mppTempoModeratoRpcUrl: env.MPP_TEMPO_MODERATO_RPC_URL,
     t402IoEnabled: env.T402_IO_ENABLED,
     t402IoBaseUrl: env.T402_IO_BASE_URL,
     t402IoApiKey: env.T402_IO_API_KEY,
