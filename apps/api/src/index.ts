@@ -187,6 +187,14 @@ async function main(): Promise<void> {
       { network: "eip155:43114",  asset: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", scheme: "exact" }, // Avalanche C-Chain USDC
       { network: "eip155:43113",  asset: "0x5425890298aed601595a70AB815c96711a31Bc65", scheme: "exact" }, // Avalanche Fuji USDC
       { network: "eip155:421614", asset: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", scheme: "exact" }, // Arbitrum Sepolia USDC
+      // ---- SKALE Base (Phase 5 Sub-task 7) -----------------------------
+      // SKALE Base is an L3 on top of Coinbase Base; USDC.e is the SKALE
+      // Bridge-issued USDC. PayAI is the only facilitator advertising
+      // eip155:1187947933 / eip155:324705682 as of 2026-05-31 — no
+      // failover yet, document as known limitation in the README until
+      // a second facilitator picks up the network.
+      { network: "eip155:1187947933", asset: "0x85889c8c714505E0c94b30fcfcF64fE3Ac8FCb20", scheme: "exact" }, // SKALE Base mainnet USDC.e
+      { network: "eip155:324705682",  asset: "0x2e08028E3C4c2356572E096d8EF835cD5C6030bD", scheme: "exact" }, // SKALE Base Sepolia USDC.e
     ] as const;
     const payAi = new PayAiAdapter({
       capabilities: payAiCaps.map((c) => ({

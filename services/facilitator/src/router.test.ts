@@ -257,6 +257,24 @@ describe("ROUTING_CONFIG static entries", () => {
       expect(priority).toEqual(["thirdweb-x402"]);
     });
   }
+
+  // (i) SKALE Base — Phase 5 Sub-task 7. L3 on top of Coinbase Base.
+  // PayAI is the only facilitator advertising eip155:1187947933 and the
+  // matching testnet 324705682 as of 2026-05-31; no failover. Known
+  // limitation documented in the proxy README until a second
+  // facilitator picks up SKALE Base.
+  const skalePayaiOnlyRoutes = [
+    "eip155:1187947933:exact", // SKALE Base mainnet
+    "eip155:324705682:exact",  // SKALE Base Sepolia testnet
+  ];
+  for (const key of skalePayaiOnlyRoutes) {
+    it(`routes ${key} payai-only (SKALE Base, no failover yet)`, async () => {
+      const { getRoutingPriority } = await import("./routing-config.js");
+      const network = key.replace(":exact", "");
+      const priority = getRoutingPriority(network, "exact");
+      expect(priority).toEqual(["payai"]);
+    });
+  }
 });
 
 describe("pickAdaptersForRoute", () => {

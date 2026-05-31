@@ -61,6 +61,15 @@ export const ROUTING_CONFIG: Readonly<Record<string, RoutingPriority>> = {
   "eip155:43114:exact":  ["payai", "thirdweb-x402"], // Avalanche C-Chain mainnet
   "eip155:43113:exact":  ["payai", "thirdweb-x402"], // Avalanche Fuji testnet
   "eip155:421614:exact": ["payai", "thirdweb-x402"], // Arbitrum Sepolia testnet
+  // SKALE Base (Phase 5 Sub-task 7). L3 on top of Coinbase Base — see
+  // packages/signers/evm/src/domains.ts header comment for the on-chain
+  // verification of the USDC.e contract and EIP-3009 support. PayAI is
+  // the only adapter advertising these networks today; no failover.
+  // Known limitation documented in README until a second facilitator
+  // picks up SKALE Base. Until S7 testnet smoke turns green this route
+  // is not advertised as "supported" in any public materials.
+  "eip155:1187947933:exact": ["payai"], // SKALE Base mainnet
+  "eip155:324705682:exact":  ["payai"], // SKALE Base Sepolia testnet
   // Thirdweb-exclusive EVM routes (Phase 4 Block 1 Sub-task 3). CDP
   // does not advertise these on x402 and PayAI's /supported does not
   // list them either; Thirdweb's Nexus facilitator is the only route.
