@@ -8,20 +8,46 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 Phase 5 has started. Iterating toward customer-facing infrastructure.
 
-### Milestone — First customer-facing x402 settle LIVE (2026-05-31)
+### Milestone — First MULTICHAIN customer-facing x402 settle LIVE (2026-05-31)
 
 CoinGecko BTC/ETH price feed
 (`https://proxy.suverse.io/v1/proxy/reskey_1166628d/prices`) is the
 first real third-party API running behind the self-serve proxy.
-End-to-end demonstrated via the published
-`@suverselabs/x402-client@0.1.0` buyer SDK against a Base test
-wallet: **8 real on-chain settles** during the e2e run, all
-`status=settled` in `facilitator_payments`, all via the
-`coinbase-cdp` adapter, 30 bps platform fee withheld on each row.
-Sample tx `0x8545493152fa96690f1e8820b0bd2e8c1820965be7f8476afda3e650214066b4`
-on Base block 46709749. The same run surfaced + fixed two header
-bugs in the proxy and one persistence bug in the CDP adapter,
-documented in the next two entries.
+The same endpoint settled end-to-end on **three networks in a single
+session** — one seller config, three buyer SDK signer families —
+demonstrating that the multi-VM routing layer works in production:
+
+| Network | Tx | Block / Slot / Height |
+| --- | --- | --- |
+| Base mainnet (eip155:8453) | `0x8545493152fa96690f1e8820b0bd2e8c1820965be7f8476afda3e650214066b4` (+7 more in the run) | 46709749 |
+| Solana mainnet beta | `5vLwjtmNWBHmJqEtb135KkWPn49TcorRqxukqqyN8S8kpDre6rSyhz5D4LSv1WDAWRuADixPTDP1qZmLioDD7aFC` | slot 423322111 |
+| Cosmos noble-1 mainnet | `8A89E3A5D863917382DAE2D4FCB813D0526C37E38018A32088370DF3D8F7F183` | height 51890807 |
+
+All paid through the published `@suverselabs/x402-client@0.1.0`,
+priced at $0.01 USDC per call. Base settles route through the
+`coinbase-cdp` adapter (30 bps platform fee withheld in
+`facilitator_payments`); Solana through CDP-as-feePayer (buyer's
+SOL balance stays untouched); Cosmos through `cosmos-pay`'s grantee
+`noble18jq3tgk39z8qk5jz304zqkhd02gs5zkhrj7sqt` ([[project_cosmos_pay_facilitator]]).
+
+The run surfaced + fixed three latent bugs (proxy header hygiene
++ proxy per-VM scheme map + CDP adapter EIP-712 persistence),
+documented in the entries below.
+
+### Fixed — Proxy per-VM scheme in 402 challenges
+
+The proxy was hardcoding `scheme: "exact"` on every accept in the 402
+challenge regardless of namespace. Cosmos pays through an authz Exec
+dispatched by the facilitator's grantee — the only x402 scheme
+`cosmos-pay` routes today is `exact_cosmos_authz`, and both the buyer
+SDK's Cosmos signer and the facilitator's routing table reject any
+other value. Sellers configuring a Cosmos network on their proxy
+shipped a 402 that no Cosmos client could satisfy. New
+`SCHEME_BY_NAMESPACE` map in `apps/proxy/src/handler.ts` —
+`cosmos` → `exact_cosmos_authz`, everyone else stays on `exact`.
+Surfaced by the Cosmos leg of the milestone test (buyer SDK threw
+`scheme_mismatch` before any HTTP retry). New vitest case pins the
+per-VM emission shape side-by-side; 61/61 proxy tests green.
 
 ### Fixed — Proxy header hygiene on upstream + downstream
 
