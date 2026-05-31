@@ -39,22 +39,27 @@ UPDATE seller_proxy_configs SET public_slug = 'ip-geolocation',           update
 -- Repoint each catalog_listings row at the new clean URL + bind the FK.
 -- Matches rows that still point at the legacy /v1/proxy/.../<endpoint_slug>
 -- shape AND have an unset proxy_config_id, so re-run is a no-op.
-UPDATE catalog_listings cl
-   SET proxy_config_id = spc.id,
-       endpoint_url    = 'https://proxy.suverse.io/v1/data/' || spc.public_slug
-  FROM seller_proxy_configs spc
- WHERE spc.resource_key_id = 'reskey_1166628d'
-   AND spc.public_slug IS NOT NULL
-   AND cl.endpoint_url = 'https://proxy.suverse.io/v1/proxy/reskey_1166628d/' || spc.endpoint_slug
-   AND cl.proxy_config_id IS NULL;
+-- (UPDATE target uses no alias — pg-mem 3.0.14 chokes on `UPDATE t AS x`
+-- when the WHERE references `x.column`; the unaliased form is portable.)
+UPDATE catalog_listings
+   SET proxy_config_id = seller_proxy_configs.id,
+       endpoint_url    = 'https://proxy.suverse.io/v1/data/' || seller_proxy_configs.public_slug
+  FROM seller_proxy_configs
+ WHERE seller_proxy_configs.resource_key_id = 'reskey_1166628d'
+   AND seller_proxy_configs.public_slug IS NOT NULL
+   AND catalog_listings.endpoint_url = 'https://proxy.suverse.io/v1/proxy/reskey_1166628d/' || seller_proxy_configs.endpoint_slug
+   AND catalog_listings.proxy_config_id IS NULL;
 
 -- DeFiLlama TVL sample_response_json was originally a bare JSON array
 -- (`[{...},{...}]`). CDP's Bazaar schema for bazaar.info.output expects
 -- example to be an `object` (not an array), so the entry was rejected
 -- by the indexer. Wrap in `{"protocols": [...]}` so the example type
--- matches the schema. Idempotent: only updates rows that still hold the
--- array shape (jsonb_typeof = 'array').
+-- matches the schema. Idempotent: only updates rows whose payload still
+-- starts with `[` (i.e. is still in array shape). String-only ops —
+-- pg-mem 3.0.14 doesn't implement jsonb_typeof / jsonb_build_object,
+-- and sample_response_json is a TEXT column, so the cast was wasteful
+-- anyway.
 UPDATE catalog_listings
-   SET sample_response_json = jsonb_build_object('protocols', sample_response_json::jsonb)::text
+   SET sample_response_json = '{"protocols":' || sample_response_json || '}'
  WHERE endpoint_url = 'https://proxy.suverse.io/v1/data/defillama-tvl'
-   AND jsonb_typeof(sample_response_json::jsonb) = 'array';
+   AND sample_response_json LIKE '[%';
