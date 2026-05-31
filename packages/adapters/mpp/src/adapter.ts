@@ -206,19 +206,29 @@ export class MppAdapter implements MppFacilitatorAdapter {
     if (intentGuard !== null) {
       return { valid: false, verifiedAt: new Date().toISOString(), ...intentGuard };
     }
+    const route = resolveTempoRoute(args.challenge, args.credential);
+    if (route.kind === "moderato-hash") {
+      return this.verifyTempoModeratoHash({
+        challenge: args.challenge,
+        credential: args.credential,
+        hash: route.hash,
+      });
+    }
+    if (route.kind === "moderato-unsupported-payload-type") {
+      return {
+        valid: false,
+        verifiedAt: new Date().toISOString(),
+        errorCode: "unsupported_payload_type",
+        errorMessage: `Tempo Moderato direct-RPC path supports only payload.type="hash" in v1; got payload.type="${route.gotType}". The "transaction" and "proof" types land if/when a viem/tempo dependency is added to this adapter.`,
+      };
+    }
     this.requireSecret("verifyCredential");
-    const verifiedAt = new Date().toISOString();
-    // Stripe's MPP verify endpoint is not yet documented as a REST
-    // path; verifyCredential below is a placeholder that returns a
-    // structured "deferred" result so callers see a clear "Stripe
-    // MPP REST verify path not yet wired — set
-    // STRIPE_MPP_VERIFY_PATH" error rather than a silent pass.
     return {
       valid: false,
-      verifiedAt,
+      verifiedAt: new Date().toISOString(),
       errorCode: "unsupported_scheme",
       errorMessage:
-        "Stripe MPP REST verify path is not yet publicly documented; the adapter ships capability advertising + wire-translation primitives only. Wire the production path via STRIPE_MPP_VERIFY_PATH when Stripe publishes it.",
+        "MPP verify path for this (method, intent, network) tuple is not wired. Tempo mainnet + the stripe method route through Stripe's MPP REST surface, which is not yet publicly documented; only Tempo Moderato testnet via direct JSON-RPC is wired in Phase 2 v1.",
     };
   }
 
@@ -231,15 +241,159 @@ export class MppAdapter implements MppFacilitatorAdapter {
     if (intentGuard !== null) {
       return { settled: false, settledAt: new Date().toISOString(), ...intentGuard };
     }
+    const route = resolveTempoRoute(args.challenge, args.credential);
+    if (route.kind === "moderato-hash") {
+      return this.settleTempoModeratoHash({
+        challenge: args.challenge,
+        credential: args.credential,
+        hash: route.hash,
+      });
+    }
+    if (route.kind === "moderato-unsupported-payload-type") {
+      return {
+        settled: false,
+        settledAt: new Date().toISOString(),
+        errorCode: "unsupported_payload_type",
+        errorMessage: `Tempo Moderato direct-RPC path supports only payload.type="hash" in v1; got payload.type="${route.gotType}".`,
+      };
+    }
     this.requireSecret("settleCredential");
-    const settledAt = new Date().toISOString();
     return {
       settled: false,
-      settledAt,
+      settledAt: new Date().toISOString(),
       errorCode: "unsupported_scheme",
       errorMessage:
-        "Stripe MPP REST settle path is not yet publicly documented. Phase 5: wire via STRIPE_MPP_SETTLE_PATH or replace this adapter with one targeting the published endpoint.",
+        "MPP settle path for this (method, intent, network) tuple is not wired. Tempo mainnet + the stripe method route through Stripe's MPP REST surface, which is not yet publicly documented; only Tempo Moderato testnet via direct JSON-RPC is wired in Phase 2 v1.",
     };
+  }
+
+  /**
+   * Verify a `(tempo, charge, eip155:42431, payload.type="hash")`
+   * credential by reading the on-chain receipt at `hash` via direct
+   * JSON-RPC against Tempo Moderato and asserting the receipt's
+   * Transfer log matches the challenge.
+   *
+   * The client (not us) broadcasts the actual transfer — this mirrors
+   * wevm/mppx's canonical `case 'hash'` server-side flow. We never
+   * touch Tempo-specific transaction envelopes; we only read receipts.
+   */
+  private async verifyTempoModeratoHash(args: {
+    challenge: MppChallenge;
+    credential: MppCredential;
+    hash: string;
+  }): Promise<MppVerifyResult> {
+    const verifiedAt = new Date().toISOString();
+    const fetchImpl = this.fetchImpl ?? globalThis.fetch;
+    let receipt: EthTransactionReceipt | null;
+    try {
+      receipt = await rpcGetReceipt(
+        fetchImpl,
+        this.tempoModeratoRpcUrl,
+        args.hash,
+        this.timeoutMs,
+      );
+    } catch (err) {
+      return {
+        valid: false,
+        verifiedAt,
+        errorCode: "rpc_error",
+        errorMessage: `Tempo Moderato RPC eth_getTransactionReceipt failed: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+    if (receipt === null) {
+      return {
+        valid: false,
+        verifiedAt,
+        errorCode: "transaction_not_found",
+        errorMessage: `Tempo Moderato has no receipt for transaction hash ${args.hash} — the transaction may not be mined yet, or the hash is invalid.`,
+      };
+    }
+    if (receipt.status === "0x0") {
+      return {
+        valid: false,
+        verifiedAt,
+        errorCode: "transaction_reverted",
+        errorMessage: `Transaction ${args.hash} reverted on Tempo Moderato.`,
+      };
+    }
+    const requestAmount = extractStringField(args.challenge.request, "amount");
+    const requestRecipient = extractStringField(args.challenge.request, "recipient");
+    const requestCurrency = extractStringField(args.challenge.request, "currency");
+    if (
+      requestAmount === null ||
+      requestRecipient === null ||
+      requestCurrency === null
+    ) {
+      return {
+        valid: false,
+        verifiedAt,
+        errorCode: "malformed_challenge",
+        errorMessage:
+          "Tempo charge challenge.request must include string fields amount, recipient, currency.",
+      };
+    }
+    let expectedAmount: bigint;
+    try {
+      expectedAmount = BigInt(requestAmount);
+    } catch {
+      return {
+        valid: false,
+        verifiedAt,
+        errorCode: "malformed_challenge",
+        errorMessage: `Tempo charge challenge.request.amount must be a decimal integer string; got "${requestAmount}".`,
+      };
+    }
+    const transferMatch = findMatchingTransferLog(receipt.logs, {
+      tokenContract: requestCurrency,
+      to: requestRecipient,
+      minAmount: expectedAmount,
+    });
+    if (transferMatch === null) {
+      return {
+        valid: false,
+        verifiedAt,
+        errorCode: "transfer_not_found",
+        errorMessage: `Transaction ${args.hash} contains no Transfer(to=${requestRecipient}, value>=${expectedAmount}) on token ${requestCurrency}.`,
+      };
+    }
+    return {
+      valid: true,
+      verifiedAt,
+      payer: transferMatch.from,
+    };
+  }
+
+  /**
+   * Settle = re-run verify + project the receipt into `MppSettleResult`.
+   * The on-chain settle has already happened client-side; we are
+   * asserting + recording it. No broadcast happens here.
+   */
+  private async settleTempoModeratoHash(args: {
+    challenge: MppChallenge;
+    credential: MppCredential;
+    hash: string;
+  }): Promise<MppSettleResult> {
+    const verifyResult = await this.verifyTempoModeratoHash(args);
+    const settledAt = verifyResult.verifiedAt;
+    if (!verifyResult.valid) {
+      const result: MppSettleResult = { settled: false, settledAt };
+      if (verifyResult.errorCode !== undefined) result.errorCode = verifyResult.errorCode;
+      if (verifyResult.errorMessage !== undefined) {
+        result.errorMessage = verifyResult.errorMessage;
+      }
+      return result;
+    }
+    const requestAmount = extractStringField(args.challenge.request, "amount");
+    const requestCurrency = extractStringField(args.challenge.request, "currency");
+    const result: MppSettleResult = {
+      settled: true,
+      reference: args.hash,
+      network: TEMPO_MODERATO_CAIP2,
+      settledAt,
+    };
+    if (requestAmount !== null) result.amount = requestAmount;
+    if (requestCurrency !== null) result.asset = requestCurrency;
+    return result;
   }
 
   /**
@@ -347,4 +501,194 @@ function guardChargeIntent(
     errorCode: "unsupported_intent",
     errorMessage: `MPP v1 only supports intent="charge"; got intent="${intent}". The "subscription" and "session" intents land when Stripe publishes the REST surface for them.`,
   };
+}
+
+/* ---------- Tempo route resolution ---------- */
+
+type TempoRoute =
+  | { kind: "moderato-hash"; hash: string }
+  | { kind: "moderato-unsupported-payload-type"; gotType: string }
+  | { kind: "stripe-facilitated" };
+
+/**
+ * Resolve a (challenge, credential) pair to a settle route. The
+ * dispatcher in verifyCredential / settleCredential branches on the
+ * returned `kind`. v1 supports only `moderato-hash` (Tempo Moderato
+ * testnet via direct JSON-RPC, mppx's canonical `case 'hash'`); the
+ * rest fall through to the "endpoint not wired" path.
+ */
+function resolveTempoRoute(
+  challenge: MppChallenge,
+  credential: MppCredential,
+): TempoRoute {
+  if (credential.method !== "tempo") return { kind: "stripe-facilitated" };
+  const chainId = extractChainId(challenge.request);
+  if (chainId !== 42431) return { kind: "stripe-facilitated" };
+  const payload = credential.payload;
+  const payloadType =
+    payload !== null && typeof payload === "object" && "type" in payload
+      ? String((payload as { type?: unknown }).type)
+      : "";
+  if (payloadType !== "hash") {
+    return { kind: "moderato-unsupported-payload-type", gotType: payloadType };
+  }
+  const rawHash = (payload as { hash?: unknown }).hash;
+  if (typeof rawHash !== "string" || !/^0x[0-9a-fA-F]{64}$/u.test(rawHash)) {
+    // Malformed hash → treat as wrong payload type so the upstream
+    // handler emits the same error class. The exact malformed-string
+    // surfaces through the hash field in errorMessage.
+    return { kind: "moderato-unsupported-payload-type", gotType: payloadType };
+  }
+  return { kind: "moderato-hash", hash: rawHash.toLowerCase() };
+}
+
+/**
+ * Extract a numeric chainId from a Tempo challenge.request. mppx's
+ * canonical shape places it either at `request.chainId` directly or,
+ * after the request transform, at `request.methodDetails.chainId`.
+ * Returns null when absent.
+ */
+function extractChainId(request: Record<string, unknown>): number | null {
+  const direct = request["chainId"];
+  if (typeof direct === "number") return direct;
+  const methodDetails = request["methodDetails"];
+  if (methodDetails !== null && typeof methodDetails === "object") {
+    const nested = (methodDetails as Record<string, unknown>)["chainId"];
+    if (typeof nested === "number") return nested;
+  }
+  return null;
+}
+
+function extractStringField(
+  obj: Record<string, unknown>,
+  key: string,
+): string | null {
+  const v = obj[key];
+  return typeof v === "string" ? v : null;
+}
+
+/* ---------- Direct-RPC client (eth_getTransactionReceipt) ---------- */
+
+/**
+ * Minimal shape of an Ethereum JSON-RPC transaction receipt — only
+ * the fields the Tempo Moderato direct-RPC verify path reads.
+ */
+interface EthTransactionReceipt {
+  status: string;
+  from: string;
+  to: string | null;
+  logs: ReadonlyArray<EthLog>;
+}
+
+interface EthLog {
+  address: string;
+  topics: ReadonlyArray<string>;
+  data: string;
+}
+
+/**
+ * Call `eth_getTransactionReceipt` on the configured Tempo Moderato
+ * RPC endpoint. Returns `null` if the receipt does not exist
+ * (transaction not mined or unknown hash). Throws on transport
+ * errors, malformed JSON, or RPC-level error responses.
+ */
+async function rpcGetReceipt(
+  fetchImpl: typeof globalThis.fetch,
+  rpcUrl: string,
+  hash: string,
+  timeoutMs: number,
+): Promise<EthTransactionReceipt | null> {
+  const body = JSON.stringify({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "eth_getTransactionReceipt",
+    params: [hash],
+  });
+  const response = await fetchImpl(rpcUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `RPC HTTP ${response.status} ${response.statusText} from ${rpcUrl}`,
+    );
+  }
+  const parsed = (await response.json()) as {
+    result?: EthTransactionReceipt | null;
+    error?: { code?: number; message?: string };
+  };
+  if (parsed.error !== undefined) {
+    throw new Error(
+      `RPC error ${parsed.error.code ?? "?"}: ${parsed.error.message ?? "unknown"}`,
+    );
+  }
+  return parsed.result ?? null;
+}
+
+/**
+ * ERC-20 `Transfer(address indexed from, address indexed to,
+ * uint256 value)` event topic hash. Constant per the ERC-20 spec —
+ * computed off-chain to avoid pulling in a keccak256 dependency.
+ */
+const ERC20_TRANSFER_TOPIC =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as const;
+
+/**
+ * Scan receipt logs for an ERC-20 Transfer event on the expected
+ * token contract whose `to` matches the challenge recipient and
+ * whose value is at least the challenge amount.
+ *
+ * Address comparisons are case-insensitive — log topics are
+ * zero-padded lowercase 32-byte hex; user-supplied addresses can be
+ * checksummed. Matches the first qualifying log; returns null when
+ * none match.
+ */
+function findMatchingTransferLog(
+  logs: ReadonlyArray<EthLog>,
+  match: {
+    tokenContract: string;
+    to: string;
+    minAmount: bigint;
+  },
+): { from: string; to: string; amount: bigint } | null {
+  const tokenContractLc = match.tokenContract.toLowerCase();
+  const toLc = normalizeAddress(match.to);
+  if (toLc === null) return null;
+  for (const log of logs) {
+    if (log.address.toLowerCase() !== tokenContractLc) continue;
+    if (log.topics.length < 3) continue;
+    if (log.topics[0]?.toLowerCase() !== ERC20_TRANSFER_TOPIC) continue;
+    const logToLc = topicToAddressLc(log.topics[2]);
+    if (logToLc === null || logToLc !== toLc) continue;
+    let amount: bigint;
+    try {
+      amount = BigInt(log.data);
+    } catch {
+      continue;
+    }
+    if (amount < match.minAmount) continue;
+    const fromLc = topicToAddressLc(log.topics[1]) ?? "";
+    return { from: fromLc, to: logToLc, amount };
+  }
+  return null;
+}
+
+/** Lowercase 20-byte hex address; null on malformed input. */
+function normalizeAddress(raw: string): string | null {
+  const trimmed = raw.toLowerCase();
+  if (!/^0x[0-9a-f]{40}$/u.test(trimmed)) return null;
+  return trimmed;
+}
+
+/**
+ * Strip the leading 12 zero bytes from a log topic to recover the
+ * 20-byte address. Returns null on malformed topics.
+ */
+function topicToAddressLc(topic: string | undefined): string | null {
+  if (typeof topic !== "string") return null;
+  const lc = topic.toLowerCase();
+  if (!/^0x[0-9a-f]{64}$/u.test(lc)) return null;
+  return "0x" + lc.slice(26);
 }

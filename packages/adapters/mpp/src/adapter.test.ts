@@ -251,6 +251,428 @@ describe("MppAdapter intent guard (Phase 2 T4 — v1 charge-only)", () => {
   });
 });
 
+describe("MppAdapter Tempo Moderato direct-RPC (Phase 2 T6 — type=hash only)", () => {
+  // The Moderato path bypasses Stripe entirely. Client broadcasts the
+  // transfer onto Tempo Moderato testnet (chainId 42431), then sends
+  // an MPP credential with `payload: { type: "hash", hash: "0x..." }`.
+  // The adapter pulls the receipt via direct JSON-RPC and validates
+  // the Transfer log against the challenge. Mirrors wevm/mppx's
+  // canonical `case 'hash'` flow.
+
+  const PAYER = "0x1111111111111111111111111111111111111111";
+  const RECIPIENT = "0x2222222222222222222222222222222222222222";
+  const TX_HASH =
+    "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+  // Challenge that targets Tempo Moderato testnet. `chainId: 42431`
+  // is what triggers the direct-RPC dispatch route.
+  const MODERATO_CHALLENGE: MppChallenge = {
+    id: "chal_moderato_1",
+    realm: "api.example.com",
+    method: "tempo",
+    intent: "charge",
+    request: {
+      amount: "1000000", // 1.000000 pathUSD at 6 decimals
+      currency: TEMPO_MODERATO_PATHUSD,
+      recipient: RECIPIENT,
+      chainId: 42431,
+    },
+  };
+
+  // Credential with payload.type="hash".
+  const MODERATO_HASH_CRED: MppCredential = {
+    challengeId: "chal_moderato_1",
+    method: "tempo",
+    intent: "charge",
+    payload: { type: "hash", hash: TX_HASH },
+  };
+
+  /**
+   * Construct an EVM-style Transfer log. Topic 0 is the keccak256 of
+   * "Transfer(address,address,uint256)"; topics 1+2 are zero-padded
+   * lowercase 32-byte addresses; data is the 32-byte hex value.
+   */
+  function transferLog(args: {
+    contract: string;
+    from: string;
+    to: string;
+    amount: bigint;
+  }) {
+    const pad = (a: string) => "0x" + a.slice(2).toLowerCase().padStart(64, "0");
+    const amountHex =
+      "0x" + args.amount.toString(16).padStart(64, "0");
+    return {
+      address: args.contract.toLowerCase(),
+      topics: [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        pad(args.from),
+        pad(args.to),
+      ],
+      data: amountHex,
+    };
+  }
+
+  function rpcReceiptResponse(receipt: unknown): Response {
+    return jsonResponse({ jsonrpc: "2.0", id: 1, result: receipt });
+  }
+
+  it("happy path — receipt with matching Transfer log returns valid + payer", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({
+          status: "0x1",
+          from: PAYER,
+          to: TEMPO_MODERATO_PATHUSD,
+          logs: [
+            transferLog({
+              contract: TEMPO_MODERATO_PATHUSD,
+              from: PAYER,
+              to: RECIPIENT,
+              amount: 1_000_000n,
+            }),
+          ],
+        }),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(true);
+    expect(r.errorCode).toBeUndefined();
+    expect(r.payer?.toLowerCase()).toBe(PAYER.toLowerCase());
+  });
+
+  it("happy path — settleCredential mirrors verify + projects amount/asset/reference", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({
+          status: "0x1",
+          from: PAYER,
+          to: TEMPO_MODERATO_PATHUSD,
+          logs: [
+            transferLog({
+              contract: TEMPO_MODERATO_PATHUSD,
+              from: PAYER,
+              to: RECIPIENT,
+              amount: 1_000_000n,
+            }),
+          ],
+        }),
+    });
+    const r = await a.settleCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.settled).toBe(true);
+    expect(r.reference).toBe(TX_HASH);
+    expect(r.amount).toBe("1000000");
+    expect(r.asset).toBe(TEMPO_MODERATO_PATHUSD);
+    expect(r.network).toBe(TEMPO_MODERATO_CAIP2);
+    expect(r.errorCode).toBeUndefined();
+  });
+
+  it("accepts a Transfer with value strictly greater than the challenge amount (overpayment)", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({
+          status: "0x1",
+          from: PAYER,
+          to: TEMPO_MODERATO_PATHUSD,
+          logs: [
+            transferLog({
+              contract: TEMPO_MODERATO_PATHUSD,
+              from: PAYER,
+              to: RECIPIENT,
+              amount: 5_000_000n, // 5× the challenge
+            }),
+          ],
+        }),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(true);
+  });
+
+  it("rejects when the transaction is not yet mined (RPC returns result=null)", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () => rpcReceiptResponse(null),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("transaction_not_found");
+    expect(r.errorMessage).toContain(TX_HASH);
+  });
+
+  it("rejects a reverted transaction (status=0x0)", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({
+          status: "0x0",
+          from: PAYER,
+          to: TEMPO_MODERATO_PATHUSD,
+          logs: [],
+        }),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("transaction_reverted");
+  });
+
+  it("rejects a Transfer on a different ERC-20 contract", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({
+          status: "0x1",
+          from: PAYER,
+          to: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+          logs: [
+            transferLog({
+              contract: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+              from: PAYER,
+              to: RECIPIENT,
+              amount: 1_000_000n,
+            }),
+          ],
+        }),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("transfer_not_found");
+  });
+
+  it("rejects a Transfer that pays a different recipient", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({
+          status: "0x1",
+          from: PAYER,
+          to: TEMPO_MODERATO_PATHUSD,
+          logs: [
+            transferLog({
+              contract: TEMPO_MODERATO_PATHUSD,
+              from: PAYER,
+              to: "0x3333333333333333333333333333333333333333",
+              amount: 1_000_000n,
+            }),
+          ],
+        }),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("transfer_not_found");
+  });
+
+  it("rejects an underpayment (value less than challenge amount)", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({
+          status: "0x1",
+          from: PAYER,
+          to: TEMPO_MODERATO_PATHUSD,
+          logs: [
+            transferLog({
+              contract: TEMPO_MODERATO_PATHUSD,
+              from: PAYER,
+              to: RECIPIENT,
+              amount: 999_999n, // 1 atomic unit short
+            }),
+          ],
+        }),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("transfer_not_found");
+  });
+
+  it("surfaces an RPC HTTP failure (5xx) as rpc_error", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        new Response("upstream gone", {
+          status: 503,
+          statusText: "Service Unavailable",
+        }),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("rpc_error");
+    expect(r.errorMessage).toContain("503");
+  });
+
+  it("surfaces an RPC-level error response as rpc_error", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        jsonResponse({
+          jsonrpc: "2.0",
+          id: 1,
+          error: { code: -32602, message: "Invalid params" },
+        }),
+    });
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("rpc_error");
+    expect(r.errorMessage).toContain("Invalid params");
+  });
+
+  it("rejects a malformed challenge missing amount/recipient/currency", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({ status: "0x1", from: PAYER, to: null, logs: [] }),
+    });
+    const r = await a.verifyCredential({
+      challenge: {
+        ...MODERATO_CHALLENGE,
+        request: { chainId: 42431 }, // amount/recipient/currency missing
+      },
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("malformed_challenge");
+  });
+
+  it("rejects when challenge amount is not a decimal-integer string", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () =>
+        rpcReceiptResponse({ status: "0x1", from: PAYER, to: null, logs: [] }),
+    });
+    const r = await a.verifyCredential({
+      challenge: {
+        ...MODERATO_CHALLENGE,
+        request: { ...MODERATO_CHALLENGE.request, amount: "not-a-number" },
+      },
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("malformed_challenge");
+  });
+
+  it("payload.type=\"transaction\" returns unsupported_payload_type (v1 hash-only)", async () => {
+    const a = new MppAdapter();
+    const cred: MppCredential = {
+      ...MODERATO_HASH_CRED,
+      payload: { type: "transaction", signature: "0x" + "ab".repeat(65) },
+    };
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: cred,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("unsupported_payload_type");
+    expect(r.errorMessage).toContain("hash");
+    expect(r.errorMessage).toContain("transaction");
+  });
+
+  it("payload.type=\"proof\" returns unsupported_payload_type", async () => {
+    const a = new MppAdapter();
+    const cred: MppCredential = {
+      ...MODERATO_HASH_CRED,
+      payload: { type: "proof", signature: "0x" + "cd".repeat(65) },
+    };
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: cred,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("unsupported_payload_type");
+  });
+
+  it("rejects a malformed payload hash (wrong length) as unsupported_payload_type", async () => {
+    const a = new MppAdapter();
+    const cred: MppCredential = {
+      ...MODERATO_HASH_CRED,
+      payload: { type: "hash", hash: "0xdeadbeef" }, // too short
+    };
+    const r = await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: cred,
+    });
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("unsupported_payload_type");
+  });
+
+  it("chainId other than 42431 routes to the Stripe-facilitated path (unsupported_scheme requires secret)", async () => {
+    // Tempo MAINNET (chainId=4217) — falls through to "endpoint not
+    // wired" because the Stripe MPP REST surface isn't public yet.
+    // Without a secretKey, the Stripe path throws unauthorized.
+    const a = new MppAdapter();
+    await expect(
+      a.verifyCredential({
+        challenge: {
+          ...MODERATO_CHALLENGE,
+          request: { ...MODERATO_CHALLENGE.request, chainId: 4217 },
+        },
+        credential: {
+          ...MODERATO_HASH_CRED,
+          payload: { type: "transaction", signature: "0x" + "ab".repeat(65) },
+        },
+      }),
+    ).rejects.toMatchObject({ code: "unauthorized" });
+  });
+
+  it("settleCredential propagates verify errorCode on failure (no double-call surface)", async () => {
+    const a = new MppAdapter({
+      fetchImpl: async () => rpcReceiptResponse(null),
+    });
+    const r = await a.settleCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(r.settled).toBe(false);
+    expect(r.errorCode).toBe("transaction_not_found");
+    expect(r.reference).toBeUndefined();
+  });
+
+  it("respects an operator-overridden Tempo Moderato RPC URL", async () => {
+    let calledUrl = "";
+    const a = new MppAdapter({
+      tempoModeratoRpcUrl: "https://rpc.internal.example/tempo-moderato",
+      fetchImpl: async (input) => {
+        calledUrl = typeof input === "string" ? input : (input as Request).url;
+        return rpcReceiptResponse({
+          status: "0x1",
+          from: PAYER,
+          to: TEMPO_MODERATO_PATHUSD,
+          logs: [
+            transferLog({
+              contract: TEMPO_MODERATO_PATHUSD,
+              from: PAYER,
+              to: RECIPIENT,
+              amount: 1_000_000n,
+            }),
+          ],
+        });
+      },
+    });
+    await a.verifyCredential({
+      challenge: MODERATO_CHALLENGE,
+      credential: MODERATO_HASH_CRED,
+    });
+    expect(calledUrl).toBe("https://rpc.internal.example/tempo-moderato");
+  });
+});
+
 describe("MppAdapter getHealthStatus", () => {
   it("returns healthy on 2xx from api.stripe.com/v1", async () => {
     const a = new MppAdapter({
