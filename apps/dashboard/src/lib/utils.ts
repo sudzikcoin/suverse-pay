@@ -83,6 +83,10 @@ const EXPLORERS: Record<string, (tx: string) => string> = {
   "eip155:42161": (tx) => `https://arbiscan.io/tx/${tx}`,
   "eip155:43114": (tx) => `https://snowtrace.io/tx/${tx}`,
   "eip155:84532": (tx) => `https://sepolia.basescan.org/tx/${tx}`,
+  "eip155:1187947933": (tx) =>
+    `https://skale-base-explorer.skalenodes.com/tx/${tx}`,
+  "eip155:324705682": (tx) =>
+    `https://skale-base-sepolia-explorer.skalenodes.com/tx/${tx}`,
   "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp": (tx) =>
     `https://solscan.io/tx/${tx}`,
   "tron:mainnet": (tx) => `https://tronscan.org/#/transaction/${tx}`,
@@ -113,13 +117,15 @@ const NETWORK_LABELS: Record<string, string> = {
   "eip155:2741": "Abstract",
   "eip155:4217": "Tempo",
   "eip155:4689": "IoTeX",
-  "eip155:8453": "Base",
+  "eip155:8453": "Base (Coinbase L2)",
   "eip155:42161": "Arbitrum",
   "eip155:42220": "Celo",
   "eip155:43114": "Avalanche",
   "eip155:57073": "Ink",
   "eip155:59144": "Linea",
   "eip155:84532": "Base Sepolia",
+  "eip155:1187947933": "SKALE Base",
+  "eip155:324705682": "SKALE Base Sepolia",
   "tron:mainnet": "TRON",
   "tron:nile": "TRON Nile",
   "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp": "Solana",

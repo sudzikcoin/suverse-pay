@@ -102,7 +102,11 @@ describe("explorerUrl", () => {
 
 describe("networkLabel", () => {
   it("renders friendly labels for known networks", () => {
-    expect(networkLabel("eip155:8453")).toBe("Base");
+    // Base label now distinguishes the Coinbase L2 from SKALE Base L3
+    // (Phase 5 Sub-task 7) to keep them visually unambiguous in the UI.
+    expect(networkLabel("eip155:8453")).toBe("Base (Coinbase L2)");
+    expect(networkLabel("eip155:1187947933")).toBe("SKALE Base");
+    expect(networkLabel("eip155:324705682")).toBe("SKALE Base Sepolia");
     expect(networkLabel("eip155:1")).toBe("Ethereum");
     expect(networkLabel("eip155:4217")).toBe("Tempo");
     expect(networkLabel("cosmos:noble-1")).toBe("Noble");

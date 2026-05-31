@@ -244,7 +244,7 @@ export function ConfigureView({
           <Section
             n={1}
             title="Accepted networks"
-            description="Which chains will you accept payments on? Toggle one or more. Base is recommended for first integrations."
+            description="Which chains will you accept payments on? Toggle one or more. Base (Coinbase L2) is recommended for first integrations."
           >
             <NetworksPicker
               catalog={networksCatalog}

@@ -68,8 +68,9 @@ export default async function DocsConfigurePage(): Promise<React.JSX.Element> {
             <code className="mx-1 rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">
               /dashboard/keys/&lt;id&gt;/configure
             </code>
-            where you pick accepted networks (Base is recommended for
-            first integrations), paste your USDC receive addresses, set
+            where you pick accepted networks (Base (Coinbase L2) is
+            recommended for first integrations), paste your USDC receive
+            addresses, set
             a default price ($0.07 is a sensible starting point), and
             optionally describe what your endpoint does.
           </p>
