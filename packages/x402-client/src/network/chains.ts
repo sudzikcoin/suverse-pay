@@ -287,6 +287,27 @@ export const CHAINS: readonly ChainEntry[] = [
     eip3009Supported: true,
     testnet: false,
   },
+  // SKALE Base — Phase 5 Sub-task 7. L3 atop Coinbase Base. The native
+  // gas token is CREDIT (pre-paid by the operator/facilitator), so the
+  // buyer never sees gas costs. USDC.e is the SKALE Bridge-issued
+  // USDC; on-chain name() returns "Bridged USDC (SKALE Bridge)" —
+  // verified 2026-05-31 via eth_call against
+  // skale-base.skalenodes.com.
+  {
+    caip2: "eip155:1187947933",
+    chainId: 1187947933,
+    displayName: "SKALE Base",
+    nativeToken: "CREDIT",
+    usdc: {
+      address: "0x85889c8c714505E0c94b30fcfcF64fE3Ac8FCb20",
+      decimals: 6,
+      eip712Name: "Bridged USDC (SKALE Bridge)",
+      eip712Version: "2",
+    },
+    costClass: "l2",
+    eip3009Supported: true,
+    testnet: false,
+  },
 
   // ---- L1 mainnets (expensive gas — selected last by cost rank) ----
   {
@@ -399,6 +420,24 @@ export const CHAINS: readonly ChainEntry[] = [
       address: "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88",
       decimals: 6,
       eip712Name: "USDC",
+      eip712Version: "2",
+    },
+    costClass: "testnet",
+    eip3009Supported: true,
+    testnet: true,
+  },
+  // SKALE Base Sepolia — Phase 5 Sub-task 7 test surface. Same on-chain
+  // shape as mainnet (Bridged USDC (SKALE Bridge) / version "2"),
+  // verified via eth_call against base-sepolia-testnet.skalenodes.com.
+  {
+    caip2: "eip155:324705682",
+    chainId: 324705682,
+    displayName: "SKALE Base Sepolia",
+    nativeToken: "CREDIT",
+    usdc: {
+      address: "0x2e08028E3C4c2356572E096d8EF835cD5C6030bD",
+      decimals: 6,
+      eip712Name: "Bridged USDC (SKALE Bridge)",
       eip712Version: "2",
     },
     costClass: "testnet",
