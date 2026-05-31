@@ -60,6 +60,16 @@ const HOP_BY_HOP = new Set([
   // config) not the buyer.
   "authorization",
   "cookie",
+  // Infrastructure headers added by nginx in front of us — leaking
+  // them to the upstream advertises that the request is double-
+  // proxied. Cloudflare-fronted APIs (CoinGecko etc.) treat that as
+  // a bot signal and return 403; standard reverse-proxy hygiene is
+  // to terminate them here and emit only canonical `X-Forwarded-For`
+  // if the seller wants it (we don't, in v1).
+  "x-forwarded-for",
+  "x-forwarded-proto",
+  "x-forwarded-host",
+  "x-real-ip",
 ]);
 
 export interface HandleArgs {
@@ -414,10 +424,20 @@ function mergeUpstreamHeaders(
   return out;
 }
 
+// Response-only headers the proxy must NOT forward to the buyer. The
+// upstream Response's body was already decompressed by undici when we
+// called `arrayBuffer()`, so the `Content-Encoding` it advertised is
+// no longer accurate. Leaving it on triggers the client to try a
+// second round of gunzip on plain bytes — undici throws "terminated".
+// Fastify will recompute `Content-Length` from the Buffer we send, so
+// we drop the upstream's value to keep the two in sync.
+const RESPONSE_STRIP = new Set(["content-encoding", "content-length"]);
+
 function stripHopByHop(h: Headers): Record<string, string> {
   const out: Record<string, string> = {};
   h.forEach((value, name) => {
-    if (HOP_BY_HOP.has(name.toLowerCase())) return;
+    const lower = name.toLowerCase();
+    if (HOP_BY_HOP.has(lower) || RESPONSE_STRIP.has(lower)) return;
     out[name] = value;
   });
   return out;

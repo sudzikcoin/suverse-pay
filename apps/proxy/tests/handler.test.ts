@@ -285,6 +285,151 @@ describe("handle", () => {
     expect(upstreamInit).toMatchObject({ method: "POST" });
   });
 
+  it("strips nginx infrastructure headers from the upstream call", async () => {
+    // Cloudflare-fronted upstreams (CoinGecko etc.) read
+    // x-forwarded-* + x-real-ip as a bot signal and return 403.
+    // Nginx in front of the proxy injects them on every request, so
+    // they have to terminate at our edge — never reach upstream.
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xPAYER" }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xTXHASH",
+            network: "eip155:8453",
+            payer: "0xPAYER",
+          }),
+          { status: 200 },
+        );
+      }
+      if (url === "https://upstream.example.com/forecast") {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({ store: makeStore(makeConfig()), fetchImpl: fetchMock });
+    await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "test-idem-fwd",
+        incomingHeaders: {
+          "content-type": "application/json",
+          "x-forwarded-for": "1.2.3.4, 5.6.7.8",
+          "x-forwarded-proto": "https",
+          "x-forwarded-host": "proxy.suverse.io",
+          "x-real-ip": "1.2.3.4",
+          "user-agent": "buyer-sdk/1.0",
+        },
+        body: Buffer.from("{}"),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    const upstreamCall = fetchMock.mock.calls.find(
+      ([u]) => u === "https://upstream.example.com/forecast",
+    )!;
+    const upstreamHeaders = (upstreamCall[1] as { headers: Record<string, string> })
+      .headers;
+    expect(upstreamHeaders["x-forwarded-for"]).toBeUndefined();
+    expect(upstreamHeaders["x-forwarded-proto"]).toBeUndefined();
+    expect(upstreamHeaders["x-forwarded-host"]).toBeUndefined();
+    expect(upstreamHeaders["x-real-ip"]).toBeUndefined();
+    // user-agent must still pass through — it's a legitimate end-to-end
+    // header buyers control.
+    expect(upstreamHeaders["user-agent"]).toBe("buyer-sdk/1.0");
+  });
+
+  it("drops content-encoding + content-length from the upstream response", async () => {
+    // undici's Response.arrayBuffer() returns the DECODED body, so any
+    // Content-Encoding the upstream advertised is now a lie. Forwarding
+    // it makes the buyer's HTTP client (also undici, typically) try to
+    // gunzip already-plain bytes — the connection drops mid-stream with
+    // "terminated" and no useful diagnostic. Strip the encoding pair
+    // and let Fastify recompute Content-Length from the actual Buffer.
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xPAYER" }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xTXHASH",
+            network: "eip155:8453",
+            payer: "0xPAYER",
+          }),
+          { status: 200 },
+        );
+      }
+      if (url === "https://upstream.example.com/forecast") {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "content-encoding": "gzip",
+            "content-length": "9999",
+            "cache-control": "max-age=30",
+          },
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({ store: makeStore(makeConfig()), fetchImpl: fetchMock });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "test-idem-enc",
+        incomingHeaders: { "content-type": "application/json" },
+        body: Buffer.from("{}"),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(200);
+    expect(result.headers["content-encoding"]).toBeUndefined();
+    expect(result.headers["content-length"]).toBeUndefined();
+    // Non-stripped upstream headers should pass through.
+    expect(result.headers["content-type"]).toBe("application/json");
+    expect(result.headers["cache-control"]).toBe("max-age=30");
+  });
+
   it("returns 503 upstream_unavailable when probe sees HEAD 503", async () => {
     const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
       if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
