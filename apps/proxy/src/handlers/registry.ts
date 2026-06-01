@@ -23,6 +23,7 @@ import { defillamaProtocolTvl } from "./defillama-protocol-tvl.js";
 import { defillamaStablecoins } from "./defillama-stablecoins.js";
 import { defillamaTvlChain } from "./defillama-tvl-chain.js";
 import { defillamaYieldPools } from "./defillama-yield-pools.js";
+import { fearGreedIndex } from "./fear-greed-index.js";
 import { frankfurterHistorical } from "./frankfurter-historical.js";
 import { frankfurterRatesBatch } from "./frankfurter-rates-batch.js";
 import { geckoterminalBasePools } from "./geckoterminal-base-pools.js";
@@ -32,6 +33,9 @@ import { heliusPriorityFee } from "./helius-priority-fee.js";
 import { heliusTxDecoder } from "./helius-tx-decoder.js";
 import { heliusTxSimulator } from "./helius-tx-simulator.js";
 import { heliusWalletHistory } from "./helius-wallet-history.js";
+import { secFilings } from "./sec-filings.js";
+import { stooqOilPrices } from "./stooq-oil-prices.js";
+import { stooqPreciousMetals } from "./stooq-precious-metals.js";
 import { taMacd } from "./ta-macd.js";
 import { taMovingAverages } from "./ta-moving-averages.js";
 import { taRsi } from "./ta-rsi.js";
@@ -70,6 +74,10 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   yahoo_stock_batch: yahooStockBatch,
   frankfurter_rates_batch: frankfurterRatesBatch,
   frankfurter_historical: frankfurterHistorical,
+  fear_greed_index: fearGreedIndex,
+  sec_filings: secFilings,
+  stooq_precious_metals: stooqPreciousMetals,
+  stooq_oil_prices: stooqOilPrices,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
