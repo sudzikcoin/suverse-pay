@@ -32,6 +32,8 @@ import { decryptHeaders } from "./crypto.js";
 import { getInternalHandler } from "./handlers/registry.js";
 import { lookupNetwork } from "./networks.js";
 import {
+  createInboundFacilitatorPaymentFallback,
+  findInboundFacilitatorPaymentByTxHash,
   finishOutboundUpstreamPayment,
   logProxyRequest,
   startOutboundUpstreamPayment,
@@ -388,13 +390,7 @@ export async function handle(
       };
     }
     const latencyMsInternal = Date.now() - startedAtInternal;
-    await logProxyRequest(deps.pool, {
-      proxyConfigId: config.id,
-      resourceKeyId: config.resourceKeyId,
-      outcome: "settled",
-      network: receipt.network,
-      amountAtomic: receipt.amount,
-      txHash: receipt.txHash,
+    await recordSettledWithInboundLink(deps, config, receipt, args, {
       upstreamStatus: handlerResult.status,
       upstreamLatencyMs: latencyMsInternal,
       ipHash,
@@ -628,13 +624,7 @@ export async function handle(
 
   const latencyMs = Date.now() - startedAt;
 
-  await logProxyRequest(deps.pool, {
-    proxyConfigId: config.id,
-    resourceKeyId: config.resourceKeyId,
-    outcome: "settled",
-    network: receipt.network,
-    amountAtomic: receipt.amount,
-    txHash: receipt.txHash,
+  await recordSettledWithInboundLink(deps, config, receipt, args, {
     upstreamStatus: upstreamRes.status,
     upstreamLatencyMs: latencyMs,
     ipHash,
@@ -756,4 +746,138 @@ function encodeHeaderJson(value: unknown): string {
 function hashIp(ip: string | null): string | null {
   if (!ip) return null;
   return createHash("sha256").update(ip).digest("hex").slice(0, 16);
+}
+
+/**
+ * Pick the seller's pay_to address matching the network the buyer
+ * actually paid on. Mirrors the namespace switch in
+ * `buildAcceptedPayments`; only invoked from settled paths where the
+ * relevant pay_to was non-null at challenge time, so the empty-string
+ * default below is only ever taken on misconfigured rows (defensive).
+ */
+function recipientForNetwork(
+  config: ProxyConfigRow,
+  network: string,
+): string {
+  const entry = lookupNetwork(network);
+  if (!entry) return "";
+  switch (entry.namespace) {
+    case "evm":
+      return config.payToEvm ?? "";
+    case "solana":
+      return config.payToSolana ?? "";
+    case "cosmos":
+      return config.payToCosmos ?? "";
+    case "tron":
+      return config.payToTron ?? "";
+    default:
+      return "";
+  }
+}
+
+/**
+ * Deterministic per-payment id used as the seller-side
+ * `facilitator_payments.idempotency_key` when the proxy has to write
+ * a fallback inbound row (approach B). The buyer's
+ * `Idempotency-Key` header wins when supplied (the natural retry
+ * contract); otherwise a fingerprint of receipt fields keeps
+ * re-issues of the same call landing on the same row via the unique
+ * index on (resource_key_id, idempotency_key).
+ */
+function inboundFallbackIdempotencyKey(
+  buyerIdemKey: string | undefined,
+  receipt: { payer: string; network: string; amount: string; txHash: string | null },
+): string {
+  if (buyerIdemKey && buyerIdemKey.length > 0) return buyerIdemKey;
+  const seed = receipt.txHash
+    ? `tx:${receipt.txHash}`
+    : `payer:${receipt.payer}|net:${receipt.network}|amt:${receipt.amount}`;
+  return createHash("sha256").update(seed, "utf8").digest("hex").slice(0, 32);
+}
+
+/**
+ * Settled-path sink for inbound x402 payments. Tries Approach A first
+ * (look up the existing `facilitator_payments` row the gateway wrote,
+ * join on tx_hash + network), then Approach B fallback (write a fresh
+ * inbound row OWNED by the seller's resource_key) when A returns
+ * nothing — typically the no-txHash case, occasionally the race
+ * where the proxy is reading before the gateway's commit is visible.
+ *
+ * Either way, `proxy_request_logs.facilitator_payment_id` is filled
+ * in so the dashboard can answer "who paid me?" with a single join.
+ *
+ * Best-effort end-to-end: any DB error inside the resolver falls back
+ * to a plain `logProxyRequest` without the fp link. The buyer already
+ * paid on-chain — never let bookkeeping mask the success.
+ */
+async function recordSettledWithInboundLink(
+  deps: HandleDeps,
+  config: ProxyConfigRow,
+  receipt: {
+    payer: string;
+    network: string;
+    asset: string;
+    amount: string;
+    txHash: string | null;
+  },
+  args: HandleArgs,
+  log: {
+    upstreamStatus: number;
+    upstreamLatencyMs: number;
+    ipHash: string | null;
+  },
+): Promise<void> {
+  let fpId: string | null = null;
+  try {
+    if (receipt.txHash !== null) {
+      fpId = await findInboundFacilitatorPaymentByTxHash(
+        deps.pool,
+        receipt.txHash,
+        receipt.network,
+      );
+    }
+    if (fpId === null) {
+      const idem = inboundFallbackIdempotencyKey(args.idempotencyKey, receipt);
+      fpId = await createInboundFacilitatorPaymentFallback(deps.pool, {
+        resourceKeyId: config.resourceKeyId,
+        idempotencyKey: idem,
+        network: receipt.network,
+        asset: receipt.asset,
+        scheme: SCHEME_BY_NAMESPACE[lookupNetwork(receipt.network)?.namespace ?? "evm"],
+        amountAtomic: receipt.amount,
+        payer: receipt.payer,
+        recipient: recipientForNetwork(config, receipt.network),
+        txHash: receipt.txHash,
+      });
+    }
+  } catch (err) {
+    deps.logger?.warn?.(
+      `proxy: inbound fp link resolve failed config=${config.id} ` +
+        `network=${receipt.network} payer=${receipt.payer} ` +
+        `tx=${receipt.txHash ?? "(none)"}`,
+      err,
+    );
+    fpId = null;
+  }
+
+  try {
+    await logProxyRequest(deps.pool, {
+      proxyConfigId: config.id,
+      resourceKeyId: config.resourceKeyId,
+      outcome: "settled",
+      facilitatorPaymentId: fpId,
+      network: receipt.network,
+      amountAtomic: receipt.amount,
+      txHash: receipt.txHash,
+      upstreamStatus: log.upstreamStatus,
+      upstreamLatencyMs: log.upstreamLatencyMs,
+      ipHash: log.ipHash,
+    });
+  } catch (err) {
+    deps.logger?.error?.(
+      `proxy: logProxyRequest failed for settled row config=${config.id} ` +
+        `tx=${receipt.txHash ?? "(none)"}`,
+      err,
+    );
+  }
 }

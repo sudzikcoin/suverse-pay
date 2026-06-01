@@ -869,17 +869,23 @@ describe("handle", () => {
     // Two-phase recorder: one INSERT 'pending', one UPDATE 'settled'.
     // Both must hit facilitator_payments with the outbound metadata
     // so an interrupted call leaves a row we can reconcile against
-    // the on-chain spend.
-    const insertCalls = poolQuery.mock.calls.filter(([sql]) =>
-      String(sql).includes("INSERT INTO facilitator_payments"),
-    );
-    expect(insertCalls.length).toBe(1);
-    const insertSql = String(insertCalls[0][0]);
+    // the on-chain spend. Filter on the 'outbound' literal so the
+    // inbound fallback insert from `recordSettledWithInboundLink`
+    // does not collide with this assertion.
+    const outboundInserts = poolQuery.mock.calls.filter(([sql]) => {
+      const s = String(sql);
+      return (
+        s.includes("INSERT INTO facilitator_payments") &&
+        s.includes("'outbound'")
+      );
+    });
+    expect(outboundInserts.length).toBe(1);
+    const insertSql = String(outboundInserts[0][0]);
     expect(insertSql).toContain("'outbound'");
     expect(insertSql).toContain("'upstream-x402'");
     expect(insertSql).toContain("'pending'");
     // The amount we are about to pay matches the upstream's quote.
-    expect(insertCalls[0][1]).toEqual(
+    expect(outboundInserts[0][1]).toEqual(
       expect.arrayContaining(["100000"]),
     );
     const updateCalls = poolQuery.mock.calls.filter(([sql]) =>
@@ -1135,5 +1141,271 @@ describe("handle", () => {
     );
     expect(result.status).toBe(503);
     expect(result.outcome).toBe("invalid_config");
+  });
+
+  // ----- P1 Hybrid A+B payer-attribution tests -----
+  // The two settled paths (internal_handler + upstream forward) now
+  // call `recordSettledWithInboundLink`, which:
+  //   A) first looks up the existing inbound fp row by (tx_hash, network),
+  //   B) if not found, inserts a fresh inbound fp row OWNED by the
+  //      seller's resource_key,
+  // then writes the proxy_request_logs row with the resolved
+  // facilitator_payment_id. These tests exercise both branches via
+  // the mock pool's query stub.
+
+  it("settled path uses Approach A: links prl to existing inbound fp by tx_hash", async () => {
+    // Make the pool's SELECT for inbound fp return a hit, so Approach
+    // A wins and Approach B is never invoked.
+    const queryByLookup = vi.fn((sql: string, _params?: unknown[]) => {
+      const s = String(sql);
+      if (
+        s.includes("FROM facilitator_payments") &&
+        s.includes("direction = 'inbound'")
+      ) {
+        return Promise.resolve({
+          rows: [{ id: "fp_existing_gateway_row" }],
+          rowCount: 1,
+        });
+      }
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    });
+    const pool = { query: queryByLookup } as unknown as HandleDeps["pool"];
+
+    const upstreamFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (u.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xBUYER" }),
+          { status: 200 },
+        );
+      }
+      if (u.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xUPSTREAM_TX",
+            network: "eip155:8453",
+            payer: "0xBUYER",
+          }),
+          { status: 200 },
+        );
+      }
+      // Upstream API call.
+      return new Response('{"ok":true}', { status: 200 });
+    });
+
+    const deps = makeDeps({ pool, fetchImpl: upstreamFetch });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/data/weather",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "idem-a",
+        incomingHeaders: { "content-type": "application/json" },
+        body: Buffer.from("{}"),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+
+    expect(result.outcome).toBe("settled");
+    // Approach A path: SELECT happened, no fallback INSERT into
+    // facilitator_payments was needed.
+    const prlInserts = queryByLookup.mock.calls.filter(([sql]) =>
+      String(sql).includes("INSERT INTO proxy_request_logs"),
+    );
+    expect(prlInserts.length).toBe(1);
+    // proxy_request_logs row carries the looked-up fp id as
+    // facilitator_payment_id (the $4 parameter in the insert).
+    expect(prlInserts[0]![1]).toEqual(
+      expect.arrayContaining(["fp_existing_gateway_row"]),
+    );
+    // No inbound fallback insert was issued.
+    const inboundFallbackInserts = queryByLookup.mock.calls.filter(
+      ([sql]) => {
+        const s = String(sql);
+        return (
+          s.includes("INSERT INTO facilitator_payments") &&
+          s.includes("'inbound'") &&
+          s.includes("'standard'")
+        );
+      },
+    );
+    expect(inboundFallbackInserts.length).toBe(0);
+  });
+
+  it("settled path uses Approach B fallback when no fp row exists for tx_hash", async () => {
+    // Pool returns no row for the inbound lookup → Approach B fires.
+    const fpFallbackInsertSpy = vi.fn();
+    const queryFallback = vi.fn((sql: string, params?: unknown[]) => {
+      const s = String(sql);
+      if (
+        s.includes("FROM facilitator_payments") &&
+        s.includes("direction = 'inbound'")
+      ) {
+        return Promise.resolve({ rows: [], rowCount: 0 });
+      }
+      if (
+        s.includes("INSERT INTO facilitator_payments") &&
+        s.includes("'inbound'") &&
+        s.includes("RETURNING id")
+      ) {
+        fpFallbackInsertSpy(s, params);
+        return Promise.resolve({
+          rows: [{ id: "fp_in_fallback_id" }],
+          rowCount: 1,
+        });
+      }
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    });
+    const pool = { query: queryFallback } as unknown as HandleDeps["pool"];
+
+    const upstreamFetch = vi.fn(async (url: string) => {
+      const u = String(url);
+      if (u.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (u.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xBUYER" }),
+          { status: 200 },
+        );
+      }
+      if (u.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xTX_FALLBACK",
+            network: "eip155:8453",
+            payer: "0xBUYER",
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response('{"ok":true}', { status: 200 });
+    });
+
+    const deps = makeDeps({ pool, fetchImpl: upstreamFetch });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/data/weather",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "idem-b",
+        incomingHeaders: { "content-type": "application/json" },
+        body: Buffer.from("{}"),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+
+    expect(result.outcome).toBe("settled");
+    // Approach B path: exactly one fallback insert was issued, and
+    // the prl row's facilitator_payment_id points at the new fp id.
+    expect(fpFallbackInsertSpy).toHaveBeenCalledTimes(1);
+    const prlInserts = queryFallback.mock.calls.filter(([sql]) =>
+      String(sql).includes("INSERT INTO proxy_request_logs"),
+    );
+    expect(prlInserts.length).toBe(1);
+    expect(prlInserts[0]![1]).toEqual(
+      expect.arrayContaining(["fp_in_fallback_id"]),
+    );
+  });
+
+  it("settled path tolerates DB error during fp resolve — prl is still written without fp link", async () => {
+    // Both SELECT and INSERT throw. The handler must still log a
+    // proxy_request_logs row (without a fp link) so the audit trail
+    // survives a DB outage on the link path.
+    const queryAlwaysThrows = vi.fn((sql: string, _params?: unknown[]) => {
+      const s = String(sql);
+      if (
+        s.includes("FROM facilitator_payments") ||
+        (s.includes("INSERT INTO facilitator_payments") && s.includes("'inbound'"))
+      ) {
+        return Promise.reject(new Error("DB unavailable"));
+      }
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    });
+    const pool = { query: queryAlwaysThrows } as unknown as HandleDeps["pool"];
+
+    const upstreamFetch = vi.fn(async (url: string) => {
+      const u = String(url);
+      if (u.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (u.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xBUYER" }),
+          { status: 200 },
+        );
+      }
+      if (u.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xTX_DB_FAIL",
+            network: "eip155:8453",
+            payer: "0xBUYER",
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response('{"ok":true}', { status: 200 });
+    });
+
+    const deps = makeDeps({ pool, fetchImpl: upstreamFetch });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/data/weather",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "idem-c",
+        incomingHeaders: { "content-type": "application/json" },
+        body: Buffer.from("{}"),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+
+    expect(result.outcome).toBe("settled");
+    const prlInserts = queryAlwaysThrows.mock.calls.filter(([sql]) =>
+      String(sql).includes("INSERT INTO proxy_request_logs"),
+    );
+    expect(prlInserts.length).toBe(1);
+    // facilitator_payment_id parameter is null when resolve failed.
+    // The proxy_request_logs INSERT positions: $1=proxy_config_id,
+    // $2=resource_key_id, $3=outcome, $4=facilitator_payment_id.
+    const prlParams = prlInserts[0]![1] as Array<unknown>;
+    expect(prlParams[3]).toBeNull();
   });
 });
