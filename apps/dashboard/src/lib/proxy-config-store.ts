@@ -580,18 +580,45 @@ export interface ProxyLogRow {
   upstreamStatus: number | null;
   upstreamLatencyMs: number | null;
   errorCode: string | null;
+  /** Payer address from the settled payment; null when the log is not
+   *  tied to a facilitator_payments row (challenges, errors, etc.). */
+  payer: string | null;
 }
+
+export type ProxyLogFilter = "all" | "external" | "self" | "errors";
 
 export async function listProxyLogs(args: {
   userId: string;
   proxyId: string;
   limit: number;
+  filter?: ProxyLogFilter;
+  selfWallets?: ReadonlyArray<string>;
 }): Promise<ProxyLogRow[]> {
   const ok = await getOwnedProxy({
     userId: args.userId,
     proxyId: args.proxyId,
   });
   if (!ok) return [];
+  const filter: ProxyLogFilter = args.filter ?? "all";
+  const selfWallets = args.selfWallets ?? [];
+  // Filter clauses share $3 = selfWallets[]. Filters that don't need it
+  // get an always-true predicate so the SQL is uniform either way.
+  const whereExtra = (() => {
+    if (filter === "external") {
+      return "AND prl.outcome = 'settled' AND (fp.payer IS NULL OR fp.payer <> ALL($3::text[]))";
+    }
+    if (filter === "self") {
+      return "AND prl.outcome = 'settled' AND fp.payer = ANY($3::text[])";
+    }
+    if (filter === "errors") {
+      return "AND prl.outcome IN ('settle_failed','upstream_error','rate_limited','invalid_config')";
+    }
+    return "";
+  })();
+  const params: unknown[] = [args.proxyId, args.limit];
+  if (filter === "external" || filter === "self") {
+    params.push(selfWallets);
+  }
   const rows = await dbQuery<{
     id: string;
     created_at: string;
@@ -602,17 +629,27 @@ export async function listProxyLogs(args: {
     upstream_status: number | null;
     upstream_latency_ms: number | null;
     error_code: string | null;
+    payer: string | null;
   }>(
     `
-    SELECT id, created_at::text AS created_at, outcome, network,
-           amount_atomic::text AS amount_atomic, tx_hash,
-           upstream_status, upstream_latency_ms, error_code
-      FROM proxy_request_logs
-     WHERE proxy_config_id = $1
-     ORDER BY created_at DESC
+    SELECT prl.id,
+           prl.created_at::text                       AS created_at,
+           prl.outcome,
+           prl.network,
+           prl.amount_atomic::text                    AS amount_atomic,
+           prl.tx_hash,
+           prl.upstream_status,
+           prl.upstream_latency_ms,
+           prl.error_code,
+           fp.payer                                    AS payer
+      FROM proxy_request_logs prl
+      LEFT JOIN facilitator_payments fp ON fp.id = prl.facilitator_payment_id
+     WHERE prl.proxy_config_id = $1
+       ${whereExtra}
+     ORDER BY prl.created_at DESC
      LIMIT $2
     `,
-    [args.proxyId, args.limit],
+    params,
   );
   return rows.map((r) => ({
     id: r.id,
@@ -624,5 +661,6 @@ export async function listProxyLogs(args: {
     upstreamStatus: r.upstream_status,
     upstreamLatencyMs: r.upstream_latency_ms,
     errorCode: r.error_code,
+    payer: r.payer,
   }));
 }

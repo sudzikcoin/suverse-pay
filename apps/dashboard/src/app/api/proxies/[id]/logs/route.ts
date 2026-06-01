@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { listProxyLogs } from "@/lib/proxy-config-store";
+import { listProxyLogs, type ProxyLogFilter } from "@/lib/proxy-config-store";
+import { SELF_WALLETS } from "@/lib/dashboard-aggregates";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LimitSchema = z.coerce.number().int().min(1).max(200).default(50);
+const FilterSchema = z.enum(["all", "external", "self", "errors"]).default("all");
 
-/** GET /api/proxies/[id]/logs?limit=50 */
+/** GET /api/proxies/[id]/logs?limit=50&filter=all|external|self|errors */
 export async function GET(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
@@ -24,10 +26,16 @@ export async function GET(
     url.searchParams.get("limit") ?? "50",
   );
   const limit = limitParsed.success ? limitParsed.data : 50;
+  const filterParsed = FilterSchema.safeParse(
+    url.searchParams.get("filter") ?? "all",
+  );
+  const filter: ProxyLogFilter = filterParsed.success ? filterParsed.data : "all";
   const logs = await listProxyLogs({
     userId: session.user.id,
     proxyId: id,
     limit,
+    filter,
+    selfWallets: SELF_WALLETS,
   });
   return NextResponse.json({ logs });
 }

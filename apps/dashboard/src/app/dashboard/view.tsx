@@ -2,46 +2,40 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { BalancesCards } from "@/components/panels/balances-cards";
 import { CreateKeyForm } from "@/components/panels/create-key-form";
+import { ExternalVolumeChart } from "@/components/panels/external-volume-chart";
 import { InvoiceDownload } from "@/components/panels/invoice-download";
 import { KeysList } from "@/components/panels/keys-list";
-import {
-  NetworkModeToggle,
-  type NetworkMode,
-} from "@/components/panels/network-mode-toggle";
-import { NetworksTable } from "@/components/panels/networks-table";
-import { PeriodToggle, type Period } from "@/components/panels/period-toggle";
-import { SettlesTable } from "@/components/panels/settles-table";
-import { SummaryCards } from "@/components/panels/summary-cards";
-import { VolumeChart } from "@/components/panels/volume-chart";
+import { RecentExternalPayments } from "@/components/panels/recent-external-payments";
+import { RevenueSummary } from "@/components/panels/revenue-summary";
+import { TopEndpoints } from "@/components/panels/top-endpoints";
 import { WebhooksSection } from "@/components/panels/webhooks-section";
 
 /**
- * Four-panel dashboard view. Period state lives at this level so
- * Summary / Volume / Networks all see the same toggle; the Settles
- * table has its own status filter (not bound to the period).
+ * Redesigned dashboard overview. The block order follows what an
+ * operator wants to see at-a-glance, top to bottom:
  *
- * Layout:
- *   Row 1: KeyPill (left) + "New key" button + Period toggle (right)
- *   Row 2: 4 summary cards
- *   Row 3: Volume chart (full width)
- *   Row 4: Settles (60% width) + Networks (40% width) on lg+
- *           Stack on smaller screens.
- *   Row 5: API keys management list (Sub-task 2)
+ *   1. Balances        on-chain USDC across all payout wallets
+ *   2. Revenue         external vs self split with period tabs
+ *   3. Volume chart    external-only series
+ *   4. Top 5           highest-grossing endpoints (24h external)
+ *   5. Recent payments last 10 external settles
+ *   6. API keys        management — moved down: it's housekeeping,
+ *                      not a primary view
+ *   7. Webhooks        ditto
+ *   8. Invoice export  ditto
  *
- * The "New key" affordance opens a small inline dialog rather than
- * navigating away — keeps the dashboard's context visible while the
- * customer reads the one-time plaintext.
+ * Each block manages its own period state (where applicable) so a
+ * user can compare 24h revenue alongside a 7d chart without one
+ * widget hijacking the other.
  */
 export function DashboardView({
   linkedKeys,
 }: {
   linkedKeys: ReadonlyArray<{ resource_key_id: string; label: string }>;
 }): React.JSX.Element {
-  const [period, setPeriod] = useState<Period>("24h");
-  const [networkMode, setNetworkMode] = useState<NetworkMode>("mainnet");
   const [showCreate, setShowCreate] = useState(false);
-  const includeTestnet = networkMode === "all";
 
   return (
     <div className="flex flex-col gap-8">
@@ -57,8 +51,6 @@ export function DashboardView({
           >
             {showCreate ? "Close" : "+ New key"}
           </Button>
-          <NetworkModeToggle value={networkMode} onChange={setNetworkMode} />
-          <PeriodToggle value={period} onChange={setPeriod} />
         </div>
       </div>
 
@@ -67,30 +59,39 @@ export function DashboardView({
           <h3 className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Create a new key
           </h3>
-          <CreateKeyForm
-            className="max-w-xl"
-            onCreated={() => {
-              /* Keep the panel open so the user can see the one-time
-                 plaintext; CreateKeyForm shows its own "I've saved
-                 it" dismiss button which clears its internal state. */
-            }}
-          />
+          <CreateKeyForm className="max-w-xl" onCreated={() => {}} />
         </div>
       ) : null}
 
-      <SummaryCards period={period} includeTestnet={includeTestnet} />
-      <VolumeChart period={period} includeTestnet={includeTestnet} />
+      <section aria-labelledby="balances-heading" className="space-y-3">
+        <h2
+          id="balances-heading"
+          className="text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground"
+        >
+          Balances · on-chain
+        </h2>
+        <BalancesCards />
+      </section>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
-        <SettlesTable includeTestnet={includeTestnet} />
-        <NetworksTable period={period} includeTestnet={includeTestnet} />
+      <RevenueSummary />
+
+      <ExternalVolumeChart />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <TopEndpoints />
+        <RecentExternalPayments />
       </div>
 
-      <KeysList />
-
-      <WebhooksSection />
-
-      <InvoiceDownload />
+      <div className="border-t border-border pt-8">
+        <h2 className="mb-4 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+          Account · keys, webhooks, invoices
+        </h2>
+        <div className="flex flex-col gap-8">
+          <KeysList />
+          <WebhooksSection />
+          <InvoiceDownload />
+        </div>
+      </div>
     </div>
   );
 }
@@ -112,9 +113,6 @@ function KeyPill({
       </div>
     );
   }
-  // Multi-key UI — for v1 we just show count; a per-key filter
-  // selector is a follow-on once we see customers using multiple
-  // keys in production.
   return (
     <div className="text-sm text-muted-foreground">
       <span className="font-medium text-foreground">{linkedKeys.length}</span>{" "}
