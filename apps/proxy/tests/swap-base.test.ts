@@ -1,8 +1,9 @@
 /**
  * Focused unit tests for the pure helpers in swap-base.ts —
- * buildBaseQuoteResponse formatting. The orchestration (executeBaseSwap)
- * is exercised end-to-end by the swap-base-smoke script and the
- * integration suite; we don't double-cover it here.
+ * buildBaseQuoteResponse formatting + gas-guard field threading. The
+ * orchestration (executeBaseSwap) is exercised end-to-end by the
+ * swap-base-smoke script and the integration suite; we don't double-
+ * cover it here.
  */
 
 import { describe, expect, it } from "vitest";
@@ -11,6 +12,7 @@ import {
   computeFee,
 } from "../src/swap-base.js";
 import type { TokenMetadata } from "../src/lib/token-metadata.js";
+import type { GasGuardOk } from "../src/swap-gas-guard.js";
 
 const USDC_META: TokenMetadata = {
   mint: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
@@ -89,5 +91,49 @@ describe("buildBaseQuoteResponse", () => {
     });
     expect(r.expected_output_human).toBe("12345 UNKNOWN");
     expect(r.output_token.decimals).toBe(0);
+  });
+
+  it("threads gas-guard fields through when supplied", () => {
+    const guard: GasGuardOk = {
+      ok: true,
+      minimumInputAtomic: 1_100_000n,
+      estimatedGasCostUsd: 0.011,
+      warning:
+        "LiFi router has no USDC allowance from the liquidity wallet " +
+        "yet; minimum input is raised to cover the one-time approve.",
+    };
+    const r = buildBaseQuoteResponse({
+      quoteId: "qb_guard",
+      inputMeta: USDC_META,
+      outputMeta: WETH_META,
+      inputAmount: 5_000_000n,
+      expectedOutput: 1_250_000_000_000_000n,
+      fee: 50_000n,
+      tool: "uniswap-v3",
+      expiresAt: new Date(1_900_000_000_000),
+      publicBaseUrl: "https://proxy.suverse.io",
+      gasGuard: guard,
+    });
+    expect(r.minimum_input_atomic).toBe("1100000");
+    expect(r.estimated_gas_cost_usd).toBe(0.011);
+    expect(r.gas_warning).toBeDefined();
+    expect(r.gas_warning).toMatch(/allowance/i);
+  });
+
+  it("omits gas-guard fields when no guard is supplied", () => {
+    const r = buildBaseQuoteResponse({
+      quoteId: "qb_no_guard",
+      inputMeta: USDC_META,
+      outputMeta: WETH_META,
+      inputAmount: 1_000_000n,
+      expectedOutput: 250_000_000_000_000n,
+      fee: 10_000n,
+      tool: "uniswap-v3",
+      expiresAt: new Date(1_900_000_000_000),
+      publicBaseUrl: "https://proxy.suverse.io",
+    });
+    expect(r.minimum_input_atomic).toBeUndefined();
+    expect(r.estimated_gas_cost_usd).toBeUndefined();
+    expect(r.gas_warning).toBeUndefined();
   });
 });

@@ -65,6 +65,12 @@ import {
   type LifiQuoteResponse,
 } from "./swap-lifi.js";
 import {
+  buildGasGuardQuoteFields,
+  evaluateBaseSwapGas,
+  type BaseGasProbe,
+  type GasGuardOk,
+} from "./swap-gas-guard.js";
+import {
   findByQuoteId,
   insertQuote,
   markCompleted,
@@ -481,6 +487,24 @@ export interface BaseQuoteResponseShape {
   total_cost_human: string;
   expires_at: string;
   x402_pay_url: string;
+  /**
+   * USD estimate for the executor's combined approve+swap+transfer
+   * gas cost on Base.
+   */
+  estimated_gas_cost_usd?: number;
+  /**
+   * Token-and-router-specific minimum input (USDC atomic, 6 dp) the
+   * gas-cost guard derived for this quote. Above the absolute $1
+   * floor only when the LiFi router has no USDC allowance from the
+   * liquidity wallet yet.
+   */
+  minimum_input_atomic?: string;
+  /**
+   * Human-readable warning surfaced when the floor was bumped above
+   * the absolute default — e.g. "LiFi router has no USDC allowance
+   * from the liquidity wallet yet…". Absent on the cheapest path.
+   */
+  gas_warning?: string;
 }
 
 export interface BuildBaseQuoteResponseArgs {
@@ -493,6 +517,12 @@ export interface BuildBaseQuoteResponseArgs {
   tool: string;
   expiresAt: Date;
   publicBaseUrl: string;
+  /**
+   * Gas-cost guard result. When supplied, the response includes
+   * estimated_gas_cost_usd / minimum_input_atomic / gas_warning.
+   * Optional so old callers don't need to thread the guard through.
+   */
+  gasGuard?: GasGuardOk;
 }
 
 export function buildBaseQuoteResponse(
@@ -500,7 +530,7 @@ export function buildBaseQuoteResponse(
 ): BaseQuoteResponseShape {
   const inputView = toView(args.inputMeta);
   const outputView = toView(args.outputMeta);
-  return {
+  const out: BaseQuoteResponseShape = {
     quote_id: args.quoteId,
     input_token: inputView,
     output_token: outputView,
@@ -517,6 +547,13 @@ export function buildBaseQuoteResponse(
     expires_at: args.expiresAt.toISOString(),
     x402_pay_url: `${args.publicBaseUrl}/v1/swap/base/execute/${args.quoteId}`,
   };
+  if (args.gasGuard !== undefined) {
+    const fields = buildGasGuardQuoteFields(args.gasGuard);
+    out.estimated_gas_cost_usd = fields.estimated_gas_cost_usd;
+    out.minimum_input_atomic = fields.minimum_input_atomic;
+    if (fields.warning !== undefined) out.gas_warning = fields.warning;
+  }
+  return out;
 }
 
 function toView(meta: TokenMetadata): BaseTokenMetadataView {
@@ -916,6 +953,39 @@ export function registerBaseSwapRoutes(
       const quoteId = `qb_${randomUUID().replace(/-/g, "")}`;
       const expiresAt = new Date(Date.now() + QUOTE_TTL_SECONDS * 1000);
 
+      // Gas-cost guard. Rejects swaps whose 1% fee can't cover the
+      // executor's approve+swap+transfer gas for this router+wallet
+      // pair (mostly: first swap through a router for which the
+      // liquidity wallet has no USDC allowance → +$0.005 approve).
+      // Runs AFTER LiFi confirms a route + spender; BEFORE insertQuote
+      // so a rejected dust swap leaves no DB trace. The probe is a
+      // single ERC20 allowance read; falls closed on RPC failure
+      // (see swap-gas-guard.ts).
+      const lifiSpender = getAddress(quote.estimate.approvalAddress);
+      const gasProbe: BaseGasProbe = {
+        allowance: (token, spender) =>
+          deps.chain.readAllowance(getAddress(token), getAddress(spender)),
+      };
+      const guard = await evaluateBaseSwapGas({
+        inputAtomic: vreq.inputAmount,
+        inputToken: vreq.inputToken,
+        lifiSpender,
+        feeBps: FEE_BPS,
+        probe: gasProbe,
+      });
+      if (!guard.ok) {
+        req.log.info(
+          `swap-base: quote_too_small input=${vreq.inputAmount} min=${guard.minimumInputAtomic} ` +
+            `gas_usd=${guard.estimatedGasCostUsd} out=${vreq.outputToken}`,
+        );
+        return reply.code(400).send({
+          error: guard.reason,
+          detail: guard.message,
+          minimum_input_atomic: guard.minimumInputAtomic.toString(),
+          estimated_gas_cost_usd: guard.estimatedGasCostUsd,
+        });
+      }
+
       try {
         await insertQuote(deps.pool, {
           quoteId,
@@ -953,6 +1023,7 @@ export function registerBaseSwapRoutes(
           tool: quote.tool,
           expiresAt,
           publicBaseUrl: deps.publicBaseUrl,
+          gasGuard: guard,
         }),
       );
     },
