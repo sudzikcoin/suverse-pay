@@ -130,6 +130,13 @@ export async function callUpstreamWithX402(
 
   let first: Response;
   try {
+    deps.logger?.info?.(
+      `upstream-x402: outbound url=${args.upstreamUrl} ` +
+        `method=${args.method} ` +
+        `bodyLen=${args.body?.length ?? 0} ` +
+        `ct=${args.headers["content-type"] ?? "(none)"} ` +
+        `headerKeys=${Object.keys(args.headers).join(",")}`,
+    );
     first = await deps.fetchImpl(args.upstreamUrl, initialInit);
   } catch (err) {
     deps.logger?.warn?.(
@@ -165,6 +172,10 @@ export async function callUpstreamWithX402(
     // and deserves to see the upstream's actual error (e.g. 400 bad
     // signature on the user's body, 404 unknown route).
     const buf = Buffer.from(await first.arrayBuffer());
+    deps.logger?.warn?.(
+      `upstream-x402: non-402/non-200 from upstream url=${args.upstreamUrl} ` +
+        `status=${first.status} bodyHead=${buf.slice(0, 400).toString("utf8")}`,
+    );
     return { kind: "passthrough", response: first, bodyBuffer: buf };
   }
 
@@ -248,11 +259,17 @@ export async function callUpstreamWithX402(
   }
 
   if (retry.status !== 200) {
+    const errBody = Buffer.from(await retry.arrayBuffer())
+      .slice(0, 600)
+      .toString("utf8");
+    deps.logger?.warn?.(
+      `upstream-x402: retry non-200 status=${retry.status} body=${errBody}`,
+    );
     return {
       kind: "error",
       reason: "retry_not_200",
       upstreamStatus: retry.status,
-      message: `upstream retry after payment returned HTTP ${retry.status}`,
+      message: `upstream retry after payment returned HTTP ${retry.status}: ${errBody.slice(0, 200)}`,
     };
   }
 

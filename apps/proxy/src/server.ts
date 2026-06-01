@@ -51,6 +51,15 @@ export async function buildServer(
   // Treat ALL bodies as raw Buffers — we forward to the upstream
   // unmodified, so JSON parsing would be wasted work (and would
   // corrupt non-JSON payloads).
+  //
+  // Critical: Fastify ships built-in parsers for application/json
+  // and text/plain that win over a "*" catch-all addContentTypeParser
+  // — they parse the body into an object/string BEFORE our parser
+  // sees it, so req.body is never a Buffer for JSON requests. That
+  // silently broke every POST/PUT/PATCH proxy until now (all
+  // production self-serve proxies were GET). We strip the built-ins
+  // first so the buffer parser actually applies universally.
+  app.removeAllContentTypeParsers();
   app.addContentTypeParser(
     "*",
     { parseAs: "buffer" },
@@ -165,6 +174,14 @@ export async function buildServer(
         const paymentHeader =
           headers["payment-signature"] ?? headers["x-payment"];
         const idempotencyKey = headers["idempotency-key"];
+        req.log.info(
+          `proxy: /v1/data inbound publicSlug=${params.publicSlug} ` +
+            `bodyIsBuf=${Buffer.isBuffer(req.body)} ` +
+            `bodyType=${typeof req.body} ` +
+            `bodyLen=${Buffer.isBuffer(req.body) ? req.body.length : (typeof req.body === "string" ? req.body.length : "n/a")} ` +
+            `ct=${headers["content-type"] ?? "(none)"} ` +
+            `cl=${headers["content-length"] ?? "(none)"}`,
+        );
         const result = await handle(
           {
             resourceKeyId: config.resourceKeyId,
