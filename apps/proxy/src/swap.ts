@@ -64,6 +64,7 @@ import type {
 import {
   fetchJupiterQuote,
   fetchJupiterSwap,
+  isJupiterSlippageError,
   JupiterError,
   type JupiterQuoteResponse,
 } from "./swap-jupiter.js";
@@ -552,6 +553,12 @@ export type ExecuteSwapOutcome =
   | {
       kind: "slippage";
       detail: string;
+      /** Quote's `otherAmountThreshold` — the floor we needed to clear. */
+      expectedMin: bigint;
+      /** What we actually got. 0n when the swap aborted before delivery. */
+      actual: bigint;
+      /** Buyer-declared slippage tolerance in basis points. */
+      bpsTolerance: number;
     }
   | {
       kind: "failed";
@@ -632,18 +639,22 @@ export async function executeSolanaSwap(
         status: "failed_slippage",
         error: `requote_drift_bps_${driftBps}`,
       });
-      const refundRecorded = await tryRecordRefund(
-        args,
-        swap,
-        `requote_drift_bps=${driftBps}`,
-      );
+      await tryRecordRefund(args, swap, `requote_drift_bps=${driftBps}`);
       args.logger?.warn?.(
         `swap: requote drift exceeded quote=${args.quoteId} drift_bps=${driftBps}`,
       );
+      // Approximate the floor the buyer was holding us to: their
+      // tolerance applied to the originally quoted output. Reported
+      // back to the buyer so they can decide whether to retry with a
+      // larger slippage_bps.
+      const expectedMin =
+        (expectedOutput * BigInt(10000 - slippageBps)) / 10000n;
       return {
         kind: "slippage",
         detail: `requote_drift_bps=${driftBps}`,
-        ...(refundRecorded ? {} : {}),
+        expectedMin,
+        actual: freshOut,
+        bpsTolerance: slippageBps,
       };
     }
   }
@@ -674,6 +685,23 @@ export async function executeSolanaSwap(
     });
     swapTxB64 = swapResp.swapTransaction;
   } catch (err) {
+    // Jupiter occasionally refuses to construct the swap tx when its
+    // live route plan moved past the configured slippage. Surface
+    // that as `failed_slippage` (not generic `failed`) so the
+    // execute handler can return a 422 with the structured detail
+    // the buyer needs to retry with a wider tolerance.
+    if (isJupiterSlippageError(err)) {
+      const expectedMin = BigInt(freshQuote.otherAmountThreshold);
+      return await handleSlippageFailure(args, swap, {
+        detail:
+          err instanceof JupiterError
+            ? `jupiter_swap_${err.code}`
+            : "jupiter_slippage_unknown",
+        expectedMin,
+        actual: 0n,
+        bpsTolerance: slippageBps,
+      });
+    }
     return await handleFailure(
       args,
       swap,
@@ -719,12 +747,12 @@ export async function executeSolanaSwap(
   // minimum-out for the chosen slippage; honor it directly.
   const minOut = BigInt(freshQuote.otherAmountThreshold);
   if (delivered < minOut) {
-    return await handleFailure(
-      args,
-      swap,
-      "failed_slippage",
-      `delivered_${delivered}_lt_min_${minOut}`,
-    );
+    return await handleSlippageFailure(args, swap, {
+      detail: `delivered_${delivered}_lt_min_${minOut}`,
+      expectedMin: minOut,
+      actual: delivered,
+      bpsTolerance: slippageBps,
+    });
   }
 
   // Transfer to the buyer's recipient.
@@ -767,7 +795,7 @@ export async function executeSolanaSwap(
 async function handleFailure(
   args: ExecuteSwapArgs,
   swap: SwapRow,
-  status: "failed" | "failed_slippage",
+  status: "failed",
   detail: string,
 ): Promise<ExecuteSwapOutcome> {
   await markFailed(args.pool, {
@@ -780,10 +808,37 @@ async function handleFailure(
     `swap: failed quote=${args.quoteId} status=${status} detail=${detail} ` +
       `refund_recorded=${refundRecorded}`,
   );
-  if (status === "failed_slippage") {
-    return { kind: "slippage", detail };
-  }
   return { kind: "failed", detail, refundRecorded };
+}
+
+async function handleSlippageFailure(
+  args: ExecuteSwapArgs,
+  swap: SwapRow,
+  info: {
+    detail: string;
+    expectedMin: bigint;
+    actual: bigint;
+    bpsTolerance: number;
+  },
+): Promise<ExecuteSwapOutcome> {
+  await markFailed(args.pool, {
+    quoteId: args.quoteId,
+    status: "failed_slippage",
+    error: info.detail,
+  });
+  const refundRecorded = await tryRecordRefund(args, swap, info.detail);
+  args.logger?.warn?.(
+    `swap: slippage quote=${args.quoteId} detail=${info.detail} ` +
+      `expected_min=${info.expectedMin} actual=${info.actual} ` +
+      `bps_tolerance=${info.bpsTolerance} refund_recorded=${refundRecorded}`,
+  );
+  return {
+    kind: "slippage",
+    detail: info.detail,
+    expectedMin: info.expectedMin,
+    actual: info.actual,
+    bpsTolerance: info.bpsTolerance,
+  };
 }
 
 async function tryRecordRefund(
@@ -1072,9 +1127,12 @@ export function registerSwapRoutes(
         });
       }
       if (outcome.kind === "slippage") {
-        return reply.code(503).headers(replyHeaders).send({
+        return reply.code(422).headers(replyHeaders).send({
           error: "slippage_exceeded",
           detail: outcome.detail,
+          expected_min: outcome.expectedMin.toString(),
+          actual: outcome.actual.toString(),
+          bps_tolerance: outcome.bpsTolerance,
           refund_pending: true,
         });
       }

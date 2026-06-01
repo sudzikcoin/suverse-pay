@@ -195,6 +195,25 @@ export class JupiterError extends Error {
   }
 }
 
+/**
+ * Recognize a Jupiter error that means the prebuilt swap couldn't be
+ * constructed because the live quote drifted past the configured
+ * slippage tolerance. Jupiter surfaces this with either a literal
+ * "slippage" / "SlippageToleranceExceeded" mention in the body, or
+ * one of the documented error codes
+ * (`0x1771`, `0x1788` — Raydium / Whirlpool slippage selectors).
+ */
+export function isJupiterSlippageError(err: unknown): boolean {
+  if (!(err instanceof JupiterError)) return false;
+  const haystack = `${err.code} ${err.excerpt}`.toLowerCase();
+  return (
+    haystack.includes("slippage") ||
+    haystack.includes("slippagetoleranceexceeded") ||
+    haystack.includes("0x1771") ||
+    haystack.includes("0x1788")
+  );
+}
+
 function excerpt(s: string): string {
   return s.length > 240 ? `${s.slice(0, 240)}…` : s;
 }

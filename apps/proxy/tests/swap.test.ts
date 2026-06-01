@@ -580,6 +580,12 @@ describe("executeSolanaSwap", () => {
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
     expect(r.kind).toBe("slippage");
+    if (r.kind === "slippage") {
+      expect(r.bpsTolerance).toBe(100);
+      expect(r.actual).toBe(23_950_000n);
+      // expectedMin = expectedOutput * (10000 - 100) / 10000 = 47900000 * 0.99
+      expect(r.expectedMin).toBe(47_421_000n);
+    }
     const row = await findByQuoteId(pool, quoteId);
     expect(row?.status).toBe("failed_slippage");
 
@@ -764,6 +770,63 @@ describe("executeSolanaSwap", () => {
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
     expect(r.kind).toBe("slippage");
+    if (r.kind === "slippage") {
+      expect(r.expectedMin).toBe(47_421_000n);
+      expect(r.actual).toBe(30_000_000n);
+      expect(r.bpsTolerance).toBe(100);
+      expect(r.detail).toContain("delivered_");
+    }
+    const row = await findByQuoteId(pool, quoteId);
+    expect(row?.status).toBe("failed_slippage");
+  });
+
+  it("flags Jupiter swap-build slippage failure as kind=slippage", async () => {
+    const { quoteId } = await insertTestQuote(pool);
+    const chain = fakeChain();
+    const fetchImpl = vi
+      .fn()
+      // re-quote OK
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            inputMint: REAL_USDC,
+            outputMint: REAL_WSOL,
+            inAmount: "10000000",
+            outAmount: "47900000",
+            otherAmountThreshold: "47421000",
+            swapMode: "ExactIn",
+            slippageBps: 100,
+            priceImpactPct: "0.05",
+            routePlan: [],
+          }),
+          { status: 200 },
+        ),
+      )
+      // POST /swap returns a body containing the "slippage" keyword
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: "SlippageToleranceExceeded",
+            message: "0x1771 slippage error",
+          }),
+          { status: 400 },
+        ),
+      );
+    const r = await executeSolanaSwap({
+      quoteId,
+      recipient: FAKE_PAYER,
+      inboundPaymentId: null,
+      pool,
+      chain,
+      swapWalletAddress: SWAP_WALLET_ADDR,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(r.kind).toBe("slippage");
+    if (r.kind === "slippage") {
+      expect(r.expectedMin).toBe(47_421_000n);
+      expect(r.actual).toBe(0n);
+      expect(r.bpsTolerance).toBe(100);
+    }
     const row = await findByQuoteId(pool, quoteId);
     expect(row?.status).toBe("failed_slippage");
   });
