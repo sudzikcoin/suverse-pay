@@ -29,6 +29,7 @@ import type {
 import type { Pool } from "pg";
 import { buildBazaarExtension } from "./bazaar.js";
 import { decryptHeaders } from "./crypto.js";
+import { getInternalHandler } from "./handlers/registry.js";
 import { lookupNetwork } from "./networks.js";
 import {
   finishOutboundUpstreamPayment,
@@ -217,9 +218,11 @@ export async function handle(
   // runProtocol + the upstream call play out so they see real
   // upstream errors (and the existing `outcome: "upstream_error"`
   // logging) rather than getting blocked by a probe.
+  //
+  // Internal handlers have no external upstream to probe — skip.
   const noPaymentHeader =
     args.paymentHeader === undefined || args.paymentHeader.trim() === "";
-  if (noPaymentHeader) {
+  if (noPaymentHeader && !config.internalHandler) {
     const probe = await checkUpstreamHealth({
       url: config.originalUrl,
       fetchImpl,
@@ -323,8 +326,98 @@ export async function handle(
     };
   }
 
-  // Settled — forward to upstream.
+  // Settled — dispatch to internal handler (first-party service) or
+  // forward to the upstream HTTP API (reseller flow).
   const receipt = protocol.receipt;
+
+  if (config.internalHandler) {
+    const handler = getInternalHandler(config.internalHandler);
+    if (!handler) {
+      deps.logger?.error?.(
+        `proxy: unknown internal_handler=${config.internalHandler} config=${config.id}`,
+      );
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "invalid_config",
+        errorCode: `unknown_internal_handler:${config.internalHandler}`,
+        network: receipt.network,
+        amountAtomic: receipt.amount,
+        txHash: receipt.txHash,
+        ipHash,
+      });
+      return {
+        status: 503,
+        body: { error: "proxy_misconfigured" },
+        headers: { "content-type": "application/json" },
+        outcome: "invalid_config",
+      };
+    }
+    const startedAtInternal = Date.now();
+    let handlerResult;
+    try {
+      handlerResult = await handler({
+        body: args.body,
+        method: args.method.toUpperCase(),
+        fetchImpl,
+      });
+    } catch (err) {
+      const latencyMsErr = Date.now() - startedAtInternal;
+      deps.logger?.error?.(
+        `proxy: internal handler threw handler=${config.internalHandler} config=${config.id}`,
+        err,
+      );
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "upstream_error",
+        network: receipt.network,
+        amountAtomic: receipt.amount,
+        txHash: receipt.txHash,
+        upstreamLatencyMs: latencyMsErr,
+        errorCode: "internal_handler_threw",
+        ipHash,
+      });
+      return {
+        status: 500,
+        body: { error: "internal_handler_error" },
+        headers: { "content-type": "application/json" },
+        outcome: "upstream_error",
+      };
+    }
+    const latencyMsInternal = Date.now() - startedAtInternal;
+    await logProxyRequest(deps.pool, {
+      proxyConfigId: config.id,
+      resourceKeyId: config.resourceKeyId,
+      outcome: "settled",
+      network: receipt.network,
+      amountAtomic: receipt.amount,
+      txHash: receipt.txHash,
+      upstreamStatus: handlerResult.status,
+      upstreamLatencyMs: latencyMsInternal,
+      ipHash,
+    });
+    const paymentResponseInternal = encodeHeaderJson({
+      success: true,
+      transaction: receipt.txHash ?? "",
+      network: receipt.network,
+      payer: receipt.payer,
+      amount: receipt.amount,
+    });
+    return {
+      status: handlerResult.status,
+      body: handlerResult.body,
+      headers: {
+        "content-type": "application/json",
+        "payment-response": paymentResponseInternal,
+        "x-payment-response": paymentResponseInternal,
+        "access-control-expose-headers":
+          "PAYMENT-RESPONSE, X-PAYMENT-RESPONSE",
+      },
+      outcome: "settled",
+    };
+  }
+
   let forwardHeaders: Record<string, string>;
   try {
     forwardHeaders = config.forwardHeadersEncrypted

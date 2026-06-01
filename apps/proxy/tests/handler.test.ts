@@ -40,6 +40,7 @@ function makeConfig(over: Partial<ProxyConfigRow> = {}): ProxyConfigRow {
     upstreamX402MaxPrice: null,
     upstreamSignerWallet: null,
     publicSlug: null,
+    internalHandler: null,
     ...over,
   };
 }
@@ -984,5 +985,155 @@ describe("handle", () => {
       String(sql).includes("INSERT INTO facilitator_payments"),
     );
     expect(insertCalls.length).toBe(0);
+  });
+
+  it("internal handler: dispatches helius_tx_decoder after settle, no upstream fetch", async () => {
+    const heliusBody = [
+      {
+        signature: "SIGabc",
+        slot: 123,
+        timestamp: 1700000000,
+        fee: 5000,
+        feePayer: "PAYERaddr",
+        description: "Swap on Jupiter",
+        type: "SWAP",
+        source: "JUPITER",
+        instructions: [{ programId: "JUP6" }],
+        tokenTransfers: [{ mint: "USDC", tokenAmount: 100 }],
+        nativeTransfers: [],
+      },
+    ];
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xPAYER" }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xINTERNALTX",
+            network: "eip155:8453",
+            payer: "0xPAYER",
+          }),
+          { status: 200 },
+        );
+      }
+      if (url.startsWith("https://api.helius.xyz/v0/transactions/")) {
+        return new Response(JSON.stringify(heliusBody), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    process.env["HELIUS_API_KEY"] = "test-helius-key";
+    const deps = makeDeps({
+      store: makeStore(
+        makeConfig({ internalHandler: "helius_tx_decoder" }),
+      ),
+      fetchImpl: fetchMock,
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/data/suverse-solana-tx-decoder",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "test-idem-internal",
+        incomingHeaders: { "content-type": "application/json" },
+        body: Buffer.from(
+          JSON.stringify({
+            signature:
+              "5KQwrPbwdL6PhXujxW37FSSbT5HG4d6V8c5jYrqWwG6QrBmbX2RhPZ8M9LrgDmBnYpZHVz9KvxWsyABcdEfGhij1",
+          }),
+        ),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(200);
+    expect(result.outcome).toBe("settled");
+    expect(result.headers["payment-response"]).toMatch(/^[A-Za-z0-9+/=]+$/);
+    const decoded = result.body as Record<string, unknown>;
+    expect(decoded["signature"]).toBe("SIGabc");
+    expect(decoded["summary"]).toBe("Swap on Jupiter");
+    expect(decoded["type"]).toBe("SWAP");
+    // upstream URL was never fetched — only facilitator + Helius.
+    const upstreamCalls = fetchMock.mock.calls.filter(
+      ([u]) => u === "https://upstream.example.com/forecast",
+    );
+    expect(upstreamCalls.length).toBe(0);
+    const heliusCalls = fetchMock.mock.calls.filter(([u]) =>
+      String(u).startsWith("https://api.helius.xyz/v0/transactions/"),
+    );
+    expect(heliusCalls.length).toBe(1);
+    delete process.env["HELIUS_API_KEY"];
+  });
+
+  it("internal handler: unknown handler name → 503 invalid_config", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xPAYER" }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xTX",
+            network: "eip155:8453",
+            payer: "0xPAYER",
+          }),
+          { status: 200 },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({
+      store: makeStore(makeConfig({ internalHandler: "nonexistent_handler" })),
+      fetchImpl: fetchMock,
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/data/bogus",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "test-idem-bogus",
+        incomingHeaders: { "content-type": "application/json" },
+        body: Buffer.from("{}"),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(503);
+    expect(result.outcome).toBe("invalid_config");
   });
 });
