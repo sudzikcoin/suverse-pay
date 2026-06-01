@@ -40,10 +40,12 @@ import {
   type ProxyConfigStore,
   type ProxyOutcome,
 } from "./store.js";
+import { recordRefundPending } from "./refunds.js";
 import { checkUpstreamHealth } from "./upstream-health.js";
 import {
   callUpstreamWithX402,
   type OutboundRecorder,
+  type RefundPendingRecorder,
   type ServiceAddresses,
 } from "./upstream-x402.js";
 import type { SuverseClient } from "@suverselabs/x402-client";
@@ -511,6 +513,27 @@ export async function handle(
       finish: (id, outcome) =>
         finishOutboundUpstreamPayment(deps.pool, id, outcome),
     };
+    // Refund-pending recorder — invoked when the upstream call fails
+    // AFTER we've signed and sent the X-PAYMENT retry. The buyer has
+    // paid us already; the operator drains `refunds_pending` to make
+    // them whole. Best-effort: a DB outage here MUST NOT prevent
+    // returning the upstream error to the buyer.
+    const refundPendingRecorder: RefundPendingRecorder = {
+      record: async (info) => {
+        await recordRefundPending(deps.pool, {
+          proxyConfigId: config.id,
+          resourceKeyId: config.resourceKeyId,
+          buyerAddress: receipt.payer,
+          buyerNetwork: receipt.network,
+          buyerAsset: receipt.asset,
+          buyerAmountAtomic: receipt.amount,
+          buyerTxHash: receipt.txHash,
+          reason: info.reason,
+          upstreamStatus: info.upstreamStatus,
+          upstreamErrorSnippet: info.upstreamErrorSnippet,
+        });
+      },
+    };
     const upstreamResult = await callUpstreamWithX402(
       {
         upstreamUrl: config.originalUrl,
@@ -526,6 +549,7 @@ export async function handle(
         addresses: deps.upstreamServiceAddresses,
         fetchImpl,
         recorder,
+        refundPendingRecorder,
         ...(deps.logger ? { logger: deps.logger } : {}),
       },
     );

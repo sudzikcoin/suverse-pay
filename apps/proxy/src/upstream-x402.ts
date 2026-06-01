@@ -4,9 +4,13 @@
  * When seller_proxy_configs.upstream_x402_enabled is true, the proxy
  * itself is a buyer to the upstream API. The flow:
  *
- *   1. fetch(upstreamUrl) with the customer's headers + body.
+ *   1. fetch(upstreamUrl) with the customer's headers + body — retried
+ *      up to INITIAL_FETCH_RETRY_ATTEMPTS times on 5xx / network error
+ *      with exponential backoff (200ms, 800ms). Pre-payment retries
+ *      are safe because no money has moved yet.
  *   2. If 200 → pass straight back.
- *   3. If 5xx / network error → surface as upstream_unavailable.
+ *   3. If 5xx / network error after all retries → surface as
+ *      upstream_unavailable.
  *   4. If 402 → parse the challenge, pick the accept whose `network`
  *      matches `upstream_x402_network`, check the quoted price against
  *      `upstream_x402_max_price`, sign with the service wallet for
@@ -17,6 +21,13 @@
  * Anything other than 200 / 402 / 5xx (e.g. a 4xx that isn't 402)
  * gets passed through verbatim — the customer paid us already and
  * deserves the upstream's actual error.
+ *
+ * Post-payment failures (the X-PAYMENT retry returns non-200, aborts,
+ * or network-errors) are NOT retried — our service wallet may already
+ * have settled on-chain, so issuing the call again risks a double
+ * spend. Instead the caller's `refundPendingRecorder` is invoked so
+ * the operator can refund the buyer out-of-band. See refunds.ts and
+ * migration 027.
  *
  * The service wallet is injected by the boot layer via the
  * `ServiceWallets` map: namespace ("solana", "evm", "cosmos", "tron")
@@ -89,6 +100,30 @@ export interface OutboundFinishInput {
   errorMessage?: string | null;
 }
 
+/**
+ * Hook invoked when the upstream call fails AFTER we've signed and sent
+ * the X-PAYMENT retry. The buyer paid us up front; the on-chain spend
+ * by our service wallet may or may not have settled (we can't tell from
+ * an HTTP 500 / timeout / network error). Either way the buyer isn't
+ * getting the response, so the operator should refund them.
+ *
+ * The hook is fire-and-forget: any DB error is logged but does not
+ * cascade into the upstream result. The buyer still gets the 502 the
+ * caller is going to return; the missing refund row is a triage burden,
+ * never a correctness break.
+ */
+export interface RefundPendingRecorder {
+  record(input: {
+    reason: "upstream_post_payment_500" | "upstream_post_payment_timeout" | "upstream_post_payment_network";
+    upstreamStatus: number | null;
+    upstreamErrorSnippet: string | null;
+  }): Promise<void>;
+}
+
+/** Caller-tunable parameters for the pre-payment retry loop. */
+const INITIAL_FETCH_RETRY_ATTEMPTS = 3; // 1 initial + 2 retries
+const INITIAL_FETCH_RETRY_DELAYS_MS = [200, 800]; // index = retry # − 1
+
 export interface UpstreamX402Deps {
   /** SuverseClient instance carrying the service wallets. */
   client: SuverseClient;
@@ -104,6 +139,14 @@ export interface UpstreamX402Deps {
    * Tests omit it; production wires it to `facilitator_payments`.
    */
   recorder?: OutboundRecorder;
+  /**
+   * Optional refund-pending recorder. Invoked when the upstream call
+   * fails AFTER we've signed and sent the X-PAYMENT retry — the buyer
+   * has paid us but won't get a response, so the operator should
+   * refund. Tests usually omit it; production wires it to the
+   * `refunds_pending` table via `apps/proxy/src/refunds.ts`.
+   */
+  refundPendingRecorder?: RefundPendingRecorder;
 }
 
 export interface UpstreamX402Args {
@@ -174,27 +217,37 @@ export async function callUpstreamWithX402(
     body: args.body && args.body.length > 0 ? args.body : undefined,
   };
 
-  let first: Response;
-  try {
-    deps.logger?.info?.(
-      `upstream-x402: outbound url=${args.upstreamUrl} ` +
-        `method=${args.method} ` +
-        `bodyLen=${args.body?.length ?? 0} ` +
-        `ct=${args.headers["content-type"] ?? "(none)"} ` +
-        `headerKeys=${Object.keys(args.headers).join(",")}`,
-    );
-    first = await deps.fetchImpl(args.upstreamUrl, initialInit);
-  } catch (err) {
-    deps.logger?.warn?.(
-      `upstream-x402: initial fetch failed url=${args.upstreamUrl}`,
-      err,
-    );
+  deps.logger?.info?.(
+    `upstream-x402: outbound url=${args.upstreamUrl} ` +
+      `method=${args.method} ` +
+      `bodyLen=${args.body?.length ?? 0} ` +
+      `ct=${args.headers["content-type"] ?? "(none)"} ` +
+      `headerKeys=${Object.keys(args.headers).join(",")}`,
+  );
+
+  // Pre-payment fetch with retry. Network error and 5xx are both
+  // retryable here — the buyer has not paid the upstream yet, so a
+  // retry can't double-spend. After all attempts are exhausted we
+  // surface the original error semantics (network_error / upstream_5xx)
+  // unchanged so the handler's logging path doesn't have to learn new
+  // shapes.
+  const fetchResult = await fetchInitialWithRetry(args.upstreamUrl, initialInit, deps);
+  if (fetchResult.kind === "network_error") {
     return {
       kind: "error",
       reason: "network_error",
-      message: (err as Error).message,
+      message: fetchResult.message,
     };
   }
+  if (fetchResult.kind === "upstream_5xx") {
+    return {
+      kind: "error",
+      reason: "upstream_5xx",
+      upstreamStatus: fetchResult.status,
+      message: `upstream returned ${fetchResult.status} after ${fetchResult.attempts} attempts`,
+    };
+  }
+  const first = fetchResult.response;
 
   // 200 — no payment was needed (e.g. cached endpoint, or first hit
   // before throttle). Forward as-is, the buyer still paid us, our
@@ -202,15 +255,6 @@ export async function callUpstreamWithX402(
   if (first.status === 200) {
     const buf = Buffer.from(await first.arrayBuffer());
     return { kind: "passthrough", response: first, bodyBuffer: buf };
-  }
-
-  if (first.status >= 500) {
-    return {
-      kind: "error",
-      reason: "upstream_5xx",
-      upstreamStatus: first.status,
-      message: `upstream returned ${first.status}`,
-    };
   }
 
   if (first.status !== 402) {
@@ -344,6 +388,11 @@ export async function callUpstreamWithX402(
       errorCode: isAbort ? "retry_aborted" : "retry_network_error",
       errorMessage: message.slice(0, 500),
     });
+    await recordRefundIfWired(deps, {
+      reason: isAbort ? "upstream_post_payment_timeout" : "upstream_post_payment_network",
+      upstreamStatus: null,
+      upstreamErrorSnippet: message.slice(0, 500),
+    });
     return {
       kind: "error",
       reason: "network_error",
@@ -368,6 +417,11 @@ export async function callUpstreamWithX402(
       txHash: extractTxHash(retry),
       errorCode: `retry_http_${retry.status}`,
       errorMessage: errBody.slice(0, 500),
+    });
+    await recordRefundIfWired(deps, {
+      reason: "upstream_post_payment_500",
+      upstreamStatus: retry.status,
+      upstreamErrorSnippet: errBody.slice(0, 500),
     });
     return {
       kind: "error",
@@ -404,6 +458,106 @@ export async function callUpstreamWithX402(
 /** Random idempotency key for one outbound upstream-x402 call. */
 export function newOutboundIdempotencyKey(): string {
   return `up_${randomBytes(12).toString("hex")}`;
+}
+
+type InitialFetchOutcome =
+  | { kind: "response"; response: Response; attempts: number }
+  | { kind: "upstream_5xx"; status: number; attempts: number }
+  | { kind: "network_error"; message: string; attempts: number };
+
+/**
+ * Initial (pre-payment) upstream fetch with retry on 5xx / network
+ * error. Retrying is safe here because the buyer has not paid the
+ * upstream yet, so duplicate requests cannot double-spend. Up to
+ * INITIAL_FETCH_RETRY_ATTEMPTS - 1 retries after the first attempt,
+ * with exponential backoff drawn from INITIAL_FETCH_RETRY_DELAYS_MS.
+ *
+ * A non-5xx response (including 402, our happy path) returns
+ * immediately on the first attempt that produced it. Only retries on
+ * 500-599 status codes and on thrown fetch errors. 4xx-that-isn't-402
+ * is handled by the caller as passthrough.
+ */
+async function fetchInitialWithRetry(
+  url: string,
+  init: RequestInit,
+  deps: UpstreamX402Deps,
+): Promise<InitialFetchOutcome> {
+  let lastResponse: Response | null = null;
+  let lastNetworkError: string | null = null;
+  for (let attempt = 1; attempt <= INITIAL_FETCH_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      const res = await deps.fetchImpl(url, init);
+      if (res.status < 500) {
+        return { kind: "response", response: res, attempts: attempt };
+      }
+      // 5xx — drain body so the next attempt's fetch is unblocked, and
+      // remember the last response in case all attempts fail.
+      lastResponse = res;
+      // Drain previous body so a retry doesn't race on a half-read
+      // stream from the previous attempt.
+      try {
+        await res.arrayBuffer();
+      } catch {
+        /* nothing to drain */
+      }
+      deps.logger?.warn?.(
+        `upstream-x402: initial fetch attempt=${attempt}/${INITIAL_FETCH_RETRY_ATTEMPTS} ` +
+          `status=${res.status} url=${url}`,
+      );
+    } catch (err) {
+      lastNetworkError = (err as Error).message ?? String(err);
+      deps.logger?.warn?.(
+        `upstream-x402: initial fetch attempt=${attempt}/${INITIAL_FETCH_RETRY_ATTEMPTS} ` +
+          `network_error url=${url} err=${lastNetworkError}`,
+      );
+    }
+    // Last attempt — fall through to terminal branch below the loop.
+    if (attempt < INITIAL_FETCH_RETRY_ATTEMPTS) {
+      const delay = INITIAL_FETCH_RETRY_DELAYS_MS[attempt - 1] ?? 0;
+      if (delay > 0) await sleep(delay);
+    }
+  }
+  if (lastResponse !== null) {
+    return {
+      kind: "upstream_5xx",
+      status: lastResponse.status,
+      attempts: INITIAL_FETCH_RETRY_ATTEMPTS,
+    };
+  }
+  return {
+    kind: "network_error",
+    message: lastNetworkError ?? "unknown fetch error",
+    attempts: INITIAL_FETCH_RETRY_ATTEMPTS,
+  };
+}
+
+/** Best-effort sleep for the retry backoff. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Best-effort invocation of the refund-pending recorder. The buyer
+ * already paid us, so we always need to return their error to them;
+ * a DB failure recording the refund must NOT propagate.
+ */
+async function recordRefundIfWired(
+  deps: UpstreamX402Deps,
+  info: {
+    reason: "upstream_post_payment_500" | "upstream_post_payment_timeout" | "upstream_post_payment_network";
+    upstreamStatus: number | null;
+    upstreamErrorSnippet: string | null;
+  },
+): Promise<void> {
+  if (!deps.refundPendingRecorder) return;
+  try {
+    await deps.refundPendingRecorder.record(info);
+  } catch (err) {
+    deps.logger?.warn?.(
+      `upstream-x402: refundPendingRecorder.record failed reason=${info.reason}`,
+      err,
+    );
+  }
 }
 
 // -------------------------------------------------------------
