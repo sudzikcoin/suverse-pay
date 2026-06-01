@@ -66,11 +66,13 @@ import { bitcoinMempoolStats } from "./bitcoin-mempool-stats.js";
 import { bitcoinTxDecoder } from "./bitcoin-tx-decoder.js";
 
 // SuVerse Swap — the actual swap flow lives in apps/proxy/src/swap.ts
-// at /v1/swap/solana/{quote,execute}; this registry entry exists so
+// at /v1/swap/solana/{quote,execute} and apps/proxy/src/swap-base.ts
+// at /v1/swap/base/{quote,execute}; these registry entries exist so
 // the discovery-only seller_proxy_configs row can carry a non-null
 // internal_handler. See handlers/swap-solana-execute.ts for the
 // rationale.
 import { swapSolanaExecute } from "./swap-solana-execute.js";
+import { swapBaseExecute } from "./swap-base-execute.js";
 
 import type {
   InternalHandler,
@@ -134,8 +136,9 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   bitcoin_mempool_stats: bitcoinMempoolStats,
   bitcoin_block_info: bitcoinBlockInfo,
 
-  // SuVerse Swap (discovery stub — real flow at /v1/swap/solana/...).
+  // SuVerse Swap (discovery stubs — real flows at /v1/swap/<chain>/...).
   swap_solana_execute: swapSolanaExecute,
+  swap_base_execute: swapBaseExecute,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {

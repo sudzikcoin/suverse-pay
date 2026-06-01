@@ -38,6 +38,12 @@ import {
   type SolanaSwapChain,
   type SwapSignerConfig,
 } from "./swap.js";
+import {
+  loadBaseSwapSigner,
+  ViemBaseSwapChain,
+  type BaseSwapChain,
+  type BaseSwapSignerConfig,
+} from "./swap-base.js";
 
 async function main(): Promise<void> {
   const databaseUrl = required("DATABASE_URL");
@@ -93,6 +99,33 @@ async function main(): Promise<void> {
     }
   }
 
+  // Base swap signer + viem RPC client. Independent from the Solana
+  // path — either or both can be configured. Reuses swapPublicBaseUrl
+  // for the x402_pay_url prefix; if only the Base swap is configured
+  // we still need to seed the base URL.
+  let baseSwapSigner: BaseSwapSignerConfig | undefined;
+  let baseSwapChain: BaseSwapChain | undefined;
+  try {
+    baseSwapSigner = loadBaseSwapSigner();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `proxy: failed to load Base swap signer — Base swap routes disabled: ${(err as Error).message}`,
+    );
+  }
+  if (baseSwapSigner) {
+    const baseRpcUrl =
+      process.env["BASE_RPC_URL"] ?? "https://mainnet.base.org";
+    baseSwapChain = new ViemBaseSwapChain({
+      rpcUrl: baseRpcUrl,
+      privateKey: baseSwapSigner.privateKey,
+    });
+    if (!swapPublicBaseUrl) {
+      swapPublicBaseUrl =
+        process.env["SWAP_PUBLIC_BASE_URL"] ?? "https://proxy.suverse.io";
+    }
+  }
+
   const app = await buildServer({
     pool,
     masterKey,
@@ -108,6 +141,9 @@ async function main(): Promise<void> {
       : {}),
     ...(swapSigner && swapChain && swapPublicBaseUrl
       ? { swapSigner, swapChain, swapPublicBaseUrl }
+      : {}),
+    ...(baseSwapSigner && baseSwapChain && swapPublicBaseUrl
+      ? { baseSwapSigner, baseSwapChain, swapPublicBaseUrl }
       : {}),
   });
 

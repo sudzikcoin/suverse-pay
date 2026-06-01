@@ -16,6 +16,11 @@ import {
   type SolanaSwapChain,
   type SwapSignerConfig,
 } from "./swap.js";
+import {
+  registerBaseSwapRoutes,
+  type BaseSwapChain,
+  type BaseSwapSignerConfig,
+} from "./swap-base.js";
 
 export interface BuildServerArgs {
   pool: Pool;
@@ -52,6 +57,13 @@ export interface BuildServerArgs {
   swapChain?: SolanaSwapChain;
   /** Public base URL used to build x402_pay_url. e.g. https://proxy.suverse.io */
   swapPublicBaseUrl?: string;
+  /**
+   * Optional Base swap configuration. Mirrors `swapSigner` /
+   * `swapChain` but for the EVM/LiFi flow registered at
+   * /v1/swap/base/{quote,execute}. Reuses `swapPublicBaseUrl`.
+   */
+  baseSwapSigner?: BaseSwapSignerConfig;
+  baseSwapChain?: BaseSwapChain;
 }
 
 export async function buildServer(
@@ -148,6 +160,20 @@ export async function buildServer(
       facilitatorApiKey: args.facilitatorApiKey,
       swapSigner: args.swapSigner,
       chain: args.swapChain,
+      publicBaseUrl: args.swapPublicBaseUrl,
+      ...(args.fetchImpl ? { fetchImpl: args.fetchImpl } : {}),
+    });
+  }
+
+  // Base swap routes — independent from Solana; either or both can be
+  // configured. Shares swapPublicBaseUrl for the x402_pay_url prefix.
+  if (args.baseSwapSigner && args.baseSwapChain && args.swapPublicBaseUrl) {
+    registerBaseSwapRoutes(app, {
+      pool: args.pool,
+      facilitatorUrl: args.facilitatorUrl,
+      facilitatorApiKey: args.facilitatorApiKey,
+      swapSigner: args.baseSwapSigner,
+      chain: args.baseSwapChain,
       publicBaseUrl: args.swapPublicBaseUrl,
       ...(args.fetchImpl ? { fetchImpl: args.fetchImpl } : {}),
     });
