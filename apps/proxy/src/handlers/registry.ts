@@ -8,6 +8,8 @@
  * map — no other code change required.
  */
 import { binanceFunding } from "./binance-funding.js";
+import { binanceFundingBatch } from "./binance-funding-batch.js";
+import { binanceOpenInterest } from "./binance-open-interest.js";
 import { binanceOrderbook } from "./binance-orderbook.js";
 import { binanceTrades } from "./binance-trades.js";
 import { coingecko24hMovers } from "./coingecko-24h-movers.js";
@@ -18,8 +20,11 @@ import { coingeckoTrending } from "./coingecko-trending.js";
 import { defillamaBridges } from "./defillama-bridges.js";
 import { defillamaFees } from "./defillama-fees.js";
 import { defillamaProtocolTvl } from "./defillama-protocol-tvl.js";
+import { defillamaStablecoins } from "./defillama-stablecoins.js";
 import { defillamaTvlChain } from "./defillama-tvl-chain.js";
 import { defillamaYieldPools } from "./defillama-yield-pools.js";
+import { frankfurterHistorical } from "./frankfurter-historical.js";
+import { frankfurterRatesBatch } from "./frankfurter-rates-batch.js";
 import { geckoterminalBasePools } from "./geckoterminal-base-pools.js";
 import { geckoterminalSolanaPools } from "./geckoterminal-solana-pools.js";
 import { heliusNftMetadata } from "./helius-nft-metadata.js";
@@ -27,6 +32,11 @@ import { heliusPriorityFee } from "./helius-priority-fee.js";
 import { heliusTxDecoder } from "./helius-tx-decoder.js";
 import { heliusTxSimulator } from "./helius-tx-simulator.js";
 import { heliusWalletHistory } from "./helius-wallet-history.js";
+import { taMacd } from "./ta-macd.js";
+import { taMovingAverages } from "./ta-moving-averages.js";
+import { taRsi } from "./ta-rsi.js";
+import { yahooStockBatch } from "./yahoo-stock-batch.js";
+import { yahooStockQuote } from "./yahoo-stock-quote.js";
 import type { InternalHandler } from "./types.js";
 
 export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
@@ -50,6 +60,16 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   binance_orderbook: binanceOrderbook,
   binance_trades: binanceTrades,
   binance_funding: binanceFunding,
+  ta_rsi: taRsi,
+  ta_macd: taMacd,
+  ta_moving_averages: taMovingAverages,
+  binance_open_interest: binanceOpenInterest,
+  binance_funding_batch: binanceFundingBatch,
+  defillama_stablecoins: defillamaStablecoins,
+  yahoo_stock_quote: yahooStockQuote,
+  yahoo_stock_batch: yahooStockBatch,
+  frankfurter_rates_batch: frankfurterRatesBatch,
+  frankfurter_historical: frankfurterHistorical,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
