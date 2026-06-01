@@ -29,7 +29,10 @@ import type {
 import type { Pool } from "pg";
 import { buildBazaarExtension } from "./bazaar.js";
 import { decryptHeaders } from "./crypto.js";
-import { getInternalHandler } from "./handlers/registry.js";
+import {
+  getInternalHandler,
+  getInternalHandlerValidator,
+} from "./handlers/registry.js";
 import { lookupNetwork } from "./networks.js";
 import {
   createInboundFacilitatorPaymentFallback,
@@ -197,6 +200,38 @@ export async function handle(
       },
       outcome: "invalid_config",
     };
+  }
+
+  // P2 pre-payment body validation. When the proxy endpoint is backed
+  // by an internal handler that registered a validator, run it BEFORE
+  // the 402 challenge. Bot probes with empty / malformed bodies get a
+  // clean 400 and never see the 402 prompt — they stop retrying,
+  // which keeps the published error rate clean for legitimate buyers.
+  //
+  // `outcome: "invalid_config"` is the closest existing prl outcome
+  // for "client sent unusable input". It's deliberately excluded from
+  // the dashboard's error-rate query (errors = settle_failed +
+  // upstream_error) so this branch does not pollute reputation.
+  if (config.internalHandler) {
+    const validator = getInternalHandlerValidator(config.internalHandler);
+    if (validator) {
+      const rejection = validator(args.body, args.method.toUpperCase());
+      if (rejection) {
+        await logProxyRequest(deps.pool, {
+          proxyConfigId: config.id,
+          resourceKeyId: config.resourceKeyId,
+          outcome: "invalid_config",
+          errorCode: "client_invalid_body",
+          ipHash,
+        });
+        return {
+          status: rejection.status,
+          body: rejection.body,
+          headers: { "content-type": "application/json" },
+          outcome: "invalid_config",
+        };
+      }
+    }
   }
 
   const accepted = buildAcceptedPayments(config);

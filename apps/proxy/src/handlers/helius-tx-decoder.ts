@@ -16,7 +16,60 @@
  * translates Helius's raw response shape into the gateway-native
  * contract. No routing, no fee math, no policy.
  */
-import type { InternalHandler, InternalHandlerInput, InternalHandlerResult } from "./types.js";
+import type {
+  InternalHandler,
+  InternalHandlerInput,
+  InternalHandlerResult,
+  InternalHandlerValidator,
+} from "./types.js";
+
+/**
+ * Pre-payment validator for `helius_tx_decoder`. Same idea as
+ * `heliusTxSimulatorValidator` but checks a base58 signature instead
+ * of a base64 transaction blob. Solana tx signatures are 64-byte
+ * Ed25519 sigs encoded as base58 — between 86 and 88 chars. We
+ * accept a generous 64–128 char window to leave room for unusual
+ * encodings; the handler itself re-checks more strictly after payment.
+ */
+export const heliusTxDecoderValidator: InternalHandlerValidator = (
+  body,
+  method,
+) => {
+  if (method !== "POST") return null;
+  if (!body || body.length === 0) {
+    return { status: 400, body: { error: "signature_required" } };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body.toString("utf8"));
+  } catch {
+    return { status: 400, body: { error: "invalid_json_body" } };
+  }
+  const sig =
+    parsed !== null && typeof parsed === "object"
+      ? (parsed as Record<string, unknown>)["signature"]
+      : undefined;
+  if (typeof sig !== "string" || sig.length === 0) {
+    return { status: 400, body: { error: "signature_required" } };
+  }
+  if (sig.length < 64 || sig.length > 128) {
+    return {
+      status: 400,
+      body: {
+        error: "invalid_signature_format",
+        message: "Solana signature must be 64-128 base58 chars",
+      },
+    };
+  }
+  // base58 alphabet (no 0, O, I, l). Reject if any other char appears.
+  if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(sig)) {
+    return {
+      status: 400,
+      body: { error: "signature_not_base58" },
+    };
+  }
+  return null;
+};
 
 interface HeliusTokenTransfer {
   fromUserAccount?: string;

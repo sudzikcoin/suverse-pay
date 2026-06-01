@@ -30,8 +30,14 @@ import { geckoterminalBasePools } from "./geckoterminal-base-pools.js";
 import { geckoterminalSolanaPools } from "./geckoterminal-solana-pools.js";
 import { heliusNftMetadata } from "./helius-nft-metadata.js";
 import { heliusPriorityFee } from "./helius-priority-fee.js";
-import { heliusTxDecoder } from "./helius-tx-decoder.js";
-import { heliusTxSimulator } from "./helius-tx-simulator.js";
+import {
+  heliusTxDecoder,
+  heliusTxDecoderValidator,
+} from "./helius-tx-decoder.js";
+import {
+  heliusTxSimulator,
+  heliusTxSimulatorValidator,
+} from "./helius-tx-simulator.js";
 import { heliusWalletHistory } from "./helius-wallet-history.js";
 import { secFilings } from "./sec-filings.js";
 import { stooqOilPrices } from "./stooq-oil-prices.js";
@@ -66,7 +72,10 @@ import { bitcoinTxDecoder } from "./bitcoin-tx-decoder.js";
 // rationale.
 import { swapSolanaExecute } from "./swap-solana-execute.js";
 
-import type { InternalHandler } from "./types.js";
+import type {
+  InternalHandler,
+  InternalHandlerValidator,
+} from "./types.js";
 
 export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   helius_tx_decoder: heliusTxDecoder,
@@ -131,4 +140,24 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
   return INTERNAL_HANDLERS[name];
+}
+
+/**
+ * Pre-payment body validators keyed by the same handler name as
+ * `INTERNAL_HANDLERS`. Optional — handlers without a validator skip
+ * pre-payment validation, the buyer pays first and the handler
+ * surfaces its own 400 after settlement (legacy behavior). Add an
+ * entry here when you want to reject malformed bodies BEFORE the
+ * 402 challenge, sparing buyers a fee for a call that was always
+ * going to fail.
+ */
+export const INTERNAL_HANDLER_VALIDATORS: Record<string, InternalHandlerValidator> = {
+  helius_tx_simulator: heliusTxSimulatorValidator,
+  helius_tx_decoder: heliusTxDecoderValidator,
+};
+
+export function getInternalHandlerValidator(
+  name: string,
+): InternalHandlerValidator | undefined {
+  return INTERNAL_HANDLER_VALIDATORS[name];
 }

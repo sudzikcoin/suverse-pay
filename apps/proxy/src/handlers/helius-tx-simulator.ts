@@ -19,7 +19,62 @@ import type {
   InternalHandler,
   InternalHandlerInput,
   InternalHandlerResult,
+  InternalHandlerValidator,
 } from "./types.js";
+
+/**
+ * Pre-payment validator for `helius_tx_simulator`. Rejects empty
+ * bodies, non-JSON bodies, and bodies missing a plausible base64
+ * `transaction` field BEFORE the 402 challenge is issued. Bots
+ * probing with `{}` or random bytes get a 400 and stop retrying,
+ * which keeps the error rate clean for paid callers.
+ *
+ * Threshold reasoning: a Solana transaction wire blob starts with a
+ * compact-array of 64-byte signatures plus the message; the minimum
+ * legal length (1 sig + a trivial transfer) base64-encodes to >=120
+ * chars. We reject anything below 100 chars as bot garbage.
+ */
+export const heliusTxSimulatorValidator: InternalHandlerValidator = (
+  body,
+  method,
+) => {
+  if (method !== "POST") return null;
+  if (!body || body.length === 0) {
+    return { status: 400, body: { error: "transaction_required" } };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body.toString("utf8"));
+  } catch {
+    return { status: 400, body: { error: "invalid_json_body" } };
+  }
+  const tx =
+    parsed !== null && typeof parsed === "object"
+      ? (parsed as Record<string, unknown>)["transaction"]
+      : undefined;
+  if (typeof tx !== "string" || tx.length === 0) {
+    return { status: 400, body: { error: "transaction_required" } };
+  }
+  if (tx.length < 100) {
+    return {
+      status: 400,
+      body: {
+        error: "transaction_too_short",
+        message: "base64 transaction is shorter than a minimal Solana tx",
+      },
+    };
+  }
+  if (!/^[A-Za-z0-9+/]+=*$/.test(tx)) {
+    return {
+      status: 400,
+      body: {
+        error: "transaction_not_base64",
+        message: "transaction field must be base64-encoded",
+      },
+    };
+  }
+  return null;
+};
 
 interface SimulateResult {
   err?: unknown;

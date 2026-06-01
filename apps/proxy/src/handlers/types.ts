@@ -32,3 +32,21 @@ export interface InternalHandlerResult {
 export type InternalHandler = (
   input: InternalHandlerInput,
 ) => Promise<InternalHandlerResult>;
+
+/**
+ * Optional pre-payment body validator. Runs BEFORE x402 challenge or
+ * settlement so a buyer who sent garbage gets a clean 400 — they
+ * never reach the 402 prompt, never pay for a call that was always
+ * going to fail server-side. Returns null when the body is fine,
+ * otherwise an `InternalHandlerResult` whose `status` and `body` are
+ * served to the buyer verbatim.
+ *
+ * Validators are intentionally cheap: argument-shape checks, base
+ * encodings, length plausibility. They MUST NOT do network I/O — the
+ * proxy is on the hot path before the buyer has even paid. Heavier
+ * validation belongs in the handler itself after payment.
+ */
+export type InternalHandlerValidator = (
+  body: Buffer | null,
+  method: string,
+) => InternalHandlerResult | null;
