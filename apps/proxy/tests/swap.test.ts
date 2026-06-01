@@ -35,12 +35,31 @@ import {
   registerSwapRoutes,
   SOLANA_CAIP2,
   USDC_MINT,
+  parsePriceImpact,
   validateQuoteInput,
   WSOL_MINT,
   type SolanaSwapChain,
   type SwapSignerConfig,
 } from "../src/swap.js";
 import { findByQuoteId } from "../src/swap-store.js";
+import {
+  _resetTokenMetadataCache,
+  _seedTokenMetadataCache,
+  type TokenMetadata,
+} from "../src/lib/token-metadata.js";
+
+const TEST_USDC_META: TokenMetadata = {
+  mint: USDC_MINT,
+  symbol: "USDC",
+  name: "USD Coin",
+  decimals: 6,
+};
+const TEST_WSOL_META: TokenMetadata = {
+  mint: WSOL_MINT,
+  symbol: "SOL",
+  name: "Wrapped SOL",
+  decimals: 9,
+};
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = join(HERE, "..", "..", "..", "db", "migrations");
@@ -160,11 +179,11 @@ describe("computeFee", () => {
 });
 
 describe("buildQuoteResponse", () => {
-  it("emits x402_pay_url with the quote id", () => {
+  it("emits x402_pay_url with the quote id and formatted output", () => {
     const r = buildQuoteResponse({
       quoteId: "q_abc",
-      inputMint: REAL_USDC,
-      outputMint: REAL_WSOL,
+      inputMeta: TEST_USDC_META,
+      outputMeta: TEST_WSOL_META,
       inputAmount: 10_000_000n,
       expectedOutput: 47_900_000n,
       fee: 100_000n,
@@ -179,6 +198,66 @@ describe("buildQuoteResponse", () => {
     expect(r.total_cost).toBe("10100000"); // 10 + 0.10 USDC
     expect(r.total_cost_human).toBe("10.1 USDC");
     expect(r.expected_output_human).toBe("0.0479 SOL");
+  });
+
+  it("returns input_token / output_token as objects with metadata", () => {
+    const r = buildQuoteResponse({
+      quoteId: "q_xyz",
+      inputMeta: TEST_USDC_META,
+      outputMeta: TEST_WSOL_META,
+      inputAmount: 10_000_000n,
+      expectedOutput: 47_900_000n,
+      fee: 100_000n,
+      priceImpactPct: 0,
+      expiresAt: new Date(1_900_000_000_000),
+      publicBaseUrl: "https://proxy.suverse.io",
+    });
+    expect(r.output_token).toEqual({
+      mint: WSOL_MINT,
+      symbol: "SOL",
+      name: "Wrapped SOL",
+      decimals: 9,
+    });
+    expect(r.input_token.symbol).toBe("USDC");
+    expect(r.input_token_mint).toBe(USDC_MINT);
+    expect(r.output_token_mint).toBe(WSOL_MINT);
+  });
+
+  it("renders UNKNOWN tokens without crashing", () => {
+    const unknownMeta: TokenMetadata = {
+      mint: "Unknown111",
+      symbol: "UNKNOWN",
+      name: "Unknown111",
+      decimals: 0,
+    };
+    const r = buildQuoteResponse({
+      quoteId: "q_unk",
+      inputMeta: TEST_USDC_META,
+      outputMeta: unknownMeta,
+      inputAmount: 1_000_000n,
+      expectedOutput: 12_345n,
+      fee: 10_000n,
+      priceImpactPct: 0,
+      expiresAt: new Date(1_900_000_000_000),
+      publicBaseUrl: "https://proxy.suverse.io",
+    });
+    expect(r.expected_output_human).toBe("12345 UNKNOWN");
+    expect(r.output_token.decimals).toBe(0);
+  });
+});
+
+describe("parsePriceImpact", () => {
+  it("parses a Jupiter string decimal to a number", () => {
+    expect(parsePriceImpact("0.05")).toBeCloseTo(0.05);
+  });
+  it("accepts a number input", () => {
+    expect(parsePriceImpact(0.123)).toBeCloseTo(0.123);
+  });
+  it("returns 0 for null / undefined / empty / NaN", () => {
+    expect(parsePriceImpact(null)).toBe(0);
+    expect(parsePriceImpact(undefined)).toBe(0);
+    expect(parsePriceImpact("")).toBe(0);
+    expect(parsePriceImpact("not-a-number")).toBe(0);
   });
 });
 
@@ -203,6 +282,10 @@ describe("POST /v1/swap/solana/quote", () => {
   beforeEach(async () => {
     pool = await freshDb();
     fetchImpl = vi.fn();
+    // Seed metadata cache so the /quote handler's lookups don't try
+    // to hit tokens.jup.ag through the test's mocked fetch.
+    _resetTokenMetadataCache();
+    _seedTokenMetadataCache([TEST_USDC_META, TEST_WSOL_META]);
     app = Fastify({ logger: false });
     app.removeAllContentTypeParsers();
     app.addContentTypeParser(
@@ -225,6 +308,7 @@ describe("POST /v1/swap/solana/quote", () => {
   afterEach(async () => {
     await app.close();
     await pool.end();
+    _resetTokenMetadataCache();
     vi.restoreAllMocks();
   });
 
@@ -305,6 +389,23 @@ describe("POST /v1/swap/solana/quote", () => {
     expect(body.x402_pay_url).toBe(
       `https://proxy.suverse.io/v1/swap/solana/execute/${body.quote_id}`,
     );
+    expect(body.input_token).toEqual({
+      mint: REAL_USDC,
+      symbol: "USDC",
+      name: "USD Coin",
+      decimals: 6,
+    });
+    expect(body.output_token).toEqual({
+      mint: REAL_WSOL,
+      symbol: "SOL",
+      name: "Wrapped SOL",
+      decimals: 9,
+    });
+    expect(body.input_token_mint).toBe(REAL_USDC);
+    expect(body.output_token_mint).toBe(REAL_WSOL);
+    expect(body.expected_output_human).toBe("0.0479 SOL");
+    expect(typeof body.price_impact_pct).toBe("number");
+    expect(body.price_impact_pct).toBeCloseTo(0.05);
 
     const row = await findByQuoteId(pool, body.quote_id);
     expect(row).not.toBeNull();

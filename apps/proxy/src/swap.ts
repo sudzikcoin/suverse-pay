@@ -68,6 +68,11 @@ import {
   type JupiterQuoteResponse,
 } from "./swap-jupiter.js";
 import {
+  formatTokenAmount,
+  getTokenMetadata,
+  type TokenMetadata,
+} from "./lib/token-metadata.js";
+import {
   findByQuoteId,
   insertQuote,
   markCompleted,
@@ -421,10 +426,30 @@ export function computeFee(inputAmount: bigint): bigint {
 
 // --------------------------------------------------------- public response ----
 
+/**
+ * Quote response shape. The breaking change from earlier versions is
+ * `input_token` and `output_token` — previously raw mint strings, now
+ * structured `TokenMetadataView` objects with symbol/name/decimals/
+ * logoURI. The old string field names are aliased as
+ * `input_token_mint` / `output_token_mint` so older clients can read
+ * the mint address without breakage.
+ */
+export interface TokenMetadataView {
+  mint: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoURI?: string;
+}
+
 export interface QuoteResponseShape {
   quote_id: string;
-  input_token: string;
-  output_token: string;
+  input_token: TokenMetadataView;
+  output_token: TokenMetadataView;
+  /** Back-compat alias for `input_token.mint` (deprecated). */
+  input_token_mint: string;
+  /** Back-compat alias for `output_token.mint` (deprecated). */
+  output_token_mint: string;
   input_amount: string;
   expected_output: string;
   expected_output_human: string;
@@ -439,8 +464,8 @@ export interface QuoteResponseShape {
 
 export interface BuildQuoteResponseArgs {
   quoteId: string;
-  inputMint: string;
-  outputMint: string;
+  inputMeta: TokenMetadata;
+  outputMeta: TokenMetadata;
   inputAmount: bigint;
   expectedOutput: bigint;
   fee: bigint;
@@ -449,45 +474,51 @@ export interface BuildQuoteResponseArgs {
   publicBaseUrl: string;
 }
 
-export function buildQuoteResponse(args: BuildQuoteResponseArgs): QuoteResponseShape {
+export function buildQuoteResponse(
+  args: BuildQuoteResponseArgs,
+): QuoteResponseShape {
+  const inputView = toView(args.inputMeta);
+  const outputView = toView(args.outputMeta);
   return {
     quote_id: args.quoteId,
-    input_token: args.inputMint,
-    output_token: args.outputMint,
+    input_token: inputView,
+    output_token: outputView,
+    input_token_mint: inputView.mint,
+    output_token_mint: outputView.mint,
     input_amount: args.inputAmount.toString(),
     expected_output: args.expectedOutput.toString(),
-    expected_output_human: humanAmount(args.expectedOutput, args.outputMint),
+    expected_output_human: formatTokenAmount(args.expectedOutput, args.outputMeta),
     price_impact_pct: args.priceImpactPct,
     fee: args.fee.toString(),
-    fee_human: humanAmount(args.fee, args.inputMint),
+    fee_human: formatTokenAmount(args.fee, args.inputMeta),
     total_cost: (args.inputAmount + args.fee).toString(),
-    total_cost_human: humanAmount(args.inputAmount + args.fee, args.inputMint),
+    total_cost_human: formatTokenAmount(args.inputAmount + args.fee, args.inputMeta),
     expires_at: args.expiresAt.toISOString(),
     x402_pay_url: `${args.publicBaseUrl}/v1/swap/solana/execute/${args.quoteId}`,
   };
 }
 
-/**
- * Best-effort human-readable amount. USDC + WSOL have 6 + 9 decimals
- * respectively; everything else falls back to the raw atomic string.
- * Used purely for display in `*_human` fields — never relied on
- * downstream.
- */
-function humanAmount(atomic: bigint, mint: string): string {
-  if (mint === USDC_MINT) return `${formatDecimal(atomic, 6)} USDC`;
-  if (mint === WSOL_MINT) return `${formatDecimal(atomic, 9)} SOL`;
-  return `${atomic.toString()} atomic`;
+function toView(meta: TokenMetadata): TokenMetadataView {
+  return {
+    mint: meta.mint,
+    symbol: meta.symbol,
+    name: meta.name,
+    decimals: meta.decimals,
+    ...(meta.logoURI ? { logoURI: meta.logoURI } : {}),
+  };
 }
 
-function formatDecimal(n: bigint, decimals: number): string {
-  const sign = n < 0n ? "-" : "";
-  const abs = n < 0n ? -n : n;
-  const divisor = 10n ** BigInt(decimals);
-  const whole = abs / divisor;
-  const frac = abs % divisor;
-  if (frac === 0n) return `${sign}${whole}`;
-  const fracStr = frac.toString().padStart(decimals, "0").replace(/0+$/, "");
-  return fracStr ? `${sign}${whole}.${fracStr}` : `${sign}${whole}`;
+/**
+ * Parse the `priceImpactPct` field from a Jupiter quote response.
+ * Jupiter sends a stringified decimal (e.g. "0.000026") on most
+ * routes, but small-trade routes occasionally come back as a number
+ * or empty. Normalize to a finite `number`, falling back to 0 for
+ * anything weird so the response always carries a non-null value.
+ */
+export function parsePriceImpact(raw: unknown): number {
+  if (raw === undefined || raw === null || raw === "") return 0;
+  const n = typeof raw === "number" ? raw : Number.parseFloat(String(raw));
+  return Number.isFinite(n) ? n : 0;
 }
 
 // --------------------------------------------------------- execute pipeline ----
@@ -862,16 +893,28 @@ export function registerSwapRoutes(
         return reply.code(500).send({ error: "store_unavailable" });
       }
 
-      const priceImpactPct = Number.parseFloat(quote.priceImpactPct ?? "0");
+      // Resolve token metadata for both legs. The resolver never
+      // throws and never returns null — worst case yields an UNKNOWN
+      // stub so the response shape stays stable.
+      const heliusApiKey = process.env["HELIUS_API_KEY"];
+      const metaOpts = {
+        fetchImpl,
+        ...(heliusApiKey ? { heliusApiKey } : {}),
+      };
+      const [inputMeta, outputMeta] = await Promise.all([
+        getTokenMetadata(vreq.inputMint, metaOpts),
+        getTokenMetadata(vreq.outputMint, metaOpts),
+      ]);
+
       return reply.code(200).send(
         buildQuoteResponse({
           quoteId,
-          inputMint: vreq.inputMint,
-          outputMint: vreq.outputMint,
+          inputMeta,
+          outputMeta,
           inputAmount: vreq.inputAmount,
           expectedOutput,
           fee,
-          priceImpactPct: Number.isFinite(priceImpactPct) ? priceImpactPct : 0,
+          priceImpactPct: parsePriceImpact(quote.priceImpactPct),
           expiresAt,
           publicBaseUrl: deps.publicBaseUrl,
         }),
