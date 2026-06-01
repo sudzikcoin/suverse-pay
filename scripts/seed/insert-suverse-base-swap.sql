@@ -45,7 +45,7 @@ WITH proxy_ins AS (
     'https://proxy.suverse.io/v1/swap/base/quote',
     'POST',
     'SuVerse Base Token Swap',
-    'Swap USDC into any ERC20 token on Base chain using LiFi aggregator. Best price routing across Uniswap V3, Aerodrome, BaseSwap, SushiSwap, KyberSwap, and 20+ Base DEXs. Two step flow: first POST /v1/swap/base/quote to get a quote_id and total_cost, then pay via x402 to POST /v1/swap/base/execute/{quote_id}. Maximum 50 USDC per swap. Slippage protection from 10 to 500 basis points. Output tokens delivered to your wallet within 60 seconds. Service fee is 1% of input. Quotes expire after 60 seconds.',
+    'Swap USDC into any ERC20 token on Base chain using LiFi aggregator. Best price routing across Uniswap V3, Aerodrome, BaseSwap, SushiSwap, KyberSwap, and 20+ Base DEXs. Two step flow: first POST /v1/swap/base/quote to get a quote_id and total_cost, then pay via x402 to POST /v1/swap/base/execute/{quote_id}. Maximum 50 USDC per swap. Slippage protection from 10 to 500 basis points. Output tokens delivered to your wallet within 60 seconds. Service fee is 1% of input. Quotes expire after 60 seconds. Minimum swap is $1 once the LiFi router has a standing USDC allowance from the liquidity wallet; the first swap through a router (no allowance yet) requires at least $1.10 to cover the one-time approve gas. The /quote response carries estimated_gas_cost_usd and minimum_input_atomic; if your input is below the floor the call returns HTTP 400 quote_too_small with the bumped minimum.',
     1000,
     ARRAY['eip155:8453'],
     '0x4261701A4dDf4625EBfA80CEefB5B3B2b5453B2E',
@@ -77,7 +77,7 @@ INSERT INTO catalog_listings (
 SELECT
   gen_random_uuid(),
   'SuVerse Base Token Swap',
-  'Swap USDC into any ERC20 on Base via LiFi aggregator. Two step flow: POST /v1/swap/base/quote for price discovery, then POST /v1/swap/base/execute/{quote_id} with x402 payment to settle the swap. Best routing across 20+ Base DEXs (Uniswap V3, Aerodrome, BaseSwap, SushiSwap, KyberSwap, etc.). Maximum 50 USDC per swap. 1% service fee. Tokens delivered to the paying wallet within 60 seconds.',
+  'Swap USDC into any ERC20 on Base via LiFi aggregator. Two step flow: POST /v1/swap/base/quote for price discovery, then POST /v1/swap/base/execute/{quote_id} with x402 payment to settle the swap. Best routing across 20+ Base DEXs (Uniswap V3, Aerodrome, BaseSwap, SushiSwap, KyberSwap, etc.). Maximum 50 USDC per swap. 1% service fee. Tokens delivered to the paying wallet within 60 seconds. Minimum input is $1 (or $1.10 the first time a router needs a USDC approve from the liquidity wallet).',
   'https://proxy.suverse.io/v1/swap/base/quote',
   ARRAY['base','evm','swap','dex','lifi','erc20','aggregator','suverse'],
   1000,
