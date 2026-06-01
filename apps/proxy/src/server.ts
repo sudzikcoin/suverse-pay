@@ -11,6 +11,11 @@ import type { SuverseClient } from "@suverselabs/x402-client";
 import { handle, type HandleDeps } from "./handler.js";
 import { CatalogBazaarStore, ProxyConfigStore } from "./store.js";
 import type { ServiceAddresses } from "./upstream-x402.js";
+import {
+  registerSwapRoutes,
+  type SolanaSwapChain,
+  type SwapSignerConfig,
+} from "./swap.js";
 
 export interface BuildServerArgs {
   pool: Pool;
@@ -37,6 +42,16 @@ export interface BuildServerArgs {
   /** Buyer-side client for upstream-x402 wrapping (optional). */
   upstreamX402Client?: SuverseClient;
   upstreamServiceAddresses?: ServiceAddresses;
+  /**
+   * Optional SuVerse Swap configuration. When both are supplied the
+   * proxy registers `/v1/swap/solana/quote` and
+   * `/v1/swap/solana/execute/:quoteId`. When absent, the routes are
+   * skipped entirely — the rest of the proxy boots unchanged.
+   */
+  swapSigner?: SwapSignerConfig;
+  swapChain?: SolanaSwapChain;
+  /** Public base URL used to build x402_pay_url. e.g. https://proxy.suverse.io */
+  swapPublicBaseUrl?: string;
 }
 
 export async function buildServer(
@@ -122,6 +137,21 @@ export async function buildServer(
   });
 
   app.get("/health", async () => ({ status: "ok", service: "proxy" }));
+
+  // SuVerse Swap routes. Only registered when the operator wired a
+  // liquidity wallet + Solana RPC; otherwise the routes 404 (same as
+  // any unconfigured endpoint).
+  if (args.swapSigner && args.swapChain && args.swapPublicBaseUrl) {
+    registerSwapRoutes(app, {
+      pool: args.pool,
+      facilitatorUrl: args.facilitatorUrl,
+      facilitatorApiKey: args.facilitatorApiKey,
+      swapSigner: args.swapSigner,
+      chain: args.swapChain,
+      publicBaseUrl: args.swapPublicBaseUrl,
+      ...(args.fetchImpl ? { fetchImpl: args.fetchImpl } : {}),
+    });
+  }
 
   // Five methods, one handler. POST/PUT/PATCH/DELETE are explicit so
   // Fastify routes them; the handler itself reads `args.method`.

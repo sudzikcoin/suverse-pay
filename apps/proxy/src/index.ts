@@ -32,6 +32,12 @@ import type {
   ServiceAddresses,
   ServiceWallets,
 } from "./upstream-x402.js";
+import {
+  loadSwapSigner,
+  Web3SolanaSwapChain,
+  type SolanaSwapChain,
+  type SwapSignerConfig,
+} from "./swap.js";
 
 async function main(): Promise<void> {
   const databaseUrl = required("DATABASE_URL");
@@ -55,6 +61,38 @@ async function main(): Promise<void> {
       ? new SuverseClient({ wallets: wallets as MultiChainWallets })
       : undefined;
 
+  // SuVerse Swap: separate liquidity wallet, totally independent of
+  // the upstream-x402 service wallets above. Optional; absence is
+  // logged but does not abort boot.
+  let swapSigner: SwapSignerConfig | undefined;
+  let swapChain: SolanaSwapChain | undefined;
+  let swapPublicBaseUrl: string | undefined;
+  try {
+    swapSigner = loadSwapSigner();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `proxy: failed to load swap signer — swap routes disabled: ${(err as Error).message}`,
+    );
+  }
+  if (swapSigner) {
+    const rpcUrl = resolveSolanaRpcUrl();
+    if (rpcUrl) {
+      swapChain = new Web3SolanaSwapChain({
+        rpcUrl,
+        secretKey: swapSigner.secretKey,
+      });
+      swapPublicBaseUrl =
+        process.env["SWAP_PUBLIC_BASE_URL"] ?? "https://proxy.suverse.io";
+    } else {
+      // eslint-disable-next-line no-console
+      console.error(
+        "proxy: SWAP_SOLANA_* present but no Solana RPC (set HELIUS_API_KEY or SOLANA_RPC_URL) — swap routes disabled",
+      );
+      swapSigner = undefined;
+    }
+  }
+
   const app = await buildServer({
     pool,
     masterKey,
@@ -67,6 +105,9 @@ async function main(): Promise<void> {
     ...(healthCheckTimeoutMs !== undefined ? { healthCheckTimeoutMs } : {}),
     ...(upstreamClient !== undefined
       ? { upstreamX402Client: upstreamClient, upstreamServiceAddresses: addresses }
+      : {}),
+    ...(swapSigner && swapChain && swapPublicBaseUrl
+      ? { swapSigner, swapChain, swapPublicBaseUrl }
       : {}),
   });
 
@@ -133,6 +174,20 @@ function loadServiceWallets(): {
   }
   // (EVM / Cosmos / TRON wallets land here when added.)
   return { wallets, addresses };
+}
+
+/**
+ * Pick a Solana RPC URL — explicit override wins, else Helius if the
+ * key is configured, else undefined (caller skips swap wiring).
+ */
+function resolveSolanaRpcUrl(): string | undefined {
+  const explicit = process.env["SOLANA_RPC_URL"];
+  if (explicit && explicit.trim() !== "") return explicit;
+  const heliusKey = process.env["HELIUS_API_KEY"];
+  if (heliusKey && heliusKey.trim() !== "") {
+    return `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`;
+  }
+  return undefined;
 }
 
 /** Parse an optional positive integer env var; return undefined on absence or junk. */
