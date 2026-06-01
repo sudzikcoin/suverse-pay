@@ -21,6 +21,10 @@ import {
   type BaseSwapChain,
   type BaseSwapSignerConfig,
 } from "./swap-base.js";
+import {
+  publishEnabled,
+  registerSwapPublishRoutes,
+} from "./swap-publish.js";
 
 export interface BuildServerArgs {
   pool: Pool;
@@ -177,6 +181,22 @@ export async function buildServer(
       publicBaseUrl: args.swapPublicBaseUrl,
       ...(args.fetchImpl ? { fetchImpl: args.fetchImpl } : {}),
     });
+  }
+
+  // One-shot Bazaar publishing endpoints — only when explicitly
+  // enabled via env. Single purpose is to wake CDP's /discovery
+  // indexer with one real settle that carries the swap service's
+  // extensions.bazaar block. Disable after the indexing run.
+  if (publishEnabled() && args.swapPublicBaseUrl) {
+    registerSwapPublishRoutes(app, {
+      facilitatorUrl: args.facilitatorUrl,
+      facilitatorApiKey: args.facilitatorApiKey,
+      publicBaseUrl: args.swapPublicBaseUrl,
+      ...(args.swapSigner ? { swapSigner: args.swapSigner } : {}),
+      ...(args.baseSwapSigner ? { baseSwapSigner: args.baseSwapSigner } : {}),
+      ...(args.fetchImpl ? { fetchImpl: args.fetchImpl } : {}),
+    });
+    app.log.info("proxy: swap publish endpoints registered (SWAP_PUBLISH_ENABLED=true)");
   }
 
   // Five methods, one handler. POST/PUT/PATCH/DELETE are explicit so
