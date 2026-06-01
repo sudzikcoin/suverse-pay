@@ -74,6 +74,12 @@ import {
   type TokenMetadata,
 } from "./lib/token-metadata.js";
 import {
+  buildGasGuardQuoteFields,
+  evaluateSolanaSwapGas,
+  type GasGuardOk,
+  type SolanaGasProbe,
+} from "./swap-gas-guard.js";
+import {
   findByQuoteId,
   insertQuote,
   markCompleted,
@@ -190,6 +196,16 @@ export interface SolanaSwapChain {
    * pass WSOL_MINT and we'll lamport-query the wallet.
    */
   readSwapWalletBalance(mint: string): Promise<bigint>;
+
+  /**
+   * Does the swap liquidity wallet already hold an associated-token-
+   * account for `mint`? Read at /quote time by the gas-cost guard to
+   * decide whether the upcoming swap will pay one-time ATA rent
+   * (~$0.40 at $200 SOL). For native SOL (WSOL_MINT) there is no ATA
+   * — returns `true`. Implementations should throw on RPC failure;
+   * the guard treats throws as "no" and falls closed.
+   */
+  hasSwapWalletAta(mint: string): Promise<boolean>;
 }
 
 /**
@@ -329,6 +345,16 @@ export class Web3SolanaSwapChain implements SolanaSwapChain {
       return 0n;
     }
   }
+
+  async hasSwapWalletAta(mint: string): Promise<boolean> {
+    if (mint === WSOL_MINT) return true;
+    const ata = getAssociatedTokenAddressSync(
+      new PublicKey(mint),
+      this.keypair.publicKey,
+    );
+    const info = await this.conn.getAccountInfo(ata);
+    return info !== null;
+  }
 }
 
 // --------------------------------------------------------- shared quoting ----
@@ -461,6 +487,23 @@ export interface QuoteResponseShape {
   total_cost_human: string;
   expires_at: string;
   x402_pay_url: string;
+  /**
+   * USD estimate for the executor's combined gas cost. Surfaced so an
+   * AI agent can decide whether the swap is economically rational.
+   */
+  estimated_gas_cost_usd?: number;
+  /**
+   * Token-and-wallet-specific minimum input (USDC atomic, 6 dp) the
+   * gas-cost guard derived for this quote. Above the absolute floor
+   * only when output-token novelty bumps gas (see swap-gas-guard.ts).
+   */
+  minimum_input_atomic?: string;
+  /**
+   * Human-readable warning surfaced when the minimum was bumped above
+   * the default floor — e.g. "Output token has no liquidity wallet
+   * ATA yet…". Absent on the cheapest path.
+   */
+  gas_warning?: string;
 }
 
 export interface BuildQuoteResponseArgs {
@@ -473,6 +516,13 @@ export interface BuildQuoteResponseArgs {
   priceImpactPct: number;
   expiresAt: Date;
   publicBaseUrl: string;
+  /**
+   * Gas-cost guard result for this token+wallet pair. When supplied,
+   * the response includes estimated_gas_cost_usd / minimum_input_atomic
+   * / gas_warning. Optional so old callers don't need to thread the
+   * guard through.
+   */
+  gasGuard?: GasGuardOk;
 }
 
 export function buildQuoteResponse(
@@ -480,7 +530,7 @@ export function buildQuoteResponse(
 ): QuoteResponseShape {
   const inputView = toView(args.inputMeta);
   const outputView = toView(args.outputMeta);
-  return {
+  const out: QuoteResponseShape = {
     quote_id: args.quoteId,
     input_token: inputView,
     output_token: outputView,
@@ -497,6 +547,13 @@ export function buildQuoteResponse(
     expires_at: args.expiresAt.toISOString(),
     x402_pay_url: `${args.publicBaseUrl}/v1/swap/solana/execute/${args.quoteId}`,
   };
+  if (args.gasGuard !== undefined) {
+    const fields = buildGasGuardQuoteFields(args.gasGuard);
+    out.estimated_gas_cost_usd = fields.estimated_gas_cost_usd;
+    out.minimum_input_atomic = fields.minimum_input_atomic;
+    if (fields.warning !== undefined) out.gas_warning = fields.warning;
+  }
+  return out;
 }
 
 function toView(meta: TokenMetadata): TokenMetadataView {
@@ -930,6 +987,35 @@ export function registerSwapRoutes(
       const quoteId = `q_${randomUUID().replace(/-/g, "")}`;
       const expiresAt = new Date(Date.now() + QUOTE_TTL_SECONDS * 1000);
 
+      // Gas-cost guard. Rejects swaps whose 1% fee can't cover the
+      // executor's gas for this token+wallet pair (mostly: new SPL
+      // mints whose ATA the swap wallet doesn't hold yet → +$0.40
+      // rent). Runs AFTER Jupiter so we know there's a route at all;
+      // runs BEFORE insertQuote so a rejected dust swap leaves no DB
+      // trace. The probe is a single getAccountInfo; the guard falls
+      // closed on RPC failure (see swap-gas-guard.ts).
+      const gasProbe: SolanaGasProbe = {
+        swapWalletHasOutputAta: (mint) => deps.chain.hasSwapWalletAta(mint),
+      };
+      const guard = await evaluateSolanaSwapGas({
+        inputAtomic: vreq.inputAmount,
+        outputMint: vreq.outputMint,
+        feeBps: FEE_BPS,
+        probe: gasProbe,
+      });
+      if (!guard.ok) {
+        req.log.info(
+          `swap: quote_too_small input=${vreq.inputAmount} min=${guard.minimumInputAtomic} ` +
+            `gas_usd=${guard.estimatedGasCostUsd} out=${vreq.outputMint}`,
+        );
+        return reply.code(400).send({
+          error: guard.reason,
+          detail: guard.message,
+          minimum_input_atomic: guard.minimumInputAtomic.toString(),
+          estimated_gas_cost_usd: guard.estimatedGasCostUsd,
+        });
+      }
+
       try {
         await insertQuote(deps.pool, {
           quoteId,
@@ -972,6 +1058,7 @@ export function registerSwapRoutes(
           priceImpactPct: parsePriceImpact(quote.priceImpactPct),
           expiresAt,
           publicBaseUrl: deps.publicBaseUrl,
+          gasGuard: guard,
         }),
       );
     },

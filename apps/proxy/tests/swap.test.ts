@@ -277,11 +277,20 @@ describe("POST /v1/swap/solana/quote", () => {
     signAndSendVersionedSwap: vi.fn(),
     transferOutput: vi.fn(),
     readSwapWalletBalance: vi.fn().mockResolvedValue(0n),
+    // Default to "ATA exists" so existing happy-path tests with $1/$10
+    // input clear the gas-cost guard floor. quote_too_small scenarios
+    // override this with mockResolvedValueOnce(false).
+    hasSwapWalletAta: vi.fn().mockResolvedValue(true),
   };
 
   beforeEach(async () => {
     pool = await freshDb();
     fetchImpl = vi.fn();
+    // restoreAllMocks() in afterEach wipes the describe-scope
+    // mockResolvedValue, so re-apply the gas-guard default here. Any
+    // test that wants the "ATA missing" path overrides via
+    // mockResolvedValueOnce(false).
+    (chain.hasSwapWalletAta as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     // Seed metadata cache so the /quote handler's lookups don't try
     // to hit tokens.jup.ag through the test's mocked fetch.
     _resetTokenMetadataCache();
@@ -431,6 +440,125 @@ describe("POST /v1/swap/solana/quote", () => {
     expect(res.statusCode).toBe(502);
     expect(res.json().error).toBe("jupiter_quote_503");
   });
+
+  it("400 quote_too_small when output ATA is missing and input is below the bumped floor", async () => {
+    // Override the chain probe ONCE: swap wallet has no ATA for the
+    // output mint → floor jumps to $40.20 (40_200_000 atomic).
+    (chain.hasSwapWalletAta as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      false,
+    );
+    fetchImpl.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          inputMint: REAL_USDC,
+          outputMint: REAL_WSOL,
+          inAmount: "1000000",
+          outAmount: "4790000",
+          otherAmountThreshold: "4742000",
+          swapMode: "ExactIn",
+          slippageBps: 100,
+          priceImpactPct: "0.05",
+          routePlan: [],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/swap/solana/quote",
+      payload: {
+        input_mint: REAL_USDC,
+        output_mint: REAL_WSOL,
+        input_amount: "1000000", // $1 — well under $40.20
+        slippage_bps: 100,
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    const body = res.json();
+    expect(body.error).toBe("quote_too_small");
+    expect(body.minimum_input_atomic).toBe("40200000");
+    expect(typeof body.estimated_gas_cost_usd).toBe("number");
+    expect(body.estimated_gas_cost_usd).toBeGreaterThan(0.4);
+    expect(body.detail).toMatch(/40\.20/);
+    // No DB row should have been written for a rejected quote.
+    const { rows } = await pool.query("SELECT count(*)::int AS n FROM swap_transactions");
+    expect(rows[0].n).toBe(0);
+  });
+
+  it("200 + gas_warning when ATA missing but input clears the bumped floor", async () => {
+    (chain.hasSwapWalletAta as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      false,
+    );
+    fetchImpl.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          inputMint: REAL_USDC,
+          outputMint: REAL_WSOL,
+          inAmount: "41000000",
+          outAmount: "196500000",
+          otherAmountThreshold: "194535000",
+          swapMode: "ExactIn",
+          slippageBps: 100,
+          priceImpactPct: "0.02",
+          routePlan: [],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/swap/solana/quote",
+      payload: {
+        input_mint: REAL_USDC,
+        output_mint: REAL_WSOL,
+        input_amount: "41000000", // $41 — clears the $40.20 floor
+        slippage_bps: 100,
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.quote_id).toMatch(/^q_[a-f0-9]+$/);
+    expect(body.minimum_input_atomic).toBe("40200000");
+    expect(typeof body.estimated_gas_cost_usd).toBe("number");
+    expect(body.gas_warning).toBeDefined();
+    expect(body.gas_warning).toMatch(/ATA/);
+  });
+
+  it("200 happy path on common token does NOT surface gas_warning (floor at absolute default)", async () => {
+    fetchImpl.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          inputMint: REAL_USDC,
+          outputMint: REAL_WSOL,
+          inAmount: "10000000",
+          outAmount: "47900000",
+          otherAmountThreshold: "47421000",
+          swapMode: "ExactIn",
+          slippageBps: 100,
+          priceImpactPct: "0.05",
+          routePlan: [],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/swap/solana/quote",
+      payload: {
+        input_mint: REAL_USDC,
+        output_mint: REAL_WSOL,
+        input_amount: "10000000",
+        slippage_bps: 100,
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    // ATA exists → no bumpReason → no gas_warning even though the
+    // break-even floor ($0.20) does exceed the absolute floor ($0.10).
+    expect(body.minimum_input_atomic).toBe("200000");
+    expect(typeof body.estimated_gas_cost_usd).toBe("number");
+    expect(body.gas_warning).toBeUndefined();
+  });
 });
 
 // ----------------------------------------------------- executeSolanaSwap ----
@@ -439,6 +567,7 @@ interface FakeChain extends SolanaSwapChain {
   signAndSendVersionedSwap: ReturnType<typeof vi.fn>;
   transferOutput: ReturnType<typeof vi.fn>;
   readSwapWalletBalance: ReturnType<typeof vi.fn>;
+  hasSwapWalletAta: ReturnType<typeof vi.fn>;
 }
 
 function fakeChain(opts?: {
@@ -459,6 +588,10 @@ function fakeChain(opts?: {
       calls += 1;
       return calls === 1 ? (opts?.preBal ?? 0n) : (opts?.postBal ?? 47_500_000n);
     }),
+    // executeSolanaSwap doesn't call this — the guard runs at /quote.
+    // Default true so any test that ends up using this chain through
+    // a future /quote-coupled path still passes.
+    hasSwapWalletAta: vi.fn().mockResolvedValue(true),
   };
 }
 
