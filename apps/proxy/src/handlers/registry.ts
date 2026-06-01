@@ -7,6 +7,11 @@
  * Add a new handler by importing it here and adding one entry to the
  * map — no other code change required.
  */
+import { coingecko24hMovers } from "./coingecko-24h-movers.js";
+import { coingeckoMarketRankings } from "./coingecko-market-rankings.js";
+import { coingeckoOhlcHistory } from "./coingecko-ohlc-history.js";
+import { coingeckoPriceBatch } from "./coingecko-price-batch.js";
+import { coingeckoTrending } from "./coingecko-trending.js";
 import { heliusNftMetadata } from "./helius-nft-metadata.js";
 import { heliusPriorityFee } from "./helius-priority-fee.js";
 import { heliusTxDecoder } from "./helius-tx-decoder.js";
@@ -20,6 +25,11 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   helius_priority_fee: heliusPriorityFee,
   helius_nft_metadata: heliusNftMetadata,
   helius_wallet_history: heliusWalletHistory,
+  coingecko_price_batch: coingeckoPriceBatch,
+  coingecko_ohlc_history: coingeckoOhlcHistory,
+  coingecko_market_rankings: coingeckoMarketRankings,
+  coingecko_24h_movers: coingecko24hMovers,
+  coingecko_trending: coingeckoTrending,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
