@@ -41,6 +41,24 @@ import { taMovingAverages } from "./ta-moving-averages.js";
 import { taRsi } from "./ta-rsi.js";
 import { yahooStockBatch } from "./yahoo-stock-batch.js";
 import { yahooStockQuote } from "./yahoo-stock-quote.js";
+
+// Base / Cosmos / Bitcoin first-party endpoints (no upstream x402).
+import { baseRpcTxDecoder } from "./base-rpc-tx-decoder.js";
+import { blockscoutBaseTokenHolders } from "./blockscout-base-token-holders.js";
+import { blockscoutBaseWalletHistory } from "./blockscout-base-wallet-history.js";
+import { etherscanBaseContractInfo } from "./etherscan-base-contract-info.js";
+import { goplusTokenRiskBase } from "./goplus-token-risk-base.js";
+import { cosmosChainInfo } from "./cosmos-chain-info.js";
+import { cosmosIbcTracker } from "./cosmos-ibc-tracker.js";
+import { cosmosTxDecoder } from "./cosmos-tx-decoder.js";
+import { cosmosValidatorStats } from "./cosmos-validator-stats.js";
+import { cosmosWalletBalance } from "./cosmos-wallet-balance.js";
+import { bitcoinAddressInfo } from "./bitcoin-address-info.js";
+import { bitcoinBlockInfo } from "./bitcoin-block-info.js";
+import { bitcoinFeesRecommended } from "./bitcoin-fees-recommended.js";
+import { bitcoinMempoolStats } from "./bitcoin-mempool-stats.js";
+import { bitcoinTxDecoder } from "./bitcoin-tx-decoder.js";
+
 import type { InternalHandler } from "./types.js";
 
 export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
@@ -78,6 +96,27 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   sec_filings: secFilings,
   stooq_precious_metals: stooqPreciousMetals,
   stooq_oil_prices: stooqOilPrices,
+
+  // Base
+  base_rpc_tx_decoder: baseRpcTxDecoder,
+  goplus_token_risk_base: goplusTokenRiskBase,
+  blockscout_base_wallet_history: blockscoutBaseWalletHistory,
+  blockscout_base_token_holders: blockscoutBaseTokenHolders,
+  etherscan_base_contract_info: etherscanBaseContractInfo,
+
+  // Cosmos
+  cosmos_tx_decoder: cosmosTxDecoder,
+  cosmos_wallet_balance: cosmosWalletBalance,
+  cosmos_validator_stats: cosmosValidatorStats,
+  cosmos_ibc_tracker: cosmosIbcTracker,
+  cosmos_chain_info: cosmosChainInfo,
+
+  // Bitcoin
+  bitcoin_tx_decoder: bitcoinTxDecoder,
+  bitcoin_fees_recommended: bitcoinFeesRecommended,
+  bitcoin_address_info: bitcoinAddressInfo,
+  bitcoin_mempool_stats: bitcoinMempoolStats,
+  bitcoin_block_info: bitcoinBlockInfo,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
