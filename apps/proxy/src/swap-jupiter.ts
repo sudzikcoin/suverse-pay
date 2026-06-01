@@ -1,23 +1,36 @@
 /**
- * Thin wrapper around the public Jupiter v6 aggregator HTTP API.
+ * Thin wrapper around the public Jupiter Swap aggregator HTTP API.
  *
  * Jupiter routes across 30+ Solana DEXs (Raydium, Orca, Meteora, …)
  * and returns the best price quote, plus a pre-built swap transaction
- * we sign and broadcast. v6 is the current GA endpoint as of 2026-05.
+ * we sign and broadcast.
  *
- * Two endpoints are used:
- *   - GET  /v6/quote — price quote, free, used by both /quote and
- *     /execute (re-fetched at execute time to detect price drift).
- *   - POST /v6/swap  — turns a quote response into a signed-ready
- *     versioned transaction (base64 encoded).
+ * Endpoints (Jupiter migrated off the legacy `quote-api.jup.ag/v6/*`
+ * hosts in 2025; the free tier now lives at `lite-api.jup.ag` under
+ * the unified Swap API at /swap/v1/*. `api.jup.ag/swap/v1/*` is the
+ * paid mirror — same shapes, API-key auth):
+ *   - GET  /swap/v1/quote — price quote, free; called by both /quote
+ *     and /execute (re-fetched at execute time to detect drift).
+ *   - POST /swap/v1/swap  — turns a quote response into a signed-
+ *     ready versioned transaction (base64 encoded).
  *
  * No SDK — the API is small enough to call with plain fetch, which
- * also keeps the proxy bundle slim and avoids pulling in @jup-ag/api
+ * keeps the proxy bundle slim and avoids pulling in @jup-ag/api
  * (which transitively depends on a heavy AMM math library).
+ *
+ * `JUPITER_API_BASE_URL` overrides the host (paid plan, self-hosted
+ * proxy, or test fixtures). Defaults to `https://lite-api.jup.ag`.
  */
 
-const QUOTE_URL = "https://quote-api.jup.ag/v6/quote";
-const SWAP_URL = "https://quote-api.jup.ag/v6/swap";
+function baseUrl(): string {
+  return process.env["JUPITER_API_BASE_URL"] ?? "https://lite-api.jup.ag";
+}
+function quoteUrl(): string {
+  return `${baseUrl()}/swap/v1/quote`;
+}
+function swapUrl(): string {
+  return `${baseUrl()}/swap/v1/swap`;
+}
 
 export interface JupiterQuoteRequest {
   inputMint: string;
@@ -53,7 +66,7 @@ export async function fetchJupiterQuote(
   req: JupiterQuoteRequest,
 ): Promise<JupiterQuoteResponse> {
   const fetchImpl = req.fetchImpl ?? fetch;
-  const url = new URL(QUOTE_URL);
+  const url = new URL(quoteUrl());
   url.searchParams.set("inputMint", req.inputMint);
   url.searchParams.set("outputMint", req.outputMint);
   url.searchParams.set("amount", req.amount);
@@ -134,7 +147,7 @@ export async function fetchJupiterSwap(
   if (req.prioritizationFeeLamports !== undefined) {
     body["prioritizationFeeLamports"] = req.prioritizationFeeLamports;
   }
-  const res = await fetchImpl(SWAP_URL, {
+  const res = await fetchImpl(swapUrl(), {
     method: "POST",
     headers: {
       "content-type": "application/json",
