@@ -73,6 +73,11 @@ import {
   recordRefund,
   type SwapRow,
 } from "./swap-store.js";
+import { getBaseTokenMetadata } from "./lib/base-token-metadata.js";
+import {
+  formatTokenAmount,
+  type TokenMetadata,
+} from "./lib/token-metadata.js";
 
 // ---------------------------------------------------------------- consts ----
 
@@ -449,10 +454,22 @@ export function computeFee(inputAmount: bigint): bigint {
 
 // --------------------------------------------------------- public response ----
 
+export interface BaseTokenMetadataView {
+  mint: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoURI?: string;
+}
+
 export interface BaseQuoteResponseShape {
   quote_id: string;
-  input_token: string;
-  output_token: string;
+  input_token: BaseTokenMetadataView;
+  output_token: BaseTokenMetadataView;
+  /** Back-compat alias for `input_token.mint` (deprecated). */
+  input_token_mint: string;
+  /** Back-compat alias for `output_token.mint` (deprecated). */
+  output_token_mint: string;
   input_amount: string;
   expected_output: string;
   expected_output_human: string;
@@ -468,8 +485,8 @@ export interface BaseQuoteResponseShape {
 
 export interface BuildBaseQuoteResponseArgs {
   quoteId: string;
-  inputToken: Address;
-  outputToken: Address;
+  inputMeta: TokenMetadata;
+  outputMeta: TokenMetadata;
   inputAmount: bigint;
   expectedOutput: bigint;
   fee: bigint;
@@ -481,29 +498,35 @@ export interface BuildBaseQuoteResponseArgs {
 export function buildBaseQuoteResponse(
   args: BuildBaseQuoteResponseArgs,
 ): BaseQuoteResponseShape {
+  const inputView = toView(args.inputMeta);
+  const outputView = toView(args.outputMeta);
   return {
     quote_id: args.quoteId,
-    input_token: args.inputToken,
-    output_token: args.outputToken,
+    input_token: inputView,
+    output_token: outputView,
+    input_token_mint: inputView.mint,
+    output_token_mint: outputView.mint,
     input_amount: args.inputAmount.toString(),
     expected_output: args.expectedOutput.toString(),
-    expected_output_human: `${args.expectedOutput.toString()} atomic`,
+    expected_output_human: formatTokenAmount(args.expectedOutput, args.outputMeta),
     tool: args.tool,
     fee: args.fee.toString(),
-    fee_human: formatUsdc(args.fee),
+    fee_human: formatTokenAmount(args.fee, args.inputMeta),
     total_cost: (args.inputAmount + args.fee).toString(),
-    total_cost_human: formatUsdc(args.inputAmount + args.fee),
+    total_cost_human: formatTokenAmount(args.inputAmount + args.fee, args.inputMeta),
     expires_at: args.expiresAt.toISOString(),
     x402_pay_url: `${args.publicBaseUrl}/v1/swap/base/execute/${args.quoteId}`,
   };
 }
 
-function formatUsdc(atomic: bigint): string {
-  const whole = atomic / 1_000_000n;
-  const frac = atomic % 1_000_000n;
-  if (frac === 0n) return `${whole} USDC`;
-  const fracStr = frac.toString().padStart(6, "0").replace(/0+$/, "");
-  return `${whole}.${fracStr} USDC`;
+function toView(meta: TokenMetadata): BaseTokenMetadataView {
+  return {
+    mint: meta.mint,
+    symbol: meta.symbol,
+    name: meta.name,
+    decimals: meta.decimals,
+    ...(meta.logoURI ? { logoURI: meta.logoURI } : {}),
+  };
 }
 
 // --------------------------------------------------------- execute pipeline ----
@@ -532,7 +555,16 @@ export type ExecuteBaseSwapOutcome =
     }
   | { kind: "expired" }
   | { kind: "already_taken" }
-  | { kind: "slippage"; detail: string }
+  | {
+      kind: "slippage";
+      detail: string;
+      /** Slippage-protected floor we needed to clear. */
+      expectedMin: bigint;
+      /** Actual delivered; 0n when the swap aborted before delivery. */
+      actual: bigint;
+      /** Buyer-declared slippage tolerance in basis points. */
+      bpsTolerance: number;
+    }
   | { kind: "failed"; detail: string; refundRecorded: boolean };
 
 /**
@@ -613,7 +645,15 @@ export async function executeBaseSwap(
       args.logger?.warn?.(
         `swap-base: requote drift exceeded quote=${args.quoteId} drift_bps=${driftBps}`,
       );
-      return { kind: "slippage", detail: `requote_drift_bps=${driftBps}` };
+      const expectedMin =
+        (expectedOutput * BigInt(10000 - slippageBps)) / 10000n;
+      return {
+        kind: "slippage",
+        detail: `requote_drift_bps=${driftBps}`,
+        expectedMin,
+        actual: freshOut,
+        bpsTolerance: slippageBps,
+      };
     }
   }
 
@@ -693,12 +733,12 @@ export async function executeBaseSwap(
 
   const minOut = BigInt(freshQuote.estimate.toAmountMin);
   if (delivered < minOut) {
-    return await handleFailure(
-      args,
-      swap,
-      "failed_slippage",
-      `delivered_${delivered}_lt_min_${minOut}`,
-    );
+    return await handleSlippageFailure(args, swap, {
+      detail: `delivered_${delivered}_lt_min_${minOut}`,
+      expectedMin: minOut,
+      actual: delivered,
+      bpsTolerance: slippageBps,
+    });
   }
 
   // Forward output to buyer.
@@ -743,7 +783,7 @@ export async function executeBaseSwap(
 async function handleFailure(
   args: ExecuteBaseSwapArgs,
   swap: SwapRow,
-  status: "failed" | "failed_slippage",
+  status: "failed",
   detail: string,
 ): Promise<ExecuteBaseSwapOutcome> {
   await markFailed(args.pool, {
@@ -756,10 +796,37 @@ async function handleFailure(
     `swap-base: failed quote=${args.quoteId} status=${status} detail=${detail} ` +
       `refund_recorded=${refundRecorded}`,
   );
-  if (status === "failed_slippage") {
-    return { kind: "slippage", detail };
-  }
   return { kind: "failed", detail, refundRecorded };
+}
+
+async function handleSlippageFailure(
+  args: ExecuteBaseSwapArgs,
+  swap: SwapRow,
+  info: {
+    detail: string;
+    expectedMin: bigint;
+    actual: bigint;
+    bpsTolerance: number;
+  },
+): Promise<ExecuteBaseSwapOutcome> {
+  await markFailed(args.pool, {
+    quoteId: args.quoteId,
+    status: "failed_slippage",
+    error: info.detail,
+  });
+  const refundRecorded = await tryRecordRefund(args, swap, info.detail);
+  args.logger?.warn?.(
+    `swap-base: slippage quote=${args.quoteId} detail=${info.detail} ` +
+      `expected_min=${info.expectedMin} actual=${info.actual} ` +
+      `bps_tolerance=${info.bpsTolerance} refund_recorded=${refundRecorded}`,
+  );
+  return {
+    kind: "slippage",
+    detail: info.detail,
+    expectedMin: info.expectedMin,
+    actual: info.actual,
+    bpsTolerance: info.bpsTolerance,
+  };
 }
 
 async function tryRecordRefund(
@@ -867,11 +934,19 @@ export function registerBaseSwapRoutes(
         return reply.code(500).send({ error: "store_unavailable" });
       }
 
+      // Resolve token metadata for both legs — hardcoded fast-path
+      // for popular tokens + LiFi /v1/tokens fallback for the long
+      // tail. Never throws; worst case yields an UNKNOWN stub.
+      const [inputMeta, outputMeta] = await Promise.all([
+        getBaseTokenMetadata(vreq.inputToken, { fetchImpl }),
+        getBaseTokenMetadata(vreq.outputToken, { fetchImpl }),
+      ]);
+
       return reply.code(200).send(
         buildBaseQuoteResponse({
           quoteId,
-          inputToken: vreq.inputToken,
-          outputToken: vreq.outputToken,
+          inputMeta,
+          outputMeta,
           inputAmount: vreq.inputAmount,
           expectedOutput,
           fee,
@@ -1032,9 +1107,12 @@ export function registerBaseSwapRoutes(
         });
       }
       if (outcome.kind === "slippage") {
-        return reply.code(503).headers(replyHeaders).send({
+        return reply.code(422).headers(replyHeaders).send({
           error: "slippage_exceeded",
           detail: outcome.detail,
+          expected_min: outcome.expectedMin.toString(),
+          actual: outcome.actual.toString(),
+          bps_tolerance: outcome.bpsTolerance,
           refund_pending: true,
         });
       }
