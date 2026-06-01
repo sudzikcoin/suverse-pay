@@ -7,7 +7,9 @@ import {
   loadPendingRefunds,
   loadTopActiveWallets,
 } from "@/lib/wallets-activity";
-import { readWalletBalances } from "@/lib/wallets-onchain";
+import { readWalletBalances, type ExtraTokenSpec } from "@/lib/wallets-onchain";
+import { detectOrphans } from "@/lib/wallets-orphans";
+import { dbQuery } from "@/lib/db";
 
 /**
  * GET /api/wallets/summary
@@ -36,14 +38,21 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  // Fan out: balances for every wallet (sum the USDC leg), and the
-  // DB aggregates in parallel.
+  // Fan out: balances for every wallet (sum the USDC leg + orphan
+  // detection for swap wallets), plus the DB aggregates in
+  // parallel.
   const [snapshots, fees, refunds, top] = await Promise.all([
-    Promise.all(SUVERSE_WALLETS.map((w) => readWalletBalances(w))),
+    Promise.all(
+      SUVERSE_WALLETS.map(async (w) => {
+        const extras = w.kind === "swap" ? await swapWalletExtras(w.id) : [];
+        return readWalletBalances(w, extras);
+      }),
+    ),
     loadFeesByPeriod(),
     loadPendingRefunds(),
     loadTopActiveWallets(),
   ]);
+  const orphans = await detectOrphans(snapshots);
 
   let totalUsdcAtomic = 0n;
   const perChain: Record<"base" | "solana" | "cosmos", bigint> = {
@@ -77,15 +86,42 @@ export async function GET(): Promise<NextResponse> {
         countRows: refunds.countRows,
         totalUsdcAtomic: refunds.totalAtomic,
       },
-      // Hook for commit E — kept here so the response shape is
-      // stable and frontend wiring doesn't churn when E lands.
       orphanTokens: {
-        countRows: 0,
-        totalUsdcAtomic: "0",
-        items: [] as Array<{ walletId: string; symbol: string; amountAtomic: string }>,
+        countRows: orphans.countRows,
+        totalUsdcAtomic: orphans.totalUsdcAtomic,
+        items: orphans.items,
       },
       topActiveWallets24h: top,
     },
     { headers: { "cache-control": "private, max-age=30" } },
   );
+}
+
+/**
+ * Load the swap_transactions output_token set for the given swap
+ * wallet, identical to the per-wallet balances route. Pulled into
+ * a helper so the orphan check reads the SAME extras the per-card
+ * snapshot uses; otherwise the summary's count and the cards could
+ * disagree.
+ */
+async function swapWalletExtras(walletId: string): Promise<ExtraTokenSpec[]> {
+  const network = walletId === "base-swap"
+    ? "eip155:8453"
+    : walletId === "solana-swap"
+      ? "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+      : null;
+  if (!network) return [];
+  const rows = await dbQuery<{ output_token: string }>(
+    `SELECT DISTINCT output_token FROM swap_transactions
+     WHERE network = $1 AND output_token IS NOT NULL
+     ORDER BY output_token
+     LIMIT 25`,
+    [network],
+  );
+  const isEvm = network === "eip155:8453";
+  return rows.map((r) => ({
+    symbol: r.output_token.slice(0, 10) + "…",
+    decimals: isEvm ? 18 : 6,
+    tokenIdentifier: r.output_token,
+  }));
 }
