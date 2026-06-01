@@ -207,8 +207,8 @@ SELECT
   50000, 50000, 'per-call',
   ARRAY['eip155:8453','solana:mainnet','cosmos:noble-1'],
   'approved', proxy_ins.resource_key_id, 'cosmos-validator-stats',
-  '{"chain":"cosmoshub","validator":"cosmosvaloper1sjllsnramtg7ewxqwwrwjxfgc4n4ef9u2lcnj0"}',
-  '{"chain":"cosmoshub","chainId":"cosmoshub-4","operatorAddress":"cosmosvaloper1sjllsnramtg7ewxqwwrwjxfgc4n4ef9u2lcnj0","moniker":"Coinbase Custody","jailed":false,"status":"BOND_STATUS_BONDED","bondedTokens":"15000000000000","commissionRate":0.05,"maxCommissionRate":0.2,"slashingParams":{"windowSize":10000,"minSignedPerWindow":0.05}}',
+  '{"chain":"cosmoshub","validator":"cosmosvaloper1qphf0ferqcch0jca9hlqfm3x0eds3dpkcvpafp"}',
+  '{"chain":"cosmoshub","chainId":"cosmoshub-4","operatorAddress":"cosmosvaloper1qphf0ferqcch0jca9hlqfm3x0eds3dpkcvpafp","moniker":"test kim","jailed":false,"status":"BOND_STATUS_BONDED","bondedTokens":"15000000000000","commissionRate":0.05,"maxCommissionRate":0.2,"slashingParams":{"windowSize":10000,"minSignedPerWindow":0.05}}',
   proxy_ins.id
 FROM proxy_ins
 ON CONFLICT DO NOTHING;

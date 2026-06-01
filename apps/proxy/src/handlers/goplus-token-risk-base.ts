@@ -7,6 +7,14 @@
  * derived 0..100 `riskScore`. We don't reshape the entire upstream
  * doc; callers wanting raw GoPlus data get it under `raw`.
  *
+ * GoPlus auth note: the public `token_security` endpoint accepts
+ * unauthenticated requests. Sending a Bearer with a free-tier API
+ * key (`GOPLUS_API_KEY` env) produces a confusing
+ * `4012 signature verification failure`. We therefore deliberately
+ * do NOT send the Authorization header — the key in env is reserved
+ * for the day GoPlus moves authenticated tiers behind a different
+ * auth scheme (HMAC over a v1/token request body, etc.).
+ *
  * Scoring keeps it boring on purpose — each surfaced red flag is
  * worth a fixed +N penalty (mint=20, blacklist=15, honeypot=40,
  * paused=15, anti-whale-modifiable=10, owner-not-renounced=10, top-10
@@ -81,11 +89,6 @@ function toFloat(v: string | undefined): number | null {
 export const goplusTokenRiskBase: InternalHandler = async (
   input: InternalHandlerInput,
 ): Promise<InternalHandlerResult> => {
-  const apiKey = process.env["GOPLUS_API_KEY"];
-  if (!apiKey) {
-    return { status: 503, body: { error: "goplus_not_configured" } };
-  }
-
   let parsed: unknown;
   try {
     parsed =
@@ -111,10 +114,7 @@ export const goplusTokenRiskBase: InternalHandler = async (
   try {
     response = await (input.fetchImpl ?? fetch)(url, {
       method: "GET",
-      headers: {
-        accept: "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { accept: "application/json" },
       signal: ctrl.signal,
     });
   } catch (err) {

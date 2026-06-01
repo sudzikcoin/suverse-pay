@@ -20,7 +20,11 @@ import type {
   InternalHandlerResult,
 } from "./types.js";
 
-const TIMEOUT_MS = 10_000;
+// base.blockscout.com's /tokens/{addr}/holders endpoint routinely
+// takes 15-20s when Cloudflare's cache is cold; observed P99 well over
+// 10s. We bump the timeout above the proxy's usual 10s budget so
+// callers don't see a 504 on the first cold call after deploy.
+const TIMEOUT_MS = 25_000;
 
 interface BlockscoutHolder {
   address?: { hash?: string; is_contract?: boolean } | null;

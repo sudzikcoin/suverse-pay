@@ -162,15 +162,6 @@ describe("baseRpcTxDecoder", () => {
 // ─────────────────────────────────────────────────────────────────────
 
 describe("goplusTokenRiskBase", () => {
-  it("503 when GOPLUS_API_KEY missing", async () => {
-    delete process.env["GOPLUS_API_KEY"];
-    const res = await goplusTokenRiskBase({
-      body: buf({ contract_address: USDC_BASE }),
-      method: "POST",
-    });
-    expect(res.status).toBe(503);
-  });
-
   it("400 when contract_address malformed", async () => {
     const res = await goplusTokenRiskBase({
       body: buf({ contract_address: "not-an-address" }),
