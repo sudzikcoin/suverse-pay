@@ -7,11 +7,21 @@
  * Add a new handler by importing it here and adding one entry to the
  * map — no other code change required.
  */
+import { binanceFunding } from "./binance-funding.js";
+import { binanceOrderbook } from "./binance-orderbook.js";
+import { binanceTrades } from "./binance-trades.js";
 import { coingecko24hMovers } from "./coingecko-24h-movers.js";
 import { coingeckoMarketRankings } from "./coingecko-market-rankings.js";
 import { coingeckoOhlcHistory } from "./coingecko-ohlc-history.js";
 import { coingeckoPriceBatch } from "./coingecko-price-batch.js";
 import { coingeckoTrending } from "./coingecko-trending.js";
+import { defillamaBridges } from "./defillama-bridges.js";
+import { defillamaFees } from "./defillama-fees.js";
+import { defillamaProtocolTvl } from "./defillama-protocol-tvl.js";
+import { defillamaTvlChain } from "./defillama-tvl-chain.js";
+import { defillamaYieldPools } from "./defillama-yield-pools.js";
+import { geckoterminalBasePools } from "./geckoterminal-base-pools.js";
+import { geckoterminalSolanaPools } from "./geckoterminal-solana-pools.js";
 import { heliusNftMetadata } from "./helius-nft-metadata.js";
 import { heliusPriorityFee } from "./helius-priority-fee.js";
 import { heliusTxDecoder } from "./helius-tx-decoder.js";
@@ -30,6 +40,16 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   coingecko_market_rankings: coingeckoMarketRankings,
   coingecko_24h_movers: coingecko24hMovers,
   coingecko_trending: coingeckoTrending,
+  defillama_tvl_chain: defillamaTvlChain,
+  defillama_protocol_tvl: defillamaProtocolTvl,
+  defillama_yield_pools: defillamaYieldPools,
+  defillama_bridges: defillamaBridges,
+  defillama_fees: defillamaFees,
+  geckoterminal_base_pools: geckoterminalBasePools,
+  geckoterminal_solana_pools: geckoterminalSolanaPools,
+  binance_orderbook: binanceOrderbook,
+  binance_trades: binanceTrades,
+  binance_funding: binanceFunding,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
