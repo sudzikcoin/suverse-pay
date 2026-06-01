@@ -865,17 +865,30 @@ describe("handle", () => {
     expect(result.outcome).toBe("settled");
     // signRequirement was called with the Solana accept.
     expect(fakeClient!.signRequirement).toHaveBeenCalledTimes(1);
-    // facilitator_payments INSERT happened with direction='outbound'.
+    // Two-phase recorder: one INSERT 'pending', one UPDATE 'settled'.
+    // Both must hit facilitator_payments with the outbound metadata
+    // so an interrupted call leaves a row we can reconcile against
+    // the on-chain spend.
     const insertCalls = poolQuery.mock.calls.filter(([sql]) =>
       String(sql).includes("INSERT INTO facilitator_payments"),
     );
     expect(insertCalls.length).toBe(1);
-    const sql = String(insertCalls[0][0]);
-    expect(sql).toContain("'outbound'");
-    expect(sql).toContain("'upstream-x402'");
-    // The amount we paid matches the upstream's quoted amount.
+    const insertSql = String(insertCalls[0][0]);
+    expect(insertSql).toContain("'outbound'");
+    expect(insertSql).toContain("'upstream-x402'");
+    expect(insertSql).toContain("'pending'");
+    // The amount we are about to pay matches the upstream's quote.
     expect(insertCalls[0][1]).toEqual(
       expect.arrayContaining(["100000"]),
+    );
+    const updateCalls = poolQuery.mock.calls.filter(([sql]) =>
+      String(sql).includes("UPDATE facilitator_payments"),
+    );
+    expect(updateCalls.length).toBe(1);
+    // The terminal status is settled, and the tx hash from the
+    // upstream's PAYMENT-RESPONSE header is captured.
+    expect(updateCalls[0][1]).toEqual(
+      expect.arrayContaining(["settled", "sol_tx_hash_abc"]),
     );
   });
 

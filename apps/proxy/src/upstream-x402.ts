@@ -51,6 +51,44 @@ export interface ServiceAddresses {
   tron?: string;
 }
 
+/**
+ * Two-phase recorder hook. The handler implements this against
+ * `facilitator_payments` so every signed-and-sent upstream call leaves
+ * a row in the DB — even when the upstream's facilitator settles
+ * on-chain but then returns a non-200 to us. Without the pre-insert
+ * step, a retry_not_200 / timeout silently loses the on-chain
+ * reference and we cannot reconcile our spend.
+ *
+ * `start` is called AFTER the envelope has been signed but BEFORE the
+ * retry hits the wire. `finish` is called from every terminal branch
+ * (200 OK, non-200, fetch threw / aborted) with the actual outcome.
+ *
+ * Both methods are wrapped in try/catch by the caller — a logging
+ * failure must NEVER prevent the upstream call from completing, or
+ * worse, mask a successful upstream response from the buyer.
+ */
+export interface OutboundRecorder {
+  start(input: OutboundStartInput): Promise<string>;
+  finish(id: string, outcome: OutboundFinishInput): Promise<void>;
+}
+
+export interface OutboundStartInput {
+  idempotencyKey: string;
+  network: string;
+  asset: string;
+  scheme: string;
+  amountAtomic: string;
+  payer: string;
+  recipient: string;
+}
+
+export interface OutboundFinishInput {
+  status: "settled" | "upstream_failed" | "upstream_timeout" | "network_error";
+  txHash?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+}
+
 export interface UpstreamX402Deps {
   /** SuverseClient instance carrying the service wallets. */
   client: SuverseClient;
@@ -58,6 +96,14 @@ export interface UpstreamX402Deps {
   addresses: ServiceAddresses;
   fetchImpl: typeof fetch;
   logger?: Pick<Console, "info" | "warn" | "error">;
+  /**
+   * Optional two-phase outbound recorder. When provided, a 'pending'
+   * row is written before the retry and updated to a terminal state
+   * after — protects against silently losing on-chain spend when the
+   * upstream's facilitator settles but the retry returns non-200.
+   * Tests omit it; production wires it to `facilitator_payments`.
+   */
+  recorder?: OutboundRecorder;
 }
 
 export interface UpstreamX402Args {
@@ -243,6 +289,44 @@ export async function callUpstreamWithX402(
     "X-PAYMENT": headerValue,
   };
 
+  // From here on every exit MUST land in `recorder.finish` (when
+  // recorder is wired) so the on-chain spend can be reconciled later
+  // even if the upstream returns an error or our fetch never
+  // completes. The pre-insert is best-effort — if recording fails the
+  // call still proceeds rather than losing the buyer's request.
+  const outboundIdem = newOutboundIdempotencyKey();
+  let recordedId: string | null = null;
+  if (deps.recorder) {
+    try {
+      recordedId = await deps.recorder.start({
+        idempotencyKey: outboundIdem,
+        network: matching.network,
+        asset: matching.asset,
+        scheme: matching.scheme,
+        amountAtomic: matching.amount,
+        payer: payerAddress,
+        recipient: matching.payTo,
+      });
+    } catch (err) {
+      deps.logger?.warn?.(
+        `upstream-x402: recorder.start failed (non-fatal) idem=${outboundIdem}`,
+        err,
+      );
+    }
+  }
+
+  const finalize = async (outcome: OutboundFinishInput): Promise<void> => {
+    if (!deps.recorder || recordedId === null) return;
+    try {
+      await deps.recorder.finish(recordedId, outcome);
+    } catch (err) {
+      deps.logger?.warn?.(
+        `upstream-x402: recorder.finish failed (non-fatal) id=${recordedId} status=${outcome.status}`,
+        err,
+      );
+    }
+  };
+
   let retry: Response;
   try {
     retry = await deps.fetchImpl(args.upstreamUrl, {
@@ -251,10 +335,19 @@ export async function callUpstreamWithX402(
       body: args.body && args.body.length > 0 ? args.body : undefined,
     });
   } catch (err) {
+    const message = (err as Error).message ?? String(err);
+    const isAbort =
+      (err as Error).name === "AbortError" ||
+      /abort|timed?\s*out|timeout/i.test(message);
+    await finalize({
+      status: isAbort ? "upstream_timeout" : "network_error",
+      errorCode: isAbort ? "retry_aborted" : "retry_network_error",
+      errorMessage: message.slice(0, 500),
+    });
     return {
       kind: "error",
       reason: "network_error",
-      message: (err as Error).message,
+      message,
     };
   }
 
@@ -265,6 +358,17 @@ export async function callUpstreamWithX402(
     deps.logger?.warn?.(
       `upstream-x402: retry non-200 status=${retry.status} body=${errBody}`,
     );
+    // Try to extract a tx hash even on non-200 — some upstream
+    // facilitators stamp PAYMENT-RESPONSE before the application
+    // layer rejects the body, which means our money MAY have moved
+    // on-chain. Capture whatever we can so reconciliation has
+    // something to start from.
+    await finalize({
+      status: "upstream_failed",
+      txHash: extractTxHash(retry),
+      errorCode: `retry_http_${retry.status}`,
+      errorMessage: errBody.slice(0, 500),
+    });
     return {
       kind: "error",
       reason: "retry_not_200",
@@ -275,6 +379,11 @@ export async function callUpstreamWithX402(
 
   const buf = Buffer.from(await retry.arrayBuffer());
   const txHash = extractTxHash(retry);
+
+  await finalize({
+    status: "settled",
+    txHash,
+  });
 
   return {
     kind: "paid",

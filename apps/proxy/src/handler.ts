@@ -31,8 +31,9 @@ import { buildBazaarExtension } from "./bazaar.js";
 import { decryptHeaders } from "./crypto.js";
 import { lookupNetwork } from "./networks.js";
 import {
+  finishOutboundUpstreamPayment,
   logProxyRequest,
-  logUpstreamPayment,
+  startOutboundUpstreamPayment,
   type CatalogBazaarStore,
   type ProxyConfigRow,
   type ProxyConfigStore,
@@ -41,7 +42,7 @@ import {
 import { checkUpstreamHealth } from "./upstream-health.js";
 import {
   callUpstreamWithX402,
-  newOutboundIdempotencyKey,
+  type OutboundRecorder,
   type ServiceAddresses,
 } from "./upstream-x402.js";
 import type { SuverseClient } from "@suverselabs/x402-client";
@@ -403,6 +404,20 @@ export async function handle(
         outcome: "invalid_config",
       };
     }
+    // Two-phase recorder so an on-chain spend by the upstream's
+    // facilitator is captured even when the retry returns non-200 or
+    // never returns. The hook is non-fatal end-to-end: any DB error
+    // inside start/finish is logged but does not propagate, so a
+    // logging outage cannot mask a successful upstream response.
+    const recorder: OutboundRecorder = {
+      start: (input) =>
+        startOutboundUpstreamPayment(deps.pool, {
+          resourceKeyId: config.resourceKeyId,
+          ...input,
+        }),
+      finish: (id, outcome) =>
+        finishOutboundUpstreamPayment(deps.pool, id, outcome),
+    };
     const upstreamResult = await callUpstreamWithX402(
       {
         upstreamUrl: config.originalUrl,
@@ -417,6 +432,7 @@ export async function handle(
         client: deps.upstreamX402Client,
         addresses: deps.upstreamServiceAddresses,
         fetchImpl,
+        recorder,
         ...(deps.logger ? { logger: deps.logger } : {}),
       },
     );
@@ -447,36 +463,17 @@ export async function handle(
     upstreamRes = upstreamResult.response;
     upstreamBody = upstreamResult.bodyBuffer;
     if (upstreamResult.kind === "paid") {
-      // Record what the service wallet paid the upstream. Best-effort
-      // — a duplicate-key collision (extremely unlikely with random
-      // 12-byte idem) or transient DB hiccup must not 500 the buyer's
-      // call, which already succeeded upstream.
-      try {
-        await logUpstreamPayment(deps.pool, {
-          resourceKeyId: config.resourceKeyId,
-          idempotencyKey: newOutboundIdempotencyKey(),
-          network: upstreamResult.payment.network,
-          asset: upstreamResult.payment.asset,
-          scheme: upstreamResult.payment.scheme,
-          amountAtomic: upstreamResult.payment.amountAtomic,
-          payer: upstreamResult.payment.payer,
-          recipient: upstreamResult.payment.recipient,
-          txHash: upstreamResult.payment.txHash,
-          status: "settled",
-        });
-        deps.logger?.info?.(
-          `proxy: upstream-x402 paid config=${config.id} ` +
-            `network=${upstreamResult.payment.network} ` +
-            `amount=${upstreamResult.payment.amountAtomic} ` +
-            `recipient=${upstreamResult.payment.recipient} ` +
-            `tx=${upstreamResult.payment.txHash ?? "(none)"}`,
-        );
-      } catch (logErr) {
-        deps.logger?.warn?.(
-          `proxy: logUpstreamPayment failed (non-fatal) config=${config.id}`,
-          logErr,
-        );
-      }
+      // facilitator_payments row is now written inside
+      // callUpstreamWithX402 via the recorder hook above (two-phase
+      // pending→settled). Keep the success log line for operators
+      // grepping journalctl for "upstream-x402 paid".
+      deps.logger?.info?.(
+        `proxy: upstream-x402 paid config=${config.id} ` +
+          `network=${upstreamResult.payment.network} ` +
+          `amount=${upstreamResult.payment.amountAtomic} ` +
+          `recipient=${upstreamResult.payment.recipient} ` +
+          `tx=${upstreamResult.payment.txHash ?? "(none)"}`,
+      );
     }
   } else {
     try {
