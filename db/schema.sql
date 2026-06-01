@@ -75,15 +75,7 @@ CREATE TABLE IF NOT EXISTS payments (
   error_code          TEXT,
   error_message       TEXT,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  settled_at          TIMESTAMPTZ,
-  -- Phase 5 Phase 2 T7 — second protocol family. Defaults to 'x402'
-  -- so the column lands non-breaking; /mpp/* writes emit 'mpp'
-  -- explicitly. mpp_method/mpp_intent are populated only when
-  -- protocol='mpp'; the application enforces that invariant
-  -- (services/orchestrator/src/ledger.ts).
-  protocol            TEXT NOT NULL DEFAULT 'x402',
-  mpp_method          TEXT,
-  mpp_intent          TEXT
+  settled_at          TIMESTAMPTZ
 );
 
 -- Partial unique index — clients that don't pass an Idempotency-Key
@@ -96,9 +88,6 @@ CREATE INDEX IF NOT EXISTS payments_by_status_recent_idx
   ON payments (status, created_at DESC);
 CREATE INDEX IF NOT EXISTS payments_by_final_provider_idx
   ON payments (final_provider_id, settled_at DESC);
-CREATE INDEX IF NOT EXISTS payments_by_mpp_idx
-  ON payments (mpp_method, mpp_intent)
-  WHERE protocol = 'mpp';
 
 CREATE TABLE IF NOT EXISTS payment_attempts (
   id                BIGSERIAL PRIMARY KEY,
@@ -1163,3 +1152,452 @@ ALTER TABLE catalog_listings
 
 CREATE UNIQUE INDEX IF NOT EXISTS catalog_listings_slug_idx
   ON catalog_listings (slug);
+-- 015_mpp_protocol.sql — second protocol family in the payments
+-- ledger (Phase 5 Phase 2 T7).
+--
+-- The `payments` table was created Phase 1 with x402 as its only
+-- protocol. As of Phase 5 Phase 2 the gateway also handles MPP
+-- (Stripe / Tempo's 402-sibling protocol; see
+-- packages/adapters/mpp/README.md). MPP rows need to be identified
+-- separately so /payments queries can filter by protocol and the
+-- dashboard can render method/intent metadata.
+--
+-- Adds:
+--   * `protocol` — "x402" | "mpp". NOT NULL, defaults to "x402" so
+--     all existing rows backfill cleanly without an UPDATE. New
+--     /facilitator/settle writes keep emitting the default; new
+--     /mpp/charge writes (T8) emit "mpp" explicitly.
+--   * `mpp_method` — the MPP method (e.g. "tempo"). NULL for x402.
+--   * `mpp_intent` — the MPP intent (e.g. "charge"). NULL for x402.
+--   * Partial index on `(mpp_method, mpp_intent)` for the MPP-row
+--     filter path. Tiny — only MPP rows are indexed.
+--
+-- Invariant — (protocol='mpp') IS (mpp_method AND mpp_intent set) —
+-- is enforced application-side in services/orchestrator/src/ledger.ts.
+-- A DB-level CHECK across multiple columns is intentionally NOT added
+-- here: pg-mem (used for the migration golden test) supports inline
+-- column-level CHECKs but trips on cross-column table-level ADD
+-- CONSTRAINTs, and the cost of weakening the migrate-test surface
+-- isn't worth the marginal extra guard.
+--
+-- Backfill: no UPDATE needed — every existing row IS an x402 payment
+-- by construction, and the default takes care of the new column.
+
+ALTER TABLE payments
+  ADD COLUMN IF NOT EXISTS protocol   TEXT NOT NULL DEFAULT 'x402',
+  ADD COLUMN IF NOT EXISTS mpp_method TEXT,
+  ADD COLUMN IF NOT EXISTS mpp_intent TEXT;
+
+CREATE INDEX IF NOT EXISTS payments_by_mpp_idx
+  ON payments (mpp_method, mpp_intent)
+  WHERE protocol = 'mpp';
+-- 016_public_slug.sql — globally-unique public_slug for /v1/data/<slug>
+-- routing, plus an explicit FK from catalog_listings to seller_proxy_configs
+-- so the bazaar lookup no longer needs the brittle split_part(URL, '/', -1)
+-- JOIN constraint.
+--
+-- Motivation: CDP's Bazaar crawler filters /v1/proxy/<reskey_HEX>/<slug>
+-- URLs (the long hex-like segment trips a session-token heuristic), so the
+-- 9 self-serve proxy endpoints never appear in discovery. Routing the same
+-- spc rows behind a clean /v1/data/<public_slug> URL on the same proxy
+-- host clears the filter (proven by an 8-experiment series ending in
+-- a 35-second indexing of proxy.suverse.io/v1/data/test-btc-spot-noresk).
+--
+-- Backward compat is Policy A: the legacy /v1/proxy/<reskey>/<slug> route
+-- keeps working for existing buyers (e.g. AgentOS scripts). Only the
+-- catalog/discovery surface advertises the /v1/data/ URL.
+
+ALTER TABLE seller_proxy_configs
+    ADD COLUMN public_slug TEXT;
+
+-- Globally unique among non-NULL values. NULL means the endpoint is only
+-- reachable via the legacy /v1/proxy/<reskey>/<endpoint_slug> URL — kept
+-- nullable so existing rows don't need backfill before the column exists,
+-- and new sellers can defer choosing a public slug.
+CREATE UNIQUE INDEX seller_proxy_configs_public_slug_unique
+    ON seller_proxy_configs (public_slug)
+    WHERE public_slug IS NOT NULL;
+
+-- Format validation (lowercase alphanumeric + hyphens, 3..50 chars, start
+-- and end on an alphanumeric) is enforced at the application layer (the
+-- dashboard's new-proxy form + a server-side admin check). We deliberately
+-- DO NOT enforce it via a DB CHECK because the natural regex form uses
+-- the POSIX `~` operator which pg-mem (the test infrastructure) does not
+-- implement, and the test suites that run migrations against pg-mem would
+-- break on apply. The UNIQUE index above still guarantees the slug is
+-- globally unique among non-NULL values.
+
+-- Explicit FK from a catalog row to the proxy config it describes. Replaces
+-- the prior split_part(endpoint_url, '/', -1) = spc.endpoint_slug heuristic
+-- in CatalogBazaarStore.lookup, which was about to break: under the new
+-- /v1/data/<public_slug> URLs the last path segment is the public slug,
+-- not the spc's endpoint_slug. SET NULL on delete so removing a proxy
+-- config orphans the catalog row instead of cascading it away — admins
+-- can then re-point or retire the listing manually.
+ALTER TABLE catalog_listings
+    ADD COLUMN proxy_config_id UUID
+    REFERENCES seller_proxy_configs(id) ON DELETE SET NULL;
+
+CREATE INDEX catalog_listings_proxy_config_id_idx
+    ON catalog_listings (proxy_config_id)
+    WHERE proxy_config_id IS NOT NULL;
+-- 017_public_slug_backfill.sql — backfill public_slug for the 9 production
+-- proxy endpoints under reskey_1166628d, plus repoint their catalog rows at
+-- the new /v1/data/<public_slug> URL.
+--
+-- Migration 016 added the public_slug column (nullable) and the
+-- catalog_listings.proxy_config_id FK. This is the one-shot data move
+-- that flips those 9 endpoints from the legacy /v1/proxy/<reskey>/<slug>
+-- URLs (which CDP's Bazaar crawler filters as session-token-looking)
+-- onto the clean /v1/data/<public_slug> URLs CDP indexes. The 8 + 1
+-- batch was settled live on Base via CDP on 2026-05-31; 9/9 ended up
+-- in `/discovery/merchant?payTo=0x260fbe1ec46968ee02e5b972507d7bb7f09f82b0`
+-- within ~25 min (one extra retry for `tvl` after a sample-response-json
+-- shape fix — see CHANGELOG / IDEAS notes).
+--
+-- Idempotent: WHERE clauses guard against re-running on a DB that has
+-- already been backfilled (only matches rows where public_slug is still
+-- NULL AND the endpoint_slug is one of the original 9). Safe to apply
+-- against any seed-data state.
+
+UPDATE seller_proxy_configs SET public_slug = 'coingecko-btc-eth-prices', updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'prices'       AND public_slug IS NULL;
+UPDATE seller_proxy_configs SET public_slug = 'defillama-tvl',            updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'tvl'          AND public_slug IS NULL;
+UPDATE seller_proxy_configs SET public_slug = 'binance-btc-spot',         updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'btc-spot'     AND public_slug IS NULL;
+UPDATE seller_proxy_configs SET public_slug = 'coinbase-btc-spot',        updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'coinbase-btc' AND public_slug IS NULL;
+UPDATE seller_proxy_configs SET public_slug = 'geckoterminal-eth-pools',  updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'eth-pools'    AND public_slug IS NULL;
+UPDATE seller_proxy_configs SET public_slug = 'weather-forecast-nyc',     updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'weather'      AND public_slug IS NULL;
+UPDATE seller_proxy_configs SET public_slug = 'fiat-exchange-rates',      updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'forex'        AND public_slug IS NULL;
+UPDATE seller_proxy_configs SET public_slug = 'ethereum-gas-tracker',     updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'eth-gas'      AND public_slug IS NULL;
+UPDATE seller_proxy_configs SET public_slug = 'ip-geolocation',           updated_at = now()
+ WHERE resource_key_id = 'reskey_1166628d' AND endpoint_slug = 'geo'          AND public_slug IS NULL;
+
+-- Repoint each catalog_listings row at the new clean URL + bind the FK.
+-- Matches rows that still point at the legacy /v1/proxy/.../<endpoint_slug>
+-- shape AND have an unset proxy_config_id, so re-run is a no-op.
+-- (UPDATE target uses no alias — pg-mem 3.0.14 chokes on `UPDATE t AS x`
+-- when the WHERE references `x.column`; the unaliased form is portable.)
+UPDATE catalog_listings
+   SET proxy_config_id = seller_proxy_configs.id,
+       endpoint_url    = 'https://proxy.suverse.io/v1/data/' || seller_proxy_configs.public_slug
+  FROM seller_proxy_configs
+ WHERE seller_proxy_configs.resource_key_id = 'reskey_1166628d'
+   AND seller_proxy_configs.public_slug IS NOT NULL
+   AND catalog_listings.endpoint_url = 'https://proxy.suverse.io/v1/proxy/reskey_1166628d/' || seller_proxy_configs.endpoint_slug
+   AND catalog_listings.proxy_config_id IS NULL;
+
+-- DeFiLlama TVL sample_response_json was originally a bare JSON array
+-- (`[{...},{...}]`). CDP's Bazaar schema for bazaar.info.output expects
+-- example to be an `object` (not an array), so the entry was rejected
+-- by the indexer. Wrap in `{"protocols": [...]}` so the example type
+-- matches the schema. Idempotent: only updates rows whose payload still
+-- starts with `[` (i.e. is still in array shape). String-only ops —
+-- pg-mem 3.0.14 doesn't implement jsonb_typeof / jsonb_build_object,
+-- and sample_response_json is a TEXT column, so the cast was wasteful
+-- anyway.
+UPDATE catalog_listings
+   SET sample_response_json = '{"protocols":' || sample_response_json || '}'
+ WHERE endpoint_url = 'https://proxy.suverse.io/v1/data/defillama-tvl'
+   AND sample_response_json LIKE '[%';
+-- 018_drop_public_slug_format_check.sql — drop the public_slug regex
+-- CHECK that migration 016 originally shipped with. The CHECK used the
+-- POSIX `~` operator which pg-mem does not implement, so fresh test
+-- environments could not apply 016. Migration 016 has now been amended
+-- to omit the CHECK; this migration removes it from already-applied
+-- production databases so the schema is consistent across all
+-- environments.
+--
+-- Format validation (lowercase, alphanumeric + hyphens, 3..50 chars)
+-- lives in the application layer instead (dashboard new-proxy form +
+-- server-side admin check). The UNIQUE index from 016 still guarantees
+-- global uniqueness.
+
+ALTER TABLE seller_proxy_configs
+    DROP CONSTRAINT IF EXISTS seller_proxy_configs_public_slug_format;
+-- 019_external_endpoints.sql — mirror of every paid x402 endpoint we can
+-- see from upstream discovery catalogs (CDP Bazaar + future sources).
+-- Periodically refreshed by the `CatalogSyncer` in apps/api so the
+-- unified-search surface (phase 3) reads the local mirror instead of
+-- fanning out to every source on every query.
+--
+-- Dedup key is (resource_url, pay_to): the same endpoint can legitimately
+-- appear in multiple catalogs. We keep `source` as the LAST writer (whichever
+-- catalog refreshed it most recently). Per-row `archived_at` is set when a
+-- previously-seen URL disappears from its source; we keep the row instead of
+-- deleting so the search index can show "last seen 3 days ago" instead of a
+-- hard 404.
+
+-- id is supplied by the caller (crypto.randomUUID() in TS) — matches the
+-- convention every other table in this schema uses (pg-mem doesn't register
+-- gen_random_uuid by default, and DEFAULTing here would break db tests).
+CREATE TABLE external_endpoints (
+    id UUID PRIMARY KEY,
+    source TEXT NOT NULL,                       -- 'cdp-bazaar', 'x402-org', ...
+    resource_url TEXT NOT NULL,
+    pay_to TEXT NOT NULL,
+    x402_version INT,
+    description TEXT,
+    accepts JSONB NOT NULL,                     -- the accepts[] array as-is
+    extensions JSONB,                           -- extensions.bazaar etc
+    quality_signals JSONB,                      -- l30DaysTotalCalls etc (CDP)
+    raw_payload JSONB,                          -- full source entry for diff/debug
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    archived_at TIMESTAMPTZ                     -- NULL = live in its source
+);
+
+CREATE UNIQUE INDEX external_endpoints_url_payto_unique
+    ON external_endpoints (resource_url, pay_to);
+
+CREATE INDEX external_endpoints_source_active_idx
+    ON external_endpoints (source)
+    WHERE archived_at IS NULL;
+
+CREATE INDEX external_endpoints_last_seen_idx
+    ON external_endpoints (last_seen_at DESC)
+    WHERE archived_at IS NULL;
+
+-- One-row sync-state table so /admin/catalog/stats can report per-source
+-- last_run / last_count / last_status without scanning external_endpoints
+-- twice. UPSERTed by the syncer at the end of each per-source pass.
+CREATE TABLE external_catalog_runs (
+    source TEXT PRIMARY KEY,
+    last_run_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_status TEXT NOT NULL,                  -- 'ok', 'partial', 'error'
+    last_error TEXT,
+    last_fetched_count INT NOT NULL DEFAULT 0,
+    last_upserted_count INT NOT NULL DEFAULT 0,
+    last_archived_count INT NOT NULL DEFAULT 0,
+    total_runs INT NOT NULL DEFAULT 0
+);
+-- 020_search_text.sql — search_text TEXT column on the two row sources the
+-- /api/search route unions (external_endpoints + seller_proxy_configs).
+--
+-- Maintained at write time: the catalog syncer's upsert (apps/api/src/
+-- catalogs/upsert.ts) and the dashboard's seller-proxy create/edit path
+-- compose `search_text = lower(description ' ' url ' ' slug ' ' …)` so
+-- the route can do a single case-insensitive LIKE / ILIKE against one
+-- indexed column rather than fanning out per-column.
+--
+-- pg-mem compat: we deliberately avoid GENERATED ALWAYS AS … STORED
+-- (pg-mem 3.0.14 doesn't implement it) and avoid `CREATE EXTENSION
+-- pg_trgm` + GIN/trgm indexes (likewise unsupported). The trgm index
+-- is added by a follow-up production-only DDL applied out-of-band via
+-- psql (see deploy/sql/021_search_trgm_index_prod.sql) so test
+-- environments stay green. Plain LIKE is adequate at ≤40k rows; the
+-- trgm index is only a nice-to-have for sub-millisecond search.
+
+ALTER TABLE external_endpoints ADD COLUMN IF NOT EXISTS search_text TEXT;
+
+UPDATE external_endpoints
+   SET search_text = lower(coalesce(description, '') || ' ' || coalesce(resource_url, ''))
+ WHERE search_text IS NULL;
+
+ALTER TABLE seller_proxy_configs ADD COLUMN IF NOT EXISTS search_text TEXT;
+
+UPDATE seller_proxy_configs
+   SET search_text = lower(
+           coalesce(display_name, '') || ' '
+        || coalesce(description, '') || ' '
+        || coalesce(endpoint_slug, '') || ' '
+        || coalesce(public_slug, '')
+       )
+ WHERE search_text IS NULL;
+-- 022_x402_upstream.sql — wrap any 402-protected upstream API behind
+-- our own proxy. When enabled, the proxy itself acts as an x402 buyer:
+-- it forwards the customer's request to the upstream, expects a 402
+-- challenge back, picks the matching accept by `upstream_x402_network`,
+-- signs with a service-side wallet keyed off the namespace, and replays
+-- the request with X-Payment. The customer pays us once on whichever
+-- network they chose; we pay the upstream once on whichever network
+-- the upstream requires. The margin between the two is our take.
+--
+-- All four columns are optional and default to "off". Existing proxy
+-- rows continue to work unchanged (upstream is plain HTTPS, no 402).
+--
+-- Field notes:
+--
+--   upstream_x402_enabled — feature switch. When false, the proxy
+--     behaves as it does today (forward → return whatever upstream
+--     gives back). When true, the proxy enters the buyer flow on a
+--     402 from upstream and short-circuits to 503 on any other 5xx.
+--
+--   upstream_x402_network — CAIP-2 the upstream demands. Used to pick
+--     the matching `accepts[]` entry out of the upstream's 402 body.
+--     If the upstream's 402 has no accept with this network, the
+--     proxy returns 503 — we never silently pay a different network.
+--
+--   upstream_x402_max_price — defensive cap in human-readable USDC
+--     (e.g. 0.500000 = 50¢). NUMERIC(20,6) deliberately mismatches
+--     the atomic NUMERIC(78,0) used elsewhere in this table because
+--     this column is sized for the upstream's published price, which
+--     facilitators advertise in decimal USDC, not atomic units. The
+--     proxy refuses to sign if the upstream's quoted price exceeds
+--     this — protection against an upstream silently jacking the rate.
+--
+--   upstream_signer_wallet — namespace label ("solana" today, room
+--     for "evm" / "cosmos" later) that picks which service wallet
+--     keypair env-var pair the proxy should use. Today only the
+--     SERVICE_SOLANA_ADDRESS + SERVICE_SOLANA_PRIVKEY_PATH pair
+--     exists. Free text rather than an enum so we don't need a
+--     follow-up migration when a new chain is added.
+
+ALTER TABLE seller_proxy_configs
+  ADD COLUMN IF NOT EXISTS upstream_x402_enabled   BOOLEAN        NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS upstream_x402_network   TEXT,
+  ADD COLUMN IF NOT EXISTS upstream_x402_max_price NUMERIC(20, 6),
+  ADD COLUMN IF NOT EXISTS upstream_signer_wallet  TEXT;
+-- 023_facilitator_payments_direction.sql — tag facilitator_payments
+-- rows with direction + kind so we can distinguish two flows that
+-- share the table:
+--
+--   1. (existing, the only kind until now)
+--      direction='inbound', kind='standard' — a buyer paid the
+--      resource owner. payer = buyer, recipient = seller payTo.
+--
+--   2. (new, introduced by the upstream-x402 wrapping feature)
+--      direction='outbound', kind='upstream-x402' — the proxy itself
+--      acted as a buyer, signing a payment from a service wallet to a
+--      402-protected upstream. payer = service wallet, recipient = the
+--      upstream's payTo. resource_key_id is the proxy's own key (the
+--      one that owns the seller_proxy_configs row that triggered the
+--      outbound buy), so the seller's dashboard can join on it to show
+--      "our cost" alongside "what the buyer paid".
+--
+-- Both columns default to the legacy semantics so existing rows
+-- (and any settle code that hasn't been updated yet) keep working
+-- without backfill. The new upstream-x402 logging path sets them
+-- explicitly.
+
+ALTER TABLE facilitator_payments
+  ADD COLUMN IF NOT EXISTS direction TEXT NOT NULL DEFAULT 'inbound',
+  ADD COLUMN IF NOT EXISTS kind      TEXT NOT NULL DEFAULT 'standard';
+
+CREATE INDEX IF NOT EXISTS facilitator_payments_outbound_idx
+  ON facilitator_payments (resource_key_id, created_at DESC)
+  WHERE direction = 'outbound';
+-- 024_catalog_sample_request.sql — sample_request_json on catalog_listings.
+--
+-- Body-method (POST/PUT/PATCH) endpoints need a request-body example
+-- to emit a valid extensions.bazaar block. Without it, CDP Bazaar's
+-- crawler skips the route (it requires `info.input.body` for body
+-- methods, schema-validated). Until now the proxy only emitted
+-- extensions for GET/DELETE since we had no place to store the
+-- example body — fixed here.
+--
+-- Stored as TEXT to mirror sample_response_json; parsed at read time
+-- in apps/proxy/src/store.ts. Existing rows stay NULL and remain
+-- GET/DELETE-only (the current behavior), so the migration is
+-- backwards compatible for every legacy listing.
+
+ALTER TABLE catalog_listings
+  ADD COLUMN IF NOT EXISTS sample_request_json TEXT;
+-- 025_internal_handlers.sql — internal handler dispatch.
+--
+-- The proxy can now serve an endpoint from in-process code instead of
+-- (or in addition to) an HTTP upstream. When `internal_handler` is set
+-- on a `seller_proxy_configs` row, the proxy looks up that name in its
+-- handler registry after settle and returns whatever the handler
+-- produces — no `fetch()` to `original_url`, no `upstream_x402` path.
+--
+-- This is the foundation for "first-party" endpoints where SuVerse is
+-- the actual service provider (Helius-backed Solana tx decoder, etc.)
+-- rather than reselling someone else's 402-protected upstream.
+--
+-- The column is nullable + free-text: existing rows behave exactly as
+-- before, and adding a new handler does not require another migration.
+-- The runtime registry enumerates the legal names; an unknown value
+-- surfaces as 503 invalid_config (logged with the offending name) so a
+-- typo in this column cannot silently fall through to the upstream
+-- path. `original_url` is still NOT NULL for back-compat — for an
+-- internal-only endpoint, set it to the canonical proxy URL itself
+-- (the value is unused at runtime but still surfaces in dashboards).
+
+ALTER TABLE seller_proxy_configs
+  ADD COLUMN IF NOT EXISTS internal_handler TEXT;
+-- 026_swap_transactions.sql — Solana swap orchestration ledger.
+--
+-- The SuVerse Swap feature lets an agent pay USDC via x402 and
+-- receive a different SPL token (or SOL) in return, routed through
+-- Jupiter aggregator. The flow is two-step:
+--
+--   1. POST /v1/swap/solana/quote — FREE. We query Jupiter, persist a
+--      row with status='quoted', return quote_id + total_cost
+--      (input + 1% service fee) + a 60s expiry.
+--
+--   2. POST /v1/swap/solana/execute/:quote_id — x402-paid. Buyer pays
+--      total_cost in Solana USDC. We re-quote, sign the swap with the
+--      dedicated liquidity wallet (SWAP_SOLANA_ADDRESS), broadcast,
+--      transfer the output tokens to the buyer's payer address.
+--
+-- The status column drives the state machine; index lets a future
+-- cron find stuck rows ('executing' for >5 min) and surface them.
+--
+-- pg-mem gotcha: pg-mem does not implement gen_random_uuid().
+-- App-side inserts MUST supply UUIDs via Node crypto.randomUUID(),
+-- same pattern as catalog_listings in 007. We omit the DEFAULT
+-- so db tests don't break.
+--
+-- inbound_payment_id references facilitator_payments(id), which is
+-- TEXT ("fpay_<ulid>") not UUID — match the existing column type.
+-- ON DELETE SET NULL so deleting a payment row does not orphan a
+-- swap_transactions row (we keep the swap record for audit).
+
+CREATE TABLE IF NOT EXISTS swap_transactions (
+  id                  UUID PRIMARY KEY,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  quote_id            TEXT NOT NULL UNIQUE,
+  network             TEXT NOT NULL,
+  input_token         TEXT NOT NULL,
+  output_token        TEXT NOT NULL,
+  input_amount        NUMERIC(30,0) NOT NULL,
+  expected_output     NUMERIC(30,0),
+  actual_output       NUMERIC(30,0),
+  slippage_bps        INT,
+  fee_amount          NUMERIC(30,0),
+  recipient_address   TEXT,
+  inbound_payment_id  TEXT REFERENCES facilitator_payments(id) ON DELETE SET NULL,
+  swap_tx_hash        TEXT,
+  status              TEXT NOT NULL DEFAULT 'quoted',
+  error               TEXT,
+  expires_at          TIMESTAMPTZ,
+  completed_at        TIMESTAMPTZ,
+  -- Raw Jupiter quote response, used to re-submit the swap without
+  -- another /quote round-trip. Stored JSONB for searchability.
+  jupiter_quote       JSONB
+);
+
+CREATE INDEX IF NOT EXISTS swap_transactions_status_idx
+  ON swap_transactions (status, created_at);
+
+CREATE INDEX IF NOT EXISTS swap_transactions_recipient_idx
+  ON swap_transactions (recipient_address);
+
+-- Swap refunds — when execute fails AFTER payment is accepted, we
+-- record an obligation here. v1: no automatic on-chain refund; a
+-- human operator (or a future cron) drains pending rows.
+CREATE TABLE IF NOT EXISTS swap_refunds (
+  id                UUID PRIMARY KEY,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  swap_id           UUID NOT NULL REFERENCES swap_transactions(id) ON DELETE CASCADE,
+  buyer_address     TEXT NOT NULL,
+  network           TEXT NOT NULL,
+  amount            NUMERIC(30,0) NOT NULL,
+  reason            TEXT,
+  status            TEXT NOT NULL DEFAULT 'pending',
+  refund_tx_hash    TEXT,
+  refunded_at       TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS swap_refunds_status_idx
+  ON swap_refunds (status, created_at);
+
+CREATE INDEX IF NOT EXISTS swap_refunds_swap_id_idx
+  ON swap_refunds (swap_id);
