@@ -73,6 +73,10 @@ function buildItems(state: NavState | null): ReadonlyArray<NavItem> {
       href: "/dashboard/admin/catalog",
       label: "Admin · Catalog moderation",
     });
+    out.push({
+      href: "/dashboard/wallets",
+      label: "Admin · Wallets",
+    });
   }
   return out;
 }
