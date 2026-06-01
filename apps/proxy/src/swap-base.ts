@@ -206,8 +206,19 @@ export function loadBaseSwapSigner(
  * `ViemBaseSwapChain` below.
  */
 export interface BaseSwapChain {
-  /** Read ERC20 balance of `token` held by the swap wallet. */
-  readSwapWalletBalance(token: Address): Promise<bigint>;
+  /**
+   * Read ERC20 balance of `token` held by the swap wallet. When
+   * `opts.blockNumber` is supplied, the read is pinned to that exact
+   * block — required after a freshly-confirmed tx so a load-balanced
+   * RPC (e.g. mainnet.base.org) cannot return stale state from a
+   * node that hasn't applied the block yet. Implementations should
+   * retry transient errors (block-not-found / timeout) before giving
+   * up; the executor relies on this read to detect false negatives.
+   */
+  readSwapWalletBalance(
+    token: Address,
+    opts?: { blockNumber?: bigint },
+  ): Promise<bigint>;
   /**
    * Read ERC20 allowance the swap wallet has granted to `spender`
    * over `token`.
@@ -224,7 +235,9 @@ export interface BaseSwapChain {
   }): Promise<{ txHash: Hex }>;
   /**
    * Broadcast LiFi's prebuilt swap transaction (sign with swap wallet,
-   * wait for receipt). Throws on revert or timeout.
+   * wait for receipt). Returns the txHash AND the receipt's
+   * blockNumber so the caller can pin its post-balance read to the
+   * exact block that included the swap. Throws on revert or timeout.
    */
   sendSwapTx(args: {
     to: Address;
@@ -232,7 +245,7 @@ export interface BaseSwapChain {
     value: bigint;
     gasLimit?: bigint;
     gasPrice?: bigint;
-  }): Promise<{ txHash: Hex }>;
+  }): Promise<{ txHash: Hex; blockNumber: bigint }>;
   /**
    * ERC20.transfer(to, amount) signed by the swap wallet.
    */
@@ -269,13 +282,42 @@ export class ViemBaseSwapChain implements BaseSwapChain {
     });
   }
 
-  async readSwapWalletBalance(token: Address): Promise<bigint> {
-    return (await this.publicClient.readContract({
-      address: token,
-      abi: ERC20_ABI,
-      functionName: "balanceOf",
-      args: [this.account.address],
-    })) as bigint;
+  async readSwapWalletBalance(
+    token: Address,
+    opts?: { blockNumber?: bigint },
+  ): Promise<bigint> {
+    // mainnet.base.org is a public load balancer. A read pinned to a
+    // freshly-mined block can hit a node that hasn't applied it yet
+    // and throw "block not found"; an unpinned "latest" read can land
+    // on a node a slot behind and silently return pre-tx state. Both
+    // failure modes have produced orphaned post-swap WETH in
+    // production (refund rows 4e4691cd, 6b8b3243). Retry on ANY error
+    // up to ~7s — long enough to outlast a typical lagging-node
+    // window. When opts.blockNumber is supplied we always pin (caller
+    // is responsible for passing the swap's inclusion block).
+    const delaysMs = [500, 1000, 1000, 1500, 1500, 1500];
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= delaysMs.length; attempt++) {
+      try {
+        return (await this.publicClient.readContract({
+          address: token,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [this.account.address],
+          ...(opts?.blockNumber !== undefined
+            ? { blockNumber: opts.blockNumber }
+            : {}),
+        })) as bigint;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < delaysMs.length) {
+          await new Promise((r) => setTimeout(r, delaysMs[attempt]));
+        }
+      }
+    }
+    throw lastErr instanceof Error
+      ? lastErr
+      : new Error(`balance read failed: ${String(lastErr)}`);
   }
 
   async readAllowance(token: Address, spender: Address): Promise<bigint> {
@@ -320,7 +362,7 @@ export class ViemBaseSwapChain implements BaseSwapChain {
     value: bigint;
     gasLimit?: bigint;
     gasPrice?: bigint;
-  }): Promise<{ txHash: Hex }> {
+  }): Promise<{ txHash: Hex; blockNumber: bigint }> {
     // viem's sendTransaction picks gas fee fields automatically if we
     // omit them. LiFi gives us a hint (`gasPrice`) but EIP-1559 on
     // Base means letting viem use maxFeePerGas/maxPriorityFeePerGas
@@ -340,7 +382,7 @@ export class ViemBaseSwapChain implements BaseSwapChain {
     if (receipt.status !== "success") {
       throw new Error(`swap_tx_reverted: ${txHash}`);
     }
-    return { txHash };
+    return { txHash, blockNumber: receipt.blockNumber };
   }
 
   async transferERC20(args: {
@@ -735,6 +777,7 @@ export async function executeBaseSwap(
 
   // Broadcast the LiFi-built swap transaction.
   let swapTxHash: Hex;
+  let swapBlockNumber: bigint;
   try {
     const txReq = freshQuote.transactionRequest;
     const r = await args.chain.sendSwapTx({
@@ -745,6 +788,7 @@ export async function executeBaseSwap(
       ...(txReq.gasPrice ? { gasPrice: BigInt(txReq.gasPrice) } : {}),
     });
     swapTxHash = r.txHash;
+    swapBlockNumber = r.blockNumber;
   } catch (err) {
     return await handleFailure(
       args,
@@ -754,10 +798,19 @@ export async function executeBaseSwap(
     );
   }
 
-  // Verify the swap actually credited the expected output.
+  // Verify the swap actually credited the expected output. Pin the
+  // read to the swap's inclusion block — mainnet.base.org is a load
+  // balancer, and a follow-up `latest` read can otherwise hit a node
+  // a slot behind and return the pre-swap balance (false negative
+  // that orphaned WETH twice in production — refunds 4e4691cd and
+  // 6b8b3243). The retry inside ViemBaseSwapChain handles the dual
+  // case where the pinned read hits a node that hasn't applied the
+  // block yet.
   let postBalance: bigint;
   try {
-    postBalance = await args.chain.readSwapWalletBalance(outputToken);
+    postBalance = await args.chain.readSwapWalletBalance(outputToken, {
+      blockNumber: swapBlockNumber,
+    });
   } catch (err) {
     return await handleFailure(
       args,
