@@ -35,6 +35,11 @@ function makeConfig(over: Partial<ProxyConfigRow> = {}): ProxyConfigRow {
     forwardHeadersEncrypted: null,
     forwardAuthScheme: "static",
     isActive: true,
+    upstreamX402Enabled: false,
+    upstreamX402Network: null,
+    upstreamX402MaxPrice: null,
+    upstreamSignerWallet: null,
+    publicSlug: null,
     ...over,
   };
 }
@@ -735,5 +740,236 @@ describe("handle", () => {
     expect(result.status).toBe(402);
     const body = result.body as { extensions?: unknown };
     expect(body.extensions).toBeUndefined();
+  });
+
+  it("upstream-x402: signs to upstream's 402, retries, logs outbound payment", async () => {
+    // Wire the buyer flow: customer pays the proxy (verify+settle pass);
+    // proxy hits upstream and gets a 402; proxy uses the injected
+    // SuverseClient to sign for the Solana accept; upstream returns 200
+    // on retry; handler logs both a proxy_request_logs row AND an
+    // outbound facilitator_payments row.
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string; headers?: Record<string, string> }) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xPAYER" }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xTXHASH",
+            network: "eip155:8453",
+            payer: "0xPAYER",
+          }),
+          { status: 200 },
+        );
+      }
+      if (url === "https://upstream.example.com/forecast") {
+        // First hit: 402 challenge with a Solana accept matching the
+        // configured upstream_x402_network. Second hit (with the
+        // PAYMENT-SIGNATURE header set by callUpstreamWithX402):
+        // 200 with the upstream payload.
+        const hasPayment = init?.headers && (init.headers["PAYMENT-SIGNATURE"] ?? init.headers["X-PAYMENT"]);
+        if (hasPayment) {
+          return new Response(JSON.stringify({ data: "decoded" }), {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+              "payment-response": Buffer.from(
+                JSON.stringify({ transaction: "sol_tx_hash_abc" }),
+              ).toString("base64"),
+            },
+          });
+        }
+        return new Response(
+          JSON.stringify({
+            x402Version: 2,
+            resource: { url: "https://upstream.example.com/forecast" },
+            accepts: [
+              {
+                scheme: "exact",
+                network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+                asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                payTo: "UPSTREAMpayToAddressXXXXXXXXXXXXXXXXXXXXXXX",
+                amount: "100000",
+                maxTimeoutSeconds: 60,
+              },
+            ],
+          }),
+          { status: 402, headers: { "content-type": "application/json" } },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    // Spy pool that records the outbound INSERT.
+    const poolQuery = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const pool = { query: poolQuery } as unknown as HandleDeps["pool"];
+    // SuverseClient stub — signRequirement returns a minimal envelope.
+    const fakeClient = {
+      signRequirement: vi.fn().mockResolvedValue({
+        x402Version: 2,
+        scheme: "exact",
+        network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+        accepted: {
+          scheme: "exact",
+          network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          payTo: "UPSTREAMpayToAddressXXXXXXXXXXXXXXXXXXXXXXX",
+          amount: "100000",
+          maxTimeoutSeconds: 60,
+        },
+        payload: { fake: true },
+      }),
+    } as unknown as HandleDeps["upstreamX402Client"];
+    const deps = makeDeps({
+      pool,
+      store: makeStore(
+        makeConfig({
+          upstreamX402Enabled: true,
+          upstreamX402Network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          upstreamX402MaxPrice: "0.500000",
+          upstreamSignerWallet: "solana",
+        }),
+      ),
+      fetchImpl: fetchMock,
+      upstreamX402Client: fakeClient,
+      upstreamServiceAddresses: { solana: "SERVICEsolanaAddrXXXXXXXXXXXXXX" },
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "test-idem-up402",
+        incomingHeaders: { "content-type": "application/json" },
+        body: Buffer.from(JSON.stringify({ signature: "5abc" })),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(200);
+    expect(result.outcome).toBe("settled");
+    // signRequirement was called with the Solana accept.
+    expect(fakeClient!.signRequirement).toHaveBeenCalledTimes(1);
+    // facilitator_payments INSERT happened with direction='outbound'.
+    const insertCalls = poolQuery.mock.calls.filter(([sql]) =>
+      String(sql).includes("INSERT INTO facilitator_payments"),
+    );
+    expect(insertCalls.length).toBe(1);
+    const sql = String(insertCalls[0][0]);
+    expect(sql).toContain("'outbound'");
+    expect(sql).toContain("'upstream-x402'");
+    // The amount we paid matches the upstream's quoted amount.
+    expect(insertCalls[0][1]).toEqual(
+      expect.arrayContaining(["100000"]),
+    );
+  });
+
+  it("upstream-x402: price cap exceeded → 503, no signing, no log row", async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: "0xPAYER" }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "0xTXHASH",
+            network: "eip155:8453",
+            payer: "0xPAYER",
+          }),
+          { status: 200 },
+        );
+      }
+      if (url === "https://upstream.example.com/forecast") {
+        return new Response(
+          JSON.stringify({
+            x402Version: 2,
+            resource: { url: "https://upstream.example.com/forecast" },
+            accepts: [
+              {
+                scheme: "exact",
+                network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+                asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                payTo: "UPSTREAMpayToAddressXXXXXXXXXXXXXXXXXXXXXXX",
+                // 2.000000 USDC — way above the 0.500000 cap.
+                amount: "2000000",
+                maxTimeoutSeconds: 60,
+              },
+            ],
+          }),
+          { status: 402 },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const poolQuery = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const fakeClient = {
+      signRequirement: vi.fn(),
+    } as unknown as HandleDeps["upstreamX402Client"];
+    const deps = makeDeps({
+      pool: { query: poolQuery } as unknown as HandleDeps["pool"],
+      store: makeStore(
+        makeConfig({
+          upstreamX402Enabled: true,
+          upstreamX402Network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+          upstreamX402MaxPrice: "0.500000",
+          upstreamSignerWallet: "solana",
+        }),
+      ),
+      fetchImpl: fetchMock,
+      upstreamX402Client: fakeClient,
+      upstreamServiceAddresses: { solana: "SERVICEsolanaAddrXXXXXXXXXXXXXX" },
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/proxy/reskey_test/weather",
+        paymentHeader: Buffer.from(
+          JSON.stringify({
+            x402Version: 2,
+            scheme: "exact",
+            network: "eip155:8453",
+            payload: { signature: "0xsig", authorization: {} },
+          }),
+        ).toString("base64"),
+        idempotencyKey: "test-idem-cap",
+        incomingHeaders: { "content-type": "application/json" },
+        body: Buffer.from("{}"),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(503);
+    expect(result.outcome).toBe("upstream_error");
+    expect((result.body as { reason: string }).reason).toBe("price_cap_exceeded");
+    expect(fakeClient!.signRequirement).not.toHaveBeenCalled();
+    // No outbound payment row — we never signed.
+    const insertCalls = poolQuery.mock.calls.filter(([sql]) =>
+      String(sql).includes("INSERT INTO facilitator_payments"),
+    );
+    expect(insertCalls.length).toBe(0);
   });
 });

@@ -260,6 +260,9 @@ importers:
       '@fastify/rate-limit':
         specifier: ^10.2.1
         version: 10.3.0
+      '@suverselabs/x402-client':
+        specifier: workspace:*
+        version: link:../../packages/x402-client
       '@suverselabs/x402-server':
         specifier: workspace:*
         version: link:../../packages/x402-server-node

@@ -32,12 +32,19 @@ import { decryptHeaders } from "./crypto.js";
 import { lookupNetwork } from "./networks.js";
 import {
   logProxyRequest,
+  logUpstreamPayment,
   type CatalogBazaarStore,
   type ProxyConfigRow,
   type ProxyConfigStore,
   type ProxyOutcome,
 } from "./store.js";
 import { checkUpstreamHealth } from "./upstream-health.js";
+import {
+  callUpstreamWithX402,
+  newOutboundIdempotencyKey,
+  type ServiceAddresses,
+} from "./upstream-x402.js";
+import type { SuverseClient } from "@suverselabs/x402-client";
 
 /** Headers we never forward to the upstream — they belong to the proxy. */
 const HOP_BY_HOP = new Set([
@@ -126,6 +133,16 @@ export interface HandleDeps {
    * than blocking on a probe.
    */
   healthCheckTimeoutMs?: number;
+  /**
+   * Optional upstream-x402 buyer client. Required only when at least
+   * one configured proxy row has `upstream_x402_enabled = true`. When
+   * absent, those rows fall through to the plain upstream path and
+   * the proxy will return the upstream's raw 402 to the buyer (which
+   * is wrong but observable — boot logs flag the missing client).
+   */
+  upstreamX402Client?: SuverseClient;
+  /** Public addresses of the service wallets, indexed by namespace. */
+  upstreamServiceAddresses?: ServiceAddresses;
 }
 
 /** Result returned to the Fastify adapter — flattened for clarity. */
@@ -343,39 +360,159 @@ export async function handle(
 
   const startedAt = Date.now();
   let upstreamRes: Response;
-  try {
-    upstreamRes = await fetchImpl(config.originalUrl, {
-      method: config.originalMethod,
-      headers: upstreamHeaders,
-      body: args.body && args.body.length > 0 ? args.body : undefined,
-    });
-  } catch (err) {
-    const latencyMs = Date.now() - startedAt;
-    deps.logger?.warn?.(
-      `proxy: upstream fetch failed config=${config.id} url=${config.originalUrl}`,
-      err,
+  let upstreamBody: Buffer;
+
+  if (config.upstreamX402Enabled) {
+    if (!deps.upstreamX402Client || !deps.upstreamServiceAddresses) {
+      deps.logger?.error?.(
+        `proxy: upstream_x402_enabled=true but no service client wired ` +
+          `(config=${config.id}). Treat as misconfigured.`,
+      );
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "invalid_config",
+        errorCode: "no_service_client",
+        network: receipt.network,
+        amountAtomic: receipt.amount,
+        txHash: receipt.txHash,
+        ipHash,
+      });
+      return {
+        status: 503,
+        body: { error: "proxy_misconfigured" },
+        headers: { "content-type": "application/json" },
+        outcome: "invalid_config",
+      };
+    }
+    if (!config.upstreamX402Network || !config.upstreamSignerWallet) {
+      deps.logger?.error?.(
+        `proxy: upstream_x402_enabled but network/signer missing config=${config.id}`,
+      );
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "invalid_config",
+        errorCode: "upstream_x402_incomplete",
+        ipHash,
+      });
+      return {
+        status: 503,
+        body: { error: "proxy_misconfigured" },
+        headers: { "content-type": "application/json" },
+        outcome: "invalid_config",
+      };
+    }
+    const upstreamResult = await callUpstreamWithX402(
+      {
+        upstreamUrl: config.originalUrl,
+        method: config.originalMethod,
+        headers: upstreamHeaders,
+        body: args.body,
+        requiredNetwork: config.upstreamX402Network,
+        maxPriceHumanUsdc: config.upstreamX402MaxPrice,
+        signerNamespace: config.upstreamSignerWallet,
+      },
+      {
+        client: deps.upstreamX402Client,
+        addresses: deps.upstreamServiceAddresses,
+        fetchImpl,
+        ...(deps.logger ? { logger: deps.logger } : {}),
+      },
     );
-    await logProxyRequest(deps.pool, {
-      proxyConfigId: config.id,
-      resourceKeyId: config.resourceKeyId,
-      outcome: "upstream_error",
-      network: receipt.network,
-      amountAtomic: receipt.amount,
-      txHash: receipt.txHash,
-      upstreamLatencyMs: latencyMs,
-      errorCode: "fetch_error",
-      ipHash,
-    });
-    return {
-      status: 502,
-      body: { error: "upstream_unreachable" },
-      headers: { "content-type": "application/json" },
-      outcome: "upstream_error",
-    };
+    if (upstreamResult.kind === "error") {
+      const latencyMs = Date.now() - startedAt;
+      deps.logger?.warn?.(
+        `proxy: upstream-x402 failed config=${config.id} reason=${upstreamResult.reason} msg=${upstreamResult.message}`,
+      );
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "upstream_error",
+        network: receipt.network,
+        amountAtomic: receipt.amount,
+        txHash: receipt.txHash,
+        upstreamStatus: upstreamResult.upstreamStatus ?? null,
+        upstreamLatencyMs: latencyMs,
+        errorCode: `upstream_x402_${upstreamResult.reason}`,
+        ipHash,
+      });
+      return {
+        status: 503,
+        body: { error: "upstream_unreachable", reason: upstreamResult.reason },
+        headers: { "content-type": "application/json", "retry-after": "30" },
+        outcome: "upstream_error",
+      };
+    }
+    upstreamRes = upstreamResult.response;
+    upstreamBody = upstreamResult.bodyBuffer;
+    if (upstreamResult.kind === "paid") {
+      // Record what the service wallet paid the upstream. Best-effort
+      // — a duplicate-key collision (extremely unlikely with random
+      // 12-byte idem) or transient DB hiccup must not 500 the buyer's
+      // call, which already succeeded upstream.
+      try {
+        await logUpstreamPayment(deps.pool, {
+          resourceKeyId: config.resourceKeyId,
+          idempotencyKey: newOutboundIdempotencyKey(),
+          network: upstreamResult.payment.network,
+          asset: upstreamResult.payment.asset,
+          scheme: upstreamResult.payment.scheme,
+          amountAtomic: upstreamResult.payment.amountAtomic,
+          payer: upstreamResult.payment.payer,
+          recipient: upstreamResult.payment.recipient,
+          txHash: upstreamResult.payment.txHash,
+          status: "settled",
+        });
+        deps.logger?.info?.(
+          `proxy: upstream-x402 paid config=${config.id} ` +
+            `network=${upstreamResult.payment.network} ` +
+            `amount=${upstreamResult.payment.amountAtomic} ` +
+            `recipient=${upstreamResult.payment.recipient} ` +
+            `tx=${upstreamResult.payment.txHash ?? "(none)"}`,
+        );
+      } catch (logErr) {
+        deps.logger?.warn?.(
+          `proxy: logUpstreamPayment failed (non-fatal) config=${config.id}`,
+          logErr,
+        );
+      }
+    }
+  } else {
+    try {
+      upstreamRes = await fetchImpl(config.originalUrl, {
+        method: config.originalMethod,
+        headers: upstreamHeaders,
+        body: args.body && args.body.length > 0 ? args.body : undefined,
+      });
+    } catch (err) {
+      const latencyMs = Date.now() - startedAt;
+      deps.logger?.warn?.(
+        `proxy: upstream fetch failed config=${config.id} url=${config.originalUrl}`,
+        err,
+      );
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "upstream_error",
+        network: receipt.network,
+        amountAtomic: receipt.amount,
+        txHash: receipt.txHash,
+        upstreamLatencyMs: latencyMs,
+        errorCode: "fetch_error",
+        ipHash,
+      });
+      return {
+        status: 502,
+        body: { error: "upstream_unreachable" },
+        headers: { "content-type": "application/json" },
+        outcome: "upstream_error",
+      };
+    }
+    upstreamBody = Buffer.from(await upstreamRes.arrayBuffer());
   }
 
   const latencyMs = Date.now() - startedAt;
-  const upstreamBody = Buffer.from(await upstreamRes.arrayBuffer());
 
   await logProxyRequest(deps.pool, {
     proxyConfigId: config.id,

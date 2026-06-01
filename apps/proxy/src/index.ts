@@ -22,9 +22,16 @@
  *                                default 3000
  */
 
+import { readFileSync } from "node:fs";
 import pg from "pg";
+import { SuverseClient } from "@suverselabs/x402-client";
+import type { MultiChainWallets } from "@suverselabs/x402-client";
 import { loadMasterKey } from "./crypto.js";
 import { buildServer } from "./server.js";
+import type {
+  ServiceAddresses,
+  ServiceWallets,
+} from "./upstream-x402.js";
 
 async function main(): Promise<void> {
   const databaseUrl = required("DATABASE_URL");
@@ -42,6 +49,12 @@ async function main(): Promise<void> {
     process.env["HEALTH_CHECK_TIMEOUT_MS"],
   );
 
+  const { wallets, addresses } = loadServiceWallets();
+  const upstreamClient =
+    Object.keys(wallets).length > 0
+      ? new SuverseClient({ wallets: wallets as MultiChainWallets })
+      : undefined;
+
   const app = await buildServer({
     pool,
     masterKey,
@@ -52,6 +65,9 @@ async function main(): Promise<void> {
       : {}),
     rateLimitPerMin: Number(process.env["RATE_LIMIT_PER_MIN"] ?? 120),
     ...(healthCheckTimeoutMs !== undefined ? { healthCheckTimeoutMs } : {}),
+    ...(upstreamClient !== undefined
+      ? { upstreamX402Client: upstreamClient, upstreamServiceAddresses: addresses }
+      : {}),
   });
 
   const port = Number(process.env["PORT"] ?? 3003);
@@ -76,6 +92,47 @@ function required(name: string): string {
     throw new Error(`Missing required env var: ${name}`);
   }
   return v;
+}
+
+/**
+ * Read every configured service wallet keypair from disk. Each family
+ * is optional — when neither SERVICE_<NS>_ADDRESS nor PRIVKEY_PATH is
+ * set, the namespace is skipped. The proxy boots fine without any
+ * service wallet; only upstream-x402-enabled rows will then fail at
+ * request time (handler logs `no_service_client`).
+ *
+ * Solana keypair format: 64-byte JSON array, the canonical
+ * `solana-keygen` output. We pass the raw Uint8Array to SuverseClient
+ * so the buyer SDK can derive the public key itself.
+ */
+function loadServiceWallets(): {
+  wallets: ServiceWallets;
+  addresses: ServiceAddresses;
+} {
+  const wallets: ServiceWallets = {};
+  const addresses: ServiceAddresses = {};
+
+  const solAddr = process.env["SERVICE_SOLANA_ADDRESS"];
+  const solPath = process.env["SERVICE_SOLANA_PRIVKEY_PATH"];
+  if (solAddr && solPath) {
+    try {
+      const raw = JSON.parse(readFileSync(solPath, "utf8")) as number[];
+      if (!Array.isArray(raw) || raw.length !== 64) {
+        throw new Error(
+          `expected 64-byte JSON array at ${solPath}, got length ${raw.length}`,
+        );
+      }
+      wallets.solana = Uint8Array.from(raw);
+      addresses.solana = solAddr;
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `proxy: failed to load Solana service wallet from ${solPath}: ${(err as Error).message}`,
+      );
+    }
+  }
+  // (EVM / Cosmos / TRON wallets land here when added.)
+  return { wallets, addresses };
 }
 
 /** Parse an optional positive integer env var; return undefined on absence or junk. */

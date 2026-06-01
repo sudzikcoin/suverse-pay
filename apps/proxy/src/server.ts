@@ -7,8 +7,10 @@
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { Pool } from "pg";
+import type { SuverseClient } from "@suverselabs/x402-client";
 import { handle, type HandleDeps } from "./handler.js";
 import { CatalogBazaarStore, ProxyConfigStore } from "./store.js";
+import type { ServiceAddresses } from "./upstream-x402.js";
 
 export interface BuildServerArgs {
   pool: Pool;
@@ -32,6 +34,9 @@ export interface BuildServerArgs {
   fetchImpl?: typeof fetch;
   /** Pre-charge upstream health probe budget (ms). Default 3000. */
   healthCheckTimeoutMs?: number;
+  /** Buyer-side client for upstream-x402 wrapping (optional). */
+  upstreamX402Client?: SuverseClient;
+  upstreamServiceAddresses?: ServiceAddresses;
 }
 
 export async function buildServer(
@@ -64,6 +69,12 @@ export async function buildServer(
     ...(args.fetchImpl ? { fetchImpl: args.fetchImpl } : {}),
     ...(args.healthCheckTimeoutMs !== undefined
       ? { healthCheckTimeoutMs: args.healthCheckTimeoutMs }
+      : {}),
+    ...(args.upstreamX402Client !== undefined
+      ? { upstreamX402Client: args.upstreamX402Client }
+      : {}),
+    ...(args.upstreamServiceAddresses !== undefined
+      ? { upstreamServiceAddresses: args.upstreamServiceAddresses }
       : {}),
     logger: app.log as unknown as HandleDeps["logger"],
   };
