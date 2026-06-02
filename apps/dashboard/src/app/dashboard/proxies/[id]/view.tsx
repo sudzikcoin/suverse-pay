@@ -34,6 +34,8 @@ interface SwapStats {
   expired: number;
   completedInputAtomic: string;
   lastCompletedAt: string | null;
+  quoteFeesAtomic: string;
+  swapFeesAtomic: string;
 }
 
 interface SwapLogRow {
@@ -435,9 +437,7 @@ function OverviewTab({
     <div className="space-y-6">
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">
-            {swapMode ? "Swap activity" : "Stats"}
-          </h2>
+          <h2 className="text-sm font-semibold">Stats</h2>
           <div
             role="radiogroup"
             className="inline-flex rounded-md border border-border p-0.5"
@@ -493,14 +493,6 @@ function OverviewTab({
               }
             />
           </div>
-        ) : null}
-        {swapMode ? (
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            Numbers are derived from <code className="font-mono">swap_transactions</code>
-            {" "}rather than <code className="font-mono">proxy_request_logs</code> — the
-            swap flow doesn't pass through the generic proxy handler, so the
-            usual stats card would read zero here.
-          </p>
         ) : null}
       </div>
 
@@ -782,6 +774,18 @@ function OutcomeBadge({ outcome }: { outcome: string }): React.JSX.Element {
   );
 }
 
+/**
+ * Sum two atomic-USDC strings (6-decimal). Used for the Total revenue
+ * tile; pulled into a helper so the math stays in one place.
+ */
+function sumAtomic(a: string, b: string): string {
+  try {
+    return (BigInt(a) + BigInt(b)).toString();
+  } catch {
+    return "0";
+  }
+}
+
 function SwapStatsTiles({
   loading,
   swap,
@@ -792,26 +796,24 @@ function SwapStatsTiles({
   if (loading || !swap) {
     return (
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
           <Skeleton key={i} className="h-16 w-full" />
         ))}
       </div>
     );
   }
   const s = swap.stats;
+  const errors = s.failed + s.failedSlippage + s.expired;
+  const totalRevenue = sumAtomic(s.quoteFeesAtomic, s.swapFeesAtomic);
   return (
     <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatTile label="Quotes" value={s.totalQuotes.toString()} />
-      <StatTile label="Completed" value={s.completed.toString()} accent />
-      <StatTile label="Failed" value={(s.failed + s.failedSlippage).toString()} />
-      <StatTile
-        label="Last completed"
-        value={
-          s.lastCompletedAt === null
-            ? "—"
-            : new Date(s.lastCompletedAt).toLocaleString()
-        }
-      />
+      <StatTile label="Requests" value={s.totalQuotes.toString()} />
+      <StatTile label="Successful" value={s.completed.toString()} accent />
+      <StatTile label="Errors" value={errors.toString()} />
+      <StatTile label="Volume" value={atomicToUsdc(s.completedInputAtomic)} />
+      <StatTile label="Quote fees" value={atomicToUsdc(s.quoteFeesAtomic)} />
+      <StatTile label="Swap fees" value={atomicToUsdc(s.swapFeesAtomic)} />
+      <StatTile label="Total revenue" value={atomicToUsdc(totalRevenue)} accent />
     </div>
   );
 }
