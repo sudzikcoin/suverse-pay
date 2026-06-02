@@ -44,6 +44,7 @@ import {
   type BaseSwapChain,
   type BaseSwapSignerConfig,
 } from "./swap-base.js";
+import { startRefundWorker } from "./refund-worker.js";
 
 async function main(): Promise<void> {
   const databaseUrl = required("DATABASE_URL");
@@ -153,8 +154,23 @@ async function main(): Promise<void> {
   await app.listen({ port, host });
   app.log.info(`proxy listening on ${host}:${port}`);
 
+  // Refund worker — drains swap_refunds + refunds_pending every 5
+  // minutes. Skips rows on networks we don't have a signer for, so
+  // it's safe to enable even when only one chain is configured.
+  const refundWorker = startRefundWorker({
+    pool,
+    ...(swapChain ? { solanaChain: swapChain } : {}),
+    ...(baseSwapChain ? { baseChain: baseSwapChain } : {}),
+    logger: {
+      info: (msg) => app.log.info(msg),
+      warn: (msg) => app.log.warn(msg),
+      error: (msg) => app.log.error(msg),
+    },
+  });
+
   const shutdown = async (signal: string): Promise<void> => {
     app.log.info(`received ${signal} — shutting down`);
+    refundWorker.stop();
     await app.close();
     await pool.end();
     process.exit(0);
