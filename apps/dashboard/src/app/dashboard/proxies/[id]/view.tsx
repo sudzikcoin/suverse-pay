@@ -32,7 +32,7 @@ interface SwapStats {
   failed: number;
   failedSlippage: number;
   expired: number;
-  completedInputAtomic: string;
+  completedVolumeAtomic: string;
   lastCompletedAt: string | null;
   quoteFeesAtomic: string;
   swapFeesAtomic: string;
@@ -810,7 +810,7 @@ function SwapStatsTiles({
       <StatTile label="Requests" value={s.totalQuotes.toString()} />
       <StatTile label="Successful" value={s.completed.toString()} accent />
       <StatTile label="Errors" value={errors.toString()} />
-      <StatTile label="Volume" value={atomicToUsdc(s.completedInputAtomic)} />
+      <StatTile label="Volume" value={atomicToUsdc(s.completedVolumeAtomic)} />
       <StatTile label="Quote fees" value={atomicToUsdc(s.quoteFeesAtomic)} />
       <StatTile label="Swap fees" value={atomicToUsdc(s.swapFeesAtomic)} />
       <StatTile label="Total revenue" value={atomicToUsdc(totalRevenue)} accent />

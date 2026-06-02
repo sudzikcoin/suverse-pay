@@ -637,10 +637,15 @@ export interface SwapStats {
   failed: number;
   failedSlippage: number;
   expired: number;
-  /** Sum of input_amount over completed swaps, atomic. Useful as a
-   *  "volume moved" headline; we surface it unformatted and let the UI
-   *  decide whether to render in USDC, SOL, etc. */
-  completedInputAtomic: string;
+  /** USD-denominated volume of completed swaps, atomic USDC (6-dec).
+   *  For forward swaps (USDC→token) this is input_amount; for reverse
+   *  swaps (token→USDC) it's expected_output (the USDC the buyer
+   *  receives). Mixing input_amount across both directions would mash
+   *  together different token decimals — a single BONK→USDC swap at
+   *  millions of BONK atoms would dwarf the legitimate USDC totals and
+   *  produce nonsense like the $5.2T headline this field originally
+   *  showed. */
+  completedVolumeAtomic: string;
   lastCompletedAt: string | null;
   /** Quote-route revenue, atomic USDC: totalQuotes × $0.001. Computed
    *  in JS rather than SQL because the per-quote price is configured
@@ -681,6 +686,44 @@ export function computeSwapRevenue(stats: {
   };
 }
 
+/**
+ * USDC-denominated atomic volume for a single completed swap row.
+ *
+ * The SQL in getSwapStats has to express the same rule via CASE; this
+ * helper is the single source of truth that the test suite exercises.
+ *
+ *   forward (input_token == USDC): input_amount is already USDC, use it.
+ *   reverse (output_token == USDC): expected_output is USDC, use it.
+ *   neither: 0 — a token↔token route isn't supported here, no fair USD
+ *            value without a price feed.
+ *
+ * Inputs come in as the raw string/null shapes Postgres NUMERIC and the
+ * pg driver hand us; the helper tolerates nulls so a swap that quoted
+ * but failed before expected_output was filled in doesn't crash the
+ * caller.
+ */
+export function swapRowVolumeAtomic(
+  row: {
+    inputToken: string;
+    inputAmount: string | null;
+    outputToken: string;
+    expectedOutput: string | null;
+  },
+  usdcToken: string,
+): bigint {
+  const toBig = (v: string | null): bigint => {
+    if (v === null) return 0n;
+    try {
+      return BigInt(v);
+    } catch {
+      return 0n;
+    }
+  };
+  if (row.inputToken === usdcToken) return toBig(row.inputAmount);
+  if (row.outputToken === usdcToken) return toBig(row.expectedOutput);
+  return 0n;
+}
+
 export async function getSwapStats(args: {
   userId: string;
   proxyId: string;
@@ -702,7 +745,7 @@ export async function getSwapStats(args: {
     failed: string;
     failed_slippage: string;
     expired: string;
-    completed_in: string;
+    completed_volume: string;
     swap_fees: string;
     last_completed_at: string | null;
   }>(
@@ -713,8 +756,16 @@ export async function getSwapStats(args: {
       COUNT(*) FILTER (WHERE status = 'failed')::text                      AS failed,
       COUNT(*) FILTER (WHERE status = 'failed_slippage')::text             AS failed_slippage,
       COUNT(*) FILTER (WHERE status = 'expired')::text                     AS expired,
-      COALESCE(SUM(input_amount) FILTER (WHERE status = 'completed'), 0)::text
-                                                                           AS completed_in,
+      -- USDC-denominated volume: forward swap pays in USDC (input_amount
+      -- is USDC), reverse swap receives USDC (expected_output is USDC).
+      -- Mirrors swapRowVolumeAtomic — see the test suite for the rule.
+      COALESCE(SUM(
+        CASE
+          WHEN status = 'completed' AND input_token = $3 THEN input_amount
+          WHEN status = 'completed' AND output_token = $3 THEN COALESCE(expected_output, 0)
+          ELSE 0
+        END
+      ), 0)::text                                                          AS completed_volume,
       COALESCE(SUM(fee_amount)
                 FILTER (WHERE status = 'completed'
                           AND input_token = $3), 0)::text                  AS swap_fees,
@@ -737,7 +788,7 @@ export async function getSwapStats(args: {
     failed: Number(r.failed),
     failedSlippage: Number(r.failed_slippage),
     expired: Number(r.expired),
-    completedInputAtomic: r.completed_in,
+    completedVolumeAtomic: r.completed_volume,
     lastCompletedAt: r.last_completed_at,
     quoteFeesAtomic: revenue.quoteFeesAtomic,
     swapFeesAtomic: revenue.swapFeesAtomic,
