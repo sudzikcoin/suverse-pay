@@ -224,22 +224,40 @@ function haystack(input: BrandingInput): string {
   return `${input.slug} ${input.displayName ?? ""}`.toLowerCase();
 }
 
+/**
+ * Whole-token check: matches `kw` only when bordered by non-alphanumeric
+ * characters (hyphen, space, start/end). Stops `coinbase` from matching
+ * `base` and `binance` from matching `btc`, while still catching
+ * `base-tx-decoder` and `helius-priority-fee`.
+ */
+function containsWord(h: string, kw: string): boolean {
+  const re = new RegExp(
+    `(?:^|[^a-z0-9])${kw.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}(?:[^a-z0-9]|$)`,
+  );
+  return re.test(h);
+}
+
+/**
+ * Chain-context detection runs purely off slug + displayName, NOT
+ * acceptedNetworks. Our endpoints accept payment in every supported
+ * chain regardless of the data subject — `coinbase-btc-spot` lists
+ * `cosmos:noble-1` in accepted_networks even though it serves a
+ * Coinbase BTC price. Using acceptedNetworks for context would tag
+ * every endpoint as cosmos+solana+base simultaneously.
+ */
 function isCosmosContext(input: BrandingInput): boolean {
-  if (input.acceptedNetworks.some((n) => n.startsWith("cosmos:"))) return true;
   const h = haystack(input);
-  return COSMOS_KEYWORDS.some((kw) => h.includes(kw));
+  return COSMOS_KEYWORDS.some((kw) => containsWord(h, kw));
 }
 
 function isSolanaContext(input: BrandingInput): boolean {
-  if (input.acceptedNetworks.some((n) => n.startsWith("solana:"))) return true;
   const h = haystack(input);
-  return SOLANA_KEYWORDS.some((kw) => h.includes(kw));
+  return SOLANA_KEYWORDS.some((kw) => containsWord(h, kw));
 }
 
 function isBaseContext(input: BrandingInput): boolean {
-  if (input.acceptedNetworks.some((n) => n.startsWith("eip155:"))) return true;
   const h = haystack(input);
-  return BASE_KEYWORDS.some((kw) => h.includes(kw));
+  return BASE_KEYWORDS.some((kw) => containsWord(h, kw));
 }
 
 /**

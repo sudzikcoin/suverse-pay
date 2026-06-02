@@ -99,23 +99,57 @@ describe("loadBrandingConfig", () => {
 /* ------------------------------------------------------- pickSwapUrl */
 
 describe("pickSwapUrl", () => {
-  it("returns the Solana quote URL for solana-network endpoints", () => {
+  it("returns the Solana quote URL for solana-* slugs", () => {
     expect(
-      pickSwapUrl(input({ acceptedNetworks: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"] })),
+      pickSwapUrl(
+        input({ slug: "solana-tx-decoder", displayName: "Solana Tx Decoder" }),
+      ),
     ).toBe("https://proxy.suverse.io/v1/swap/solana/quote");
   });
   it("returns the Solana quote URL for helius-* slugs", () => {
-    expect(pickSwapUrl(input({ slug: "helius-tx-decoder" }))).toBe(
-      "https://proxy.suverse.io/v1/swap/solana/quote",
-    );
+    expect(
+      pickSwapUrl(input({ slug: "helius-tx-decoder", displayName: "Helius Tx Decoder" })),
+    ).toBe("https://proxy.suverse.io/v1/swap/solana/quote");
   });
   it("falls back to Base for everything else (incl. cosmos data)", () => {
-    expect(pickSwapUrl(input({ slug: "cosmos-validator-stats" }))).toBe(
-      "https://proxy.suverse.io/v1/swap/base/quote",
+    expect(
+      pickSwapUrl(
+        input({ slug: "cosmos-validator-stats", displayName: "Cosmos Validator" }),
+      ),
+    ).toBe("https://proxy.suverse.io/v1/swap/base/quote");
+    expect(
+      pickSwapUrl(input({ slug: "coinbase-btc-spot", displayName: "Bitcoin Spot" })),
+    ).toBe("https://proxy.suverse.io/v1/swap/base/quote");
+  });
+  it("does NOT pick Solana just because acceptedNetworks contains solana", () => {
+    // Our endpoints accept payment in every supported chain; context
+    // must come from the slug, not from the payment menu.
+    expect(
+      pickSwapUrl(
+        input({
+          slug: "coinbase-btc-spot",
+          displayName: "Bitcoin Spot",
+          acceptedNetworks: [
+            "eip155:8453",
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            "cosmos:noble-1",
+          ],
+        }),
+      ),
+    ).toBe("https://proxy.suverse.io/v1/swap/base/quote");
+  });
+  it("doesn't false-match 'coinbase' as Base context", () => {
+    // Word-boundary detection — "coinbase" must NOT trigger Base just
+    // because "base" appears as a substring.
+    const generic = pickTip(
+      input({
+        slug: "coinbase-btc-spot",
+        displayName: "Bitcoin Spot Price",
+        acceptedNetworks: ["eip155:8453"],
+        rotationSeed: findSeedAvoidingSlot0(),
+      }),
     );
-    expect(pickSwapUrl(input({ slug: "coinbase-btc-spot" }))).toBe(
-      "https://proxy.suverse.io/v1/swap/base/quote",
-    );
+    expect(generic).toContain("Need to swap tokens based on this data");
   });
 });
 
