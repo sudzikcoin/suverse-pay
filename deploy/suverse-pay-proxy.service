@@ -37,12 +37,13 @@ StandardError=journal
 
 # Hardening — the proxy talks to Postgres + Redis on localhost and
 # fetches upstream HTTPS APIs. It needs nothing on the filesystem
-# beyond its install dir.
+# beyond its install dir and the alert log directory the refund
+# worker writes to when a row exhausts retries.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=
+ReadWritePaths=/var/log/suverse-pay
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
