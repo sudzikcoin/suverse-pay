@@ -253,6 +253,12 @@ export interface ProxyConfigRow {
   payToTron: string | null;
   forwardHeaderCount: number;
   isActive: boolean;
+  /** Name of the in-process handler, when this row is served from one
+   *  of the entries in apps/proxy/src/handlers/registry.ts instead of
+   *  an HTTP upstream. Currently the dashboard only inspects this to
+   *  branch the overview UI for swap_*_execute rows whose real activity
+   *  lives in swap_transactions, not proxy_request_logs. */
+  internalHandler: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -267,7 +273,7 @@ const SELECT_COLUMNS = `
   c.id, c.resource_key_id, c.endpoint_slug, c.original_url, c.original_method,
   c.display_name, c.description, c.price_atomic::text AS price_atomic,
   c.accepted_networks, c.pay_to_evm, c.pay_to_solana, c.pay_to_cosmos, c.pay_to_tron,
-  c.forward_headers_encrypted, c.is_active,
+  c.forward_headers_encrypted, c.is_active, c.internal_handler,
   c.created_at::text AS created_at, c.updated_at::text AS updated_at
 `;
 
@@ -287,6 +293,7 @@ interface DbRow {
   pay_to_tron: string | null;
   forward_headers_encrypted: string | null;
   is_active: boolean;
+  internal_handler: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -308,6 +315,7 @@ function rowTo(row: DbRow): ProxyConfigRow {
     payToTron: row.pay_to_tron,
     forwardHeaderCount: countHeaders(row.forward_headers_encrypted),
     isActive: row.is_active,
+    internalHandler: row.internal_handler,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -544,9 +552,13 @@ export async function getProxyStats(args: {
       COUNT(*)::text                                          AS total,
       COUNT(*) FILTER (WHERE outcome = 'settled')::text       AS settled,
       COUNT(*) FILTER (WHERE outcome = 'challenge')::text     AS challenge,
+      -- invalid_config rows are pre-payment validator rejections; the
+      -- buyer was never charged, and bot probes dominate the volume.
+      -- Excluded from the error count so a single noisy crawler can't
+      -- paint the endpoint red. See apps/proxy/src/handler.ts:213.
       COUNT(*) FILTER (WHERE outcome IN
                         ('settle_failed','upstream_error',
-                         'rate_limited','invalid_config'))::text AS err,
+                         'rate_limited'))::text                  AS err,
       COALESCE(SUM(amount_atomic) FILTER (WHERE outcome='settled'),0)::text AS volume,
       percentile_cont(0.5) WITHIN GROUP (ORDER BY upstream_latency_ms)
          FILTER (WHERE outcome='settled' AND upstream_latency_ms IS NOT NULL) AS p50,
@@ -568,6 +580,177 @@ export async function getProxyStats(args: {
     p50LatencyMs: r.p50 === null ? null : Math.round(Number(r.p50)),
     p95LatencyMs: r.p95 === null ? null : Math.round(Number(r.p95)),
   };
+}
+
+// ---------------------------------------------------------------
+// Swap-specific stats (suverse-{base,solana}-swap proxies)
+// ---------------------------------------------------------------
+//
+// The /v1/swap/{base,solana}/{quote,execute} routes are handled by
+// apps/proxy/src/swap*.ts and write to `swap_transactions`, not
+// `proxy_request_logs`. The seller_proxy_configs rows for those
+// endpoints exist only as Bazaar discovery stubs (see
+// apps/proxy/src/handlers/registry.ts:68-75), so getProxyStats above
+// returns zeros for them and the overview page shows a dead card.
+//
+// This query joins the proxy row to swap_transactions by the network
+// implied by its internal_handler value and surfaces the real numbers
+// the user expects to see.
+
+/** Network filter used by getSwapStats per internal_handler value. */
+const SWAP_HANDLER_NETWORK: Record<string, string> = {
+  // Both swap chains pin their network to a single CAIP-2 ID. The
+  // Solana one varies slightly per chain genesis hash; we match by
+  // prefix in SQL to avoid hard-coding the full ID.
+  swap_solana_execute: "solana:",
+  swap_base_execute: "eip155:8453",
+};
+
+export function isSwapHandler(internalHandler: string | null): boolean {
+  return (
+    internalHandler !== null &&
+    Object.hasOwn(SWAP_HANDLER_NETWORK, internalHandler)
+  );
+}
+
+export interface SwapStats {
+  /** Same range knob the regular ProxyStats card uses. */
+  totalQuotes: number;
+  completed: number;
+  failed: number;
+  failedSlippage: number;
+  expired: number;
+  /** Sum of input_amount over completed swaps, atomic. Useful as a
+   *  "volume moved" headline; we surface it unformatted and let the UI
+   *  decide whether to render in USDC, SOL, etc. */
+  completedInputAtomic: string;
+  lastCompletedAt: string | null;
+}
+
+export async function getSwapStats(args: {
+  userId: string;
+  proxyId: string;
+  sinceHours: number;
+}): Promise<SwapStats | null> {
+  const proxy = await getOwnedProxy({
+    userId: args.userId,
+    proxyId: args.proxyId,
+  });
+  if (!proxy || !isSwapHandler(proxy.internalHandler)) {
+    return null;
+  }
+  const networkMatch = SWAP_HANDLER_NETWORK[proxy.internalHandler!]!;
+  const sinceMs = args.sinceHours * 60 * 60 * 1000;
+  const since = new Date(Date.now() - sinceMs);
+  const rows = await dbQuery<{
+    total: string;
+    completed: string;
+    failed: string;
+    failed_slippage: string;
+    expired: string;
+    completed_in: string;
+    last_completed_at: string | null;
+  }>(
+    `
+    SELECT
+      COUNT(*)::text                                                       AS total,
+      COUNT(*) FILTER (WHERE status = 'completed')::text                   AS completed,
+      COUNT(*) FILTER (WHERE status = 'failed')::text                      AS failed,
+      COUNT(*) FILTER (WHERE status = 'failed_slippage')::text             AS failed_slippage,
+      COUNT(*) FILTER (WHERE status = 'expired')::text                     AS expired,
+      COALESCE(SUM(input_amount) FILTER (WHERE status = 'completed'), 0)::text
+                                                                           AS completed_in,
+      MAX(completed_at) FILTER (WHERE status = 'completed')::text          AS last_completed_at
+    FROM swap_transactions
+    WHERE network LIKE $1 || '%'
+      AND created_at >= $2
+    `,
+    [networkMatch, since],
+  );
+  const r = rows[0]!;
+  return {
+    totalQuotes: Number(r.total),
+    completed: Number(r.completed),
+    failed: Number(r.failed),
+    failedSlippage: Number(r.failed_slippage),
+    expired: Number(r.expired),
+    completedInputAtomic: r.completed_in,
+    lastCompletedAt: r.last_completed_at,
+  };
+}
+
+export interface SwapLogRow {
+  id: string;
+  createdAt: string;
+  status: string;
+  quoteId: string;
+  network: string;
+  inputToken: string;
+  outputToken: string;
+  inputAmount: string;
+  actualOutput: string | null;
+  swapTxHash: string | null;
+  error: string | null;
+}
+
+export async function listSwapLogs(args: {
+  userId: string;
+  proxyId: string;
+  limit: number;
+}): Promise<SwapLogRow[]> {
+  const proxy = await getOwnedProxy({
+    userId: args.userId,
+    proxyId: args.proxyId,
+  });
+  if (!proxy || !isSwapHandler(proxy.internalHandler)) {
+    return [];
+  }
+  const networkMatch = SWAP_HANDLER_NETWORK[proxy.internalHandler!]!;
+  const rows = await dbQuery<{
+    id: string;
+    created_at: string;
+    status: string;
+    quote_id: string;
+    network: string;
+    input_token: string;
+    output_token: string;
+    input_amount: string;
+    actual_output: string | null;
+    swap_tx_hash: string | null;
+    error: string | null;
+  }>(
+    `
+    SELECT id,
+           created_at::text                    AS created_at,
+           status,
+           quote_id,
+           network,
+           input_token,
+           output_token,
+           input_amount::text                  AS input_amount,
+           actual_output::text                 AS actual_output,
+           swap_tx_hash,
+           error
+      FROM swap_transactions
+     WHERE network LIKE $1 || '%'
+     ORDER BY created_at DESC
+     LIMIT $2
+    `,
+    [networkMatch, args.limit],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.created_at,
+    status: r.status,
+    quoteId: r.quote_id,
+    network: r.network,
+    inputToken: r.input_token,
+    outputToken: r.output_token,
+    inputAmount: r.input_amount,
+    actualOutput: r.actual_output,
+    swapTxHash: r.swap_tx_hash,
+    error: r.error,
+  }));
 }
 
 export interface ProxyLogRow {
@@ -611,7 +794,7 @@ export async function listProxyLogs(args: {
       return "AND prl.outcome = 'settled' AND fp.payer = ANY($3::text[])";
     }
     if (filter === "errors") {
-      return "AND prl.outcome IN ('settle_failed','upstream_error','rate_limited','invalid_config')";
+      return "AND prl.outcome IN ('settle_failed','upstream_error','rate_limited')";
     }
     return "";
   })();

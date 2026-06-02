@@ -26,6 +26,43 @@ interface Stats {
   p95LatencyMs: number | null;
 }
 
+interface SwapStats {
+  totalQuotes: number;
+  completed: number;
+  failed: number;
+  failedSlippage: number;
+  expired: number;
+  completedInputAtomic: string;
+  lastCompletedAt: string | null;
+}
+
+interface SwapLogRow {
+  id: string;
+  createdAt: string;
+  status: string;
+  quoteId: string;
+  network: string;
+  inputToken: string;
+  outputToken: string;
+  inputAmount: string;
+  actualOutput: string | null;
+  swapTxHash: string | null;
+  error: string | null;
+}
+
+interface SwapPayload {
+  range: Range;
+  stats: SwapStats;
+  recent: SwapLogRow[];
+}
+
+const SWAP_HANDLERS = ["swap_solana_execute", "swap_base_execute"] as const;
+function isSwapProxy(internalHandler: string | null): boolean {
+  return (SWAP_HANDLERS as readonly string[]).includes(
+    internalHandler ?? "",
+  );
+}
+
 interface LogRow {
   id: string;
   createdAt: string;
@@ -87,6 +124,8 @@ export function ProxyDetailView({
     }
   }, [showJustCreated]);
 
+  const swapMode = isSwapProxy(proxy.internalHandler);
+
   const statsQ = useQuery<Stats>({
     queryKey: ["proxy-stats", proxy.id, range],
     queryFn: async () => {
@@ -95,6 +134,20 @@ export function ProxyDetailView({
       return (await res.json()) as Stats;
     },
     refetchInterval: 30_000,
+    enabled: !swapMode,
+  });
+
+  const swapQ = useQuery<SwapPayload>({
+    queryKey: ["proxy-swap-stats", proxy.id, range],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/proxies/${proxy.id}/swap-stats?range=${range}`,
+      );
+      if (!res.ok) throw new Error(`swap stats ${res.status}`);
+      return (await res.json()) as SwapPayload;
+    },
+    refetchInterval: 30_000,
+    enabled: swapMode,
   });
 
   const logsQ = useQuery<LogRow[]>({
@@ -154,9 +207,15 @@ export function ProxyDetailView({
           onRangeChange={(r) => {
             setRange(r);
             void qc.invalidateQueries({ queryKey: ["proxy-stats", proxy.id] });
+            void qc.invalidateQueries({
+              queryKey: ["proxy-swap-stats", proxy.id],
+            });
           }}
           statsLoading={statsQ.isLoading}
           stats={statsQ.data ?? null}
+          swapMode={swapMode}
+          swapLoading={swapQ.isLoading}
+          swap={swapQ.data ?? null}
         />
       ) : null}
 
@@ -359,18 +418,26 @@ function OverviewTab({
   onRangeChange,
   stats,
   statsLoading,
+  swapMode,
+  swap,
+  swapLoading,
 }: {
   proxy: ProxyConfigRow;
   range: Range;
   onRangeChange: (r: Range) => void;
   stats: Stats | null;
   statsLoading: boolean;
+  swapMode: boolean;
+  swap: SwapPayload | null;
+  swapLoading: boolean;
 }): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">Stats</h2>
+          <h2 className="text-sm font-semibold">
+            {swapMode ? "Swap activity" : "Stats"}
+          </h2>
           <div
             role="radiogroup"
             className="inline-flex rounded-md border border-border p-0.5"
@@ -394,7 +461,9 @@ function OverviewTab({
             ))}
           </div>
         </div>
-        {statsLoading ? (
+        {swapMode ? (
+          <SwapStatsTiles loading={swapLoading} swap={swap} />
+        ) : statsLoading ? (
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-16 w-full" />
@@ -425,7 +494,19 @@ function OverviewTab({
             />
           </div>
         ) : null}
+        {swapMode ? (
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Numbers are derived from <code className="font-mono">swap_transactions</code>
+            {" "}rather than <code className="font-mono">proxy_request_logs</code> — the
+            swap flow doesn't pass through the generic proxy handler, so the
+            usual stats card would read zero here.
+          </p>
+        ) : null}
       </div>
+
+      {swapMode ? (
+        <SwapRecentTable loading={swapLoading} rows={swap?.recent ?? []} />
+      ) : null}
 
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-center justify-between">
@@ -697,6 +778,134 @@ function OutcomeBadge({ outcome }: { outcome: string }): React.JSX.Element {
       )}
     >
       {outcome}
+    </span>
+  );
+}
+
+function SwapStatsTiles({
+  loading,
+  swap,
+}: {
+  loading: boolean;
+  swap: SwapPayload | null;
+}): React.JSX.Element {
+  if (loading || !swap) {
+    return (
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    );
+  }
+  const s = swap.stats;
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <StatTile label="Quotes" value={s.totalQuotes.toString()} />
+      <StatTile label="Completed" value={s.completed.toString()} accent />
+      <StatTile label="Failed" value={(s.failed + s.failedSlippage).toString()} />
+      <StatTile
+        label="Last completed"
+        value={
+          s.lastCompletedAt === null
+            ? "—"
+            : new Date(s.lastCompletedAt).toLocaleString()
+        }
+      />
+    </div>
+  );
+}
+
+function SwapRecentTable({
+  loading,
+  rows,
+}: {
+  loading: boolean;
+  rows: SwapLogRow[];
+}): React.JSX.Element {
+  return (
+    <div className="rounded-lg border border-border bg-card">
+      <header className="border-b border-border px-6 py-4">
+        <h2 className="text-sm font-semibold">Recent swaps</h2>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Latest 20 quotes / executes — updates every 30 s.
+        </p>
+      </header>
+      <div className="overflow-x-auto">
+        {loading ? (
+          <div className="space-y-2 px-6 py-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="px-6 py-12 text-center text-sm text-muted-foreground">
+            No swap activity yet in this range.
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                <th className="px-6 py-3">When</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3">In → Out</th>
+                <th className="px-6 py-3 text-right">Amount in</th>
+                <th className="px-6 py-3 text-right hidden md:table-cell">Tx</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={r.id}
+                  className="border-t border-border/50 transition-colors hover:bg-secondary/40"
+                >
+                  <td className="px-6 py-3 text-muted-foreground">
+                    {new Date(r.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-3">
+                    <SwapStatusBadge status={r.status} />
+                    {r.error ? (
+                      <span className="ml-2 font-mono text-[10px] text-muted-foreground">
+                        {r.error}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="px-6 py-3 font-mono text-[11px] text-muted-foreground">
+                    {truncateMiddle(r.inputToken, 4, 4)} →{" "}
+                    {truncateMiddle(r.outputToken, 4, 4)}
+                  </td>
+                  <td className="px-6 py-3 text-right font-mono text-xs">
+                    {r.inputAmount}
+                  </td>
+                  <td className="px-6 py-3 text-right font-mono text-[11px] text-muted-foreground hidden md:table-cell">
+                    {r.swapTxHash ? truncateMiddle(r.swapTxHash, 6, 4) : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SwapStatusBadge({ status }: { status: string }): React.JSX.Element {
+  const tone: Record<string, string> = {
+    quoted: "bg-slate-500/15 text-slate-300",
+    completed: "bg-emerald-500/15 text-emerald-300",
+    failed: "bg-destructive/15 text-destructive",
+    failed_slippage: "bg-amber-500/15 text-amber-300",
+    expired: "bg-muted text-muted-foreground",
+  };
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+        tone[status] ?? "bg-muted text-muted-foreground",
+      )}
+    >
+      {status}
     </span>
   );
 }

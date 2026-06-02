@@ -401,9 +401,12 @@ export async function loadProxyListWithStats(args: {
       SELECT
         COUNT(*)                                                          AS total_requests,
         COUNT(*) FILTER (WHERE prl.outcome = 'settled')                   AS settled_count,
+        -- invalid_config is excluded: it fires before the 402, no buyer
+        -- was charged, and bot probes drive most of the volume. Matches
+        -- the contract documented in apps/proxy/src/handler.ts:213.
         COUNT(*) FILTER (WHERE prl.outcome IN
                               ('settle_failed','upstream_error',
-                               'rate_limited','invalid_config'))          AS error_count,
+                               'rate_limited'))                           AS error_count,
         COALESCE(SUM(fp.gross_amount) FILTER (
           WHERE prl.outcome = 'settled'
             AND (fp.payer IS NULL OR fp.payer <> ALL($3::text[]))
