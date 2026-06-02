@@ -29,6 +29,10 @@ const CATEGORY_STYLES: Record<string, string> = {
     "border-yellow-500/40 bg-yellow-500/10 text-yellow-300",
   "sec-filings":
     "border-slate-500/40 bg-slate-500/10 text-slate-300",
+  "bitcoin-tools":
+    "border-orange-500/40 bg-orange-500/10 text-orange-300",
+  "technical-analysis":
+    "border-rose-500/40 bg-rose-500/10 text-rose-300",
   other:
     "border-border bg-secondary/30 text-foreground/70",
 };
