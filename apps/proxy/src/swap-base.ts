@@ -415,19 +415,26 @@ export class ViemBaseSwapChain implements BaseSwapChain {
 
 // --------------------------------------------------------- shared quoting ----
 
+export type SwapDirection = "forward" | "reverse";
+
 export interface ValidatedBaseQuoteRequest {
   inputToken: Address;
   outputToken: Address;
   inputAmount: bigint;
   slippageBps: number;
+  /** Forward = USDC-in (existing flow). Reverse = USDC-out via approval+pull. */
+  direction: SwapDirection;
 }
 
 /**
- * Validate and normalise the /quote input. Hardcoded constraints:
- *   - input_token MUST be USDC on Base (v1 only accepts USDC-in).
+ * Validate and normalise the /quote input. Constraints:
+ *   - Exactly one of {input_token, output_token} MUST be USDC on Base.
  *   - output_token MUST NOT equal input_token.
- *   - both addresses must be valid EIP-55.
- *   - input_amount in (0, MAX_INPUT_USDC_ATOMIC] atomic units.
+ *   - Both addresses must be valid EIP-55.
+ *   - input_amount > 0 atomic.
+ *   - Forward direction caps input at MAX_INPUT_USDC_ATOMIC pre-quote;
+ *     reverse direction can't (USD value isn't known until Jupiter/LiFi
+ *     re-quotes), so the route handler enforces it on expected_output.
  *   - slippage_bps in [MIN, MAX].
  */
 export function validateBaseQuoteInput(raw: unknown):
@@ -453,12 +460,17 @@ export function validateBaseQuoteInput(raw: unknown):
   }
   const inputToken = getAddress(inputTokenRaw);
   const outputToken = getAddress(outputTokenRaw);
-  if (inputToken.toLowerCase() !== USDC_BASE.toLowerCase()) {
-    return { ok: false, error: "input_must_be_usdc", field: "input_token" };
-  }
   if (inputToken.toLowerCase() === outputToken.toLowerCase()) {
     return { ok: false, error: "output_equals_input", field: "output_token" };
   }
+  const inputIsUsdc =
+    inputToken.toLowerCase() === USDC_BASE.toLowerCase();
+  const outputIsUsdc =
+    outputToken.toLowerCase() === USDC_BASE.toLowerCase();
+  if (!inputIsUsdc && !outputIsUsdc) {
+    return { ok: false, error: "one_side_must_be_usdc" };
+  }
+  const direction: SwapDirection = inputIsUsdc ? "forward" : "reverse";
 
   if (typeof amountRaw !== "string" && typeof amountRaw !== "number") {
     return { ok: false, error: "missing_input_amount", field: "input_amount" };
@@ -472,7 +484,7 @@ export function validateBaseQuoteInput(raw: unknown):
   if (amount <= 0n) {
     return { ok: false, error: "invalid_input_amount", field: "input_amount" };
   }
-  if (amount > MAX_INPUT_USDC_ATOMIC) {
+  if (direction === "forward" && amount > MAX_INPUT_USDC_ATOMIC) {
     return {
       ok: false,
       error: "input_amount_exceeds_max",
@@ -491,7 +503,7 @@ export function validateBaseQuoteInput(raw: unknown):
 
   return {
     ok: true,
-    req: { inputToken, outputToken, inputAmount: amount, slippageBps: slippage },
+    req: { inputToken, outputToken, inputAmount: amount, slippageBps: slippage, direction },
   };
 }
 
@@ -547,6 +559,26 @@ export interface BaseQuoteResponseShape {
    * from the liquidity wallet yet…". Absent on the cheapest path.
    */
   gas_warning?: string;
+  /**
+   * "forward" = USDC → ERC20 (the original flow; total_cost paid in
+   * USDC via x402).
+   * "reverse" = ERC20 → USDC; total_cost is ONLY the service fee in
+   * USDC. The input ERC20 is pulled from the buyer's wallet via a
+   * previously-set allowance — see requires_approval.
+   */
+  direction: SwapDirection;
+  /**
+   * True for reverse swaps — the buyer must call
+   * `ERC20(input_token).approve(approval_target, input_amount)`
+   * BEFORE /execute. False for forward swaps.
+   */
+  requires_approval: boolean;
+  /**
+   * For reverse swaps: the spender address the buyer must grant ERC20
+   * allowance to. Equal to the swap liquidity wallet
+   * (SWAP_BASE_ADDRESS). Absent for forward swaps.
+   */
+  approval_target?: string;
 }
 
 export interface BuildBaseQuoteResponseArgs {
@@ -559,6 +591,14 @@ export interface BuildBaseQuoteResponseArgs {
   tool: string;
   expiresAt: Date;
   publicBaseUrl: string;
+  /** Direction the quote covers. */
+  direction: SwapDirection;
+  /**
+   * For reverse quotes — the swap liquidity wallet address that must
+   * be granted ERC20 allowance before /execute. Ignored when
+   * direction === "forward".
+   */
+  approvalTarget?: string;
   /**
    * Gas-cost guard result. When supplied, the response includes
    * estimated_gas_cost_usd / minimum_input_atomic / gas_warning.
@@ -572,6 +612,14 @@ export function buildBaseQuoteResponse(
 ): BaseQuoteResponseShape {
   const inputView = toView(args.inputMeta);
   const outputView = toView(args.outputMeta);
+  // x402 always settles in USDC. Forward: input+fee in input USDC.
+  // Reverse: fee only — input ERC20 is pulled via allowance, gross
+  // USDC goes to buyer.
+  const totalCost =
+    args.direction === "forward"
+      ? args.inputAmount + args.fee
+      : args.fee;
+  const usdcMeta = args.direction === "forward" ? args.inputMeta : forceUsdcMeta(args.outputMeta);
   const out: BaseQuoteResponseShape = {
     quote_id: args.quoteId,
     input_token: inputView,
@@ -583,12 +631,17 @@ export function buildBaseQuoteResponse(
     expected_output_human: formatTokenAmount(args.expectedOutput, args.outputMeta),
     tool: args.tool,
     fee: args.fee.toString(),
-    fee_human: formatTokenAmount(args.fee, args.inputMeta),
-    total_cost: (args.inputAmount + args.fee).toString(),
-    total_cost_human: formatTokenAmount(args.inputAmount + args.fee, args.inputMeta),
+    fee_human: formatTokenAmount(args.fee, usdcMeta),
+    total_cost: totalCost.toString(),
+    total_cost_human: formatTokenAmount(totalCost, usdcMeta),
     expires_at: args.expiresAt.toISOString(),
     x402_pay_url: `${args.publicBaseUrl}/v1/swap/base/execute/${args.quoteId}`,
+    direction: args.direction,
+    requires_approval: args.direction === "reverse",
   };
+  if (args.direction === "reverse" && args.approvalTarget !== undefined) {
+    out.approval_target = args.approvalTarget;
+  }
   if (args.gasGuard !== undefined) {
     const fields = buildGasGuardQuoteFields(args.gasGuard);
     out.estimated_gas_cost_usd = fields.estimated_gas_cost_usd;
@@ -596,6 +649,21 @@ export function buildBaseQuoteResponse(
     if (fields.warning !== undefined) out.gas_warning = fields.warning;
   }
   return out;
+}
+
+/**
+ * Defensive: for reverse swaps the outputMeta is expected to be USDC
+ * (validateBaseQuoteInput enforces this). If a future caller forgets,
+ * still render fee/total_cost as USDC rather than UNKNOWN.
+ */
+function forceUsdcMeta(meta: TokenMetadata): TokenMetadata {
+  if (meta.mint.toLowerCase() === USDC_BASE.toLowerCase()) return meta;
+  return {
+    mint: USDC_BASE,
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+  };
 }
 
 function toView(meta: TokenMetadata): BaseTokenMetadataView {
@@ -1002,34 +1070,50 @@ export function registerBaseSwapRoutes(
       }
 
       const expectedOutput = BigInt(quote.estimate.toAmount);
-      const fee = computeFee(vreq.inputAmount);
+      if (vreq.direction === "reverse" && expectedOutput > MAX_INPUT_USDC_ATOMIC) {
+        return reply.code(400).send({
+          error: "expected_output_exceeds_max",
+          detail: `Reverse swap output ${expectedOutput} > cap ${MAX_INPUT_USDC_ATOMIC} (USDC atomic).`,
+        });
+      }
+      // Fee always in USDC. Forward: 1% of input USDC. Reverse: 1% of
+      // expected_output USDC.
+      const feeBase =
+        vreq.direction === "forward" ? vreq.inputAmount : expectedOutput;
+      const fee = computeFee(feeBase);
       const quoteId = `qb_${randomUUID().replace(/-/g, "")}`;
       const expiresAt = new Date(Date.now() + QUOTE_TTL_SECONDS * 1000);
 
-      // Gas-cost guard. Rejects swaps whose 1% fee can't cover the
-      // executor's approve+swap+transfer gas for this router+wallet
-      // pair (mostly: first swap through a router for which the
-      // liquidity wallet has no USDC allowance → +$0.005 approve).
-      // Runs AFTER LiFi confirms a route + spender; BEFORE insertQuote
-      // so a rejected dust swap leaves no DB trace. The probe is a
-      // single ERC20 allowance read; falls closed on RPC failure
-      // (see swap-gas-guard.ts).
+      // Gas-cost guard. Forward: probe is "does swap wallet have USDC
+      // allowance for the LiFi spender?" — if not, +$0.005 approve.
+      // Reverse: probe is "does swap wallet have INPUT_TOKEN allowance
+      // for the LiFi spender?" — same shape, different token. Both
+      // probes fall closed on RPC failure.
+      //
+      // For reverse the guard's "inputAtomic" is the USDC side of the
+      // trade (expected_output) so the USD-denominated minimum applies
+      // apples-to-apples.
       const lifiSpender = getAddress(quote.estimate.approvalAddress);
+      const guardInputAtomic =
+        vreq.direction === "forward" ? vreq.inputAmount : expectedOutput;
+      const guardInputToken =
+        vreq.direction === "forward" ? vreq.inputToken : vreq.inputToken;
       const gasProbe: BaseGasProbe = {
         allowance: (token, spender) =>
           deps.chain.readAllowance(getAddress(token), getAddress(spender)),
       };
       const guard = await evaluateBaseSwapGas({
-        inputAtomic: vreq.inputAmount,
-        inputToken: vreq.inputToken,
+        inputAtomic: guardInputAtomic,
+        inputToken: guardInputToken,
         lifiSpender,
         feeBps: FEE_BPS,
         probe: gasProbe,
       });
       if (!guard.ok) {
         req.log.info(
-          `swap-base: quote_too_small input=${vreq.inputAmount} min=${guard.minimumInputAtomic} ` +
-            `gas_usd=${guard.estimatedGasCostUsd} out=${vreq.outputToken}`,
+          `swap-base: quote_too_small dir=${vreq.direction} in=${vreq.inputAmount} ` +
+            `min=${guard.minimumInputAtomic} gas_usd=${guard.estimatedGasCostUsd} ` +
+            `out=${vreq.outputToken}`,
         );
         return reply.code(400).send({
           error: guard.reason,
@@ -1076,6 +1160,10 @@ export function registerBaseSwapRoutes(
           tool: quote.tool,
           expiresAt,
           publicBaseUrl: deps.publicBaseUrl,
+          direction: vreq.direction,
+          ...(vreq.direction === "reverse"
+            ? { approvalTarget: deps.swapSigner.address }
+            : {}),
           gasGuard: guard,
         }),
       );

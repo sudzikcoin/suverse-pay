@@ -359,24 +359,32 @@ export class Web3SolanaSwapChain implements SolanaSwapChain {
 
 // --------------------------------------------------------- shared quoting ----
 
+export type SwapDirection = "forward" | "reverse";
+
 export interface ValidatedQuoteRequest {
   inputMint: string;
   outputMint: string;
   inputAmount: bigint;
   slippageBps: number;
+  /** Forward = USDC-in (existing flow). Reverse = USDC-out, input is any SPL. */
+  direction: SwapDirection;
 }
 
 /**
- * Validate and normalize the public /quote input. Returns either the
- * coerced shape or an error code the route hands to the caller as a
- * 400.
+ * Validate and normalize the public /quote input.
  *
- * Hardcoded constraints:
- *   - input_mint MUST be USDC mainnet (v1 only accepts USDC-in).
- *   - output_mint MUST NOT equal input_mint.
- *   - input_amount in (0, MAX_INPUT_USDC_ATOMIC] atomic units.
+ * Constraints:
+ *   - Exactly one of {input_mint, output_mint} MUST be USDC. Token-to-
+ *     token in one hop is out of scope; agents that want X → Y route
+ *     through USDC in two quote calls.
+ *   - output_mint != input_mint.
+ *   - input_amount > 0 atomic.
+ *   - Forward direction (USDC → token) caps input at MAX_INPUT_USDC_ATOMIC
+ *     pre-quote. Reverse direction (token → USDC) cannot cap pre-quote
+ *     because the USD value isn't known yet — the route handler enforces
+ *     the cap on `expected_output` post-quote.
  *   - slippage_bps in [MIN, MAX].
- *   - mint strings must parse as Solana PublicKeys.
+ *   - Mint strings must parse as Solana PublicKeys.
  */
 export function validateQuoteInput(raw: unknown):
   | { ok: true; req: ValidatedQuoteRequest }
@@ -396,14 +404,16 @@ export function validateQuoteInput(raw: unknown):
   if (typeof outputMint !== "string") {
     return { ok: false, error: "missing_output_mint", field: "output_mint" };
   }
-  if (inputMint !== USDC_MINT) {
-    return { ok: false, error: "input_must_be_usdc", field: "input_mint" };
-  }
   if (outputMint === inputMint) {
     return { ok: false, error: "output_equals_input", field: "output_mint" };
   }
+  const inputIsUsdc = inputMint === USDC_MINT;
+  const outputIsUsdc = outputMint === USDC_MINT;
+  if (!inputIsUsdc && !outputIsUsdc) {
+    return { ok: false, error: "one_side_must_be_usdc" };
+  }
+  const direction: SwapDirection = inputIsUsdc ? "forward" : "reverse";
   try {
-    // Validate base58.
     new PublicKey(inputMint);
     new PublicKey(outputMint);
   } catch {
@@ -422,7 +432,9 @@ export function validateQuoteInput(raw: unknown):
   if (amount <= 0n) {
     return { ok: false, error: "invalid_input_amount", field: "input_amount" };
   }
-  if (amount > MAX_INPUT_USDC_ATOMIC) {
+  // Forward cap is USDC-denominated and fast to apply pre-quote.
+  // Reverse cap is enforced on expected_output downstream.
+  if (direction === "forward" && amount > MAX_INPUT_USDC_ATOMIC) {
     return {
       ok: false,
       error: "input_amount_exceeds_max",
@@ -440,7 +452,7 @@ export function validateQuoteInput(raw: unknown):
 
   return {
     ok: true,
-    req: { inputMint, outputMint, inputAmount: amount, slippageBps: slippage },
+    req: { inputMint, outputMint, inputAmount: amount, slippageBps: slippage, direction },
   };
 }
 
@@ -504,6 +516,26 @@ export interface QuoteResponseShape {
    * ATA yet…". Absent on the cheapest path.
    */
   gas_warning?: string;
+  /**
+   * "forward" = USDC → SPL (the original flow; total_cost is paid in
+   * USDC via x402).
+   * "reverse" = SPL → USDC; total_cost is ONLY the service fee in
+   * USDC. The input SPL token is pulled from the buyer's wallet via
+   * a previously-set SPL delegate authority — see requires_approval.
+   */
+  direction: SwapDirection;
+  /**
+   * True for reverse swaps — the buyer must `SPL Token::Approve` the
+   * swap liquidity wallet as a delegate over `input_amount` of
+   * `input_token` BEFORE calling /execute. False for forward swaps.
+   */
+  requires_approval: boolean;
+  /**
+   * For reverse swaps: the address the buyer must grant SPL delegate
+   * authority to. Equal to the swap liquidity wallet
+   * (SWAP_SOLANA_ADDRESS). Absent for forward swaps.
+   */
+  approval_target?: string;
 }
 
 export interface BuildQuoteResponseArgs {
@@ -516,6 +548,14 @@ export interface BuildQuoteResponseArgs {
   priceImpactPct: number;
   expiresAt: Date;
   publicBaseUrl: string;
+  /** Direction the quote covers. */
+  direction: SwapDirection;
+  /**
+   * For reverse quotes — the swap liquidity wallet address that needs
+   * SPL delegate authority before /execute. Required when
+   * direction === "reverse"; ignored otherwise.
+   */
+  approvalTarget?: string;
   /**
    * Gas-cost guard result for this token+wallet pair. When supplied,
    * the response includes estimated_gas_cost_usd / minimum_input_atomic
@@ -530,6 +570,15 @@ export function buildQuoteResponse(
 ): QuoteResponseShape {
   const inputView = toView(args.inputMeta);
   const outputView = toView(args.outputMeta);
+  // x402 always settles in USDC. Forward: buyer pays input+fee to seed
+  // the swap. Reverse: the swap is funded by pulling input SPL from
+  // buyer via delegate authority, so x402 collects only the service
+  // fee — buyer keeps the gross USDC output.
+  const totalCost =
+    args.direction === "forward"
+      ? args.inputAmount + args.fee
+      : args.fee;
+  const totalCostMeta = args.direction === "forward" ? args.inputMeta : outputMetaIsUsdc(args.outputMeta);
   const out: QuoteResponseShape = {
     quote_id: args.quoteId,
     input_token: inputView,
@@ -541,12 +590,17 @@ export function buildQuoteResponse(
     expected_output_human: formatTokenAmount(args.expectedOutput, args.outputMeta),
     price_impact_pct: args.priceImpactPct,
     fee: args.fee.toString(),
-    fee_human: formatTokenAmount(args.fee, args.inputMeta),
-    total_cost: (args.inputAmount + args.fee).toString(),
-    total_cost_human: formatTokenAmount(args.inputAmount + args.fee, args.inputMeta),
+    fee_human: formatTokenAmount(args.fee, totalCostMeta),
+    total_cost: totalCost.toString(),
+    total_cost_human: formatTokenAmount(totalCost, totalCostMeta),
     expires_at: args.expiresAt.toISOString(),
     x402_pay_url: `${args.publicBaseUrl}/v1/swap/solana/execute/${args.quoteId}`,
+    direction: args.direction,
+    requires_approval: args.direction === "reverse",
   };
+  if (args.direction === "reverse" && args.approvalTarget !== undefined) {
+    out.approval_target = args.approvalTarget;
+  }
   if (args.gasGuard !== undefined) {
     const fields = buildGasGuardQuoteFields(args.gasGuard);
     out.estimated_gas_cost_usd = fields.estimated_gas_cost_usd;
@@ -554,6 +608,21 @@ export function buildQuoteResponse(
     if (fields.warning !== undefined) out.gas_warning = fields.warning;
   }
   return out;
+}
+
+/**
+ * For reverse swaps, the fee is denominated in USDC (the output side).
+ * Caller passes outputMeta already, which IS USDC by validateQuoteInput
+ * — defensive helper in case a future caller forgets to enforce that.
+ */
+function outputMetaIsUsdc(meta: TokenMetadata): TokenMetadata {
+  if (meta.mint === USDC_MINT) return meta;
+  return {
+    mint: USDC_MINT,
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+  };
 }
 
 function toView(meta: TokenMetadata): TokenMetadataView {
@@ -983,30 +1052,56 @@ export function registerSwapRoutes(
       }
 
       const expectedOutput = BigInt(quote.outAmount);
-      const fee = computeFee(vreq.inputAmount);
+      // Reverse cap: USD value isn't known pre-quote, so we enforce
+      // MAX_INPUT_USDC_ATOMIC against expected_output here. Same
+      // dollar exposure ceiling for both directions.
+      if (vreq.direction === "reverse" && expectedOutput > MAX_INPUT_USDC_ATOMIC) {
+        return reply.code(400).send({
+          error: "expected_output_exceeds_max",
+          detail: `Reverse swap output ${expectedOutput} > cap ${MAX_INPUT_USDC_ATOMIC} (USDC atomic).`,
+        });
+      }
+      // Fee always denominated in USDC. Forward: 1% of input (USDC).
+      // Reverse: 1% of expected_output (USDC).
+      const feeBase =
+        vreq.direction === "forward" ? vreq.inputAmount : expectedOutput;
+      const fee = computeFee(feeBase);
       const quoteId = `q_${randomUUID().replace(/-/g, "")}`;
       const expiresAt = new Date(Date.now() + QUOTE_TTL_SECONDS * 1000);
 
-      // Gas-cost guard. Rejects swaps whose 1% fee can't cover the
-      // executor's gas for this token+wallet pair (mostly: new SPL
-      // mints whose ATA the swap wallet doesn't hold yet → +$0.40
-      // rent). Runs AFTER Jupiter so we know there's a route at all;
-      // runs BEFORE insertQuote so a rejected dust swap leaves no DB
-      // trace. The probe is a single getAccountInfo; the guard falls
-      // closed on RPC failure (see swap-gas-guard.ts).
+      // Gas-cost guard. Forward swap pays gas to: build buyer's output
+      // ATA if missing, plus Jupiter swap. Reverse swap pays gas to:
+      // create swap-wallet's INPUT ATA if missing, plus Jupiter swap,
+      // plus the output USDC transfer back to buyer. Same probe shape,
+      // different `outputMint` argument depending on direction:
+      //
+      //   forward: probe = swap wallet has output ATA?  → ATA rent
+      //     hits if not.
+      //   reverse: probe = swap wallet has input  ATA?  → ATA rent
+      //     hits if not, because transferChecked deposits the input
+      //     SPL into the swap wallet.
+      //
+      // Gas guard's USD floor is denominated against the USDC side of
+      // the trade (input for forward, expected_output for reverse) so
+      // it compares apples-to-apples.
+      const guardProbeMint =
+        vreq.direction === "forward" ? vreq.outputMint : vreq.inputMint;
+      const guardInputAtomic =
+        vreq.direction === "forward" ? vreq.inputAmount : expectedOutput;
       const gasProbe: SolanaGasProbe = {
         swapWalletHasOutputAta: (mint) => deps.chain.hasSwapWalletAta(mint),
       };
       const guard = await evaluateSolanaSwapGas({
-        inputAtomic: vreq.inputAmount,
-        outputMint: vreq.outputMint,
+        inputAtomic: guardInputAtomic,
+        outputMint: guardProbeMint,
         feeBps: FEE_BPS,
         probe: gasProbe,
       });
       if (!guard.ok) {
         req.log.info(
-          `swap: quote_too_small input=${vreq.inputAmount} min=${guard.minimumInputAtomic} ` +
-            `gas_usd=${guard.estimatedGasCostUsd} out=${vreq.outputMint}`,
+          `swap: quote_too_small dir=${vreq.direction} in=${vreq.inputAmount} ` +
+            `min=${guard.minimumInputAtomic} gas_usd=${guard.estimatedGasCostUsd} ` +
+            `probe_mint=${guardProbeMint}`,
         );
         return reply.code(400).send({
           error: guard.reason,
@@ -1058,6 +1153,10 @@ export function registerSwapRoutes(
           priceImpactPct: parsePriceImpact(quote.priceImpactPct),
           expiresAt,
           publicBaseUrl: deps.publicBaseUrl,
+          direction: vreq.direction,
+          ...(vreq.direction === "reverse"
+            ? { approvalTarget: deps.swapSigner.address }
+            : {}),
           gasGuard: guard,
         }),
       );

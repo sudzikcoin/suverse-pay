@@ -93,15 +93,50 @@ describe("validateQuoteInput", () => {
     expect(r.ok).toBe(false);
   });
 
-  it("rejects non-USDC input mint", () => {
+  it("accepts non-USDC input as reverse direction", () => {
     const r = validateQuoteInput({
       input_mint: REAL_WSOL,
       output_mint: REAL_USDC,
       input_amount: "1000000",
       slippage_bps: 100,
     });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.req.direction).toBe("reverse");
+  });
+
+  it("rejects when neither side is USDC", () => {
+    const r = validateQuoteInput({
+      input_mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+      output_mint: REAL_WSOL,
+      input_amount: "1000000",
+      slippage_bps: 100,
+    });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe("input_must_be_usdc");
+    if (!r.ok) expect(r.error).toBe("one_side_must_be_usdc");
+  });
+
+  it("forward direction enforces MAX cap pre-quote", () => {
+    const r = validateQuoteInput({
+      input_mint: REAL_USDC,
+      output_mint: REAL_WSOL,
+      input_amount: (MAX_INPUT_USDC_ATOMIC + 1n).toString(),
+      slippage_bps: 100,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("input_amount_exceeds_max");
+  });
+
+  it("reverse direction does NOT cap input pre-quote (caller checks expected_output)", () => {
+    // 10000 WSOL atomic is fine for reverse — input is in SPL atomic
+    // units, not USDC. The route handler caps on expected_output.
+    const r = validateQuoteInput({
+      input_mint: REAL_WSOL,
+      output_mint: REAL_USDC,
+      input_amount: "999999999999999999",
+      slippage_bps: 100,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.req.direction).toBe("reverse");
   });
 
   it("rejects amount above max", () => {
@@ -190,6 +225,7 @@ describe("buildQuoteResponse", () => {
       priceImpactPct: 0.05,
       expiresAt: new Date(1_900_000_000_000),
       publicBaseUrl: "https://proxy.suverse.io",
+      direction: "forward",
     });
     expect(r.quote_id).toBe("q_abc");
     expect(r.x402_pay_url).toBe(
@@ -211,6 +247,7 @@ describe("buildQuoteResponse", () => {
       priceImpactPct: 0,
       expiresAt: new Date(1_900_000_000_000),
       publicBaseUrl: "https://proxy.suverse.io",
+      direction: "forward",
     });
     expect(r.output_token).toEqual({
       mint: WSOL_MINT,
@@ -221,6 +258,53 @@ describe("buildQuoteResponse", () => {
     expect(r.input_token.symbol).toBe("USDC");
     expect(r.input_token_mint).toBe(USDC_MINT);
     expect(r.output_token_mint).toBe(WSOL_MINT);
+  });
+
+  it("reverse direction: total_cost is fee-only, denominated in USDC", () => {
+    // Reverse: input is WSOL, output is USDC. expected_output = 10 USDC.
+    // Fee on the USDC side = 100_000 (0.10 USDC). total_cost should be
+    // ONLY the fee — buyer's WSOL is pulled via delegate, not paid via
+    // x402.
+    const r = buildQuoteResponse({
+      quoteId: "q_rev",
+      inputMeta: TEST_WSOL_META,
+      outputMeta: TEST_USDC_META,
+      inputAmount: 50_000_000n, // 0.05 SOL
+      expectedOutput: 10_000_000n, // 10 USDC
+      fee: 100_000n, // 0.10 USDC
+      priceImpactPct: 0.01,
+      expiresAt: new Date(1_900_000_000_000),
+      publicBaseUrl: "https://proxy.suverse.io",
+      direction: "reverse",
+      approvalTarget: "HFYkH6SUuXLvzGbuB76vJ8u76NG3X25wdd1A7mDM4cSw",
+    });
+    expect(r.direction).toBe("reverse");
+    expect(r.requires_approval).toBe(true);
+    expect(r.approval_target).toBe(
+      "HFYkH6SUuXLvzGbuB76vJ8u76NG3X25wdd1A7mDM4cSw",
+    );
+    expect(r.total_cost).toBe("100000");
+    expect(r.total_cost_human).toBe("0.1 USDC");
+    expect(r.fee_human).toBe("0.1 USDC");
+    expect(r.expected_output_human).toBe("10 USDC");
+  });
+
+  it("forward direction sets requires_approval=false and omits approval_target", () => {
+    const r = buildQuoteResponse({
+      quoteId: "q_fwd",
+      inputMeta: TEST_USDC_META,
+      outputMeta: TEST_WSOL_META,
+      inputAmount: 10_000_000n,
+      expectedOutput: 47_900_000n,
+      fee: 100_000n,
+      priceImpactPct: 0,
+      expiresAt: new Date(1_900_000_000_000),
+      publicBaseUrl: "https://proxy.suverse.io",
+      direction: "forward",
+    });
+    expect(r.direction).toBe("forward");
+    expect(r.requires_approval).toBe(false);
+    expect(r.approval_target).toBeUndefined();
   });
 
   it("renders UNKNOWN tokens without crashing", () => {
@@ -240,6 +324,7 @@ describe("buildQuoteResponse", () => {
       priceImpactPct: 0,
       expiresAt: new Date(1_900_000_000_000),
       publicBaseUrl: "https://proxy.suverse.io",
+      direction: "forward",
     });
     expect(r.expected_output_human).toBe("12345 UNKNOWN");
     expect(r.output_token.decimals).toBe(0);

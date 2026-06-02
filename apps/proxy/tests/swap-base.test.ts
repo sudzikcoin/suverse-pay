@@ -10,6 +10,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildBaseQuoteResponse,
   computeFee,
+  MAX_INPUT_USDC_ATOMIC,
+  USDC_BASE,
+  validateBaseQuoteInput,
 } from "../src/swap-base.js";
 import type { TokenMetadata } from "../src/lib/token-metadata.js";
 import type { GasGuardOk } from "../src/swap-gas-guard.js";
@@ -26,6 +29,62 @@ const WETH_META: TokenMetadata = {
   name: "Wrapped Ether",
   decimals: 18,
 };
+
+describe("validateBaseQuoteInput", () => {
+  it("accepts forward (USDC → WETH)", () => {
+    const r = validateBaseQuoteInput({
+      input_token: USDC_BASE,
+      output_token: WETH_META.mint,
+      input_amount: "10000000",
+      slippage_bps: 100,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.req.direction).toBe("forward");
+  });
+
+  it("accepts reverse (WETH → USDC)", () => {
+    const r = validateBaseQuoteInput({
+      input_token: WETH_META.mint,
+      output_token: USDC_BASE,
+      input_amount: "500000000000000",
+      slippage_bps: 100,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.req.direction).toBe("reverse");
+  });
+
+  it("rejects when neither side is USDC", () => {
+    const r = validateBaseQuoteInput({
+      input_token: WETH_META.mint,
+      output_token: "0x940181a94A35A4569E4529A3CDfB74e38FD98631", // AERO
+      input_amount: "1000000",
+      slippage_bps: 100,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("one_side_must_be_usdc");
+  });
+
+  it("forward direction enforces MAX cap pre-quote", () => {
+    const r = validateBaseQuoteInput({
+      input_token: USDC_BASE,
+      output_token: WETH_META.mint,
+      input_amount: (MAX_INPUT_USDC_ATOMIC + 1n).toString(),
+      slippage_bps: 100,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("input_amount_exceeds_max");
+  });
+
+  it("reverse direction does NOT cap input pre-quote", () => {
+    const r = validateBaseQuoteInput({
+      input_token: WETH_META.mint,
+      output_token: USDC_BASE,
+      input_amount: "999999999999999999999",
+      slippage_bps: 100,
+    });
+    expect(r.ok).toBe(true);
+  });
+});
 
 describe("Base computeFee", () => {
   it("computes 1% with round-up", () => {
@@ -46,6 +105,7 @@ describe("buildBaseQuoteResponse", () => {
       tool: "uniswap-v3",
       expiresAt: new Date(1_900_000_000_000),
       publicBaseUrl: "https://proxy.suverse.io",
+      direction: "forward",
     });
     expect(r.quote_id).toBe("qb_xyz");
     expect(r.x402_pay_url).toBe(
@@ -88,6 +148,7 @@ describe("buildBaseQuoteResponse", () => {
       tool: "uniswap-v3",
       expiresAt: new Date(1_900_000_000_000),
       publicBaseUrl: "https://proxy.suverse.io",
+      direction: "forward",
     });
     expect(r.expected_output_human).toBe("12345 UNKNOWN");
     expect(r.output_token.decimals).toBe(0);
@@ -120,6 +181,49 @@ describe("buildBaseQuoteResponse", () => {
     expect(r.gas_warning).toMatch(/allowance/i);
   });
 
+  it("reverse direction: total_cost is fee-only + requires_approval=true", () => {
+    const r = buildBaseQuoteResponse({
+      quoteId: "qb_rev",
+      inputMeta: WETH_META,
+      outputMeta: USDC_META,
+      inputAmount: 500_000_000_000_000n, // 0.0005 WETH
+      expectedOutput: 1_400_000n, // 1.40 USDC
+      fee: 14_000n, // 0.014 USDC
+      tool: "sushiswap",
+      expiresAt: new Date(1_900_000_000_000),
+      publicBaseUrl: "https://proxy.suverse.io",
+      direction: "reverse",
+      approvalTarget: "0x4261701A4dDf4625EBfA80CEefB5B3B2b5453B2E",
+    });
+    expect(r.direction).toBe("reverse");
+    expect(r.requires_approval).toBe(true);
+    expect(r.approval_target).toBe(
+      "0x4261701A4dDf4625EBfA80CEefB5B3B2b5453B2E",
+    );
+    expect(r.total_cost).toBe("14000");
+    expect(r.total_cost_human).toBe("0.014 USDC");
+    expect(r.fee_human).toBe("0.014 USDC");
+    expect(r.expected_output_human).toBe("1.4 USDC");
+  });
+
+  it("forward direction: requires_approval=false, approval_target absent", () => {
+    const r = buildBaseQuoteResponse({
+      quoteId: "qb_fwd",
+      inputMeta: USDC_META,
+      outputMeta: WETH_META,
+      inputAmount: 10_000_000n,
+      expectedOutput: 2_500_000_000_000_000n,
+      fee: 100_000n,
+      tool: "uniswap-v3",
+      expiresAt: new Date(1_900_000_000_000),
+      publicBaseUrl: "https://proxy.suverse.io",
+      direction: "forward",
+    });
+    expect(r.direction).toBe("forward");
+    expect(r.requires_approval).toBe(false);
+    expect(r.approval_target).toBeUndefined();
+  });
+
   it("omits gas-guard fields when no guard is supplied", () => {
     const r = buildBaseQuoteResponse({
       quoteId: "qb_no_guard",
@@ -131,6 +235,7 @@ describe("buildBaseQuoteResponse", () => {
       tool: "uniswap-v3",
       expiresAt: new Date(1_900_000_000_000),
       publicBaseUrl: "https://proxy.suverse.io",
+      direction: "forward",
     });
     expect(r.minimum_input_atomic).toBeUndefined();
     expect(r.estimated_gas_cost_usd).toBeUndefined();
