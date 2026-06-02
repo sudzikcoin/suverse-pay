@@ -493,19 +493,32 @@ function toCdpRequest(req: VerifyRequest | SettleRequest): unknown {
   const cdpRequirements = toCdpRequirements(req.paymentRequirements);
   // Build a clean v2 paymentPayload matching the shape CDP's bazaar
   // crawler indexes by (mirrors what GovHub's Python facilitator sends
-  // verbatim — proven to index in ~7s on api.suverse.io). Three deltas
-  // vs the prior naive spread:
-  //   1) keep `payload` (inner signed authorization) only; drop the
-  //      v1-flat `scheme`/`network` top-levels our gateway middleware
-  //      added — CDP ignores them in v2 but they clutter the envelope.
-  //   2) lift any flattened `resource`/`description`/`mimeType` fields
-  //      out of `accepted` into a top-level `resource` object.
-  //   3) preserve `extensions` (e.g. `extensions.bazaar`) — the gateway
-  //      now forwards them via the `extensions` field on paymentPayload;
-  //      without this the bazaar discovery hint never reaches CDP and
-  //      the URL is never indexed.
+  // verbatim — proven to index in ~7s on api.suverse.io).
+  //
+  // INCIDENT 2026-06-02: dropping the top-level scheme/network from
+  // paymentPayload broke every /verify with HTTP 400 from CDP at some
+  // point between 04:33 UTC (last successful settle on that envelope
+  // shape) and 04:59 UTC (first ProviderError). CDP's discriminated
+  // union now rejects a paymentPayload without scheme + network — the
+  // V2 branch fails silently and the error surfaces as the V1 branch's
+  // "requires 'scheme'". Restoring the duplicated top-levels brings
+  // settles back without breaking the Bazaar-indexable envelope (which
+  // is driven by accepted + resource + extensions, not the absence of
+  // scheme/network).
+  //
+  // The other two deltas from c567baf stay:
+  //   - lift `resource`/`description`/`mimeType` to a top-level
+  //     `resource` object (CDP bazaar requirement),
+  //   - preserve `extensions.bazaar` from the inbound paymentPayload
+  //     for the same reason.
   const v2Payload: Record<string, unknown> = {
     x402Version,
+    ...(typeof payload["scheme"] === "string"
+      ? { scheme: payload["scheme"] }
+      : {}),
+    ...(typeof payload["network"] === "string"
+      ? { network: payload["network"] }
+      : {}),
     payload: payload["payload"],
     accepted: cdpRequirements,
   };
