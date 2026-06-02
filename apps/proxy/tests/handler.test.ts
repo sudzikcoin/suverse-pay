@@ -26,6 +26,7 @@ function makeConfig(over: Partial<ProxyConfigRow> = {}): ProxyConfigRow {
     originalMethod: "POST",
     displayName: "Forecast",
     description: "Weather forecast",
+    descriptionBazaar: null,
     priceAtomic: "50000",
     acceptedNetworks: ["eip155:8453"],
     payToEvm: "0x" + "1".repeat(40),
@@ -704,6 +705,102 @@ describe("handle", () => {
     expect(body.extensions?.bazaar).toBeDefined();
     expect(body.extensions?.bazaar?.info).toBeDefined();
     expect(body.extensions?.bazaar?.schema).toBeDefined();
+  });
+
+  it("prefers descriptionBazaar over long-form description on the 402 challenge", async () => {
+    // Pins the CDP description path: when seller_proxy_configs has a
+    // hand-tuned bazaar description, it (not the 1500-char marketing
+    // description) is what lands in paymentRequirements.description
+    // and downstream in CDP's /discovery feed.
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        return new Response(null, { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const longDescription = "A".repeat(1500);
+    const bazaarDescription =
+      "Short keyword-dense weather API for AI agents. Real-time forecast.";
+    const deps = makeDeps({
+      store: makeStore(
+        makeConfig({
+          description: longDescription,
+          descriptionBazaar: bazaarDescription,
+        }),
+      ),
+      fetchImpl: fetchMock,
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy.suverse.io/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(402);
+    const body = result.body as {
+      resource?: { description?: string };
+      accepts?: Array<{ description?: string }>;
+    };
+    const desc = body.resource?.description ?? body.accepts?.[0]?.description;
+    expect(desc).toBe(bazaarDescription);
+    expect(desc?.length).toBeLessThanOrEqual(320);
+  });
+
+  it("slices long-form description to 320 chars when descriptionBazaar is null", async () => {
+    // Safety fallback: a seller who hasn't backfilled descriptionBazaar
+    // still gets a CDP-compatible cutoff rather than a 1500-char string
+    // that CDP would silently truncate mid-sentence.
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (url === "https://upstream.example.com/forecast" && init?.method === "HEAD") {
+        return new Response(null, { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const longDescription = "X".repeat(1500);
+    const deps = makeDeps({
+      store: makeStore(
+        makeConfig({
+          description: longDescription,
+          descriptionBazaar: null,
+        }),
+      ),
+      fetchImpl: fetchMock,
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "weather",
+        method: "POST",
+        resourceUrl: "https://proxy.suverse.io/v1/proxy/reskey_test/weather",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: {},
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(402);
+    const body = result.body as {
+      resource?: { description?: string };
+      accepts?: Array<{ description?: string }>;
+    };
+    const desc = body.resource?.description ?? body.accepts?.[0]?.description;
+    expect(desc?.length).toBe(320);
   });
 
   it("omits extensions when no catalog row matches (un-approved proxy)", async () => {

@@ -158,6 +158,7 @@ function makeConfig(over: Partial<ProxyConfigRow> = {}): ProxyConfigRow {
     originalMethod: "POST",
     displayName: "Simulator",
     description: null,
+    descriptionBazaar: null,
     priceAtomic: "100000",
     acceptedNetworks: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
     payToEvm: null,

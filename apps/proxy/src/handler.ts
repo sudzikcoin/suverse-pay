@@ -325,11 +325,24 @@ export async function handle(
     }
   }
 
+  // Description forwarded to CDP via paymentRequirements.description.
+  // CDP caps the field at ~320 ASCII chars (silently truncates the
+  // tail), so prefer a hand-tuned keyword-dense `description_bazaar`
+  // when the seller has populated one. Fall back to slicing the
+  // long-form `description` to 320 so the truncation we ship matches
+  // a sentence boundary as far as possible, rather than whatever CDP
+  // would have cut to.
+  const cdpDescription =
+    config.descriptionBazaar ??
+    (config.description !== null && config.description.length > 320
+      ? config.description.slice(0, 320)
+      : (config.description ?? config.displayName ?? undefined));
+
   const middlewareOpts: MiddlewareOptions = {
     apiKey: deps.facilitatorApiKey,
     facilitator: deps.facilitatorUrl,
     acceptedPayments: accepted,
-    description: config.description ?? config.displayName ?? undefined,
+    description: cdpDescription,
     x402Version: 2,
     settle: true,
     fetchImpl,

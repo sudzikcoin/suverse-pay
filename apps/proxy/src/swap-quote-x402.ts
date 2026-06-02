@@ -67,18 +67,18 @@ export const QUOTE_X402_AMOUNT_ATOMIC = "1000";
  * cutoff which has drifted slightly in past schema updates.
  */
 export const SOLANA_QUOTE_DESCRIPTION =
-  "SuVerse Solana Swap: bidirectional USDC SPL token swap aggregator " +
-  "via Jupiter v6 across Raydium, Orca, Meteora. Memecoins BONK WIF " +
-  "POPCAT, majors SOL JUP JTO PYTH. POST /v1/swap/solana/quote for " +
-  "quote_id; POST execute URL with x402 payment to swap. AI agent, " +
-  "bot, agentic DeFi, payable swap. 1% fee.";
+  "Bidirectional SPL token swap aggregator on Solana mainnet via " +
+  "Jupiter v6 routing across 30+ DEXs (Raydium, Orca, Meteora, " +
+  "Phoenix). USDC to BONK WIF POPCAT JUP RAY ORCA SOL MEW BOME or " +
+  "any SPL, and reverse to USDC. Two-step quote/execute x402 flow. " +
+  "1% fee. AI agent swap. memecoin DEX.";
 
 export const BASE_QUOTE_DESCRIPTION =
-  "SuVerse Base Swap: bidirectional USDC ERC20 token swap aggregator " +
-  "via LiFi across Uniswap V3, Aerodrome, BaseSwap, SushiSwap. " +
-  "Memecoins BRETT TOSHI DEGEN, majors WETH AERO cbBTC. POST " +
-  "/v1/swap/base/quote for quote_id; POST execute URL with x402 " +
-  "payment to swap. AI agent, bot, agentic DeFi, payable swap. 1% fee.";
+  "Bidirectional ERC20 token swap aggregator on Base mainnet via " +
+  "LiFi routing across 20+ DEXs (Uniswap V3, Aerodrome, BaseSwap, " +
+  "SushiSwap). USDC to WETH AERO DEGEN BRETT TOSHI cbETH cbBTC or " +
+  "any ERC20, and reverse to USDC. Two-step quote/execute x402 flow. " +
+  "1% fee. AI agent swap. L2 DEX.";
 
 // --------------------------------------------------------- input examples ----
 
