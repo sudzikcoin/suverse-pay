@@ -42,7 +42,7 @@ WITH proxy_ins AS (
     'https://proxy.suverse.io/v1/swap/solana/quote',
     'POST',
     'SuVerse Solana Token Swap',
-    'Swap USDC into any SPL token on Solana using Jupiter aggregator. Best price routing across Raydium, Orca, Meteora, and 30+ Solana DEXs. Two step flow: first POST /v1/swap/solana/quote to get a quote_id and total_cost, then pay via x402 to POST /v1/swap/solana/execute/{quote_id}. Maximum 50 USDC per swap. Slippage protection from 10 to 500 basis points. Output tokens delivered directly to your wallet within 30 seconds. Service fee is 1% of input. Quotes expire after 60 seconds. Minimum swap depends on token novelty: common SPL tokens accept inputs from $0.20, but the first swap into a brand-new mint requires at least $40 to cover one-time SPL associated-token-account rent (~$0.40). The /quote response carries estimated_gas_cost_usd and minimum_input_atomic; if your input is below the floor the call returns HTTP 400 quote_too_small with the bumped minimum.',
+    'Bidirectional SuVerse Solana swap (Jupiter-routed). USDC to any SPL token, or any SPL token to USDC. Two-step flow: POST /v1/swap/solana/quote with input_mint, output_mint, input_amount, slippage_bps; then POST /v1/swap/solana/execute/{quote_id} with x402 payment. Quote response carries direction, requires_approval, approval_target. Reverse swaps (token to USDC) require the buyer to call SPL Token Approve setting the swap wallet as a delegate over input_amount BEFORE /execute; quote returns requires_approval=true with approval_target. Forward x402 amount is input + 1 percent fee. Reverse x402 amount is the fee only (input pulled via delegate). Maximum 50 USDC per swap on either side. Slippage 10 to 500 bps. Output delivered to the paying wallet within 30 seconds. Quotes expire after 60 seconds. Minimum swap depends on direction and token novelty: forward common SPL from $0.20, brand-new SPL from $40 for ATA rent; reverse from $0.50 with input ATA present, $40 when the swap wallet has no input ATA yet. Errors: 400 quote_too_small with minimum_input_atomic; 412 needs_approval with current/required delegate amounts; 422 slippage_exceeded with expected_min/actual.',
     1000,
     ARRAY['solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'],
     'HFYkH6SUuXLvzGbuB76vJ8u76NG3X25wdd1A7mDM4cSw',
@@ -74,7 +74,7 @@ INSERT INTO catalog_listings (
 SELECT
   gen_random_uuid(),
   'SuVerse Solana Token Swap',
-  'Swap USDC into any SPL token on Solana via Jupiter aggregator. Two step flow: POST /v1/swap/solana/quote for price discovery, then POST /v1/swap/solana/execute/{quote_id} with x402 payment to settle the swap. Best routing across 30+ Solana DEXs. Maximum 50 USDC per swap. 1% service fee. Tokens delivered to the paying wallet within 30 seconds. Minimum input depends on output-token novelty: common SPL tokens accept from $0.20, brand-new mints require at least $40 to cover one-time ATA rent.',
+  'Bidirectional SuVerse Solana swap via Jupiter. USDC to any SPL token, or any SPL token to USDC. Two-step flow: POST /v1/swap/solana/quote then POST /v1/swap/solana/execute/{quote_id} with x402 payment. Reverse direction needs SPL Approve to the swap wallet first; quote returns requires_approval and approval_target. Maximum 50 USDC per swap, 1 percent fee, delivered within 30 seconds.',
   'https://proxy.suverse.io/v1/swap/solana/quote',
   ARRAY['solana','swap','dex','jupiter','spl','suverse'],
   1000,

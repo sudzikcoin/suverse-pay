@@ -70,19 +70,18 @@ const PUBLISH_AMOUNT_ATOMIC = "1000";
 // --------------------------------------------------------- bazaar block ----
 
 const SOLANA_DESCRIPTION =
-  "SuVerse Solana token swap. Step 1 POST /v1/swap/solana/quote with " +
-  "input_mint USDC, output_mint, input_amount, slippage_bps. Step 2 " +
-  "POST /v1/swap/solana/execute/<quote_id> with x402 payment for the " +
-  "total_cost returned by step 1. Output SPL tokens land on the paying " +
-  "wallet. Routed by Jupiter across 30 plus Solana DEXs. 1 percent fee.";
+  "SuVerse Solana swap. Two-way: USDC to any SPL token, or any SPL " +
+  "token to USDC. Step 1 POST /v1/swap/solana/quote with input/output " +
+  "mints and amount. Step 2 POST /v1/swap/solana/execute/{quote_id} " +
+  "with x402 payment. Reverse swap requires SPL Approve to the swap " +
+  "wallet first. Routed by Jupiter. 1 percent fee.";
 
 const BASE_DESCRIPTION =
-  "SuVerse Base ERC20 swap. Step 1 POST /v1/swap/base/quote with " +
-  "input_token USDC, output_token, input_amount, slippage_bps. Step 2 " +
-  "POST /v1/swap/base/execute/<quote_id> with x402 payment for the " +
-  "total_cost returned by step 1. Output tokens land on the paying " +
-  "wallet. Routed by LiFi across Uniswap V3, Aerodrome, SushiSwap. " +
-  "1 percent fee.";
+  "SuVerse Base swap. Two-way: USDC to any ERC20, or any ERC20 to USDC. " +
+  "Step 1 POST /v1/swap/base/quote with input/output tokens and amount. " +
+  "Step 2 POST /v1/swap/base/execute/{quote_id} with x402 payment. " +
+  "Reverse swap requires ERC20 approve to the swap wallet first. " +
+  "Routed by LiFi. 1 percent fee.";
 
 const SOLANA_QUOTE_INPUT_EXAMPLE: Record<string, unknown> = {
   input_mint: SOLANA_USDC_MINT,
