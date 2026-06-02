@@ -352,6 +352,28 @@ describe("POST /v1/swap/solana/quote", () => {
   let pool: import("pg").Pool;
   let app: FastifyInstance;
   let fetchImpl: ReturnType<typeof vi.fn>;
+  /**
+   * Quote is x402-paid (1 atomic USDC). Tests queue the Jupiter
+   * response with `queueJupiter`; the routed fetchImpl drains this
+   * queue after auto-stubbing the facilitator's /supported, /verify,
+   * /settle calls.
+   */
+  let jupiterQueue: Response[];
+  const queueJupiter = (r: Response) => jupiterQueue.push(r);
+
+  /**
+   * Stub X-Payment header. runProtocol only checks (scheme, network)
+   * against the seller's acceptedPayments — payload is forwarded
+   * verbatim to /verify, which our mock accepts unconditionally.
+   */
+  const STUB_PAYMENT_HEADER = Buffer.from(
+    JSON.stringify({
+      x402Version: 2,
+      scheme: "exact",
+      network: SOLANA_CAIP2,
+      payload: { signature: "stub", authorization: {} },
+    }),
+  ).toString("base64");
 
   const signer: SwapSignerConfig = {
     address: SWAP_WALLET_ADDR,
@@ -370,7 +392,33 @@ describe("POST /v1/swap/solana/quote", () => {
 
   beforeEach(async () => {
     pool = await freshDb();
-    fetchImpl = vi.fn();
+    jupiterQueue = [];
+    fetchImpl = vi.fn().mockImplementation(async (url: unknown) => {
+      const u = String(url);
+      if (u.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      if (u.endsWith("/facilitator/verify")) {
+        return new Response(
+          JSON.stringify({ isValid: true, payer: FAKE_PAYER }),
+          { status: 200 },
+        );
+      }
+      if (u.endsWith("/facilitator/settle")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction: "stub-settle-tx",
+            network: SOLANA_CAIP2,
+            payer: FAKE_PAYER,
+          }),
+          { status: 200 },
+        );
+      }
+      const r = jupiterQueue.shift();
+      if (r) return r;
+      throw new Error(`unexpected fetch: ${u}`);
+    });
     // restoreAllMocks() in afterEach wipes the describe-scope
     // mockResolvedValue, so re-apply the gas-guard default here. Any
     // test that wants the "ATA missing" path overrides via
@@ -406,10 +454,40 @@ describe("POST /v1/swap/solana/quote", () => {
     vi.restoreAllMocks();
   });
 
+  it("402 when called without X-Payment, with bazaar extension", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/swap/solana/quote",
+      payload: {
+        input_mint: REAL_USDC,
+        output_mint: REAL_WSOL,
+        input_amount: "10000000",
+        slippage_bps: 100,
+      },
+    });
+    expect(res.statusCode).toBe(402);
+    const body = res.json();
+    expect(body.accepts).toHaveLength(1);
+    expect(body.accepts[0].network).toBe(SOLANA_CAIP2);
+    expect(body.accepts[0].asset).toBe(USDC_MINT);
+    expect(body.accepts[0].payTo).toBe(SWAP_WALLET_ADDR);
+    expect(body.accepts[0].amount).toBe("1");
+    expect(body.resource?.url).toBe(
+      "https://proxy.suverse.io/v1/swap/solana/quote",
+    );
+    expect(body.extensions?.bazaar?.info).toBeTruthy();
+    expect(body.extensions?.bazaar?.info?.input).toBeTruthy();
+    expect(body.extensions?.bazaar?.info?.output?.example).toBeTypeOf("object");
+    expect(
+      Array.isArray(body.extensions?.bazaar?.info?.output?.example),
+    ).toBe(false);
+  });
+
   it("400 on missing input_mint", async () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/swap/solana/quote",
+      headers: { "x-payment": STUB_PAYMENT_HEADER },
       payload: { output_mint: REAL_WSOL, input_amount: "10000000", slippage_bps: 100 },
     });
     expect(res.statusCode).toBe(400);
@@ -420,6 +498,7 @@ describe("POST /v1/swap/solana/quote", () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/swap/solana/quote",
+      headers: { "x-payment": STUB_PAYMENT_HEADER },
       payload: {
         input_mint: REAL_USDC,
         output_mint: REAL_WSOL,
@@ -435,6 +514,7 @@ describe("POST /v1/swap/solana/quote", () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/swap/solana/quote",
+      headers: { "x-payment": STUB_PAYMENT_HEADER },
       payload: {
         input_mint: REAL_USDC,
         output_mint: REAL_WSOL,
@@ -447,7 +527,7 @@ describe("POST /v1/swap/solana/quote", () => {
   });
 
   it("200 happy path persists row and returns quote_id", async () => {
-    fetchImpl.mockResolvedValueOnce(
+    queueJupiter(
       new Response(
         JSON.stringify({
           inputMint: REAL_USDC,
@@ -467,6 +547,7 @@ describe("POST /v1/swap/solana/quote", () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/swap/solana/quote",
+      headers: { "x-payment": STUB_PAYMENT_HEADER },
       payload: {
         input_mint: REAL_USDC,
         output_mint: REAL_WSOL,
@@ -475,6 +556,7 @@ describe("POST /v1/swap/solana/quote", () => {
       },
     });
     expect(res.statusCode).toBe(200);
+    expect(res.headers["payment-response"]).toBeDefined();
     const body = res.json();
     expect(body.quote_id).toMatch(/^q_[a-f0-9]+$/);
     expect(body.expected_output).toBe("47900000");
@@ -509,12 +591,11 @@ describe("POST /v1/swap/solana/quote", () => {
   });
 
   it("502 when Jupiter returns 5xx", async () => {
-    fetchImpl.mockResolvedValueOnce(
-      new Response("upstream go boom", { status: 503 }),
-    );
+    queueJupiter(new Response("upstream go boom", { status: 503 }));
     const res = await app.inject({
       method: "POST",
       url: "/v1/swap/solana/quote",
+      headers: { "x-payment": STUB_PAYMENT_HEADER },
       payload: {
         input_mint: REAL_USDC,
         output_mint: REAL_WSOL,
@@ -532,7 +613,7 @@ describe("POST /v1/swap/solana/quote", () => {
     (chain.hasSwapWalletAta as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       false,
     );
-    fetchImpl.mockResolvedValueOnce(
+    queueJupiter(
       new Response(
         JSON.stringify({
           inputMint: REAL_USDC,
@@ -551,6 +632,7 @@ describe("POST /v1/swap/solana/quote", () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/swap/solana/quote",
+      headers: { "x-payment": STUB_PAYMENT_HEADER },
       payload: {
         input_mint: REAL_USDC,
         output_mint: REAL_WSOL,
@@ -574,7 +656,7 @@ describe("POST /v1/swap/solana/quote", () => {
     (chain.hasSwapWalletAta as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       false,
     );
-    fetchImpl.mockResolvedValueOnce(
+    queueJupiter(
       new Response(
         JSON.stringify({
           inputMint: REAL_USDC,
@@ -593,6 +675,7 @@ describe("POST /v1/swap/solana/quote", () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/swap/solana/quote",
+      headers: { "x-payment": STUB_PAYMENT_HEADER },
       payload: {
         input_mint: REAL_USDC,
         output_mint: REAL_WSOL,
@@ -610,7 +693,7 @@ describe("POST /v1/swap/solana/quote", () => {
   });
 
   it("200 happy path on common token does NOT surface gas_warning (floor at absolute default)", async () => {
-    fetchImpl.mockResolvedValueOnce(
+    queueJupiter(
       new Response(
         JSON.stringify({
           inputMint: REAL_USDC,
@@ -629,6 +712,7 @@ describe("POST /v1/swap/solana/quote", () => {
     const res = await app.inject({
       method: "POST",
       url: "/v1/swap/solana/quote",
+      headers: { "x-payment": STUB_PAYMENT_HEADER },
       payload: {
         input_mint: REAL_USDC,
         output_mint: REAL_WSOL,

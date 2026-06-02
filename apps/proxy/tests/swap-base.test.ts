@@ -11,14 +11,18 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newDb } from "pg-mem";
 import type { Address, Hex } from "viem";
+import Fastify, { type FastifyInstance } from "fastify";
 import {
+  BASE_CAIP2,
   buildBaseQuoteResponse,
   computeFee,
   MAX_INPUT_USDC_ATOMIC,
+  registerBaseSwapRoutes,
   USDC_BASE,
   validateBaseQuoteInput,
   executeBaseSwap,
   type BaseSwapChain,
+  type BaseSwapSignerConfig,
 } from "../src/swap-base.js";
 import type { TokenMetadata } from "../src/lib/token-metadata.js";
 import type { GasGuardOk } from "../src/swap-gas-guard.js";
@@ -491,5 +495,92 @@ describe("executeBaseSwap (reverse direction)", () => {
       expect(r.expectedMin).toBe(1_386_000n);
       expect(r.actual).toBe(1_000_000n);
     }
+  });
+});
+
+// --------------------------------------------- POST /v1/swap/base/quote ----
+
+describe("POST /v1/swap/base/quote", () => {
+  let app: FastifyInstance;
+  let pool: import("pg").Pool;
+
+  const baseSigner: BaseSwapSignerConfig = {
+    address: SWAP_WALLET,
+    privateKey: ("0x" + "ab".repeat(32)) as Hex,
+  };
+
+  const baseChain: BaseSwapChain = {
+    readSwapWalletBalance: vi.fn().mockResolvedValue(0n),
+    readAllowance: vi.fn().mockResolvedValue(0n),
+    readAllowanceOf: vi.fn().mockResolvedValue(0n),
+    approveERC20: vi.fn(),
+    sendSwapTx: vi.fn(),
+    transferERC20: vi.fn(),
+    transferFromBuyer: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    pool = await freshDb();
+    // Routed fetchImpl: facilitator paths return success stubs; any
+    // other URL throws because the 402-challenge test never reaches
+    // LiFi.
+    const fetchImpl = vi.fn().mockImplementation(async (url: unknown) => {
+      const u = String(url);
+      if (u.endsWith("/facilitator/supported")) {
+        return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${u}`);
+    });
+    app = Fastify({ logger: false });
+    app.removeAllContentTypeParsers();
+    app.addContentTypeParser(
+      "*",
+      { parseAs: "buffer" },
+      (_req, body, done) => done(null, body),
+    );
+    registerBaseSwapRoutes(app, {
+      pool,
+      facilitatorUrl: "https://facilitator.example",
+      facilitatorApiKey: "sup_live_test",
+      swapSigner: baseSigner,
+      chain: baseChain,
+      publicBaseUrl: "https://proxy.suverse.io",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    await app.ready();
+  });
+
+  afterEach(async () => {
+    await app.close();
+    await pool.end();
+    vi.restoreAllMocks();
+  });
+
+  it("402 when called without X-Payment, with bazaar extension and 1-atomic accept", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/swap/base/quote",
+      payload: {
+        input_token: USDC_BASE,
+        output_token: WETH_META.mint,
+        input_amount: "10000000",
+        slippage_bps: 100,
+      },
+    });
+    expect(res.statusCode).toBe(402);
+    const body = res.json();
+    expect(body.accepts).toHaveLength(1);
+    expect(body.accepts[0].network).toBe(BASE_CAIP2);
+    expect(body.accepts[0].asset).toBe(USDC_BASE);
+    expect(body.accepts[0].payTo).toBe(SWAP_WALLET);
+    expect(body.accepts[0].amount).toBe("1");
+    expect(body.resource?.url).toBe(
+      "https://proxy.suverse.io/v1/swap/base/quote",
+    );
+    expect(body.extensions?.bazaar?.info).toBeTruthy();
+    expect(body.extensions?.bazaar?.info?.output?.example).toBeTypeOf("object");
+    expect(
+      Array.isArray(body.extensions?.bazaar?.info?.output?.example),
+    ).toBe(false);
   });
 });
