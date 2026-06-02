@@ -26,6 +26,7 @@ import {
   vi,
 } from "vitest";
 
+import { Keypair, type Connection } from "@solana/web3.js";
 import {
   buildQuoteResponse,
   computeFee,
@@ -37,6 +38,7 @@ import {
   USDC_MINT,
   parsePriceImpact,
   validateQuoteInput,
+  Web3SolanaSwapChain,
   WSOL_MINT,
   type SolanaSwapChain,
   type SwapSignerConfig,
@@ -755,7 +757,10 @@ function fakeChain(opts?: {
   return {
     signAndSendVersionedSwap: vi
       .fn()
-      .mockResolvedValue({ signature: opts?.signature ?? "swap_sig_123" }),
+      .mockResolvedValue({
+        signature: opts?.signature ?? "swap_sig_123",
+        slot: 12345,
+      }),
     transferOutput: vi
       .fn()
       .mockResolvedValue({ signature: opts?.transferSig ?? "xfer_sig_123" }),
@@ -970,6 +975,16 @@ describe("executeSolanaSwap", () => {
       amount: 47_800_000n,
       recipient: FAKE_PAYER,
     });
+    // The slot returned by signAndSendVersionedSwap MUST be threaded
+    // through to the post-swap balance read so a load-balanced RPC
+    // node still behind on confirmation cannot return pre-swap state.
+    // Both calls (pre and post) happen on readSwapWalletBalance; only
+    // the second one (post-swap) carries minContextSlot. Regression
+    // guard for swap 4fc91e05 / refund 6d3fe0d0 (2026-06-02).
+    const balanceCalls = chain.readSwapWalletBalance.mock.calls;
+    expect(balanceCalls).toHaveLength(2);
+    expect(balanceCalls[0]?.[1]).toBeUndefined();
+    expect(balanceCalls[1]?.[1]).toEqual({ minContextSlot: 12345 });
   });
 
   it("records refund + marks failed when on-chain swap throws", async () => {
@@ -1145,6 +1160,120 @@ describe("executeSolanaSwap", () => {
     }
     const row = await findByQuoteId(pool, quoteId);
     expect(row?.status).toBe("failed_slippage");
+  });
+});
+
+// ------------------------------- Web3SolanaSwapChain.readSwapWalletBalance ----
+//
+// The retry+pin contract is the production fix for the same class of RPC
+// race that bit Base on 2026-06-01 (see swap-base.ts:317-353 + commit
+// 83c5ca3). A naive `try { getAccount } catch { return 0n }` silently
+// converted any transient RPC error into a "delivered=0" reading,
+// which marked successful Jupiter swaps as failed_slippage and
+// orphaned the output token in the swap wallet (swap 4fc91e05,
+// 2026-06-02, 0.796397 USDC orphaned + 153,450 BONK already-swapped).
+
+describe("Web3SolanaSwapChain.readSwapWalletBalance", () => {
+  function buildChain(connStub: Partial<Connection>): Web3SolanaSwapChain {
+    const kp = Keypair.generate();
+    // Construct with a dummy URL — the real Connection is then
+    // replaced by the test stub. The keypair must be real (it
+    // derives a PublicKey for getAssociatedTokenAddressSync).
+    const chain = new Web3SolanaSwapChain({
+      rpcUrl: "http://127.0.0.1:1",
+      secretKey: kp.secretKey,
+    });
+    (chain as unknown as { conn: Partial<Connection> }).conn = connStub;
+    return chain;
+  }
+
+  it("returns 0n without retry when the ATA does not exist", async () => {
+    const getAccountInfo = vi.fn().mockResolvedValue(null);
+    const chain = buildChain({ getAccountInfo } as Partial<Connection>);
+    const out = await chain.readSwapWalletBalance(BONK_MINT);
+    expect(out).toBe(0n);
+    expect(getAccountInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it("propagates the error after exhausting retries (does NOT return 0n)", async () => {
+    vi.useFakeTimers();
+    try {
+      // mockImplementation (not mockRejectedValue) so each call
+      // constructs a fresh Promise inside the awaited function — avoids
+      // the eager-rejected-Promise warning Vitest emits when
+      // mockRejectedValue is paired with fake timers + multiple retries.
+      const getAccountInfo = vi.fn().mockImplementation(async () => {
+        throw new Error("rpc_unreachable");
+      });
+      const chain = buildChain({ getAccountInfo } as Partial<Connection>);
+      const promise = chain.readSwapWalletBalance(BONK_MINT);
+      // Attach rejection handler synchronously so the failed promise
+      // is never observed as unhandled while timers are draining.
+      const settled = promise.catch((e: unknown) => e as Error);
+      await vi.runAllTimersAsync();
+      const err = await settled;
+      expect((err as Error).message).toBe("rpc_unreachable");
+      // 1 initial attempt + 6 retries = 7 calls.
+      expect(getAccountInfo).toHaveBeenCalledTimes(7);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("succeeds on a later attempt when an early attempt throws transiently", async () => {
+    vi.useFakeTimers();
+    try {
+      // null after the throws — "ATA absent" → 0n. Avoids needing to
+      // hand-roll a TOKEN_PROGRAM account buffer for unpackAccount.
+      let calls = 0;
+      const getAccountInfo = vi.fn().mockImplementation(async () => {
+        calls += 1;
+        if (calls <= 2) throw new Error("slot_skipped");
+        return null;
+      });
+      const chain = buildChain({ getAccountInfo } as Partial<Connection>);
+      const promise = chain.readSwapWalletBalance(BONK_MINT);
+      await vi.runAllTimersAsync();
+      await expect(promise).resolves.toBe(0n);
+      expect(getAccountInfo).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("passes minContextSlot through to getAccountInfo when caller supplies one", async () => {
+    const getAccountInfo = vi.fn().mockResolvedValue(null);
+    const chain = buildChain({ getAccountInfo } as Partial<Connection>);
+    await chain.readSwapWalletBalance(BONK_MINT, { minContextSlot: 999_888 });
+    expect(getAccountInfo).toHaveBeenCalledTimes(1);
+    const cfg = getAccountInfo.mock.calls[0]?.[1];
+    expect(cfg).toMatchObject({
+      commitment: "confirmed",
+      minContextSlot: 999_888,
+    });
+  });
+
+  it("omits minContextSlot from the config when caller does not supply one", async () => {
+    const getAccountInfo = vi.fn().mockResolvedValue(null);
+    const chain = buildChain({ getAccountInfo } as Partial<Connection>);
+    await chain.readSwapWalletBalance(BONK_MINT);
+    const cfg = getAccountInfo.mock.calls[0]?.[1] as
+      | { minContextSlot?: number }
+      | undefined;
+    expect(cfg?.minContextSlot).toBeUndefined();
+  });
+
+  it("uses getBalance + lamports for WSOL_MINT (native SOL path)", async () => {
+    const getBalance = vi.fn().mockResolvedValue(2_500_000);
+    const chain = buildChain({ getBalance } as Partial<Connection>);
+    const out = await chain.readSwapWalletBalance(WSOL_MINT, {
+      minContextSlot: 42,
+    });
+    expect(out).toBe(2_500_000n);
+    expect(getBalance).toHaveBeenCalledTimes(1);
+    expect(getBalance.mock.calls[0]?.[1]).toMatchObject({
+      minContextSlot: 42,
+    });
   });
 });
 

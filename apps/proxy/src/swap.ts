@@ -56,6 +56,7 @@ import {
   getAssociatedTokenAddressSync,
   getAccount,
   getMint,
+  unpackAccount,
   createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import { runProtocol } from "@suverselabs/x402-server";
@@ -175,11 +176,14 @@ export interface SolanaSwapChain {
   /**
    * Signs the base64-encoded VersionedTransaction with the swap
    * keypair, broadcasts, and waits for `confirmed`. Returns the
-   * signature on success or throws.
+   * signature AND the RPC's slot at confirmation — callers thread
+   * the slot into the post-swap balance read via `minContextSlot`
+   * so a load-balanced RPC cannot return pre-swap state from a
+   * node a slot behind. Throws on revert/timeout.
    */
   signAndSendVersionedSwap(args: {
     swapTransactionB64: string;
-  }): Promise<{ signature: string }>;
+  }): Promise<{ signature: string; slot: number }>;
 
   /**
    * Transfer `amount` of `mint` from the swap wallet to `recipient`.
@@ -201,8 +205,23 @@ export interface SolanaSwapChain {
    * `mint`. Used to validate that the swap actually credited the
    * expected output before we forward to the buyer. For native SOL,
    * pass WSOL_MINT and we'll lamport-query the wallet.
+   *
+   * When `opts.minContextSlot` is supplied, the read is pinned —
+   * required after a freshly-confirmed swap so a load-balanced RPC
+   * (e.g. mainnet beta with multiple nodes) cannot return pre-swap
+   * state from a node that hasn't applied the slot yet.
+   * Implementations MUST retry transient RPC errors (slot-skipped /
+   * timeout) before giving up and propagating; the executor relies
+   * on this read for slippage-detection ground truth — a silent
+   * 0-return on transient error makes a successful Jupiter swap
+   * look like a failed_slippage and orphans the output token in
+   * the swap wallet. ATA-absent (legit empty account) still
+   * resolves to 0n without retry.
    */
-  readSwapWalletBalance(mint: string): Promise<bigint>;
+  readSwapWalletBalance(
+    mint: string,
+    opts?: { minContextSlot?: number },
+  ): Promise<bigint>;
 
   /**
    * Does the swap liquidity wallet already hold an associated-token-
@@ -258,7 +277,7 @@ export class Web3SolanaSwapChain implements SolanaSwapChain {
 
   async signAndSendVersionedSwap(args: {
     swapTransactionB64: string;
-  }): Promise<{ signature: string }> {
+  }): Promise<{ signature: string; slot: number }> {
     const txBytes = Buffer.from(args.swapTransactionB64, "base64");
     const tx = VersionedTransaction.deserialize(txBytes);
     tx.sign([this.keypair]);
@@ -295,7 +314,18 @@ export class Web3SolanaSwapChain implements SolanaSwapChain {
         )}`,
       );
     }
-    return { signature };
+    // `confirmTransaction` returns RpcResponseAndContext<SignatureResult>;
+    // context.slot is the RPC's current slot when the confirmed response
+    // was assembled — strictly ≥ the tx inclusion slot. Pinning the
+    // post-swap balance read to this value forces any subsequent RPC
+    // call to wait for a node that has caught up past it, which
+    // eliminates the "read returns pre-swap state" race we saw cost
+    // the QA bot 153,450 BONK on 2026-06-02.
+    const slot =
+      result && typeof result === "object" && "context" in result
+        ? (result as { context: { slot: number } }).context.slot
+        : 0;
+    return { signature, slot };
   }
 
   async transferOutput(args: {
@@ -361,21 +391,60 @@ export class Web3SolanaSwapChain implements SolanaSwapChain {
     return { signature };
   }
 
-  async readSwapWalletBalance(mint: string): Promise<bigint> {
-    if (mint === WSOL_MINT) {
-      const lamports = await this.conn.getBalance(this.keypair.publicKey);
-      return BigInt(lamports);
+  async readSwapWalletBalance(
+    mint: string,
+    opts?: { minContextSlot?: number },
+  ): Promise<bigint> {
+    // Helius (and Solana mainnet in general) is multi-node behind the
+    // scenes; a read pinned to a freshly-confirmed slot can land on a
+    // node that hasn't applied the slot yet and either error out or
+    // — worse — silently return pre-swap state. Both modes produced
+    // an orphan in production already (swap 4fc91e05 on 2026-06-02:
+    // Jupiter delivered 796397 USDC, this method returned 0, executor
+    // marked failed_slippage, refund worker tried to send BONK that
+    // had already been swapped away). Retry transient errors with
+    // backoffs that outlast a typical lagging-node window; pin to
+    // minContextSlot when caller supplies one. ATA-absent (null
+    // info) is NOT retried — that's a legitimate 0 balance.
+    const delaysMs = [500, 1000, 1000, 1500, 1500, 1500];
+    const config = (() => {
+      if (opts?.minContextSlot === undefined) {
+        return { commitment: RPC_COMMITMENT };
+      }
+      return {
+        commitment: RPC_COMMITMENT,
+        minContextSlot: opts.minContextSlot,
+      };
+    })();
+
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= delaysMs.length; attempt++) {
+      try {
+        if (mint === WSOL_MINT) {
+          const lamports = await this.conn.getBalance(
+            this.keypair.publicKey,
+            config,
+          );
+          return BigInt(lamports);
+        }
+        const ata = getAssociatedTokenAddressSync(
+          new PublicKey(mint),
+          this.keypair.publicKey,
+        );
+        const info = await this.conn.getAccountInfo(ata, config);
+        if (info === null) return 0n;
+        const acc = unpackAccount(ata, info, TOKEN_PROGRAM_ID);
+        return acc.amount;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < delaysMs.length) {
+          await new Promise((r) => setTimeout(r, delaysMs[attempt]));
+        }
+      }
     }
-    const ata = getAssociatedTokenAddressSync(
-      new PublicKey(mint),
-      this.keypair.publicKey,
-    );
-    try {
-      const acc = await getAccount(this.conn, ata);
-      return acc.amount;
-    } catch {
-      return 0n;
-    }
+    throw lastErr instanceof Error
+      ? lastErr
+      : new Error(`solana_balance_read_failed: ${String(lastErr)}`);
   }
 
   async hasSwapWalletAta(mint: string): Promise<boolean> {
@@ -1067,13 +1136,18 @@ export async function executeSolanaSwap(
     );
   }
 
-  // Sign, send, confirm.
+  // Sign, send, confirm. The returned slot is threaded into the
+  // post-swap balance read so an RPC node still behind on the
+  // confirmation slot cannot return pre-swap state and trigger a
+  // false `delivered_0_lt_min` slippage failure.
   let swapSignature: string;
+  let swapSlot: number;
   try {
     const r = await args.chain.signAndSendVersionedSwap({
       swapTransactionB64: swapTxB64,
     });
     swapSignature = r.signature;
+    swapSlot = r.slot;
   } catch (err) {
     return await handleFailure(
       args,
@@ -1086,7 +1160,10 @@ export async function executeSolanaSwap(
   // Verify the swap actually credited the expected output.
   let postBalance: bigint;
   try {
-    postBalance = await args.chain.readSwapWalletBalance(swap.outputToken);
+    postBalance = await args.chain.readSwapWalletBalance(
+      swap.outputToken,
+      swapSlot > 0 ? { minContextSlot: swapSlot } : undefined,
+    );
   } catch (err) {
     return await handleFailure(
       args,
