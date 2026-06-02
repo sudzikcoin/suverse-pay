@@ -11,22 +11,23 @@ import { cn } from "@/lib/utils";
  * in the URL query string so the page is shareable and the back
  * button works as a user expects.
  *
- * Categories aren't a curated list — they're whatever sellers type.
- * For v1 we expose the common ones inline (weather, finance, ai,
- * data, maps) plus a free-text "Other" hint; richer faceting comes
- * with the analytics work in a later sub-task.
+ * Categories are the v1 taxonomy backfilled by db migration 030.
+ * Buttons match the values stored in `catalog_listings.category`
+ * exactly so a click reliably narrows the feed.
  */
 const QUICK_CATEGORIES = [
-  "ai",
-  "data",
-  "finance",
+  "swap",
+  "crypto-prices",
+  "solana-tools",
+  "base-tools",
+  "cosmos-tools",
+  "defi-data",
+  "market-sentiment",
+  "forex",
   "weather",
-  "maps",
-  "gov",
-  "freight",
-  "image",
-  "audio",
-  "video",
+  "commodities",
+  "sec-filings",
+  "other",
 ];
 
 export function FiltersSidebar(): React.JSX.Element {

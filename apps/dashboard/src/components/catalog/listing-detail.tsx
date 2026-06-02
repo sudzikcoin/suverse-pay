@@ -5,6 +5,7 @@ import type { CatalogListing } from "@/lib/catalog-search";
 import { Button } from "@/components/ui/button";
 import { formatListingPrice } from "@/lib/format-price";
 import { networkLabel } from "@/lib/utils";
+import { CategoryBadge } from "./category-badge";
 import { NetworkBadges } from "./network-badges";
 import { StatusBadge } from "./status-badge";
 import { REGIONS } from "@/lib/regions-catalog";
@@ -40,11 +41,7 @@ export function ListingDetail({ listing }: ListingDetailProps): React.JSX.Elemen
         <header className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status="approved" verified={listing.isVerified} />
-            {listing.category !== null && (
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                {listing.category}
-              </span>
-            )}
+            <CategoryBadge category={listing.category} />
           </div>
           <h1 className="font-display text-3xl font-medium leading-tight text-foreground sm:text-4xl">
             {listing.title}

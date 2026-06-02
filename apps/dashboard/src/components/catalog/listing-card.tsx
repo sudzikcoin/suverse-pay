@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CatalogListing } from "@/lib/catalog-search";
+import { CategoryBadge } from "./category-badge";
 import { NetworkBadges } from "./network-badges";
 import { StatusBadge } from "./status-badge";
 import { formatListingPrice } from "@/lib/format-price";
@@ -41,9 +42,7 @@ export function ListingCard({ listing }: ListingCardProps): React.JSX.Element {
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-        <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
-          {listing.category ?? "uncategorized"}
-        </p>
+        <CategoryBadge category={listing.category} />
         {listing.priceAtomicMin !== null && (
           <p className="font-mono text-xs text-foreground/80">
             <span className="text-amber-300">
