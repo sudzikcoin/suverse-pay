@@ -43,67 +43,42 @@ const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const BASE_CAIP2 = "eip155:8453";
 
 /**
- * 1 atomic USDC. USDC has 6 decimals, so this is $0.000001 — the
- * smallest non-zero amount the x402 envelope can carry.
+ * Per-quote fee in atomic USDC (6-decimal). Set to 1000 atomic =
+ * $0.001 because CDP's hosted Solana facilitator empirically
+ * rejects amounts below ~$0.001 with a 400, even though x402 spec
+ * allows 1 atomic. $0.001 is still effectively free for buyers
+ * and matches the rate the previous one-shot __publish endpoints
+ * used to wake the same indexer.
  */
-export const QUOTE_X402_AMOUNT_ATOMIC = "1";
+export const QUOTE_X402_AMOUNT_ATOMIC = "1000";
 
 // --------------------------------------------------------- descriptions ----
 
 /**
- * Public description attached to the Solana /quote 402 challenge
- * and the `description` field of the indexed Bazaar entry. Kept
- * ASCII-only — em-dashes and other non-ASCII bytes have historically
- * caused CDP /verify schema rejections.
+ * Public description attached to the /quote 402 challenge's
+ * paymentRequirements.description field. Empirically CDP's /verify
+ * schema rejects anything > 320 chars (and any non-ASCII byte —
+ * em-dashes, smart quotes — same story per the
+ * suverse-solana-tx-simulator incident logged in swap-publish.ts).
+ * Pack the highest-value semantic-search terms first; verbose
+ * documentation goes in the catalog UI instead.
+ *
+ * Length budget: target ≤ 300 to leave headroom for CDP's exact
+ * cutoff which has drifted slightly in past schema updates.
  */
 export const SOLANA_QUOTE_DESCRIPTION =
-  "SuVerse Solana Swap - bidirectional token swap aggregator for Solana mainnet. " +
-  "Exchange USDC for any SPL token, or any SPL token for USDC, via Jupiter v6 " +
-  "routing across 30+ Solana DEXs including Raydium, Orca, Meteora, Lifinity, " +
-  "Phoenix, OpenBook, Saber. Supports memecoins BONK, WIF, POPCAT, MEW, BOME, " +
-  "FARTCOIN, GOAT, MOODENG and major tokens SOL, USDT, mSOL, JTO, JUP, PYTH, " +
-  "RNDR, RENDER, ORCA, RAY. Two-step flow. Step 1 POST /v1/swap/solana/quote " +
-  "(0.000001 USDC, 1 atomic) with body {input_mint, output_mint, input_amount, " +
-  "slippage_bps} returns quote_id, expected_output, x402_pay_url, " +
-  "expected_output_human, fee, total_cost, price_impact_pct, output_token " +
-  "metadata. Step 2 POST returned x402_pay_url with x402 payment for total_cost " +
-  "executes the swap. Output tokens delivered to paying wallet within 30 seconds. " +
-  "Slippage protection with bps tolerance. 1 percent service fee. Best price " +
-  "routing, real-time quote from Jupiter aggregator. Use cases: AI agent token " +
-  "swaps, automated trading bots, portfolio rebalancing, agentic DeFi, autonomous " +
-  "wallet operations, memecoin sniping, stablecoin exchange, SPL token conversion, " +
-  "on-chain trading, DEX aggregator API, x402 swap, payable swap, micro-swap, " +
-  "micropayment swap. Minimum swap depends on token novelty: known tokens with " +
-  "existing ATA 0.20 USD, new tokens requiring ATA creation 40 USD (covers Solana " +
-  "ATA rent). Reverse direction (token to USDC): requires SPL token approval to " +
-  "swap wallet before execute, returns 412 needs_approval if missing. Jupiter " +
-  "routes optimized for slippage and price. No KYC, no signup, payment via x402 " +
-  "USDC microtransactions on Solana mainnet.";
+  "SuVerse Solana Swap: bidirectional USDC SPL token swap aggregator " +
+  "via Jupiter v6 across Raydium, Orca, Meteora. Memecoins BONK WIF " +
+  "POPCAT, majors SOL JUP JTO PYTH. POST /v1/swap/solana/quote for " +
+  "quote_id; POST execute URL with x402 payment to swap. AI agent, " +
+  "bot, agentic DeFi, payable swap. 1% fee.";
 
 export const BASE_QUOTE_DESCRIPTION =
-  "SuVerse Base Swap - bidirectional token swap aggregator for Base mainnet. " +
-  "Exchange USDC for any ERC20 token, or any ERC20 token for USDC, via LiFi " +
-  "routing across 20+ Base DEXs including Uniswap V3, Aerodrome, BaseSwap, " +
-  "SushiSwap, KyberSwap, Curve, PancakeSwap, SyncSwap. Supports memecoins BRETT, " +
-  "TOSHI, DEGEN, DOGINME, NORMIE and major tokens WETH, AERO, cbETH, cbBTC, USDT, " +
-  "USDbC, DAI, EURC. Two-step flow. Step 1 POST /v1/swap/base/quote (0.000001 " +
-  "USDC, 1 atomic) with body {input_token, output_token, input_amount, " +
-  "slippage_bps} returns quote_id, expected_output, x402_pay_url, " +
-  "expected_output_human, fee, total_cost, price_impact_pct, output_token " +
-  "metadata, route info (sushiswap, uniswap, aerodrome, etc). Step 2 POST " +
-  "returned x402_pay_url with x402 payment for total_cost executes the swap. " +
-  "Output tokens delivered to paying wallet within 30 seconds. Slippage " +
-  "protection with bps tolerance. 1 percent service fee. Best price routing " +
-  "across multiple Base DEXs aggregated by LiFi. Use cases: AI agent token swaps, " +
-  "automated trading bots, portfolio rebalancing, agentic DeFi, autonomous wallet " +
-  "operations, ERC20 conversion, stablecoin exchange, L2 token trading, DEX " +
-  "aggregator API, x402 swap, payable swap. Minimum swap depends on direction " +
-  "and router state: forward USDC to token 1.00 USD (router has allowance) or " +
-  "1.10 USD (first swap), reverse token to USDC 1.50 USD (covers approve + " +
-  "transferFrom + swap + transfer gas). Reverse direction (token to USDC): " +
-  "requires ERC20 approval to swap wallet before execute, returns 412 " +
-  "needs_approval if missing. No KYC, no signup, payment via x402 USDC " +
-  "microtransactions on Base mainnet.";
+  "SuVerse Base Swap: bidirectional USDC ERC20 token swap aggregator " +
+  "via LiFi across Uniswap V3, Aerodrome, BaseSwap, SushiSwap. " +
+  "Memecoins BRETT TOSHI DEGEN, majors WETH AERO cbBTC. POST " +
+  "/v1/swap/base/quote for quote_id; POST execute URL with x402 " +
+  "payment to swap. AI agent, bot, agentic DeFi, payable swap. 1% fee.";
 
 // --------------------------------------------------------- input examples ----
 
