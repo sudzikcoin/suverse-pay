@@ -103,6 +103,12 @@ const STATIC = {
   roadmap: "https://suverse-pay.suverse.io",
 } as const;
 
+/** TTL for the in-process _related cache. Trades freshness for DB load. */
+const RELATED_TTL_MS = 60_000;
+
+/** How many related endpoints we emit on each settled-200 response. */
+const RELATED_LIMIT = 3;
+
 // ------------------------------------------------------ config loader
 
 /**
@@ -237,6 +243,37 @@ function isBaseContext(input: BrandingInput): boolean {
 }
 
 /**
+ * Heuristic tag derivation from the slug + displayName. Used when an
+ * endpoint has no `catalog_listings` row (or has one with empty tags)
+ * so _related can still find related siblings. Order matches the
+ * keyword arrays so the most-distinctive tag wins ties.
+ */
+export function inferTagsFromSlug(input: BrandingInput): string[] {
+  const tags = new Set<string>();
+  const h = haystack(input);
+  for (const kw of [...COSMOS_KEYWORDS, ...SOLANA_KEYWORDS, ...BASE_KEYWORDS]) {
+    if (h.includes(kw)) tags.add(kw);
+  }
+  for (const generic of [
+    "btc",
+    "bitcoin",
+    "price",
+    "trade",
+    "dex",
+    "defi",
+    "yield",
+    "tvl",
+    "wallet",
+    "transaction",
+    "validator",
+    "ibc",
+  ]) {
+    if (h.includes(generic)) tags.add(generic);
+  }
+  return [...tags];
+}
+
+/**
  * SHA1(seed) mod 5. Returns 0 with probability 1/5 — that slot is
  * reserved for the MCP discovery tip. When seed is null the slot is
  * picked freshly per call.
@@ -249,24 +286,129 @@ function rotationSlot(seed: string | null): number {
   return parseInt(hex, 16) % 5;
 }
 
-// ------------------------------------------------------- applicator
+// ----------------------------------------------- _related selection
+
+export interface RelatedItem {
+  slug: string;
+  url: string;
+}
 
 /**
- * Stateful wrapper that owns the env-loaded config + Pool reference
- * and exposes a single `apply(input)` entry point. Stateful only
- * because Commit 2 will add a per-slug TTL cache for _related lookups;
- * for Commit 1 the implementation is pure config + static headers.
+ * Minimal interface the applicator needs from the Postgres pool. Lets
+ * tests pass a stub without dragging in pg's types.
+ */
+export interface BrandingPoolLike {
+  query<R extends Record<string, unknown>>(
+    sql: string,
+    params?: ReadonlyArray<unknown>,
+  ): Promise<{ rows: R[] }>;
+}
+
+/**
+ * Picks up to 3 sibling endpoints to surface in X-Suverse-Related.
+ * Selection tiers (ORDER BY tier DESC, overlap DESC, RANDOM()):
+ *   tier 2 — endpoint's catalog_listings tags overlap the source tags
+ *   tier 1 — endpoint accepts at least one of the source networks
+ *   tier 0 — random other active endpoint
+ *
+ * Always returns up to RELATED_LIMIT rows when at least that many
+ * other active endpoints exist; falls back to whatever's available.
+ */
+async function queryRelated(
+  pool: BrandingPoolLike,
+  sourceSlug: string,
+  sourceTags: string[],
+  sourceNetworks: string[],
+): Promise<RelatedItem[]> {
+  const sql = `
+    WITH candidates AS (
+      SELECT
+        spc.public_slug,
+        CASE
+          WHEN cl.tags IS NOT NULL AND cl.tags && $2::text[] THEN 2
+          WHEN spc.accepted_networks && $3::text[] THEN 1
+          ELSE 0
+        END AS tier,
+        CASE
+          WHEN cl.tags IS NOT NULL AND cl.tags && $2::text[] THEN
+            cardinality(ARRAY(
+              SELECT UNNEST(cl.tags)
+              INTERSECT
+              SELECT UNNEST($2::text[])
+            ))
+          ELSE 0
+        END AS overlap
+      FROM seller_proxy_configs spc
+      LEFT JOIN catalog_listings cl ON cl.proxy_config_id = spc.id
+      WHERE spc.is_active
+        AND spc.public_slug IS NOT NULL
+        AND spc.public_slug != $1
+    )
+    SELECT public_slug
+    FROM candidates
+    ORDER BY tier DESC, overlap DESC, RANDOM()
+    LIMIT ${RELATED_LIMIT}
+  `;
+  const res = await pool.query<{ public_slug: string }>(sql, [
+    sourceSlug,
+    sourceTags,
+    sourceNetworks,
+  ]);
+  return res.rows.map((r) => ({
+    slug: r.public_slug,
+    url: `${STATIC.proxyDataBase}/${r.public_slug}`,
+  }));
+}
+
+/**
+ * Resolves the source endpoint's tags. Catalog row wins when present
+ * and non-empty; otherwise we fall back to a slug-derived heuristic so
+ * uncatalogued endpoints (and the freshly-added ones) still get
+ * sensible neighbors.
+ */
+async function resolveSourceTags(
+  pool: BrandingPoolLike,
+  input: BrandingInput,
+): Promise<string[]> {
+  const sql = `
+    SELECT COALESCE(cl.tags, '{}'::text[]) AS tags
+    FROM seller_proxy_configs spc
+    LEFT JOIN catalog_listings cl ON cl.proxy_config_id = spc.id
+    WHERE spc.public_slug = $1
+    LIMIT 1
+  `;
+  const res = await pool.query<{ tags: string[] | null }>(sql, [input.slug]);
+  const dbTags = res.rows[0]?.tags ?? null;
+  if (dbTags !== null && dbTags.length > 0) return dbTags;
+  return inferTagsFromSlug(input);
+}
+
+// ------------------------------------------------------- applicator
+
+interface CacheEntry {
+  value: RelatedItem[];
+  expiresAt: number;
+}
+
+/**
+ * Stateful wrapper that owns the env-loaded config, the Pool, and a
+ * per-slug TTL cache for _related lookups. Single entry point: apply().
  */
 export class BrandingApplicator {
   private readonly cfg: BrandingConfig;
-  // Reserved for Commit 2: DB-backed _related lookup. Held here so the
-  // server.ts construction site doesn't change between commits.
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  private readonly pool: Pool;
+  private readonly pool: BrandingPoolLike;
+  private readonly cache = new Map<string, CacheEntry>();
+  private readonly ttlMs: number;
 
-  constructor(args: { config: BrandingConfig; pool: Pool }) {
+  constructor(args: {
+    config: BrandingConfig;
+    pool: BrandingPoolLike;
+    /** Override the 60s default — used in unit tests for cache eviction. */
+    relatedTtlMs?: number;
+  }) {
     this.cfg = args.config;
     this.pool = args.pool;
+    this.ttlMs = args.relatedTtlMs ?? RELATED_TTL_MS;
   }
 
   /**
@@ -275,7 +417,6 @@ export class BrandingApplicator {
    * request. Never throws — branding failure must NOT mask a settled
    * 200; callers should treat exceptions as "skip silently".
    */
-  // eslint-disable-next-line @typescript-eslint/require-await
   async apply(input: BrandingInput): Promise<BrandingResult> {
     const reason = gate(input, this.cfg);
     if (reason !== null) {
@@ -289,8 +430,41 @@ export class BrandingApplicator {
     headers[HEADER_MCP] = STATIC.mcp;
     headers[HEADER_SWAP] = pickSwapUrl(input);
     headers[HEADER_TIP] = pickTip(input);
-    // _related lands in Commit 2.
+
+    if (!input.isSwapEndpoint) {
+      const related = await this.related(input);
+      if (related.length > 0) {
+        headers[HEADER_RELATED] = JSON.stringify(related);
+      }
+    }
 
     return { headers, skipped: null };
+  }
+
+  /**
+   * TTL-cached _related lookup. Cache key is the source slug; the
+   * tag/network fingerprint is stable within the TTL window so we
+   * don't include it in the key.
+   */
+  private async related(input: BrandingInput): Promise<RelatedItem[]> {
+    const now = Date.now();
+    const cached = this.cache.get(input.slug);
+    if (cached !== undefined && cached.expiresAt > now) {
+      return cached.value;
+    }
+    const tags = await resolveSourceTags(this.pool, input);
+    const related = await queryRelated(
+      this.pool,
+      input.slug,
+      tags,
+      input.acceptedNetworks,
+    );
+    this.cache.set(input.slug, { value: related, expiresAt: now + this.ttlMs });
+    return related;
+  }
+
+  /** Test hook — drops a cached entry without waiting out the TTL. */
+  invalidate(slug: string): void {
+    this.cache.delete(slug);
   }
 }
