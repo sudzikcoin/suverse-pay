@@ -573,7 +573,7 @@ describe("POST /v1/swap/base/quote", () => {
     expect(body.accepts[0].network).toBe(BASE_CAIP2);
     expect(body.accepts[0].asset).toBe(USDC_BASE);
     expect(body.accepts[0].payTo).toBe(SWAP_WALLET);
-    expect(body.accepts[0].amount).toBe("1");
+    expect(body.accepts[0].amount).toBe("1000");
     expect(body.resource?.url).toBe(
       "https://proxy.suverse.io/v1/swap/base/quote",
     );

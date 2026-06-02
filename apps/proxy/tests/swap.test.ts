@@ -471,7 +471,7 @@ describe("POST /v1/swap/solana/quote", () => {
     expect(body.accepts[0].network).toBe(SOLANA_CAIP2);
     expect(body.accepts[0].asset).toBe(USDC_MINT);
     expect(body.accepts[0].payTo).toBe(SWAP_WALLET_ADDR);
-    expect(body.accepts[0].amount).toBe("1");
+    expect(body.accepts[0].amount).toBe("1000");
     expect(body.resource?.url).toBe(
       "https://proxy.suverse.io/v1/swap/solana/quote",
     );
