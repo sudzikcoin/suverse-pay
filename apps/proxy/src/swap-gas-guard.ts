@@ -70,11 +70,30 @@ export const BASE_SWAP_USD = 0.005;
 /** Approximate gas for one ERC20.transfer on Base, USD. */
 export const BASE_TRANSFER_USD = 0.001;
 
-/** Absolute minimum input for Solana quotes, USD (USDC). */
+/** Absolute minimum input for Solana FORWARD quotes, USD (USDC). */
 export const SOL_ABS_MIN_USD = 0.1;
 
-/** Absolute minimum input for Base quotes, USD (USDC). */
+/**
+ * Absolute minimum input for Solana REVERSE quotes, USD (USDC value
+ * of expected_output). Higher than forward because reverse pays an
+ * extra `transferChecked` tx (the buyer-pull) on top of the swap +
+ * the USDC transfer back. The bump is set by the SOL gas math —
+ * keep the floor a multiple of break-even so a small-fee window
+ * never opens for fresh long-tail SPLs that have no swap-wallet ATA.
+ */
+export const SOL_REVERSE_ABS_MIN_USD = 0.5;
+
+/** Absolute minimum input for Base FORWARD quotes, USD (USDC). */
 export const BASE_ABS_MIN_USD = 1.0;
+
+/**
+ * Absolute minimum input for Base REVERSE quotes, USD (USDC value of
+ * expected_output). Reverse pays an extra `transferFrom` to pull the
+ * buyer's input + the usual approve/swap/transfer, so the floor
+ * sits above forward to absorb worst-case gas without exposing the
+ * fee to a sub-cent break-even.
+ */
+export const BASE_REVERSE_ABS_MIN_USD = 1.5;
 
 /** USDC has 6 atomic decimals on both Solana mainnet and Base mainnet. */
 const USDC_DECIMALS = 6;
@@ -153,9 +172,20 @@ function maxBigint(a: bigint, b: bigint): bigint {
  */
 export async function evaluateSolanaSwapGas(args: {
   inputAtomic: bigint;
+  /**
+   * Mint whose ATA-existence the probe checks. Forward = output (we
+   * deposit into it post-swap). Reverse = input (we deposit into it
+   * via transferChecked from the buyer).
+   */
   outputMint: string;
   feeBps: bigint;
   probe: SolanaGasProbe;
+  /**
+   * Defaults to "forward" so older callers keep their behaviour.
+   * Reverse adds the cost of the buyer-pull transferChecked tx and
+   * raises the absolute floor.
+   */
+  direction?: "forward" | "reverse";
 }): Promise<GasGuardResult> {
   let ataExists: boolean;
   try {
@@ -164,18 +194,29 @@ export async function evaluateSolanaSwapGas(args: {
     ataExists = false;
   }
 
+  const isReverse = args.direction === "reverse";
+  // Reverse adds one extra signed tx (transferChecked pull) plus the
+  // USDC transfer back. Forward already counts the swap + transfer
+  // in SOL_TX_FEE_USD as a single representative cost; reverse bumps
+  // it to ~3x to capture the pull tx fee + the transfer tx fee. The
+  // dollar delta is small ($0.004 extra) but matters at the break-
+  // even floor for cheap swaps.
+  const baseTxUsd = isReverse ? SOL_TX_FEE_USD * 3 : SOL_TX_FEE_USD;
   const gasUsd = ataExists
-    ? SOL_TX_FEE_USD
-    : SOL_ATA_RENT_USD + SOL_TX_FEE_USD;
+    ? baseTxUsd
+    : SOL_ATA_RENT_USD + baseTxUsd;
   return finalizeGasGuard({
     inputAtomic: args.inputAtomic,
     gasUsd,
     feeBps: args.feeBps,
-    absMinUsd: SOL_ABS_MIN_USD,
+    absMinUsd: isReverse ? SOL_REVERSE_ABS_MIN_USD : SOL_ABS_MIN_USD,
     bumpReason: ataExists
       ? undefined
-      : "Output token has no liquidity wallet ATA yet; minimum input " +
-        "is raised to cover one-time SPL account rent.",
+      : isReverse
+        ? "Input token has no liquidity wallet ATA yet; minimum input " +
+          "is raised to cover one-time SPL account rent for the pull."
+        : "Output token has no liquidity wallet ATA yet; minimum input " +
+          "is raised to cover one-time SPL account rent.",
   });
 }
 
@@ -194,6 +235,12 @@ export async function evaluateBaseSwapGas(args: {
   lifiSpender: string;
   feeBps: bigint;
   probe: BaseGasProbe;
+  /**
+   * Defaults to "forward". Reverse adds one transferFrom (we pull the
+   * buyer's input ERC20) on top of approve/swap/transfer, and lifts
+   * the absolute floor.
+   */
+  direction?: "forward" | "reverse";
 }): Promise<GasGuardResult> {
   let approvalNeeded: boolean;
   try {
@@ -206,18 +253,28 @@ export async function evaluateBaseSwapGas(args: {
     approvalNeeded = true;
   }
 
+  const isReverse = args.direction === "reverse";
+  // Reverse adds one transferFrom (buyer → swap wallet) signed by us
+  // — comparable to a USDC transfer in cost (~$0.001-0.005). We
+  // approximate at BASE_TRANSFER_USD to stay conservative.
+  const pullUsd = isReverse ? BASE_TRANSFER_USD : 0;
   const gasUsd =
     BASE_SWAP_USD +
     BASE_TRANSFER_USD +
+    pullUsd +
     (approvalNeeded ? BASE_APPROVE_USD : 0);
   return finalizeGasGuard({
     inputAtomic: args.inputAtomic,
     gasUsd,
     feeBps: args.feeBps,
-    absMinUsd: BASE_ABS_MIN_USD,
+    absMinUsd: isReverse ? BASE_REVERSE_ABS_MIN_USD : BASE_ABS_MIN_USD,
     bumpReason: approvalNeeded
-      ? "LiFi router has no USDC allowance from the liquidity wallet " +
-        "yet; minimum input is raised to cover the one-time approve."
+      ? isReverse
+        ? "LiFi router has no allowance from the liquidity wallet over " +
+          "this input token yet; minimum input is raised to cover the " +
+          "one-time approve."
+        : "LiFi router has no USDC allowance from the liquidity wallet " +
+          "yet; minimum input is raised to cover the one-time approve."
       : undefined,
   });
 }

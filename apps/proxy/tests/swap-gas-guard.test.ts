@@ -9,10 +9,12 @@ import { describe, expect, it, vi } from "vitest";
 import {
   BASE_ABS_MIN_USD,
   BASE_APPROVE_USD,
+  BASE_REVERSE_ABS_MIN_USD,
   BASE_SWAP_USD,
   BASE_TRANSFER_USD,
   SOL_ABS_MIN_USD,
   SOL_ATA_RENT_USD,
+  SOL_REVERSE_ABS_MIN_USD,
   SOL_TX_FEE_USD,
   buildGasGuardQuoteFields,
   evaluateBaseSwapGas,
@@ -128,6 +130,73 @@ describe("evaluateSolanaSwapGas", () => {
     expect(r.warning).toMatch(/ATA/);
     expect(r.minimumInputAtomic).toBe(40_200_000n);
   });
+
+  it("reverse direction: floor lifts to $0.50 when input ATA exists", async () => {
+    const probe: SolanaGasProbe = {
+      swapWalletHasOutputAta: async () => true,
+    };
+    const r = await evaluateSolanaSwapGas({
+      inputAtomic: 600_000n, // $0.60 — clears the floor
+      outputMint: "BONK111",
+      feeBps: 100n,
+      probe,
+      direction: "reverse",
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // 3 SOL tx fees @ $0.002 = $0.006 → break-even $0.60. Floor max(0.50, 0.60) = 0.60.
+    expect(r.minimumInputAtomic).toBe(600_000n);
+  });
+
+  it("reverse direction: $0.30 input rejected when floor is $0.60", async () => {
+    const probe: SolanaGasProbe = {
+      swapWalletHasOutputAta: async () => true,
+    };
+    const r = await evaluateSolanaSwapGas({
+      inputAtomic: 300_000n,
+      outputMint: "BONK111",
+      feeBps: 100n,
+      probe,
+      direction: "reverse",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.reason).toBe("quote_too_small");
+  });
+
+  it("reverse direction: input ATA missing bumps floor by SPL rent", async () => {
+    const probe: SolanaGasProbe = {
+      swapWalletHasOutputAta: async () => false,
+    };
+    // $30 — under the $40.60 break-even floor → rejected.
+    const r = await evaluateSolanaSwapGas({
+      inputAtomic: 30_000_000n,
+      outputMint: "BONK111",
+      feeBps: 100n,
+      probe,
+      direction: "reverse",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.minimumInputAtomic).toBe(40_600_000n);
+  });
+
+  it("reverse direction: input ATA missing — $50 input clears the bumped floor", async () => {
+    const probe: SolanaGasProbe = {
+      swapWalletHasOutputAta: async () => false,
+    };
+    const r = await evaluateSolanaSwapGas({
+      inputAtomic: 50_000_000n,
+      outputMint: "BONK111",
+      feeBps: 100n,
+      probe,
+      direction: "reverse",
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.warning).toMatch(/ATA/);
+    expect(r.minimumInputAtomic).toBe(40_600_000n);
+  });
 });
 
 // ---------- Base -----------------------------------------------------------
@@ -232,6 +301,68 @@ describe("evaluateBaseSwapGas", () => {
       4,
     );
   });
+
+  it("reverse direction: floor is $1.50 when allowance covers the input", async () => {
+    const probe: BaseGasProbe = {
+      allowance: vi.fn().mockResolvedValue(10_000_000_000n), // ample
+    };
+    const r = await evaluateBaseSwapGas({
+      inputAtomic: 1_500_000n, // exactly the $1.50 reverse floor
+      inputToken: USDC_BASE,
+      lifiSpender: LIFI_SPENDER,
+      feeBps: FEE_BPS,
+      probe,
+      direction: "reverse",
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.minimumInputAtomic).toBe(1_500_000n);
+    expect(r.estimatedGasCostUsd).toBeCloseTo(
+      BASE_SWAP_USD + BASE_TRANSFER_USD + BASE_TRANSFER_USD,
+      4,
+    );
+  });
+
+  it("reverse direction: $1.00 input rejected against $1.50 floor", async () => {
+    const probe: BaseGasProbe = {
+      allowance: vi.fn().mockResolvedValue(10_000_000_000n),
+    };
+    const r = await evaluateBaseSwapGas({
+      inputAtomic: 1_000_000n,
+      inputToken: USDC_BASE,
+      lifiSpender: LIFI_SPENDER,
+      feeBps: FEE_BPS,
+      probe,
+      direction: "reverse",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.reason).toBe("quote_too_small");
+  });
+
+  it("reverse direction: approve needed bumps gas cost (warning surfaces only when break-even > $1.50)", async () => {
+    const probe: BaseGasProbe = {
+      allowance: vi.fn().mockResolvedValue(0n),
+    };
+    const r = await evaluateBaseSwapGas({
+      inputAtomic: 5_000_000n, // $5 — well above the reverse floor
+      inputToken: USDC_BASE,
+      lifiSpender: LIFI_SPENDER,
+      feeBps: FEE_BPS,
+      probe,
+      direction: "reverse",
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // gas = $0.005 approve + $0.005 swap + $0.001 transfer + $0.001 pull = $0.012
+    // break-even = $1.20 < $1.50 abs floor → warning is suppressed by design.
+    expect(r.warning).toBeUndefined();
+    expect(r.estimatedGasCostUsd).toBeCloseTo(
+      BASE_APPROVE_USD + BASE_SWAP_USD + BASE_TRANSFER_USD + BASE_TRANSFER_USD,
+      4,
+    );
+    expect(r.minimumInputAtomic).toBe(1_500_000n);
+  });
 });
 
 // ---------- buildGasGuardQuoteFields ---------------------------------------
@@ -266,6 +397,8 @@ describe("buildGasGuardQuoteFields", () => {
 describe("constants", () => {
   it("documented absolute floors match the catalog description", () => {
     expect(SOL_ABS_MIN_USD).toBe(0.1);
+    expect(SOL_REVERSE_ABS_MIN_USD).toBe(0.5);
     expect(BASE_ABS_MIN_USD).toBe(1);
+    expect(BASE_REVERSE_ABS_MIN_USD).toBe(1.5);
   });
 });

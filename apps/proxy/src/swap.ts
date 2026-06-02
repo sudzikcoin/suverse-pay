@@ -1321,6 +1321,7 @@ export function registerSwapRoutes(
         outputMint: guardProbeMint,
         feeBps: FEE_BPS,
         probe: gasProbe,
+        direction: vreq.direction,
       });
       if (!guard.ok) {
         req.log.info(
