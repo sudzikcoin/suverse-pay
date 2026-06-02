@@ -149,6 +149,17 @@ const ERC20_ABI = [
     outputs: [{ name: "", type: "bool" }],
   },
   {
+    name: "transferFrom",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
     name: "transfer",
     type: "function",
     stateMutability: "nonpayable",
@@ -224,6 +235,22 @@ export interface BaseSwapChain {
    * over `token`.
    */
   readAllowance(token: Address, spender: Address): Promise<bigint>;
+  /**
+   * Read ERC20 allowance `owner` has granted to the swap wallet over
+   * `token`. Used in reverse swaps to check whether the buyer has
+   * approved us to pull their input ERC20 via transferFrom.
+   */
+  readAllowanceOf(token: Address, owner: Address): Promise<bigint>;
+  /**
+   * ERC20.transferFrom(from, swapWallet, amount) signed by the swap
+   * wallet. Pulls a buyer's previously-approved input token into the
+   * liquidity wallet before a reverse swap.
+   */
+  transferFromBuyer(args: {
+    token: Address;
+    from: Address;
+    amount: bigint;
+  }): Promise<{ txHash: Hex; blockNumber: bigint }>;
   /**
    * ERC20.approve(spender, amount) signed by the swap wallet. Waits
    * for receipt; throws on revert.
@@ -327,6 +354,42 @@ export class ViemBaseSwapChain implements BaseSwapChain {
       functionName: "allowance",
       args: [this.account.address, spender],
     })) as bigint;
+  }
+
+  async readAllowanceOf(token: Address, owner: Address): Promise<bigint> {
+    return (await this.publicClient.readContract({
+      address: token,
+      abi: ERC20_ABI,
+      functionName: "allowance",
+      args: [owner, this.account.address],
+    })) as bigint;
+  }
+
+  async transferFromBuyer(args: {
+    token: Address;
+    from: Address;
+    amount: bigint;
+  }): Promise<{ txHash: Hex; blockNumber: bigint }> {
+    const data = encodeFunctionData({
+      abi: ERC20_ABI,
+      functionName: "transferFrom",
+      args: [args.from, this.account.address, args.amount],
+    });
+    const txHash = await this.walletClient.sendTransaction({
+      account: this.account,
+      chain: this.chain,
+      to: args.token,
+      data,
+      value: 0n,
+    });
+    const receipt = await this.publicClient.waitForTransactionReceipt({
+      hash: txHash,
+      timeout: CONFIRM_TIMEOUT_MS,
+    });
+    if (receipt.status !== "success") {
+      throw new Error(`transfer_from_reverted: ${txHash}`);
+    }
+    return { txHash, blockNumber: receipt.blockNumber };
   }
 
   async approveERC20(args: {
@@ -699,6 +762,11 @@ export type ExecuteBaseSwapOutcome =
       transferTxHash: Hex;
       outputAmount: bigint;
       tool: string;
+      /**
+       * Reverse-only: tx hash of the transferFrom that pulled the
+       * buyer's input ERC20 into the swap wallet. Null for forward.
+       */
+      pullTxHash?: Hex;
     }
   | { kind: "expired" }
   | { kind: "already_taken" }
@@ -711,6 +779,19 @@ export type ExecuteBaseSwapOutcome =
       actual: bigint;
       /** Buyer-declared slippage tolerance in basis points. */
       bpsTolerance: number;
+    }
+  | {
+      /**
+       * Reverse-only: the buyer's ERC20 allowance for the swap wallet
+       * is insufficient to cover the swap's input. Buyer must call
+       * approve(token, swapWallet, ≥input_amount) and retry.
+       */
+      kind: "needs_approval";
+      token: Address;
+      owner: Address;
+      spender: Address;
+      currentAllowance: bigint;
+      requiredAllowance: bigint;
     }
   | { kind: "failed"; detail: string; refundRecorded: boolean };
 
@@ -755,6 +836,55 @@ export async function executeBaseSwap(
   const slippageBps = swap.slippageBps ?? MAX_SLIPPAGE_BPS;
   const inputToken = getAddress(swap.inputToken);
   const outputToken = getAddress(swap.outputToken);
+  const isReverse =
+    inputToken.toLowerCase() !== USDC_BASE.toLowerCase();
+
+  // Reverse direction only: check the buyer has approved us to pull
+  // their input ERC20 BEFORE we re-quote or move any funds. We've
+  // already taken the x402 fee at this point, so if the approval is
+  // missing we abort with kind="needs_approval" (HTTP 412) and let
+  // the caller redo approve + retry. The fee row stays recorded as a
+  // pending refund obligation so an operator can return it if the
+  // buyer never circles back.
+  if (isReverse) {
+    let buyerAllowance: bigint;
+    try {
+      buyerAllowance = await args.chain.readAllowanceOf(
+        inputToken,
+        args.recipient,
+      );
+    } catch (err) {
+      return await handleFailure(
+        args,
+        swap,
+        "failed",
+        `buyer_allowance_read_failed: ${(err as Error).message}`,
+      );
+    }
+    if (buyerAllowance < inputAmount) {
+      // Record a pending refund of the fee (we already collected x402
+      // USDC) but don't auto-broadcast — operator handles. Reset row
+      // status so a retry after the buyer approves can replay /execute.
+      await markFailed(args.pool, {
+        quoteId: args.quoteId,
+        status: "failed",
+        error: `buyer_allowance_insufficient: ${buyerAllowance} < ${inputAmount}`,
+      });
+      await tryRecordRefund(
+        args,
+        swap,
+        `buyer_allowance_insufficient: ${buyerAllowance} < ${inputAmount}`,
+      );
+      return {
+        kind: "needs_approval",
+        token: inputToken,
+        owner: args.recipient,
+        spender: getAddress(args.swapWalletAddress),
+        currentAllowance: buyerAllowance,
+        requiredAllowance: inputAmount,
+      };
+    }
+  }
 
   // Re-quote sanity check — Base AMM prices move quickly.
   let freshQuote: LifiQuoteResponse;
@@ -804,8 +934,35 @@ export async function executeBaseSwap(
     }
   }
 
+  // Reverse direction only: pull the buyer's input ERC20 into the
+  // swap wallet via transferFrom. The buyer's allowance was already
+  // verified above; this consumes it. From here on, failure of any
+  // step leaves the buyer's tokens in our wallet — a pending refund
+  // covers it.
+  let pullTxHash: Hex | undefined;
+  if (isReverse) {
+    try {
+      const r = await args.chain.transferFromBuyer({
+        token: inputToken,
+        from: args.recipient,
+        amount: inputAmount,
+      });
+      pullTxHash = r.txHash;
+    } catch (err) {
+      return await handleFailure(
+        args,
+        swap,
+        "failed",
+        `pull_from_buyer_failed: ${(err as Error).message}`,
+      );
+    }
+  }
+
   // Ensure ERC20 allowance for the LiFi router covers this swap's
   // input. Top up to ALLOWANCE_TOPUP so subsequent swaps amortise.
+  // For reverse swaps inputToken is the buyer's token (not USDC), so
+  // this is the first time the LiFi spender ever sees an approval
+  // from us for that token — the +$0.005 approve gas is real.
   const spender = getAddress(freshQuote.estimate.approvalAddress);
   let approveTxHash: Hex | null = null;
   try {
@@ -935,6 +1092,7 @@ export async function executeBaseSwap(
     transferTxHash,
     outputAmount: delivered,
     tool: freshQuote.tool,
+    ...(pullTxHash !== undefined ? { pullTxHash } : {}),
   };
 }
 
@@ -1200,8 +1358,15 @@ export function registerBaseSwapRoutes(
         return reply.code(410).send({ error: "quote_expired" });
       }
 
-      const total =
-        BigInt(swap.inputAmount) + BigInt(swap.feeAmount ?? "0");
+      // x402 charge differs by direction. Forward: input + fee (both
+      // USDC). Reverse: only the fee (USDC) — the input ERC20 is
+      // pulled from the buyer's wallet via transferFrom inside
+      // executeBaseSwap, so the buyer never spends USDC for the input.
+      const isReverseSwap =
+        swap.inputToken.toLowerCase() !== USDC_BASE.toLowerCase();
+      const total = isReverseSwap
+        ? BigInt(swap.feeAmount ?? "0")
+        : BigInt(swap.inputAmount) + BigInt(swap.feeAmount ?? "0");
       const accepted: AcceptedPayment[] = [
         {
           scheme: "exact",
@@ -1299,7 +1464,9 @@ export function registerBaseSwapRoutes(
           .send({
             status: "completed",
             quote_id: quoteId,
+            direction: isReverseSwap ? "reverse" : "forward",
             approve_tx: outcome.approveTxHash,
+            ...(outcome.pullTxHash ? { pull_tx: outcome.pullTxHash } : {}),
             swap_tx: outcome.swapTxHash,
             transfer_tx: outcome.transferTxHash,
             output_token: swap.outputToken,
@@ -1316,6 +1483,21 @@ export function registerBaseSwapRoutes(
       if (outcome.kind === "expired") {
         return reply.code(410).headers(replyHeaders).send({
           error: "quote_expired",
+        });
+      }
+      if (outcome.kind === "needs_approval") {
+        return reply.code(412).headers(replyHeaders).send({
+          error: "needs_approval",
+          detail:
+            `Buyer must call ERC20.approve(${outcome.spender}, ${outcome.requiredAllowance.toString()}) ` +
+            `on token ${outcome.token} before /execute. ` +
+            `Current allowance is ${outcome.currentAllowance.toString()}.`,
+          token: outcome.token,
+          owner: outcome.owner,
+          spender: outcome.spender,
+          current_allowance: outcome.currentAllowance.toString(),
+          required_allowance: outcome.requiredAllowance.toString(),
+          refund_pending: true,
         });
       }
       if (outcome.kind === "slippage") {
