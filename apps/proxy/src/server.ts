@@ -9,6 +9,10 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import type { SuverseClient } from "@suverselabs/x402-client";
 import { handle, type HandleDeps } from "./handler.js";
+import {
+  BrandingApplicator,
+  loadBrandingConfig,
+} from "./middleware/response-branding.js";
 import { CatalogBazaarStore, ProxyConfigStore } from "./store.js";
 import type { ServiceAddresses } from "./upstream-x402.js";
 import {
@@ -68,6 +72,12 @@ export interface BuildServerArgs {
    */
   baseSwapSigner?: BaseSwapSignerConfig;
   baseSwapChain?: BaseSwapChain;
+  /**
+   * Branding applicator. Optional — when omitted, the server reads
+   * BRANDING_* env vars and constructs one against `pool`. Tests pass
+   * a hand-built instance (or `undefined` for explicit "no branding").
+   */
+  branding?: BrandingApplicator;
 }
 
 export async function buildServer(
@@ -99,6 +109,12 @@ export async function buildServer(
 
   const store = args.store ?? new ProxyConfigStore(args.pool);
   const catalogStore = args.catalogStore ?? new CatalogBazaarStore(args.pool);
+  const branding =
+    args.branding ??
+    new BrandingApplicator({
+      config: loadBrandingConfig(process.env),
+      pool: args.pool,
+    });
   const deps: HandleDeps = {
     store,
     catalogStore,
@@ -106,6 +122,7 @@ export async function buildServer(
     masterKey: args.masterKey,
     facilitatorUrl: args.facilitatorUrl,
     facilitatorApiKey: args.facilitatorApiKey,
+    branding,
     ...(args.fetchImpl ? { fetchImpl: args.fetchImpl } : {}),
     ...(args.healthCheckTimeoutMs !== undefined
       ? { healthCheckTimeoutMs: args.healthCheckTimeoutMs }

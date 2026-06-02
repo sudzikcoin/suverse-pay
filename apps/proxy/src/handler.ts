@@ -33,6 +33,10 @@ import {
   getInternalHandler,
   getInternalHandlerValidator,
 } from "./handlers/registry.js";
+import {
+  BRANDING_HEADER_NAMES,
+  type BrandingApplicator,
+} from "./middleware/response-branding.js";
 import { lookupNetwork } from "./networks.js";
 import {
   createInboundFacilitatorPaymentFallback,
@@ -152,6 +156,14 @@ export interface HandleDeps {
   upstreamX402Client?: SuverseClient;
   /** Public addresses of the service wallets, indexed by namespace. */
   upstreamServiceAddresses?: ServiceAddresses;
+  /**
+   * Response-branding applicator. When supplied, the proxy adds
+   * X-Suverse-* headers to settled-200 responses so AI buyers can
+   * discover the rest of the catalog without payload modification.
+   * Failure during branding is swallowed — the settled response is
+   * never blocked by a branding bug.
+   */
+  branding?: BrandingApplicator;
 }
 
 /** Result returned to the Fastify adapter — flattened for clarity. */
@@ -450,6 +462,14 @@ export async function handle(
       payer: receipt.payer,
       amount: receipt.amount,
     });
+    const brandingInternal = await tryBranding(deps, {
+      slug: config.publicSlug ?? config.endpointSlug,
+      acceptedNetworks: config.acceptedNetworks,
+      displayName: config.displayName,
+      status: handlerResult.status,
+      isSwapEndpoint: isSwapEndpointConfig(config),
+      rotationSeed: receipt.txHash ?? args.idempotencyKey ?? null,
+    });
     return {
       status: handlerResult.status,
       body: handlerResult.body,
@@ -457,8 +477,8 @@ export async function handle(
         "content-type": "application/json",
         "payment-response": paymentResponseInternal,
         "x-payment-response": paymentResponseInternal,
-        "access-control-expose-headers":
-          "PAYMENT-RESPONSE, X-PAYMENT-RESPONSE",
+        "access-control-expose-headers": brandingExposeHeader(brandingInternal),
+        ...brandingInternal,
       },
       outcome: "settled",
     };
@@ -688,8 +708,19 @@ export async function handle(
   });
   respHeaders["payment-response"] = paymentResponse;
   respHeaders["x-payment-response"] = paymentResponse;
+  const brandingUpstream = await tryBranding(deps, {
+    slug: config.publicSlug ?? config.endpointSlug,
+    acceptedNetworks: config.acceptedNetworks,
+    displayName: config.displayName,
+    status: upstreamRes.status,
+    isSwapEndpoint: isSwapEndpointConfig(config),
+    rotationSeed: receipt.txHash ?? args.idempotencyKey ?? null,
+  });
+  for (const [name, value] of Object.entries(brandingUpstream)) {
+    respHeaders[name] = value;
+  }
   respHeaders["access-control-expose-headers"] =
-    "PAYMENT-RESPONSE, X-PAYMENT-RESPONSE";
+    brandingExposeHeader(brandingUpstream);
 
   return {
     status: upstreamRes.status,
@@ -697,6 +728,64 @@ export async function handle(
     headers: respHeaders,
     outcome: "settled",
   };
+}
+
+/**
+ * Returns the branding headers for the current request, or an empty
+ * map if branding is not configured, skipped by env policy, or throws.
+ * Branding MUST NOT block a settled response — we paid the upstream
+ * and the buyer paid us; a misbehaving header policy can't change that.
+ */
+async function tryBranding(
+  deps: HandleDeps,
+  input: {
+    slug: string;
+    acceptedNetworks: string[];
+    displayName: string | null;
+    status: number;
+    isSwapEndpoint: boolean;
+    rotationSeed: string | null;
+  },
+): Promise<Record<string, string>> {
+  if (!deps.branding) return {};
+  try {
+    const out = await deps.branding.apply(input);
+    return out.headers;
+  } catch (err) {
+    deps.logger?.warn?.(
+      `proxy: branding apply threw slug=${input.slug} — skipping`,
+      err,
+    );
+    return {};
+  }
+}
+
+/**
+ * Builds the Access-Control-Expose-Headers value, always including
+ * the payment-response pair (which existing buyer SDKs read), and
+ * appending any branding headers actually emitted so browser-side
+ * buyers can read them.
+ */
+function brandingExposeHeader(branding: Record<string, string>): string {
+  const base = ["PAYMENT-RESPONSE", "X-PAYMENT-RESPONSE"];
+  const present = BRANDING_HEADER_NAMES.filter((h) => branding[h] !== undefined);
+  return [...base, ...present].join(", ");
+}
+
+/**
+ * Detects swap endpoints by slug prefix or internal-handler key. Swap
+ * responses already have their own structured shape and we'd recurse
+ * if _related listed sibling swap routes — skip branding for these.
+ */
+function isSwapEndpointConfig(config: ProxyConfigRow): boolean {
+  if (config.internalHandler && config.internalHandler.startsWith("swap-")) {
+    return true;
+  }
+  if (config.endpointSlug.startsWith("swap-")) return true;
+  if (config.publicSlug !== null && config.publicSlug.startsWith("swap-")) {
+    return true;
+  }
+  return false;
 }
 
 // Per-VM `scheme` declaration the proxy emits in 402 challenges.
