@@ -84,6 +84,11 @@ import {
   formatTokenAmount,
   type TokenMetadata,
 } from "./lib/token-metadata.js";
+import {
+  BASE_QUOTE_DESCRIPTION,
+  baseQuoteAccepted,
+  baseQuoteBazaar,
+} from "./swap-quote-x402.js";
 
 // ---------------------------------------------------------------- consts ----
 
@@ -1188,19 +1193,87 @@ export function registerBaseSwapRoutes(
   const fetchImpl = deps.fetchImpl ?? fetch;
 
   // --- POST /v1/swap/base/quote -------------------------------------------
+  //
+  // x402-paid at 1 atomic USDC ($0.000001). The gate runs before
+  // body parsing so an unauthenticated probe (no X-Payment) gets a
+  // proper 402 challenge carrying `extensions.bazaar` for CDP
+  // Bazaar indexing. See swap-quote-x402.ts for the bazaar block
+  // shape.
+  const baseQuoteAcceptedPayments = baseQuoteAccepted(deps.swapSigner.address);
+  const baseQuoteBazaarBlock = baseQuoteBazaar();
   app.route({
     method: "POST",
     url: "/v1/swap/base/quote",
     handler: async (req, reply) => {
+      const reqHeaders = req.headers as Record<
+        string,
+        string | string[] | undefined
+      >;
+      const quotePaymentHeader =
+        pickHeader(reqHeaders, "payment-signature") ??
+        pickHeader(reqHeaders, "x-payment");
+      const quoteIdempotencyKey = pickHeader(reqHeaders, "idempotency-key");
+      const quoteResourceUrl = `${deps.publicBaseUrl}/v1/swap/base/quote`;
+
+      const quoteMiddlewareOpts: MiddlewareOptions = {
+        apiKey: deps.facilitatorApiKey,
+        facilitator: deps.facilitatorUrl,
+        acceptedPayments: baseQuoteAcceptedPayments,
+        description: BASE_QUOTE_DESCRIPTION,
+        x402Version: 2,
+        extensions: baseQuoteBazaarBlock,
+        settle: true,
+        fetchImpl,
+        logger: req.log as unknown as MiddlewareOptions["logger"],
+      };
+
+      const quoteProtocol = await runProtocol({
+        opts: quoteMiddlewareOpts,
+        resourceUrl: quoteResourceUrl,
+        paymentHeader: quotePaymentHeader,
+        idempotencyKey: quoteIdempotencyKey,
+      });
+      if (quoteProtocol.kind !== "accepted") {
+        return reply
+          .code(quoteProtocol.status)
+          .header("content-type", "application/json")
+          .header("cache-control", "no-store")
+          .header(
+            "payment-required",
+            Buffer.from(JSON.stringify(quoteProtocol.body)).toString("base64"),
+          )
+          .send(quoteProtocol.body);
+      }
+      const quoteReceipt = quoteProtocol.receipt;
+      const quotePaymentResponse = Buffer.from(
+        JSON.stringify({
+          success: true,
+          transaction: quoteReceipt.txHash ?? "",
+          network: quoteReceipt.network,
+          payer: quoteReceipt.payer,
+          amount: quoteReceipt.amount,
+        }),
+      ).toString("base64");
+      const sendWithPayment = (status: number, body: unknown) =>
+        reply
+          .code(status)
+          .header("payment-response", quotePaymentResponse)
+          .header("x-payment-response", quotePaymentResponse)
+          .header(
+            "access-control-expose-headers",
+            "PAYMENT-RESPONSE, X-PAYMENT-RESPONSE",
+          )
+          .send(body);
+
       const raw = parseJsonBody(req.body);
       if (raw === null) {
-        return reply.code(400).send({ error: "invalid_json_body" });
+        return sendWithPayment(400, { error: "invalid_json_body" });
       }
       const validated = validateBaseQuoteInput(raw);
       if (!validated.ok) {
         const body: Record<string, unknown> = { error: validated.error };
         if (validated.field) body["field"] = validated.field;
-        return reply.code(400).send(body);
+        return sendWithPayment(400, body);
       }
       const vreq = validated.req;
       let quote: LifiQuoteResponse;
@@ -1220,16 +1293,17 @@ export function registerBaseSwapRoutes(
           `swap-base: quote upstream failed input=${vreq.inputAmount} out=${vreq.outputToken}`,
         );
         if (err instanceof LifiError) {
-          return reply
-            .code(err.upstreamStatus >= 500 ? 502 : 400)
-            .send({ error: err.code, detail: err.excerpt });
+          return sendWithPayment(err.upstreamStatus >= 500 ? 502 : 400, {
+            error: err.code,
+            detail: err.excerpt,
+          });
         }
-        return reply.code(502).send({ error: "lifi_unreachable" });
+        return sendWithPayment(502, { error: "lifi_unreachable" });
       }
 
       const expectedOutput = BigInt(quote.estimate.toAmount);
       if (vreq.direction === "reverse" && expectedOutput > MAX_INPUT_USDC_ATOMIC) {
-        return reply.code(400).send({
+        return sendWithPayment(400, {
           error: "expected_output_exceeds_max",
           detail: `Reverse swap output ${expectedOutput} > cap ${MAX_INPUT_USDC_ATOMIC} (USDC atomic).`,
         });
@@ -1274,7 +1348,7 @@ export function registerBaseSwapRoutes(
             `min=${guard.minimumInputAtomic} gas_usd=${guard.estimatedGasCostUsd} ` +
             `out=${vreq.outputToken}`,
         );
-        return reply.code(400).send({
+        return sendWithPayment(400, {
           error: guard.reason,
           detail: guard.message,
           minimum_input_atomic: guard.minimumInputAtomic.toString(),
@@ -1297,7 +1371,7 @@ export function registerBaseSwapRoutes(
         });
       } catch (err) {
         req.log.error({ err }, "swap-base: insert quote row failed");
-        return reply.code(500).send({ error: "store_unavailable" });
+        return sendWithPayment(500, { error: "store_unavailable" });
       }
 
       // Resolve token metadata for both legs — hardcoded fast-path
@@ -1308,7 +1382,8 @@ export function registerBaseSwapRoutes(
         getBaseTokenMetadata(vreq.outputToken, { fetchImpl }),
       ]);
 
-      return reply.code(200).send(
+      return sendWithPayment(
+        200,
         buildBaseQuoteResponse({
           quoteId,
           inputMeta,
