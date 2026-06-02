@@ -52,8 +52,10 @@ import {
 import {
   TOKEN_PROGRAM_ID,
   createTransferInstruction,
+  createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
   getAccount,
+  getMint,
   createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import { runProtocol } from "@suverselabs/x402-server";
@@ -206,6 +208,31 @@ export interface SolanaSwapChain {
    * the guard treats throws as "no" and falls closed.
    */
   hasSwapWalletAta(mint: string): Promise<boolean>;
+
+  /**
+   * Read the SPL delegate authority + delegated amount currently set
+   * on `owner`'s ATA for `mint`. Used in reverse swaps to verify the
+   * buyer has granted us authority to pull their input SPL via
+   * transferChecked. Returns delegate=null + delegatedAmount=0n when
+   * the ATA doesn't exist OR has no delegate set.
+   */
+  readSplDelegate(args: {
+    mint: string;
+    owner: string;
+  }): Promise<{ delegate: string | null; delegatedAmount: bigint }>;
+
+  /**
+   * Pull `amount` of `mint` from the buyer's ATA into the swap
+   * wallet's ATA using a transferChecked instruction signed by the
+   * swap wallet (as a previously-granted SPL delegate). Creates the
+   * swap wallet's destination ATA in the same tx if it doesn't exist
+   * yet — caller's gas-cost guard should have accounted for the rent.
+   */
+  pullFromBuyer(args: {
+    mint: string;
+    buyer: string;
+    amount: bigint;
+  }): Promise<{ signature: string }>;
 }
 
 /**
@@ -354,6 +381,111 @@ export class Web3SolanaSwapChain implements SolanaSwapChain {
     );
     const info = await this.conn.getAccountInfo(ata);
     return info !== null;
+  }
+
+  async readSplDelegate(args: {
+    mint: string;
+    owner: string;
+  }): Promise<{ delegate: string | null; delegatedAmount: bigint }> {
+    const mintPk = new PublicKey(args.mint);
+    const ownerPk = new PublicKey(args.owner);
+    const ata = getAssociatedTokenAddressSync(mintPk, ownerPk);
+    try {
+      const acc = await getAccount(this.conn, ata);
+      return {
+        delegate: acc.delegate ? acc.delegate.toBase58() : null,
+        delegatedAmount: acc.delegatedAmount,
+      };
+    } catch {
+      // Either the ATA doesn't exist (buyer hasn't held the mint) or
+      // the RPC hiccupped. Either way we report "no delegate" and let
+      // the orchestrator treat that as insufficient allowance.
+      return { delegate: null, delegatedAmount: 0n };
+    }
+  }
+
+  async pullFromBuyer(args: {
+    mint: string;
+    buyer: string;
+    amount: bigint;
+  }): Promise<{ signature: string }> {
+    const mintPk = new PublicKey(args.mint);
+    const buyerPk = new PublicKey(args.buyer);
+    const buyerAta = getAssociatedTokenAddressSync(mintPk, buyerPk);
+    const swapAta = getAssociatedTokenAddressSync(
+      mintPk,
+      this.keypair.publicKey,
+    );
+
+    const instructions: TransactionInstruction[] = [];
+    // Create our destination ATA if missing — swap wallet pays the
+    // ~0.00204 SOL rent. The gas guard at /quote should have raised
+    // the floor to cover this when probing input-ATA existence.
+    const swapAtaInfo = await this.conn.getAccountInfo(swapAta);
+    if (swapAtaInfo === null) {
+      instructions.push(
+        createAssociatedTokenAccountInstruction(
+          this.keypair.publicKey, // payer
+          swapAta,
+          this.keypair.publicKey, // owner
+          mintPk,
+        ),
+      );
+    }
+
+    // transferChecked needs the mint's on-chain decimals. One extra
+    // getAccountInfo, called once per reverse swap — acceptable.
+    const mintInfo = await getMint(this.conn, mintPk);
+
+    instructions.push(
+      createTransferCheckedInstruction(
+        buyerAta, // source
+        mintPk,
+        swapAta, // destination
+        this.keypair.publicKey, // delegate authority (us)
+        args.amount,
+        mintInfo.decimals,
+      ),
+    );
+
+    const latest = await this.conn.getLatestBlockhash(RPC_COMMITMENT);
+    const tx = new Transaction({
+      feePayer: this.keypair.publicKey,
+      blockhash: latest.blockhash,
+      lastValidBlockHeight: latest.lastValidBlockHeight,
+    }).add(...instructions);
+    tx.sign(this.keypair);
+    const signature = await this.conn.sendRawTransaction(tx.serialize(), {
+      skipPreflight: false,
+      maxRetries: 3,
+    });
+    const result = await Promise.race([
+      this.conn.confirmTransaction(
+        {
+          signature,
+          blockhash: latest.blockhash,
+          lastValidBlockHeight: latest.lastValidBlockHeight,
+        },
+        RPC_COMMITMENT,
+      ),
+      new Promise<never>((_, rej) =>
+        setTimeout(
+          () => rej(new Error("pull_confirm_timeout")),
+          CONFIRM_TIMEOUT_MS,
+        ),
+      ),
+    ]);
+    if (
+      result &&
+      typeof result === "object" &&
+      "value" in result &&
+      (result as { value: { err: unknown } }).value.err
+    ) {
+      throw new Error(
+        `pull_tx_failed: ${JSON.stringify((result as { value: { err: unknown } }).value.err)}`,
+      );
+    }
+    return { signature };
   }
 }
 
@@ -669,6 +801,11 @@ export type ExecuteSwapOutcome =
       swapSignature: string;
       transferSignature: string;
       outputAmount: bigint;
+      /**
+       * Reverse-only: signature of the transferChecked tx that pulled
+       * the buyer's input SPL into the swap wallet. Absent for forward.
+       */
+      pullSignature?: string;
     }
   | {
       kind: "expired";
@@ -685,6 +822,21 @@ export type ExecuteSwapOutcome =
       actual: bigint;
       /** Buyer-declared slippage tolerance in basis points. */
       bpsTolerance: number;
+    }
+  | {
+      /**
+       * Reverse-only: the buyer's SPL delegate authority on the input
+       * mint is missing or insufficient. Buyer must call SPL
+       * Token::Approve(input_ata, delegate=swap_wallet, ≥input_amount)
+       * and retry.
+       */
+      kind: "needs_approval";
+      mint: string;
+      owner: string;
+      delegate: string;
+      currentDelegate: string | null;
+      currentDelegatedAmount: bigint;
+      requiredAmount: bigint;
     }
   | {
       kind: "failed";
@@ -732,6 +884,54 @@ export async function executeSolanaSwap(
   const expectedOutput = BigInt(swap.expectedOutput ?? "0");
   const inputAmount = BigInt(swap.inputAmount);
   const slippageBps = swap.slippageBps ?? MAX_SLIPPAGE_BPS;
+  const isReverse = swap.inputToken !== USDC_MINT;
+
+  // Reverse direction only: verify the buyer has granted us SPL
+  // delegate authority over input_amount of input_mint BEFORE we move
+  // any funds. We've already collected the x402 fee, so if approval
+  // is missing we mark the row failed, record a pending refund of the
+  // fee, and return kind="needs_approval" → HTTP 412.
+  if (isReverse) {
+    let delegateInfo: { delegate: string | null; delegatedAmount: bigint };
+    try {
+      delegateInfo = await args.chain.readSplDelegate({
+        mint: swap.inputToken,
+        owner: args.recipient,
+      });
+    } catch (err) {
+      return await handleFailure(
+        args,
+        swap,
+        "failed",
+        `delegate_read_failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    const swapWallet = args.swapWalletAddress;
+    const hasAuthority = delegateInfo.delegate === swapWallet;
+    if (!hasAuthority || delegateInfo.delegatedAmount < inputAmount) {
+      await markFailed(args.pool, {
+        quoteId: args.quoteId,
+        status: "failed",
+        error:
+          `buyer_delegate_insufficient: delegate=${delegateInfo.delegate} ` +
+          `amount=${delegateInfo.delegatedAmount} need=${inputAmount}`,
+      });
+      await tryRecordRefund(
+        args,
+        swap,
+        `buyer_delegate_insufficient: delegate=${delegateInfo.delegate} need=${inputAmount}`,
+      );
+      return {
+        kind: "needs_approval",
+        mint: swap.inputToken,
+        owner: args.recipient,
+        delegate: swapWallet,
+        currentDelegate: delegateInfo.delegate,
+        currentDelegatedAmount: delegateInfo.delegatedAmount,
+        requiredAmount: inputAmount,
+      };
+    }
+  }
 
   // Re-quote sanity check — Jupiter prices move quickly.
   let freshQuote: JupiterQuoteResponse;
@@ -782,6 +982,30 @@ export async function executeSolanaSwap(
         actual: freshOut,
         bpsTolerance: slippageBps,
       };
+    }
+  }
+
+  // Reverse direction only: pull the buyer's input SPL into the swap
+  // wallet via transferChecked using the previously-granted SPL
+  // delegate authority. Creates the swap wallet's destination ATA in
+  // the same tx if missing. From here on, any failure leaves the
+  // buyer's tokens with us — a pending refund covers it.
+  let pullSignature: string | undefined;
+  if (isReverse) {
+    try {
+      const r = await args.chain.pullFromBuyer({
+        mint: swap.inputToken,
+        buyer: args.recipient,
+        amount: inputAmount,
+      });
+      pullSignature = r.signature;
+    } catch (err) {
+      return await handleFailure(
+        args,
+        swap,
+        "failed",
+        `pull_from_buyer_failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -915,6 +1139,7 @@ export async function executeSolanaSwap(
     swapSignature,
     transferSignature,
     outputAmount: delivered,
+    ...(pullSignature !== undefined ? { pullSignature } : {}),
   };
 }
 
@@ -1196,7 +1421,12 @@ export function registerSwapRoutes(
       }
 
       // Build the x402 challenge dynamically from this quote's price.
-      const total = BigInt(swap.inputAmount) + BigInt(swap.feeAmount ?? "0");
+      // Forward: input + fee (both USDC). Reverse: fee only — buyer's
+      // SPL input is pulled via delegate authority inside executeSolanaSwap.
+      const isReverseSwap = swap.inputToken !== USDC_MINT;
+      const total = isReverseSwap
+        ? BigInt(swap.feeAmount ?? "0")
+        : BigInt(swap.inputAmount) + BigInt(swap.feeAmount ?? "0");
       const accepted: AcceptedPayment[] = [
         {
           scheme: "exact",
@@ -1295,6 +1525,10 @@ export function registerSwapRoutes(
           .send({
             status: "completed",
             quote_id: quoteId,
+            direction: isReverseSwap ? "reverse" : "forward",
+            ...(outcome.pullSignature
+              ? { pull_tx: outcome.pullSignature }
+              : {}),
             swap_tx: outcome.swapSignature,
             transfer_tx: outcome.transferSignature,
             output_token: swap.outputToken,
@@ -1310,6 +1544,23 @@ export function registerSwapRoutes(
       if (outcome.kind === "expired") {
         return reply.code(410).headers(replyHeaders).send({
           error: "quote_expired",
+        });
+      }
+      if (outcome.kind === "needs_approval") {
+        return reply.code(412).headers(replyHeaders).send({
+          error: "needs_approval",
+          detail:
+            `Buyer must call SPL Token::Approve on the input ATA setting ` +
+            `delegate=${outcome.delegate}, amount=${outcome.requiredAmount.toString()} ` +
+            `before /execute. Current delegate=${outcome.currentDelegate ?? "null"}, ` +
+            `delegated_amount=${outcome.currentDelegatedAmount.toString()}.`,
+          mint: outcome.mint,
+          owner: outcome.owner,
+          delegate: outcome.delegate,
+          current_delegate: outcome.currentDelegate,
+          current_delegated_amount: outcome.currentDelegatedAmount.toString(),
+          required_amount: outcome.requiredAmount.toString(),
+          refund_pending: true,
         });
       }
       if (outcome.kind === "slippage") {

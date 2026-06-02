@@ -653,6 +653,8 @@ interface FakeChain extends SolanaSwapChain {
   transferOutput: ReturnType<typeof vi.fn>;
   readSwapWalletBalance: ReturnType<typeof vi.fn>;
   hasSwapWalletAta: ReturnType<typeof vi.fn>;
+  readSplDelegate: ReturnType<typeof vi.fn>;
+  pullFromBuyer: ReturnType<typeof vi.fn>;
 }
 
 function fakeChain(opts?: {
@@ -660,6 +662,10 @@ function fakeChain(opts?: {
   postBal?: bigint;
   signature?: string;
   transferSig?: string;
+  /** For reverse tests: buyer's SPL delegate state. Defaults to "no delegate". */
+  buyerDelegate?: { delegate: string | null; delegatedAmount: bigint };
+  /** For reverse tests: signature returned by transferChecked pull. */
+  pullSig?: string;
 }): FakeChain {
   let calls = 0;
   return {
@@ -677,6 +683,14 @@ function fakeChain(opts?: {
     // Default true so any test that ends up using this chain through
     // a future /quote-coupled path still passes.
     hasSwapWalletAta: vi.fn().mockResolvedValue(true),
+    readSplDelegate: vi
+      .fn()
+      .mockResolvedValue(
+        opts?.buyerDelegate ?? { delegate: null, delegatedAmount: 0n },
+      ),
+    pullFromBuyer: vi
+      .fn()
+      .mockResolvedValue({ signature: opts?.pullSig ?? "pull_sig_123" }),
   };
 }
 
@@ -1047,5 +1061,168 @@ describe("executeSolanaSwap", () => {
     }
     const row = await findByQuoteId(pool, quoteId);
     expect(row?.status).toBe("failed_slippage");
+  });
+});
+
+// --------------------------------------------- executeSolanaSwap reverse ----
+
+const BONK_MINT = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";
+
+async function insertReverseQuote(
+  pool: import("pg").Pool,
+  overrides: Partial<{
+    quoteId: string;
+    inputAmount: string;
+    expectedOutput: string;
+    expiresAt: Date;
+  }> = {},
+) {
+  const { randomUUID } = await import("node:crypto");
+  const id = randomUUID();
+  const quoteId = overrides.quoteId ?? "q_rev_test1";
+  const inputAmount = overrides.inputAmount ?? "5000000000"; // 50K BONK
+  const expectedOutput = overrides.expectedOutput ?? "330000"; // 0.33 USDC
+  const expiresAt = overrides.expiresAt ?? new Date(Date.now() + 60_000);
+  await pool.query(
+    `INSERT INTO swap_transactions (
+       id, quote_id, network, input_token, output_token,
+       input_amount, expected_output, slippage_bps, fee_amount,
+       expires_at, status, jupiter_quote
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+    [
+      id,
+      quoteId,
+      SOLANA_CAIP2,
+      BONK_MINT,
+      REAL_USDC,
+      inputAmount,
+      expectedOutput,
+      100,
+      "3300",
+      expiresAt.toISOString(),
+      "quoted",
+      JSON.stringify({ direction: "reverse" }),
+    ],
+  );
+  return { id, quoteId };
+}
+
+function jupiterReverseResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      inputMint: BONK_MINT,
+      outputMint: REAL_USDC,
+      inAmount: "5000000000",
+      outAmount: "330000",
+      otherAmountThreshold: "326700",
+      swapMode: "ExactIn",
+      slippageBps: 100,
+      priceImpactPct: "0.01",
+      routePlan: [],
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
+}
+
+describe("executeSolanaSwap (reverse direction)", () => {
+  let pool: import("pg").Pool;
+  beforeEach(async () => {
+    pool = await freshDb();
+  });
+  afterEach(async () => {
+    await pool.end();
+    vi.restoreAllMocks();
+  });
+
+  it("returns needs_approval when buyer has no SPL delegate", async () => {
+    const { quoteId } = await insertReverseQuote(pool);
+    const chain = fakeChain({
+      buyerDelegate: { delegate: null, delegatedAmount: 0n },
+    });
+    const fetchImpl = vi.fn();
+    const r = await executeSolanaSwap({
+      quoteId,
+      recipient: FAKE_PAYER,
+      inboundPaymentId: null,
+      pool,
+      chain,
+      swapWalletAddress: SWAP_WALLET_ADDR,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(r.kind).toBe("needs_approval");
+    if (r.kind === "needs_approval") {
+      expect(r.mint).toBe(BONK_MINT);
+      expect(r.owner).toBe(FAKE_PAYER);
+      expect(r.delegate).toBe(SWAP_WALLET_ADDR);
+      expect(r.currentDelegate).toBeNull();
+      expect(r.currentDelegatedAmount).toBe(0n);
+      expect(r.requiredAmount).toBe(5_000_000_000n);
+    }
+    expect(chain.pullFromBuyer).not.toHaveBeenCalled();
+  });
+
+  it("returns needs_approval when delegate is wrong wallet", async () => {
+    const { quoteId } = await insertReverseQuote(pool);
+    const chain = fakeChain({
+      buyerDelegate: {
+        delegate: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM", // not us
+        delegatedAmount: 10_000_000_000n,
+      },
+    });
+    const fetchImpl = vi.fn();
+    const r = await executeSolanaSwap({
+      quoteId,
+      recipient: FAKE_PAYER,
+      inboundPaymentId: null,
+      pool,
+      chain,
+      swapWalletAddress: SWAP_WALLET_ADDR,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(r.kind).toBe("needs_approval");
+    expect(chain.pullFromBuyer).not.toHaveBeenCalled();
+  });
+
+  it("happy path: pulls SPL, swaps via Jupiter, transfers USDC to buyer", async () => {
+    const { quoteId } = await insertReverseQuote(pool);
+    const chain = fakeChain({
+      buyerDelegate: {
+        delegate: SWAP_WALLET_ADDR,
+        delegatedAmount: 10_000_000_000n, // covers 5e9 input
+      },
+      preBal: 0n,
+      postBal: 330_000n,
+    });
+    const fetchImpl = vi
+      .fn()
+      // 1st: re-quote
+      .mockResolvedValueOnce(jupiterReverseResponse())
+      // 2nd: POST /swap (Jupiter build tx)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            swapTransaction: "BASE64_TX",
+            lastValidBlockHeight: 100,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      );
+    const r = await executeSolanaSwap({
+      quoteId,
+      recipient: FAKE_PAYER,
+      inboundPaymentId: null,
+      pool,
+      chain,
+      swapWalletAddress: SWAP_WALLET_ADDR,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") {
+      expect(r.pullSignature).toBe("pull_sig_123");
+      expect(r.swapSignature).toBe("swap_sig_123");
+      expect(r.transferSignature).toBe("xfer_sig_123");
+      expect(r.outputAmount).toBe(330_000n);
+    }
+    expect(chain.pullFromBuyer).toHaveBeenCalledTimes(1);
   });
 });
