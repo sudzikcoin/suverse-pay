@@ -27,8 +27,20 @@
 
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import type { AcceptedPayment } from "@suverselabs/x402-server";
-import { USDC_MINT, SOLANA_CAIP2 } from "./swap.js";
-import { USDC_BASE, BASE_CAIP2 } from "./swap-base.js";
+
+// Constants inlined rather than imported from ./swap and ./swap-base
+// to keep this module a leaf. swap.ts and swap-base.ts both import
+// from here, so the reverse direction would form a Node ESM cycle
+// and trip TDZ during module init (the description literals are
+// evaluated at top level).
+/** USDC mint on Solana mainnet. Matches swap.ts USDC_MINT. */
+const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+/** CAIP-2 for Solana mainnet. Matches swap.ts SOLANA_CAIP2. */
+const SOLANA_CAIP2 = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+/** USDC on Base mainnet. Matches swap-base.ts USDC_BASE. */
+const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+/** CAIP-2 for Base mainnet. Matches swap-base.ts BASE_CAIP2. */
+const BASE_CAIP2 = "eip155:8453";
 
 /**
  * 1 atomic USDC. USDC has 6 decimals, so this is $0.000001 — the
