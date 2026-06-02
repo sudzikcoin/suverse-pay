@@ -597,19 +597,36 @@ export async function getProxyStats(args: {
 // implied by its internal_handler value and surfaces the real numbers
 // the user expects to see.
 
-/** Network filter used by getSwapStats per internal_handler value. */
-const SWAP_HANDLER_NETWORK: Record<string, string> = {
-  // Both swap chains pin their network to a single CAIP-2 ID. The
-  // Solana one varies slightly per chain genesis hash; we match by
-  // prefix in SQL to avoid hard-coding the full ID.
-  swap_solana_execute: "solana:",
-  swap_base_execute: "eip155:8453",
+/**
+ * Per-chain config used by getSwapStats. We pin both:
+ *   - the network prefix used to scope swap_transactions to the right
+ *     chain (Solana CAIP-2 has a chain-id suffix, so prefix match).
+ *   - the USDC mint/contract address on that chain. swap_transactions
+ *     stores fee_amount in the input_token's atomic units, so to roll
+ *     it up as USD revenue we only sum rows where the input token is
+ *     USDC. Token→USDC swap fees (input_token != USDC) are denominated
+ *     in the source token and can't be summed as dollars without a
+ *     price feed.
+ */
+const SWAP_HANDLER_CONFIG: Record<string, { networkPrefix: string; usdcToken: string }> = {
+  swap_solana_execute: {
+    networkPrefix: "solana:",
+    usdcToken: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  },
+  swap_base_execute: {
+    networkPrefix: "eip155:8453",
+    usdcToken: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  },
 };
+
+/** Per-quote x402 fee in atomic USDC (6-decimal). Matches
+ *  apps/proxy/src/swap-quote-x402.ts QUOTE_X402_AMOUNT_ATOMIC. */
+export const SWAP_QUOTE_FEE_ATOMIC = 1000n;
 
 export function isSwapHandler(internalHandler: string | null): boolean {
   return (
     internalHandler !== null &&
-    Object.hasOwn(SWAP_HANDLER_NETWORK, internalHandler)
+    Object.hasOwn(SWAP_HANDLER_CONFIG, internalHandler)
   );
 }
 
@@ -625,6 +642,43 @@ export interface SwapStats {
    *  decide whether to render in USDC, SOL, etc. */
   completedInputAtomic: string;
   lastCompletedAt: string | null;
+  /** Quote-route revenue, atomic USDC: totalQuotes × $0.001. Computed
+   *  in JS rather than SQL because the per-quote price is configured
+   *  in the proxy, not the swap row. */
+  quoteFeesAtomic: string;
+  /** Sum of fee_amount over completed swaps where input_token == USDC,
+   *  in atomic USDC. Reverse-direction swaps are excluded (fee is in
+   *  the source token's atomic units, not USDC). */
+  swapFeesAtomic: string;
+}
+
+export interface SwapRevenue {
+  quoteFeesAtomic: string;
+  swapFeesAtomic: string;
+  totalRevenueAtomic: string;
+}
+
+/**
+ * Derive revenue tiles from a SwapStats payload. Pure function so the
+ * UI and the test suite agree on the math; the API hands quote fees
+ * back as a string to avoid bigint serialization headaches.
+ */
+export function computeSwapRevenue(stats: {
+  totalQuotes: number;
+  swapFeesAtomic: string;
+}): SwapRevenue {
+  const quote = BigInt(stats.totalQuotes) * SWAP_QUOTE_FEE_ATOMIC;
+  let swap: bigint;
+  try {
+    swap = BigInt(stats.swapFeesAtomic);
+  } catch {
+    swap = 0n;
+  }
+  return {
+    quoteFeesAtomic: quote.toString(),
+    swapFeesAtomic: swap.toString(),
+    totalRevenueAtomic: (quote + swap).toString(),
+  };
 }
 
 export async function getSwapStats(args: {
@@ -639,7 +693,7 @@ export async function getSwapStats(args: {
   if (!proxy || !isSwapHandler(proxy.internalHandler)) {
     return null;
   }
-  const networkMatch = SWAP_HANDLER_NETWORK[proxy.internalHandler!]!;
+  const cfg = SWAP_HANDLER_CONFIG[proxy.internalHandler!]!;
   const sinceMs = args.sinceHours * 60 * 60 * 1000;
   const since = new Date(Date.now() - sinceMs);
   const rows = await dbQuery<{
@@ -649,6 +703,7 @@ export async function getSwapStats(args: {
     failed_slippage: string;
     expired: string;
     completed_in: string;
+    swap_fees: string;
     last_completed_at: string | null;
   }>(
     `
@@ -660,22 +715,32 @@ export async function getSwapStats(args: {
       COUNT(*) FILTER (WHERE status = 'expired')::text                     AS expired,
       COALESCE(SUM(input_amount) FILTER (WHERE status = 'completed'), 0)::text
                                                                            AS completed_in,
+      COALESCE(SUM(fee_amount)
+                FILTER (WHERE status = 'completed'
+                          AND input_token = $3), 0)::text                  AS swap_fees,
       MAX(completed_at) FILTER (WHERE status = 'completed')::text          AS last_completed_at
     FROM swap_transactions
     WHERE network LIKE $1 || '%'
       AND created_at >= $2
     `,
-    [networkMatch, since],
+    [cfg.networkPrefix, since, cfg.usdcToken],
   );
   const r = rows[0]!;
+  const totalQuotes = Number(r.total);
+  const revenue = computeSwapRevenue({
+    totalQuotes,
+    swapFeesAtomic: r.swap_fees,
+  });
   return {
-    totalQuotes: Number(r.total),
+    totalQuotes,
     completed: Number(r.completed),
     failed: Number(r.failed),
     failedSlippage: Number(r.failed_slippage),
     expired: Number(r.expired),
     completedInputAtomic: r.completed_in,
     lastCompletedAt: r.last_completed_at,
+    quoteFeesAtomic: revenue.quoteFeesAtomic,
+    swapFeesAtomic: revenue.swapFeesAtomic,
   };
 }
 
@@ -705,7 +770,7 @@ export async function listSwapLogs(args: {
   if (!proxy || !isSwapHandler(proxy.internalHandler)) {
     return [];
   }
-  const networkMatch = SWAP_HANDLER_NETWORK[proxy.internalHandler!]!;
+  const networkMatch = SWAP_HANDLER_CONFIG[proxy.internalHandler!]!.networkPrefix;
   const rows = await dbQuery<{
     id: string;
     created_at: string;
