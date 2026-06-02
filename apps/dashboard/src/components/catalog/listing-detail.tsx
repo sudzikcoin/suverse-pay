@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CatalogListing } from "@/lib/catalog-search";
 import { Button } from "@/components/ui/button";
+import { formatListingPrice } from "@/lib/format-price";
 import { networkLabel } from "@/lib/utils";
 import { NetworkBadges } from "./network-badges";
 import { StatusBadge } from "./status-badge";
@@ -138,12 +139,10 @@ export function ListingDetail({ listing }: ListingDetailProps): React.JSX.Elemen
             </p>
           ) : (
             <p className="font-mono text-sm text-foreground/90">
-              {formatAtomic(listing.priceAtomicMin)}
-              {listing.priceAtomicMax !== null
-                && listing.priceAtomicMax !== listing.priceAtomicMin && (
-                <> – {formatAtomic(listing.priceAtomicMax)}</>
-              )}{" "}
-              <span className="text-muted-foreground">{listing.priceUnit}</span>
+              {formatListingPrice(listing.priceAtomicMin)}{" "}
+              <span className="text-muted-foreground">
+                {listing.priceUnit === "per-call" ? "per call" : listing.priceUnit}
+              </span>
             </p>
           )}
         </div>
@@ -222,18 +221,6 @@ export function ListingDetail({ listing }: ListingDetailProps): React.JSX.Elemen
       </aside>
     </div>
   );
-}
-
-function formatAtomic(atomic: string): string {
-  try {
-    const v = BigInt(atomic);
-    const d = v / 1_000_000n;
-    const c = v % 1_000_000n;
-    if (d > 0n) return `$${d}.${c.toString().padStart(6, "0").slice(0, 2)}`;
-    return `$0.${c.toString().padStart(6, "0").replace(/0+$/, "") || "0"}`;
-  } catch {
-    return "$?";
-  }
 }
 
 /**

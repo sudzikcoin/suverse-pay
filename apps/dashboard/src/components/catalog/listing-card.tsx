@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CatalogListing } from "@/lib/catalog-search";
 import { NetworkBadges } from "./network-badges";
 import { StatusBadge } from "./status-badge";
+import { formatListingPrice } from "@/lib/format-price";
 
 interface ListingCardProps {
   listing: CatalogListing;
@@ -45,21 +46,12 @@ export function ListingCard({ listing }: ListingCardProps): React.JSX.Element {
         </p>
         {listing.priceAtomicMin !== null && (
           <p className="font-mono text-xs text-foreground/80">
-            from{" "}
             <span className="text-amber-300">
-              {formatAtomicUsd(listing.priceAtomicMin)}
+              {formatListingPrice(listing.priceAtomicMin)}
+            </span>{" "}
+            <span className="text-muted-foreground">
+              {formatListingPriceUnit(listing.priceUnit)}
             </span>
-            {listing.priceAtomicMax !== null
-              && listing.priceAtomicMax !== listing.priceAtomicMin
-              && (
-                <>
-                  {" – "}
-                  <span className="text-amber-300">
-                    {formatAtomicUsd(listing.priceAtomicMax)}
-                  </span>
-                </>
-              )}{" "}
-            <span className="text-muted-foreground">{listing.priceUnit}</span>
           </p>
         )}
       </div>
@@ -67,19 +59,12 @@ export function ListingCard({ listing }: ListingCardProps): React.JSX.Element {
   );
 }
 
-/** Atomic USDC (6-dec) → human dollar string. */
-function formatAtomicUsd(atomic: string): string {
-  try {
-    const v = BigInt(atomic);
-    const dollars = v / 1_000_000n;
-    const cents = v % 1_000_000n;
-    if (dollars > 0n) {
-      const trimmed = cents.toString().padStart(6, "0").slice(0, 2);
-      return `$${dollars}.${trimmed}`;
-    }
-    // Sub-dollar — show full 6-dec precision (typical x402 pricing).
-    return `$0.${cents.toString().padStart(6, "0").replace(/0+$/, "") || "0"}`;
-  } catch {
-    return "$?";
-  }
+/**
+ * Render the price unit in human-readable form. The DB stores the
+ * x402 spec value ("per-call") but in UI copy we render the more
+ * natural "per call" without the hyphen.
+ */
+function formatListingPriceUnit(unit: string): string {
+  if (unit === "per-call") return "per call";
+  return unit;
 }
