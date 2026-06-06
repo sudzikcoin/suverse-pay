@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { listProxyLogs, type ProxyLogFilter } from "@/lib/proxy-config-store";
-import { SELF_WALLETS } from "@/lib/dashboard-aggregates";
+import { loadSelfWallets } from "@/lib/dashboard-aggregates";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LimitSchema = z.coerce.number().int().min(1).max(200).default(50);
@@ -35,7 +35,7 @@ export async function GET(
     proxyId: id,
     limit,
     filter,
-    selfWallets: SELF_WALLETS,
+    selfWallets: await loadSelfWallets(),
   });
   return NextResponse.json({ logs });
 }

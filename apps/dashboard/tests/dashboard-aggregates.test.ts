@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  SELF_WALLETS,
+  SELF_WALLETS_FALLBACK,
   periodToSince,
 } from "../src/lib/dashboard-aggregates";
 
@@ -30,17 +30,19 @@ describe("dashboard-aggregates · periodToSince", () => {
   });
 });
 
-describe("dashboard-aggregates · SELF_WALLETS", () => {
-  it("matches the test wallets called out in the design doc", () => {
-    expect(SELF_WALLETS).toContain(
+describe("dashboard-aggregates · SELF_WALLETS_FALLBACK", () => {
+  it("contains the bootstrap test wallets used when the DB list is empty", () => {
+    expect(SELF_WALLETS_FALLBACK).toContain(
       "0x3869dE7597bDEa0172B97143f3eed806D8b84bf3",
     );
-    expect(SELF_WALLETS).toContain(
+    expect(SELF_WALLETS_FALLBACK).toContain(
       "26edvkZ99Lfs6LEwfSbfbJG17NM6z4BqrWMk7Z8hTe4D",
     );
   });
 
   it("contains no duplicates", () => {
-    expect(SELF_WALLETS.length).toBe(new Set(SELF_WALLETS).size);
+    expect(SELF_WALLETS_FALLBACK.length).toBe(
+      new Set(SELF_WALLETS_FALLBACK).size,
+    );
   });
 });

@@ -11,16 +11,12 @@
 import { dbQuery } from "./db";
 
 /**
- * Hardcoded list of internal payer addresses. Used to split
- * dashboard revenue into "external" (real buyers) vs "self"
- * (smoke tests + automated catalog probes). The list is small
- * enough that an ANY($::text[]) NOT IN check is essentially free.
- *
- * Maintained alongside the buyer/service-wallet memory entries —
- * any new tester wallet should be appended here so it doesn't
- * inflate the "external revenue" numbers shown on the dashboard.
+ * Bootstrap fallback used when the `internal_wallets` table is empty
+ * or unreachable. The authoritative list lives in the DB (mig 034) —
+ * see `loadSelfWallets()` below. Keep this as the absolute floor so a
+ * cold start can't accidentally show smoke-test traffic as external.
  */
-export const SELF_WALLETS: ReadonlyArray<string> = [
+export const SELF_WALLETS_FALLBACK: ReadonlyArray<string> = [
   "0x3869dE7597bDEa0172B97143f3eed806D8b84bf3",
   "0x09939648B56A776de9783eaE750A7fBE725761f1",
   "8Hy7D9NAiB9FDjS4wU3LhWu6EEQE6AE5xFaBxgyyYai6",
@@ -28,6 +24,71 @@ export const SELF_WALLETS: ReadonlyArray<string> = [
   "26edvkZ99Lfs6LEwfSbfbJG17NM6z4BqrWMk7Z8hTe4D",
   "HFYkH6SUuXLvzGbuB76vJ8u76NG3X25wdd1A7mDM4cSw",
 ];
+
+/**
+ * Process-local cache of `internal_wallets.address`. The list rarely
+ * changes (a new QA bot every few weeks at most), so a 60 s TTL is
+ * plenty — operators who just inserted a new row see it kick in on
+ * the next dashboard refresh.
+ *
+ * We expand each address to {original, lowercased} so the
+ * `<> ALL($::text[])` filters used by every aggregate query match
+ * EVM addresses regardless of checksum casing. Solana/Cosmos
+ * addresses are base58/bech32 — case-sensitive — so the duplicate
+ * lowercased entry is a harmless no-op for those.
+ */
+interface SelfWalletCache {
+  list: ReadonlyArray<string>;
+  fetchedAt: number;
+}
+const SELF_WALLET_TTL_MS = 60_000;
+let selfWalletCache: SelfWalletCache | null = null;
+
+export async function loadSelfWallets(): Promise<ReadonlyArray<string>> {
+  const now = Date.now();
+  if (
+    selfWalletCache &&
+    now - selfWalletCache.fetchedAt < SELF_WALLET_TTL_MS
+  ) {
+    return selfWalletCache.list;
+  }
+  try {
+    const rows = await dbQuery<{ address: string }>(
+      `SELECT address FROM internal_wallets`,
+      [],
+    );
+    const expanded = new Set<string>();
+    for (const r of rows) {
+      expanded.add(r.address);
+      expanded.add(r.address.toLowerCase());
+    }
+    if (expanded.size === 0) {
+      for (const a of SELF_WALLETS_FALLBACK) {
+        expanded.add(a);
+        expanded.add(a.toLowerCase());
+      }
+    }
+    const list = Array.from(expanded);
+    selfWalletCache = { list, fetchedAt: now };
+    return list;
+  } catch {
+    // DB hiccup — keep stale cache if we have one, otherwise return
+    // the hardcoded floor so the dashboard never breaks open and
+    // never accidentally shows self-traffic as external.
+    if (selfWalletCache) return selfWalletCache.list;
+    const fallback = new Set<string>();
+    for (const a of SELF_WALLETS_FALLBACK) {
+      fallback.add(a);
+      fallback.add(a.toLowerCase());
+    }
+    return Array.from(fallback);
+  }
+}
+
+/** Forces a cache refresh on next read — used by tests. */
+export function __resetSelfWalletCache(): void {
+  selfWalletCache = null;
+}
 
 export type Period = "24h" | "7d" | "30d" | "all";
 
@@ -74,7 +135,8 @@ export async function loadRevenueSummary(args: {
   }
   const sinceClause = args.since ? "AND fp.created_at >= $3" : "";
   const testClause = args.includeTestnet ? "" : "AND fp.is_test = FALSE";
-  const params: unknown[] = [args.resourceKeyIds, SELF_WALLETS];
+  const selfWallets = await loadSelfWallets();
+  const params: unknown[] = [args.resourceKeyIds, selfWallets];
   if (args.since) params.push(args.since);
   const rows = await dbQuery<{
     total_revenue: string;
@@ -166,7 +228,7 @@ export async function loadExternalVolumeChart(args: {
     GROUP BY date_trunc($4, fp.created_at)
     ORDER BY bucket ASC
     `,
-    [args.resourceKeyIds, args.since, SELF_WALLETS, bucket],
+    [args.resourceKeyIds, args.since, await loadSelfWallets(), bucket],
   );
   return rows.map((r) => ({
     bucket: r.bucket.toISOString(),
@@ -233,7 +295,7 @@ export async function loadTopEndpoints(args: {
              COUNT(fp.id) DESC
     LIMIT $4
     `,
-    [args.resourceKeyIds, args.since, SELF_WALLETS, args.limit],
+    [args.resourceKeyIds, args.since, await loadSelfWallets(), args.limit],
   );
   return rows.map((r) => ({
     proxyId: r.proxy_id,
@@ -255,6 +317,9 @@ export interface RecentPayment {
   txHash: string | null;
   endpointSlug: string | null;
   displayName: string | null;
+  /** UUID of the seller_proxy_config the call hit, for /dashboard/proxies/[id]. */
+  proxyId: string | null;
+  status: string;
 }
 
 /**
@@ -275,7 +340,7 @@ export async function loadRecentPayments(args: {
     ? "AND (fp.payer IS NULL OR fp.payer <> ALL($3::text[]))"
     : "";
   const params: unknown[] = [args.resourceKeyIds, args.limit];
-  if (args.externalOnly) params.push(SELF_WALLETS);
+  if (args.externalOnly) params.push(await loadSelfWallets());
   const rows = await dbQuery<{
     id: string;
     created_at: Date;
@@ -285,6 +350,8 @@ export async function loadRecentPayments(args: {
     tx_hash: string | null;
     endpoint_slug: string | null;
     display_name: string | null;
+    proxy_id: string | null;
+    status: string;
   }>(
     `
     SELECT
@@ -295,7 +362,9 @@ export async function loadRecentPayments(args: {
       fp.payer,
       fp.tx_hash,
       c.endpoint_slug,
-      c.display_name
+      c.display_name,
+      c.id     AS proxy_id,
+      fp.status
     FROM facilitator_payments fp
     LEFT JOIN proxy_request_logs prl ON prl.facilitator_payment_id = fp.id
     LEFT JOIN seller_proxy_configs c ON c.id = prl.proxy_config_id
@@ -317,6 +386,8 @@ export async function loadRecentPayments(args: {
     txHash: r.tx_hash,
     endpointSlug: r.endpoint_slug,
     displayName: r.display_name,
+    proxyId: r.proxy_id,
+    status: r.status,
   }));
 }
 
@@ -430,7 +501,7 @@ export async function loadProxyListWithStats(args: {
     WHERE l.user_id = $1
     ORDER BY c.created_at DESC
     `,
-    [args.userId, args.since, SELF_WALLETS],
+    [args.userId, args.since, await loadSelfWallets()],
   );
   return rows.map((r) => ({
     id: r.id,

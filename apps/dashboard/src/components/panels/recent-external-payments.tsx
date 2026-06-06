@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  TransactionDetailModal,
+  type RecentPaymentForModal,
+} from "@/components/panels/transaction-detail-modal";
 import {
   explorerUrl,
   formatRelativeTime,
@@ -20,6 +25,8 @@ interface RecentPayment {
   txHash: string | null;
   endpointSlug: string | null;
   displayName: string | null;
+  proxyId: string | null;
+  status: string;
 }
 
 async function fetchRecent(): Promise<RecentPayment[]> {
@@ -33,22 +40,94 @@ async function fetchRecent(): Promise<RecentPayment[]> {
 }
 
 /**
- * Last 10 external (real-buyer) payments — endpoint, network,
- * amount, payer, tx hash. Auto-refreshes every 30s so a fresh
- * payment shows up while the dashboard is open.
+ * Last 10 external (real-buyer) payments. The exclude list comes
+ * from the `internal_wallets` DB table (mig 034) so adding a new QA
+ * bot is a single INSERT, not a code change.
+ *
+ * Auto-refreshes every 30 s. New rows that arrive while the panel is
+ * open get a brief amber highlight, and if the tab is in the
+ * background the document title prefixes "(N) " so the operator
+ * notices at a glance.
  */
 export function RecentExternalPayments(): React.JSX.Element {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["dashboard-recent-external"],
     queryFn: fetchRecent,
     refetchInterval: 30_000,
+    // Re-fetch the moment the tab comes back to the foreground so we
+    // don't show stale data after a long idle window.
+    refetchOnWindowFocus: true,
   });
+
+  const [selected, setSelected] = useState<RecentPaymentForModal | null>(null);
+
+  // ───── new-row tracking (highlight + tab-title flash) ─────
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const [highlightIds, setHighlightIds] = useState<Set<string>>(new Set());
+  const newSinceHiddenRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!data) return;
+    const seen = seenIdsRef.current;
+
+    // First render: seed the seen set without highlighting; we don't
+    // want to amber-flash every row on initial load.
+    if (seen.size === 0) {
+      for (const p of data) seen.add(p.id);
+      return;
+    }
+
+    const fresh = data.filter((p) => !seen.has(p.id));
+    if (fresh.length === 0) return;
+
+    for (const p of fresh) seen.add(p.id);
+
+    setHighlightIds((prev) => {
+      const next = new Set(prev);
+      for (const p of fresh) next.add(p.id);
+      return next;
+    });
+
+    // Drop the amber highlight after ~3 s — matches the UX brief.
+    const ids = fresh.map((p) => p.id);
+    const t = setTimeout(() => {
+      setHighlightIds((prev) => {
+        const next = new Set(prev);
+        for (const id of ids) next.delete(id);
+        return next;
+      });
+    }, 3000);
+
+    // Background-tab counter.
+    if (typeof document !== "undefined" && document.hidden) {
+      newSinceHiddenRef.current += fresh.length;
+      updateTitlePrefix(newSinceHiddenRef.current);
+    }
+
+    return () => clearTimeout(t);
+  }, [data]);
+
+  // Reset the title counter the moment the tab is foregrounded again.
+  useEffect(() => {
+    function onVis(): void {
+      if (!document.hidden) {
+        newSinceHiddenRef.current = 0;
+        updateTitlePrefix(0);
+      }
+    }
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      // On unmount, clear any lingering "(N) " prefix.
+      updateTitlePrefix(0);
+    };
+  }, []);
 
   return (
     <div className="rounded-lg border border-border bg-card">
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
         <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-          Recent external payments
+          Recent external activity
         </h3>
         <span className="text-[11px] text-muted-foreground">
           auto-refreshes every 30 s
@@ -84,13 +163,25 @@ export function RecentExternalPayments(): React.JSX.Element {
             </thead>
             <tbody>
               {data.map((p) => {
-                const tx = p.txHash
-                  ? explorerUrl(p.network, p.txHash)
-                  : null;
+                const tx = p.txHash ? explorerUrl(p.network, p.txHash) : null;
+                const isNew = highlightIds.has(p.id);
                 return (
                   <tr
                     key={p.id}
-                    className="border-t border-border/50 transition-colors hover:bg-secondary/40"
+                    className={
+                      "cursor-pointer border-t border-border/50 transition-colors hover:bg-secondary/40 " +
+                      (isNew ? "bg-amber-300/10 animate-pulse" : "")
+                    }
+                    onClick={() => setSelected(p)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelected(p);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Open transaction ${p.id} details`}
                   >
                     <td className="px-6 py-3 text-muted-foreground whitespace-nowrap">
                       {formatRelativeTime(new Date(p.createdAt))}
@@ -123,11 +214,14 @@ export function RecentExternalPayments(): React.JSX.Element {
                     </td>
                     <td className="px-6 py-3 hidden lg:table-cell font-mono text-[11px] text-muted-foreground">
                       {p.txHash ? (
+                        // Stop click from bubbling so the link opens the
+                        // explorer instead of the detail modal.
                         tx ? (
                           <a
                             href={tx}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="hover:text-accent hover:underline"
                           >
                             {truncateMiddle(p.txHash, 8, 6)}
@@ -156,6 +250,22 @@ export function RecentExternalPayments(): React.JSX.Element {
           See all endpoints →
         </Link>
       </footer>
+
+      <TransactionDetailModal
+        payment={selected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
+}
+
+/**
+ * Adjusts document.title so a background-tab operator sees a fresh
+ * count without us having to own the title string when count is 0.
+ */
+const TITLE_PREFIX_RE = /^\(\d+\)\s+/;
+function updateTitlePrefix(count: number): void {
+  if (typeof document === "undefined") return;
+  const stripped = document.title.replace(TITLE_PREFIX_RE, "");
+  document.title = count > 0 ? `(${count}) ${stripped}` : stripped;
 }
