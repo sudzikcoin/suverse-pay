@@ -173,6 +173,14 @@ export async function handle(
 ): Promise<HandleResult> {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const ipHash = hashIp(args.clientIp);
+  // Capture inbound User-Agent for crawler attribution. Cap at 1024
+  // chars so a misbehaving client can't blow up TEXT storage with a
+  // many-KB UA. Empty string normalises to null.
+  const rawUa = args.incomingHeaders["user-agent"];
+  const userAgent: string | null =
+    typeof rawUa === "string" && rawUa.length > 0
+      ? rawUa.slice(0, 1024)
+      : null;
 
   const config = await deps.store.lookup(args.resourceKeyId, args.slug);
   if (config === null) {
@@ -190,6 +198,7 @@ export async function handle(
       resourceKeyId: config.resourceKeyId,
       outcome: "paused",
       ipHash,
+      userAgent,
     });
     return {
       status: 503,
@@ -235,6 +244,7 @@ export async function handle(
           outcome: "invalid_config",
           errorCode: "client_invalid_body",
           ipHash,
+          userAgent,
         });
         return {
           status: rejection.status,
@@ -254,6 +264,7 @@ export async function handle(
       outcome: "invalid_config",
       errorCode: "no_accepted_payments",
       ipHash,
+      userAgent,
     });
     return {
       status: 503,
@@ -296,6 +307,7 @@ export async function handle(
         upstreamLatencyMs: probe.latencyMs,
         errorCode: `upstream_health_${probe.reason ?? "unknown"}`,
         ipHash,
+        userAgent,
       });
       return {
         status: 503,
@@ -377,6 +389,7 @@ export async function handle(
       errorCode:
         protocol.kind === "rejected" ? protocol.reason ?? null : null,
       ipHash,
+      userAgent,
     });
     return {
       status: protocol.status,
@@ -409,6 +422,7 @@ export async function handle(
         amountAtomic: receipt.amount,
         txHash: receipt.txHash,
         ipHash,
+        userAgent,
       });
       return {
         status: 503,
@@ -441,6 +455,7 @@ export async function handle(
         upstreamLatencyMs: latencyMsErr,
         errorCode: "internal_handler_threw",
         ipHash,
+        userAgent,
       });
       return {
         status: 500,
@@ -454,6 +469,7 @@ export async function handle(
       upstreamStatus: handlerResult.status,
       upstreamLatencyMs: latencyMsInternal,
       ipHash,
+      userAgent,
     });
     const paymentResponseInternal = encodeHeaderJson({
       success: true,
@@ -504,6 +520,7 @@ export async function handle(
       amountAtomic: receipt.amount,
       txHash: receipt.txHash,
       ipHash,
+      userAgent,
     });
     return {
       status: 500,
@@ -537,6 +554,7 @@ export async function handle(
         amountAtomic: receipt.amount,
         txHash: receipt.txHash,
         ipHash,
+        userAgent,
       });
       return {
         status: 503,
@@ -555,6 +573,7 @@ export async function handle(
         outcome: "invalid_config",
         errorCode: "upstream_x402_incomplete",
         ipHash,
+        userAgent,
       });
       return {
         status: 503,
@@ -633,6 +652,7 @@ export async function handle(
         upstreamLatencyMs: latencyMs,
         errorCode: `upstream_x402_${upstreamResult.reason}`,
         ipHash,
+        userAgent,
       });
       return {
         status: 503,
@@ -679,6 +699,7 @@ export async function handle(
         upstreamLatencyMs: latencyMs,
         errorCode: "fetch_error",
         ipHash,
+        userAgent,
       });
       return {
         status: 502,
@@ -696,6 +717,7 @@ export async function handle(
     upstreamStatus: upstreamRes.status,
     upstreamLatencyMs: latencyMs,
     ipHash,
+    userAgent,
   });
 
   const respHeaders = stripHopByHop(upstreamRes.headers);
@@ -962,6 +984,7 @@ async function recordSettledWithInboundLink(
     upstreamStatus: number;
     upstreamLatencyMs: number;
     ipHash: string | null;
+    userAgent: string | null;
   },
 ): Promise<void> {
   let fpId: string | null = null;
@@ -1009,6 +1032,7 @@ async function recordSettledWithInboundLink(
       upstreamStatus: log.upstreamStatus,
       upstreamLatencyMs: log.upstreamLatencyMs,
       ipHash: log.ipHash,
+      userAgent: log.userAgent,
     });
   } catch (err) {
     deps.logger?.error?.(

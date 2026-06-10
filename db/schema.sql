@@ -911,6 +911,12 @@ CREATE TABLE IF NOT EXISTS proxy_request_logs (
   -- (running behind a proxy that strips X-Forwarded-For, etc).
   ip_hash                 TEXT,
 
+  -- Raw inbound User-Agent header (migration 033). Used for
+  -- attributing traffic to known x402 catalog crawlers and uptime
+  -- probes. Nullable: pre-mig-033 rows + clients that omit the
+  -- header. No length cap, no index — read only by ad-hoc queries.
+  user_agent              TEXT,
+
   created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT proxy_request_logs_outcome_ok
