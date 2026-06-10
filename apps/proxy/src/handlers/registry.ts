@@ -78,6 +78,11 @@ import { bitcoinTxDecoder } from "./bitcoin-tx-decoder.js";
 // rationale.
 import { swapSolanaExecute } from "./swap-solana-execute.js";
 import { swapBaseExecute } from "./swap-base-execute.js";
+import {
+  walletReputation,
+  walletReputationPreflight,
+  walletReputationValidator,
+} from "./wallet-reputation.js";
 
 import type {
   InternalHandler,
@@ -118,6 +123,7 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   frankfurter_historical: frankfurterHistorical,
   fear_greed_index: fearGreedIndex,
   crypto_market_pulse: cryptoMarketPulse,
+  wallet_reputation: walletReputation,
   sec_filings: secFilings,
   stooq_precious_metals: stooqPreciousMetals,
   stooq_oil_prices: stooqOilPrices,
@@ -165,6 +171,7 @@ export const INTERNAL_HANDLER_VALIDATORS: Record<string, InternalHandlerValidato
   helius_tx_simulator: heliusTxSimulatorValidator,
   helius_tx_decoder: heliusTxDecoderValidator,
   crypto_market_pulse: cryptoMarketPulseValidator,
+  wallet_reputation: walletReputationValidator,
 };
 
 export function getInternalHandlerValidator(
@@ -182,6 +189,7 @@ export function getInternalHandlerValidator(
  */
 export const INTERNAL_HANDLER_PREFLIGHTS: Record<string, InternalHandlerPreflight> = {
   crypto_market_pulse: cryptoMarketPulsePreflight,
+  wallet_reputation: walletReputationPreflight,
 };
 
 export function getInternalHandlerPreflight(
