@@ -31,6 +31,7 @@ import { buildBazaarExtension } from "./bazaar.js";
 import { decryptHeaders } from "./crypto.js";
 import {
   getInternalHandler,
+  getInternalHandlerPreflight,
   getInternalHandlerValidator,
 } from "./handlers/registry.js";
 import {
@@ -182,6 +183,11 @@ export async function handle(
       ? rawUa.slice(0, 1024)
       : null;
 
+  // Parsed request body captured for forensics (migration 035). Only
+  // /v1/data/* POST traffic is logged — the legacy /v1/proxy routes
+  // forward arbitrary seller payloads we have no business retaining.
+  const loggedBody = requestBodyForLog(args);
+
   const config = await deps.store.lookup(args.resourceKeyId, args.slug);
   if (config === null) {
     return {
@@ -199,6 +205,7 @@ export async function handle(
       outcome: "paused",
       ipHash,
       userAgent,
+      requestBody: loggedBody,
     });
     return {
       status: 503,
@@ -265,6 +272,7 @@ export async function handle(
       errorCode: "no_accepted_payments",
       ipHash,
       userAgent,
+      requestBody: loggedBody,
     });
     return {
       status: 503,
@@ -308,6 +316,7 @@ export async function handle(
         errorCode: `upstream_health_${probe.reason ?? "unknown"}`,
         ipHash,
         userAgent,
+        requestBody: loggedBody,
       });
       return {
         status: 503,
@@ -327,6 +336,64 @@ export async function handle(
       `proxy: upstream health ok config=${config.id} ` +
         `status=${probe.status} method=${probe.method} latencyMs=${probe.latencyMs}`,
     );
+  }
+
+  // Pre-settlement preflight for fail-closed internal handlers. Runs
+  // only when the buyer actually sent payment (a challenge request
+  // never settles, so there is nothing to protect) and the handler
+  // registered a preflight. If the handler's critical sources are
+  // down we return the preflight's response BEFORE runProtocol() —
+  // the buyer is never charged for a product we cannot produce. On
+  // success the preflight's data is threaded into the handler call
+  // below so critical sources aren't computed twice.
+  let preflightData: unknown;
+  if (!noPaymentHeader && config.internalHandler) {
+    const preflight = getInternalHandlerPreflight(config.internalHandler);
+    if (preflight) {
+      const startedPreflight = Date.now();
+      let pf: Awaited<ReturnType<typeof preflight>>;
+      try {
+        pf = await preflight({
+          body: args.body,
+          method: args.method.toUpperCase(),
+          fetchImpl,
+          db: deps.pool,
+        });
+      } catch (err) {
+        deps.logger?.error?.(
+          `proxy: preflight threw handler=${config.internalHandler} config=${config.id}`,
+          err,
+        );
+        pf = {
+          proceed: false,
+          status: 503,
+          body: { error: "preflight_failed", retryable: true },
+        };
+      }
+      if (!pf.proceed) {
+        await logProxyRequest(deps.pool, {
+          proxyConfigId: config.id,
+          resourceKeyId: config.resourceKeyId,
+          outcome: "upstream_error",
+          upstreamStatus: pf.status,
+          upstreamLatencyMs: Date.now() - startedPreflight,
+          errorCode: "preflight_critical_source_down",
+          ipHash,
+          userAgent,
+          requestBody: loggedBody,
+        });
+        return {
+          status: pf.status,
+          body: pf.body,
+          headers: {
+            "content-type": "application/json",
+            "retry-after": "30",
+          },
+          outcome: "upstream_error",
+        };
+      }
+      preflightData = pf.data;
+    }
   }
 
   // Bazaar discovery extension — read from the catalog listing if
@@ -390,6 +457,7 @@ export async function handle(
         protocol.kind === "rejected" ? protocol.reason ?? null : null,
       ipHash,
       userAgent,
+      requestBody: loggedBody,
     });
     return {
       status: protocol.status,
@@ -423,6 +491,7 @@ export async function handle(
         txHash: receipt.txHash,
         ipHash,
         userAgent,
+        requestBody: loggedBody,
       });
       return {
         status: 503,
@@ -438,6 +507,8 @@ export async function handle(
         body: args.body,
         method: args.method.toUpperCase(),
         fetchImpl,
+        db: deps.pool,
+        ...(preflightData !== undefined ? { preflightData } : {}),
       });
     } catch (err) {
       const latencyMsErr = Date.now() - startedAtInternal;
@@ -456,6 +527,7 @@ export async function handle(
         errorCode: "internal_handler_threw",
         ipHash,
         userAgent,
+        requestBody: loggedBody,
       });
       return {
         status: 500,
@@ -470,6 +542,7 @@ export async function handle(
       upstreamLatencyMs: latencyMsInternal,
       ipHash,
       userAgent,
+      requestBody: loggedBody,
     });
     const paymentResponseInternal = encodeHeaderJson({
       success: true,
@@ -521,6 +594,7 @@ export async function handle(
       txHash: receipt.txHash,
       ipHash,
       userAgent,
+      requestBody: loggedBody,
     });
     return {
       status: 500,
@@ -555,6 +629,7 @@ export async function handle(
         txHash: receipt.txHash,
         ipHash,
         userAgent,
+        requestBody: loggedBody,
       });
       return {
         status: 503,
@@ -574,6 +649,7 @@ export async function handle(
         errorCode: "upstream_x402_incomplete",
         ipHash,
         userAgent,
+        requestBody: loggedBody,
       });
       return {
         status: 503,
@@ -653,6 +729,7 @@ export async function handle(
         errorCode: `upstream_x402_${upstreamResult.reason}`,
         ipHash,
         userAgent,
+        requestBody: loggedBody,
       });
       return {
         status: 503,
@@ -700,6 +777,7 @@ export async function handle(
         errorCode: "fetch_error",
         ipHash,
         userAgent,
+        requestBody: loggedBody,
       });
       return {
         status: 502,
@@ -718,6 +796,7 @@ export async function handle(
     upstreamLatencyMs: latencyMs,
     ipHash,
     userAgent,
+    requestBody: loggedBody,
   });
 
   const respHeaders = stripHopByHop(upstreamRes.headers);
@@ -908,6 +987,48 @@ function hashIp(ip: string | null): string | null {
 }
 
 /**
+ * Serialized-size cap for the forensic `request_body` column
+ * (migration 035). 8 KiB covers every legitimate /v1/data payload we
+ * have ever seen (the largest documented request body is well under
+ * 1 KiB) while keeping a hostile 1 MiB POST from bloating the table.
+ */
+const MAX_LOGGED_BODY_BYTES = 8_192;
+
+/**
+ * Returns the parsed JSON body to persist in
+ * `proxy_request_logs.request_body`, or null when nothing should be
+ * logged. Scope is deliberately narrow: /v1/data/* POST traffic only
+ * — that's first-party internal-handler territory where the body is
+ * a query we authored the schema for. Legacy /v1/proxy/* routes
+ * forward arbitrary third-party seller payloads which we have no
+ * business retaining (the long-standing "no body logging" privacy
+ * stance, see migration 010 comments).
+ *
+ * Oversize and unparseable bodies are recorded as small marker
+ * objects rather than dropped — "agent POSTs 50KB of garbage" is
+ * itself the forensic signal this column exists for.
+ */
+function requestBodyForLog(args: HandleArgs): unknown {
+  if (args.method.toUpperCase() !== "POST") return null;
+  let pathname: string;
+  try {
+    pathname = new URL(args.resourceUrl).pathname;
+  } catch {
+    return null;
+  }
+  if (!pathname.startsWith("/v1/data/")) return null;
+  if (!args.body || args.body.length === 0) return null;
+  if (args.body.length > MAX_LOGGED_BODY_BYTES) {
+    return { _oversize: true, byte_length: args.body.length };
+  }
+  try {
+    return JSON.parse(args.body.toString("utf8")) as unknown;
+  } catch {
+    return { _unparseable: true, byte_length: args.body.length };
+  }
+}
+
+/**
  * Pick the seller's pay_to address matching the network the buyer
  * actually paid on. Mirrors the namespace switch in
  * `buildAcceptedPayments`; only invoked from settled paths where the
@@ -985,6 +1106,7 @@ async function recordSettledWithInboundLink(
     upstreamLatencyMs: number;
     ipHash: string | null;
     userAgent: string | null;
+    requestBody: unknown;
   },
 ): Promise<void> {
   let fpId: string | null = null;
@@ -1033,6 +1155,7 @@ async function recordSettledWithInboundLink(
       upstreamLatencyMs: log.upstreamLatencyMs,
       ipHash: log.ipHash,
       userAgent: log.userAgent,
+      requestBody: log.requestBody,
     });
   } catch (err) {
     deps.logger?.error?.(

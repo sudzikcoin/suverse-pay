@@ -17,6 +17,11 @@ import { coingeckoMarketRankings } from "./coingecko-market-rankings.js";
 import { coingeckoOhlcHistory } from "./coingecko-ohlc-history.js";
 import { coingeckoPriceBatch } from "./coingecko-price-batch.js";
 import { coingeckoTrending } from "./coingecko-trending.js";
+import {
+  cryptoMarketPulse,
+  cryptoMarketPulsePreflight,
+  cryptoMarketPulseValidator,
+} from "./crypto-market-pulse.js";
 import { defillamaBridges } from "./defillama-bridges.js";
 import { defillamaFees } from "./defillama-fees.js";
 import { defillamaProtocolTvl } from "./defillama-protocol-tvl.js";
@@ -76,6 +81,7 @@ import { swapBaseExecute } from "./swap-base-execute.js";
 
 import type {
   InternalHandler,
+  InternalHandlerPreflight,
   InternalHandlerValidator,
 } from "./types.js";
 
@@ -111,6 +117,7 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   frankfurter_rates_batch: frankfurterRatesBatch,
   frankfurter_historical: frankfurterHistorical,
   fear_greed_index: fearGreedIndex,
+  crypto_market_pulse: cryptoMarketPulse,
   sec_filings: secFilings,
   stooq_precious_metals: stooqPreciousMetals,
   stooq_oil_prices: stooqOilPrices,
@@ -157,10 +164,28 @@ export function getInternalHandler(name: string): InternalHandler | undefined {
 export const INTERNAL_HANDLER_VALIDATORS: Record<string, InternalHandlerValidator> = {
   helius_tx_simulator: heliusTxSimulatorValidator,
   helius_tx_decoder: heliusTxDecoderValidator,
+  crypto_market_pulse: cryptoMarketPulseValidator,
 };
 
 export function getInternalHandlerValidator(
   name: string,
 ): InternalHandlerValidator | undefined {
   return INTERNAL_HANDLER_VALIDATORS[name];
+}
+
+/**
+ * Pre-settlement health gates keyed by handler name. Optional — only
+ * fail-closed endpoints register one. The dispatcher runs it AFTER
+ * the cheap validator but BEFORE `runProtocol()` settles, so a buyer
+ * is never charged for a verdict the handler cannot produce. See
+ * `InternalHandlerPreflight` in types.ts for the contract.
+ */
+export const INTERNAL_HANDLER_PREFLIGHTS: Record<string, InternalHandlerPreflight> = {
+  crypto_market_pulse: cryptoMarketPulsePreflight,
+};
+
+export function getInternalHandlerPreflight(
+  name: string,
+): InternalHandlerPreflight | undefined {
+  return INTERNAL_HANDLER_PREFLIGHTS[name];
 }

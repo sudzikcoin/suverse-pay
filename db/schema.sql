@@ -917,6 +917,12 @@ CREATE TABLE IF NOT EXISTS proxy_request_logs (
   -- header. No length cap, no index — read only by ad-hoc queries.
   user_agent              TEXT,
 
+  -- Parsed JSON request body for /v1/data/* POST calls (migration
+  -- 035). Writer-capped at 8 KiB serialized; oversize / unparseable
+  -- bodies stored as marker objects. Nullable: pre-035 rows, GET
+  -- traffic, empty bodies. Forensics-only, no index.
+  request_body            JSONB,
+
   created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT proxy_request_logs_outcome_ok
@@ -1685,3 +1691,19 @@ CREATE INDEX refunds_pending_proxy_config_idx
 CREATE UNIQUE INDEX refunds_pending_dedupe_idx
   ON refunds_pending(proxy_config_id, buyer_tx_hash)
   WHERE buyer_tx_hash IS NOT NULL;
+
+-- ─────────────────────────────────────────────────────────────────────
+-- internal_wallets (migration 034) — single source of truth for
+-- "self" wallets. Replaces the dashboard's hardcoded SELF_WALLETS
+-- const: the aggregate layer reads `address` on a short cache and
+-- feeds it into the `<> ALL($::text[])` external/self filters. New
+-- wallets are added with a plain INSERT — no redeploy. `network` and
+-- `label` are informational only; matching is on address.
+-- ─────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS internal_wallets (
+  id         SERIAL PRIMARY KEY,
+  address    VARCHAR(80) UNIQUE NOT NULL,
+  network    VARCHAR(30),
+  label      VARCHAR(100),
+  added_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
