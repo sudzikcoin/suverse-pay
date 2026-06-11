@@ -104,7 +104,17 @@ export interface ScoringRow {
   confidence_score: number | null;
   score_version: string | null;
   last_scored_at: Date | null;
+  cluster_id?: string | null;
   [k: string]: unknown;
+}
+
+/**
+ * Operator-cluster membership (coordinated-timing detection in the
+ * tracker). Label-only honesty layer: it NEVER changes the tier.
+ */
+export interface ClusterInfo {
+  cluster_id: string;
+  size: number;
 }
 
 /** The tracker's hybrid eligibility gate, evaluated on a scoring row. */
@@ -265,7 +275,8 @@ export function buildWalletSummary(v: SummaryInput): string {
 // ─────────────────────────────────────────────────────────────────────
 
 const SCORING_SQL = `
-  SELECT address, chain, status, tier, score::float8 AS score,
+  SELECT address, chain, status, tier, cluster_id,
+         score::float8 AS score,
          confidence_score, score_version, last_scored_at,
          last_activity_at, discovered_at,
          win_rate::float8 AS win_rate,
@@ -492,6 +503,7 @@ interface CriticalData {
   kind: "wallet_reputation_critical";
   wallet: string;
   scoring: ScoringRow | null;
+  cluster: ClusterInfo | null;
   aggregates: TradeAggregates;
   recentTrades: RecentTrade[];
   /**
@@ -537,10 +549,23 @@ async function computeCriticalData(
   const db = input.db;
   const now = new Date();
   let scoring: ScoringRow | null;
+  let cluster: ClusterInfo | null = null;
   let aggregates: TradeAggregates;
   let recentTrades: RecentTrade[];
   try {
     scoring = await queryScoringRow(db, wallet);
+    const clusterId = (scoring?.["cluster_id"] as string | null) ?? null;
+    if (clusterId !== null) {
+      const { rows } = await db.query(
+        `SELECT COUNT(*)::int AS size FROM sm_wallets
+          WHERE chain = $1 AND cluster_id = $2`,
+        [CHAIN, clusterId],
+      );
+      cluster = {
+        cluster_id: clusterId,
+        size: Number(rows[0]?.["size"] ?? 0),
+      };
+    }
   } catch (err) {
     return {
       ok: false,
@@ -571,6 +596,7 @@ async function computeCriticalData(
       kind: "wallet_reputation_critical",
       wallet,
       scoring,
+      cluster,
       aggregates,
       recentTrades,
       helius,
@@ -701,6 +727,7 @@ export const walletReputation: InternalHandler = async (
     body: buildReputationResponse({
       wallet: critical.wallet,
       scoring: critical.scoring,
+      cluster: critical.cluster,
       aggregates: critical.aggregates,
       recentTrades: critical.recentTrades,
       helius,
@@ -712,6 +739,8 @@ export const walletReputation: InternalHandler = async (
 export interface BuildReputationArgs {
   wallet: string;
   scoring: ScoringRow | null;
+  /** Operator-cluster membership; absent/null = not clustered. */
+  cluster?: ClusterInfo | null;
   aggregates: TradeAggregates;
   recentTrades: RecentTrade[];
   helius: HeliusResult;
@@ -724,6 +753,7 @@ export function buildReputationResponse(
 ): Record<string, unknown> {
   const { wallet, scoring, aggregates, recentTrades, helius, computedAt } =
     args;
+  const cluster = args.cluster ?? null;
 
   const tier = deriveTier(scoring);
   const activity = deriveActivity(aggregates.last_trade_at, computedAt);
@@ -764,6 +794,15 @@ export function buildReputationResponse(
         last_trade_at: aggregates.last_trade_at?.toISOString() ?? null,
       },
       style: flags,
+      // Honesty layer: coordinated-timing cluster membership. Label
+      // only — the tier above is untouched by design.
+      cluster: cluster
+        ? {
+            flag: "possible_operator_cluster",
+            cluster_id: cluster.cluster_id,
+            cluster_size: cluster.size,
+          }
+        : null,
       recent_activity: recentTrades,
     },
     data_quality: {

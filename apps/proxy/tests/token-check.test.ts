@@ -906,3 +906,75 @@ describe("buildTokenCheckResponse raw caps", () => {
     expect(b["verdict"]["confidence"]).toBe("low");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────
+// Cluster-collapsed elite counts (tracker coordinated-timing labels)
+// ─────────────────────────────────────────────────────────────────────
+
+describe("cluster-collapsed elite counts", () => {
+  it("summary leads with independent actors when clusters collapse the wallet count", async () => {
+    const res = await tokenCheck({
+      body: body(MEME),
+      method: "POST",
+      db: stubDb({
+        cardRow: {
+          trade_legs: 120,
+          distinct_elite_wallets: 21,
+          distinct_elite_clusters: 9,
+          buy_usd: 3326.76,
+          sell_usd: 3398.25,
+          first_elite_trade: new Date("2026-06-03T13:28:27Z"),
+          last_elite_trade: new Date("2026-06-06T11:49:02Z"),
+        },
+      }),
+      fetchImpl: stubFetch({ jupTokens: [jupToken()] }),
+    });
+    const b = res.body as Record<string, any>;
+    expect(b["signals"]["elite_flow"]["card"]["distinct_elite_wallets"]).toBe(21);
+    expect(b["signals"]["elite_flow"]["card"]["distinct_elite_clusters"]).toBe(9);
+    expect(b["verdict"]["summary"]).toContain("9 independent actors");
+    expect(b["verdict"]["summary"]).toContain("21 wallets, some operator-clustered");
+  });
+
+  it("equal counts keep the plain wallet phrasing", async () => {
+    const res = await tokenCheck({
+      body: body(MEME),
+      method: "POST",
+      db: stubDb({
+        cardRow: {
+          trade_legs: 10,
+          distinct_elite_wallets: 4,
+          distinct_elite_clusters: 4,
+          buy_usd: 100,
+          sell_usd: 50,
+          first_elite_trade: new Date("2026-06-03T13:28:27Z"),
+          last_elite_trade: new Date("2026-06-06T11:49:02Z"),
+        },
+      }),
+      fetchImpl: stubFetch({ jupTokens: [jupToken()] }),
+    });
+    const b = res.body as Record<string, any>;
+    expect(b["verdict"]["summary"]).toContain("4 wallets");
+    expect(b["verdict"]["summary"]).not.toContain("independent actor");
+  });
+
+  it("missing cluster info falls back to wallet count (never inflates the correction)", async () => {
+    const res = await tokenCheck({
+      body: body(MEME),
+      method: "POST",
+      db: stubDb({
+        cardRow: {
+          trade_legs: 10,
+          distinct_elite_wallets: 5,
+          buy_usd: 100,
+          sell_usd: 50,
+          first_elite_trade: new Date("2026-06-03T13:28:27Z"),
+          last_elite_trade: new Date("2026-06-06T11:49:02Z"),
+        },
+      }),
+      fetchImpl: stubFetch({ jupTokens: [jupToken()] }),
+    });
+    const b = res.body as Record<string, any>;
+    expect(b["signals"]["elite_flow"]["card"]["distinct_elite_clusters"]).toBe(5);
+  });
+});

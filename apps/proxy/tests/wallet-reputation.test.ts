@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  buildReputationResponse,
   buildWalletSummary,
   classifyTrade,
   deriveActivity,
@@ -716,5 +717,43 @@ describe("buildWalletSummary", () => {
     });
     expect(s).toContain("no skill signal");
     expect(s).toContain("no recorded trades");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// possible_operator_cluster flag (tracker coordinated-timing labels)
+// ─────────────────────────────────────────────────────────────────────
+
+describe("operator-cluster flag", () => {
+  it("clustered wallet surfaces the flag + size in signals, tier unchanged", () => {
+    const row = scoringRow({ score: 80, confidence_score: 90 });
+    const body = buildReputationResponse({
+      wallet: ELITE_WALLET,
+      scoring: row,
+      cluster: { cluster_id: "5e0bdf4e-3f3f-4a8e-9f5a-9f8f8f8f8f8f", size: 6 },
+      aggregates: aggregates(),
+      recentTrades: [],
+      helius: { ok: true, transactions: [] },
+      computedAt: NOW,
+    }) as Record<string, any>;
+    expect(body["signals"]["cluster"]).toEqual({
+      flag: "possible_operator_cluster",
+      cluster_id: "5e0bdf4e-3f3f-4a8e-9f5a-9f8f8f8f8f8f",
+      cluster_size: 6,
+    });
+    expect(body["verdict"]["tier"]).toBe("elite"); // label, not exclusion
+  });
+
+  it("unclustered wallet reports signals.cluster = null", () => {
+    const body = buildReputationResponse({
+      wallet: ELITE_WALLET,
+      scoring: scoringRow(),
+      cluster: null,
+      aggregates: aggregates(),
+      recentTrades: [],
+      helius: { ok: true, transactions: [] },
+      computedAt: NOW,
+    }) as Record<string, any>;
+    expect(body["signals"]["cluster"]).toBeNull();
   });
 });

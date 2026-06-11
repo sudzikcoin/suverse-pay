@@ -205,6 +205,12 @@ export interface EliteCard {
   sell_usd: number;
   net_usd: number;
   distinct_elite_wallets: number;
+  /**
+   * Wallets collapsed by sm_wallets.cluster_id (coordinated-timing
+   * detection): members of one cluster count as ONE logical actor.
+   * Equals distinct_elite_wallets when no member is clustered.
+   */
+  distinct_elite_clusters: number;
   trade_legs: number;
   first_elite_trade: string | null;
   last_elite_trade: string | null;
@@ -349,9 +355,15 @@ export function buildTokenSummary(v: SummaryInput): string {
       card.hours_since_last_elite_trade !== null
         ? `, last touch ${formatHours(card.hours_since_last_elite_trade)} ago`
         : "";
+    // Cluster-collapsed honesty: when coordinated wallets fold into
+    // fewer logical actors, the summary leads with the actor count.
+    const who =
+      card.distinct_elite_clusters < card.distinct_elite_wallets
+        ? `${card.distinct_elite_clusters} independent actor${card.distinct_elite_clusters === 1 ? "" : "s"} ` +
+          `(${card.distinct_elite_wallets} wallets, some operator-clustered)`
+        : `${card.distinct_elite_wallets} wallet${card.distinct_elite_wallets === 1 ? "" : "s"}`;
     second =
-      `Our elite smart-money cohort traded it: ${card.distinct_elite_wallets} ` +
-      `wallet${card.distinct_elite_wallets === 1 ? "" : "s"}, ` +
+      `Our elite smart-money cohort traded it: ${who}, ` +
       `$${card.buy_usd.toFixed(0)} bought vs $${card.sell_usd.toFixed(0)} sold ` +
       `(${dir})${when}.`;
   } else if (v.eliteStatus === "no_elite_interest") {
@@ -452,7 +464,7 @@ export function classifyHolders(
 
 const ELITE_CARD_SQL = `
   WITH eligible AS (
-    SELECT address FROM sm_wallets
+    SELECT address, cluster_id FROM sm_wallets
      WHERE chain = $1
        AND score >= $2
        AND confidence_score >= $3
@@ -461,6 +473,8 @@ const ELITE_CARD_SQL = `
   SELECT
     COUNT(*)::int AS trade_legs,
     COUNT(DISTINCT t.wallet_address)::int AS distinct_elite_wallets,
+    COUNT(DISTINCT COALESCE(e.cluster_id::text, t.wallet_address))::int
+      AS distinct_elite_clusters,
     COALESCE(SUM(t.value_usd) FILTER (
       WHERE t.token_out = $5 AND t.token_in = ANY($6::text[])
     ), 0)::float8 AS buy_usd,
@@ -521,6 +535,14 @@ async function queryEliteFlow(
   ]);
   const c = cardRes.rows[0] ?? {};
   const legs = Number(c["trade_legs"] ?? 0);
+  const distinctWallets = Number(c["distinct_elite_wallets"] ?? 0);
+  // Missing cluster info (pre-migration rows, stubs) = assume all
+  // wallets independent — never inflate the honesty correction.
+  const distinctClusters =
+    c["distinct_elite_clusters"] === null ||
+    c["distinct_elite_clusters"] === undefined
+      ? distinctWallets
+      : Number(c["distinct_elite_clusters"]);
   const buyUsd = round2(Number(c["buy_usd"] ?? 0));
   const sellUsd = round2(Number(c["sell_usd"] ?? 0));
   const lastTrade = asDate(c["last_elite_trade"]);
@@ -534,7 +556,8 @@ async function queryEliteFlow(
       buy_usd: buyUsd,
       sell_usd: sellUsd,
       net_usd: round2(buyUsd - sellUsd),
-      distinct_elite_wallets: Number(c["distinct_elite_wallets"] ?? 0),
+      distinct_elite_wallets: distinctWallets,
+      distinct_elite_clusters: distinctClusters,
       trade_legs: legs,
       first_elite_trade: asDate(c["first_elite_trade"])?.toISOString() ?? null,
       last_elite_trade: lastTrade?.toISOString() ?? null,
