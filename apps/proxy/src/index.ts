@@ -44,6 +44,7 @@ import {
   type BaseSwapChain,
   type BaseSwapSignerConfig,
 } from "./swap-base.js";
+import { loadMppRail } from "./mpp.js";
 import { startRefundWorker } from "./refund-worker.js";
 
 async function main(): Promise<void> {
@@ -127,11 +128,17 @@ async function main(): Promise<void> {
     }
   }
 
+  // MPP/Tempo rail — off unless MPP_TEMPO_ENABLED=true +
+  // MPP_SECRET_KEY are both set (and even then, per-row opt-in via
+  // mpp_tempo_enabled). loadMppRail logs why it stayed off.
+  const mppRail = loadMppRail(process.env, console);
+
   const app = await buildServer({
     pool,
     masterKey,
     facilitatorUrl,
     facilitatorApiKey,
+    ...(mppRail !== undefined ? { mppRail } : {}),
     ...(process.env["REDIS_URL"]
       ? { redisUrl: process.env["REDIS_URL"] }
       : {}),

@@ -9,6 +9,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import type { SuverseClient } from "@suverselabs/x402-client";
 import { handle, type HandleDeps } from "./handler.js";
+import type { MppRail } from "./mpp.js";
 import {
   BrandingApplicator,
   loadBrandingConfig,
@@ -78,6 +79,12 @@ export interface BuildServerArgs {
    * a hand-built instance (or `undefined` for explicit "no branding").
    */
   branding?: BrandingApplicator;
+  /**
+   * MPP/Tempo rail. Optional — absent keeps the proxy x402-only.
+   * Boot constructs it via `loadMppRail(process.env)`; tests inject
+   * fakes. Only rows with `mpp_tempo_enabled = true` are affected.
+   */
+  mppRail?: MppRail;
 }
 
 export async function buildServer(
@@ -133,6 +140,7 @@ export async function buildServer(
     ...(args.upstreamServiceAddresses !== undefined
       ? { upstreamServiceAddresses: args.upstreamServiceAddresses }
       : {}),
+    ...(args.mppRail !== undefined ? { mppRail: args.mppRail } : {}),
     logger: app.log as unknown as HandleDeps["logger"],
   };
 

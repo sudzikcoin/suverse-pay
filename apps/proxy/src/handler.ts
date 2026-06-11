@@ -38,6 +38,11 @@ import {
   BRANDING_HEADER_NAMES,
   type BrandingApplicator,
 } from "./middleware/response-branding.js";
+import {
+  isMppAuthorization,
+  type MppChallengeInput,
+  type MppRail,
+} from "./mpp.js";
 import { lookupNetwork } from "./networks.js";
 import {
   createInboundFacilitatorPaymentFallback,
@@ -165,6 +170,16 @@ export interface HandleDeps {
    * never blocked by a branding bug.
    */
   branding?: BrandingApplicator;
+  /**
+   * MPP/Tempo rail (Task 39a-rescoped). Optional — absent means the
+   * proxy is x402-only, exactly as before. Present, it only applies
+   * to rows with `mpp_tempo_enabled = true` AND a non-null
+   * `pay_to_evm` (the Tempo recipient): those rows' 402s grow a
+   * `WWW-Authenticate: Payment` challenge and `Authorization:
+   * Payment` credentials are verified + settled on Tempo instead of
+   * going through the x402 facilitator.
+   */
+  mppRail?: MppRail;
 }
 
 /** Result returned to the Fastify adapter — flattened for clarity. */
@@ -282,16 +297,48 @@ export async function handle(
     };
   }
 
+  // MPP/Tempo rail gating (Task 39a-rescoped). The rail is active
+  // for THIS request only when every layer agrees: the process has a
+  // configured rail (deps.mppRail), the row opted in (migration 036
+  // flag), and the row has an EVM payout address to reuse as the
+  // Tempo recipient. An `Authorization: Payment …` header on a
+  // non-gated row is ignored exactly as Authorization always was.
+  const mppRail =
+    deps.mppRail && config.mppTempoEnabled && config.payToEvm !== null
+      ? deps.mppRail
+      : undefined;
+  const rawAuthorization = args.incomingHeaders["authorization"];
+  const mppAuthorization =
+    mppRail !== undefined && isMppAuthorization(rawAuthorization)
+      ? rawAuthorization
+      : undefined;
+  const mppInput: MppChallengeInput | undefined =
+    mppRail !== undefined
+      ? {
+          amountAtomic: config.priceAtomic,
+          recipient: config.payToEvm as string,
+          // Scope binds the credential to this route — a credential
+          // bought for endpoint A fails verification on endpoint B.
+          scope: config.publicSlug ?? config.endpointSlug,
+          description:
+            config.displayName ??
+            config.publicSlug ??
+            config.endpointSlug,
+        }
+      : undefined;
+
   // Pre-charge upstream health probe. Only runs when the buyer
   // hasn't sent payment yet — i.e. the request that would otherwise
   // get a 402 challenge. If the buyer is already paying, we let
   // runProtocol + the upstream call play out so they see real
   // upstream errors (and the existing `outcome: "upstream_error"`
-  // logging) rather than getting blocked by a probe.
+  // logging) rather than getting blocked by a probe. An MPP
+  // credential counts as payment for the same reason.
   //
   // Internal handlers have no external upstream to probe — skip.
   const noPaymentHeader =
-    args.paymentHeader === undefined || args.paymentHeader.trim() === "";
+    (args.paymentHeader === undefined || args.paymentHeader.trim() === "") &&
+    mppAuthorization === undefined;
   if (noPaymentHeader && !config.internalHandler) {
     const probe = await checkUpstreamHealth({
       url: config.originalUrl,
@@ -441,39 +488,130 @@ export async function handle(
     ...(bazaarExtension !== undefined ? { extensions: bazaarExtension } : {}),
   };
 
-  const protocol = await runProtocol({
-    opts: middlewareOpts,
-    resourceUrl: args.resourceUrl,
-    paymentHeader: args.paymentHeader,
-    idempotencyKey: args.idempotencyKey,
-  });
+  // Settle. Two mutually exclusive rails:
+  //   - MPP: the buyer answered our `WWW-Authenticate: Payment`
+  //     challenge. Verify + settle on Tempo ourselves — the x402
+  //     facilitator is not involved.
+  //   - x402 (default): runProtocol() against the facilitator, which
+  //     also produces the 402 challenge when no payment was sent.
+  // Both paths converge on the same `receipt` shape so the dispatch
+  // and bookkeeping below stay rail-agnostic.
+  let receipt: {
+    payer: string;
+    network: string;
+    asset: string;
+    amount: string;
+    txHash: string | null;
+  };
+  let settledViaMpp = false;
+  let mppReceiptHeader: string | undefined;
 
-  if (protocol.kind !== "accepted") {
-    await logProxyRequest(deps.pool, {
-      proxyConfigId: config.id,
-      resourceKeyId: config.resourceKeyId,
-      outcome: protocol.kind === "challenge" ? "challenge" : "settle_failed",
-      errorCode:
-        protocol.kind === "rejected" ? protocol.reason ?? null : null,
-      ipHash,
-      userAgent,
-      requestBody: loggedBody,
+  if (mppRail !== undefined && mppInput !== undefined && mppAuthorization !== undefined) {
+    const settle = await mppRail.verifyAndSettle(mppAuthorization, mppInput);
+    if (!settle.ok) {
+      deps.logger?.warn?.(
+        `proxy: mpp settle failed config=${config.id} code=${settle.errorCode} msg=${settle.message}`,
+      );
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "settle_failed",
+        errorCode: settle.errorCode,
+        network: mppRail.network,
+        ipHash,
+        userAgent,
+        requestBody: loggedBody,
+      });
+      // Re-challenge: a fresh MPP challenge so a well-behaved buyer
+      // can retry (the failed credential's challenge may simply have
+      // expired). The x402 body is omitted on purpose — this buyer
+      // already chose the MPP rail.
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      };
+      const retryChallenge = await tryMppChallengeHeader(
+        mppRail,
+        mppInput,
+        deps.logger,
+      );
+      if (retryChallenge !== undefined) {
+        headers["www-authenticate"] = retryChallenge;
+      }
+      return {
+        status: 402,
+        body: {
+          error: "mpp_payment_failed",
+          code: settle.errorCode,
+          message: settle.message,
+        },
+        headers,
+        outcome: "settle_failed",
+      };
+    }
+    receipt = {
+      payer: settle.payer,
+      network: mppRail.network,
+      asset: mppRail.asset,
+      amount: config.priceAtomic,
+      txHash: settle.txHash.length > 0 ? settle.txHash : null,
+    };
+    settledViaMpp = true;
+    mppReceiptHeader = settle.receiptHeader;
+  } else {
+    const protocol = await runProtocol({
+      opts: middlewareOpts,
+      resourceUrl: args.resourceUrl,
+      paymentHeader: args.paymentHeader,
+      idempotencyKey: args.idempotencyKey,
     });
-    return {
-      status: protocol.status,
-      body: protocol.body,
-      headers: {
+
+    if (protocol.kind !== "accepted") {
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: protocol.kind === "challenge" ? "challenge" : "settle_failed",
+        errorCode:
+          protocol.kind === "rejected" ? protocol.reason ?? null : null,
+        ipHash,
+        userAgent,
+        requestBody: loggedBody,
+      });
+      const headers: Record<string, string> = {
         "content-type": "application/json",
         "cache-control": "no-store",
         "payment-required": encodeHeaderJson(protocol.body),
-      },
-      outcome: protocol.kind === "challenge" ? "challenge" : "settle_failed",
-    };
+      };
+      // Additive MPP challenge: MPP lives entirely in headers, so
+      // emitting it next to the x402 JSON body is non-breaking for
+      // x402 buyers (and invisible to CDP's crawler). Generation
+      // failure is logged and swallowed — never break the x402 402.
+      if (
+        protocol.kind === "challenge" &&
+        mppRail !== undefined &&
+        mppInput !== undefined
+      ) {
+        const mppChallenge = await tryMppChallengeHeader(
+          mppRail,
+          mppInput,
+          deps.logger,
+        );
+        if (mppChallenge !== undefined) {
+          headers["www-authenticate"] = mppChallenge;
+        }
+      }
+      return {
+        status: protocol.status,
+        body: protocol.body,
+        headers,
+        outcome: protocol.kind === "challenge" ? "challenge" : "settle_failed",
+      };
+    }
+    receipt = protocol.receipt;
   }
 
   // Settled — dispatch to internal handler (first-party service) or
   // forward to the upstream HTTP API (reseller flow).
-  const receipt = protocol.receipt;
 
   if (config.internalHandler) {
     const handler = getInternalHandler(config.internalHandler);
@@ -543,6 +681,7 @@ export async function handle(
       ipHash,
       userAgent,
       requestBody: loggedBody,
+      settledViaMpp,
     });
     const paymentResponseInternal = encodeHeaderJson({
       success: true,
@@ -566,6 +705,9 @@ export async function handle(
         "content-type": "application/json",
         "payment-response": paymentResponseInternal,
         "x-payment-response": paymentResponseInternal,
+        ...(mppReceiptHeader !== undefined
+          ? { "payment-receipt": mppReceiptHeader }
+          : {}),
         "access-control-expose-headers": brandingExposeHeader(brandingInternal),
         ...brandingInternal,
       },
@@ -797,6 +939,7 @@ export async function handle(
     ipHash,
     userAgent,
     requestBody: loggedBody,
+    settledViaMpp,
   });
 
   const respHeaders = stripHopByHop(upstreamRes.headers);
@@ -809,6 +952,9 @@ export async function handle(
   });
   respHeaders["payment-response"] = paymentResponse;
   respHeaders["x-payment-response"] = paymentResponse;
+  if (mppReceiptHeader !== undefined) {
+    respHeaders["payment-receipt"] = mppReceiptHeader;
+  }
   const brandingUpstream = await tryBranding(deps, {
     slug: config.publicSlug ?? config.endpointSlug,
     acceptedNetworks: config.acceptedNetworks,
@@ -871,6 +1017,27 @@ function brandingExposeHeader(branding: Record<string, string>): string {
   const base = ["PAYMENT-RESPONSE", "X-PAYMENT-RESPONSE"];
   const present = BRANDING_HEADER_NAMES.filter((h) => branding[h] !== undefined);
   return [...base, ...present].join(", ");
+}
+
+/**
+ * Builds the MPP `WWW-Authenticate` value, or undefined if challenge
+ * generation throws. MPP is the additive rail — a bug in it must
+ * never break the x402 402 (or the MPP error response) it rides on.
+ */
+async function tryMppChallengeHeader(
+  rail: MppRail,
+  input: MppChallengeInput,
+  logger?: HandleDeps["logger"],
+): Promise<string | undefined> {
+  try {
+    return await rail.challengeHeader(input);
+  } catch (err) {
+    logger?.warn?.(
+      `proxy: mpp challenge generation failed scope=${input.scope} — omitting WWW-Authenticate`,
+      err,
+    );
+    return undefined;
+  }
 }
 
 /**
@@ -1107,39 +1274,48 @@ async function recordSettledWithInboundLink(
     ipHash: string | null;
     userAgent: string | null;
     requestBody: unknown;
+    /**
+     * MPP settles never touch `facilitator_payments` — there is no
+     * facilitator in the loop and the table's scheme column speaks
+     * x402. The settled `proxy_request_logs` row (network = Tempo
+     * CAIP-2, tx_hash from the receipt) is the system of record.
+     */
+    settledViaMpp?: boolean;
   },
 ): Promise<void> {
   let fpId: string | null = null;
-  try {
-    if (receipt.txHash !== null) {
-      fpId = await findInboundFacilitatorPaymentByTxHash(
-        deps.pool,
-        receipt.txHash,
-        receipt.network,
+  if (log.settledViaMpp !== true) {
+    try {
+      if (receipt.txHash !== null) {
+        fpId = await findInboundFacilitatorPaymentByTxHash(
+          deps.pool,
+          receipt.txHash,
+          receipt.network,
+        );
+      }
+      if (fpId === null) {
+        const idem = inboundFallbackIdempotencyKey(args.idempotencyKey, receipt);
+        fpId = await createInboundFacilitatorPaymentFallback(deps.pool, {
+          resourceKeyId: config.resourceKeyId,
+          idempotencyKey: idem,
+          network: receipt.network,
+          asset: receipt.asset,
+          scheme: SCHEME_BY_NAMESPACE[lookupNetwork(receipt.network)?.namespace ?? "evm"],
+          amountAtomic: receipt.amount,
+          payer: receipt.payer,
+          recipient: recipientForNetwork(config, receipt.network),
+          txHash: receipt.txHash,
+        });
+      }
+    } catch (err) {
+      deps.logger?.warn?.(
+        `proxy: inbound fp link resolve failed config=${config.id} ` +
+          `network=${receipt.network} payer=${receipt.payer} ` +
+          `tx=${receipt.txHash ?? "(none)"}`,
+        err,
       );
+      fpId = null;
     }
-    if (fpId === null) {
-      const idem = inboundFallbackIdempotencyKey(args.idempotencyKey, receipt);
-      fpId = await createInboundFacilitatorPaymentFallback(deps.pool, {
-        resourceKeyId: config.resourceKeyId,
-        idempotencyKey: idem,
-        network: receipt.network,
-        asset: receipt.asset,
-        scheme: SCHEME_BY_NAMESPACE[lookupNetwork(receipt.network)?.namespace ?? "evm"],
-        amountAtomic: receipt.amount,
-        payer: receipt.payer,
-        recipient: recipientForNetwork(config, receipt.network),
-        txHash: receipt.txHash,
-      });
-    }
-  } catch (err) {
-    deps.logger?.warn?.(
-      `proxy: inbound fp link resolve failed config=${config.id} ` +
-        `network=${receipt.network} payer=${receipt.payer} ` +
-        `tx=${receipt.txHash ?? "(none)"}`,
-      err,
-    );
-    fpId = null;
   }
 
   try {
