@@ -1,0 +1,27 @@
+# suverse-pay self-serve x402 proxy (apps/proxy) — port 3003.
+# Task 53 update: Restart=on-failure -> always (a clean-exit crash
+# must also respawn), env relocated from the repo .env to
+# /etc/suverse-pay/proxy.env (chmod 600), MemoryMax added.
+# Apply:
+#   sudo cp deploy/systemd/suverse-pay-proxy.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl restart suverse-pay-proxy
+# Logs: journalctl -u suverse-pay-proxy -f
+[Unit]
+Description=Suverse Pay self-serve x402 proxy (apps/proxy)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=govhub
+WorkingDirectory=/home/govhub/suverse-pay/apps/proxy
+EnvironmentFile=/etc/suverse-pay/proxy.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=3
+MemoryMax=1G
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

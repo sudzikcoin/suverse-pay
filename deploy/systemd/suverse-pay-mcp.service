@@ -1,0 +1,26 @@
+# suverse-pay MCP server (apps/mcp) — port 3100.
+# Task 53: replaces the nohup'd `pnpm --filter @suverse-pay/mcp dev`
+# (tsx watch) that had been serving production since 2026-05-28.
+# Apply:
+#   sudo cp deploy/systemd/suverse-pay-mcp.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now suverse-pay-mcp
+# Logs: journalctl -u suverse-pay-mcp -f
+[Unit]
+Description=SuVerse Pay MCP server (apps/mcp, port 3100)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=govhub
+WorkingDirectory=/home/govhub/suverse-pay/apps/mcp
+EnvironmentFile=/etc/suverse-pay/mcp.env
+ExecStart=/usr/bin/node dist/server.js
+Restart=always
+RestartSec=3
+MemoryMax=768M
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

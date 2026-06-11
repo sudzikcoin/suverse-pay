@@ -1,0 +1,24 @@
+# suverse-pay dashboard (apps/dashboard, Next.js) — port 3002.
+# Task 53: replaces the pm2 process `suverse-dashboard` (npm run start).
+# Next.js loads apps/dashboard/.env natively from the working dir, so
+# no EnvironmentFile is needed (zero env relocation = zero behavior
+# change for the Next runtime).
+# Logs: journalctl -u suverse-pay-dashboard -f
+[Unit]
+Description=SuVerse Pay dashboard (apps/dashboard Next.js, port 3002)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=govhub
+WorkingDirectory=/home/govhub/suverse-pay/apps/dashboard
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start --port 3002
+Restart=always
+RestartSec=3
+MemoryMax=2G
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

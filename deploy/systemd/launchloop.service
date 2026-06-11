@@ -1,0 +1,23 @@
+# LaunchLoop (Next.js) — 127.0.0.1:3001 behind nginx.
+# Task 53: replaces the `next dev` watcher that had been serving since
+# 2026-05-27. Runs the production build (next start); .env loads
+# natively from /opt/launchloop.
+# Logs: journalctl -u launchloop -f
+[Unit]
+Description=LaunchLoop (Next.js, 127.0.0.1:3001)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=govhub
+WorkingDirectory=/opt/launchloop
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3001
+Restart=always
+RestartSec=3
+MemoryMax=2G
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

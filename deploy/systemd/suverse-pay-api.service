@@ -1,0 +1,26 @@
+# suverse-pay facilitator API (apps/api) — port 3000.
+# Task 53: replaces the nohup'd `pnpm --filter @suverse-pay/api dev`
+# (tsx watch) that had been serving production since 2026-06-01.
+# Apply:
+#   sudo cp deploy/systemd/suverse-pay-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now suverse-pay-api
+# Logs: journalctl -u suverse-pay-api -f
+[Unit]
+Description=SuVerse Pay facilitator API (apps/api, port 3000)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=govhub
+WorkingDirectory=/home/govhub/suverse-pay/apps/api
+EnvironmentFile=/etc/suverse-pay/api.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=3
+MemoryMax=1G
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

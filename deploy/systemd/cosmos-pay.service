@@ -1,0 +1,24 @@
+# cosmos-pay x402 facilitator (Go) — noble-1 mainnet, port 8402.
+# Task 53: replaces the nohup'd ./bin/facilitator running since
+# 2026-05-30 whose config lived only in that shell's inline env.
+# Env (PAYER_MNEMONIC, X402_*) now in /etc/suverse-pay/cosmos-pay.env.
+# Logs: journalctl -u cosmos-pay -f
+[Unit]
+Description=cosmos-pay x402 facilitator (Go, noble-1, port 8402)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=govhub
+WorkingDirectory=/home/govhub/x402-cosmos
+EnvironmentFile=/etc/suverse-pay/cosmos-pay.env
+ExecStart=/home/govhub/x402-cosmos/bin/facilitator
+Restart=always
+RestartSec=3
+MemoryMax=512M
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
