@@ -46,7 +46,9 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:15-alpine
+        # ECR Public mirror — registry-1.docker.io timed out 3x on
+        # 2026-06-11 (known Docker Hub flake on shared runners).
+        image: public.ecr.aws/docker/library/postgres:15-alpine
         env:
           POSTGRES_USER: suverse
           POSTGRES_PASSWORD: suverse
