@@ -17,9 +17,28 @@ import { randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 
 export type RefundPendingReason =
+  // Upstream-x402 wrap flow: the X-PAYMENT retry failed AFTER our
+  // service wallet may have settled on-chain (original migration 027
+  // vocabulary).
   | "upstream_post_payment_500"
   | "upstream_post_payment_timeout"
-  | "upstream_post_payment_network";
+  | "upstream_post_payment_network"
+  // Task 57 (Defect B): ANY settled buyer payment whose final
+  // response is a failure we caused must enqueue a refund — the
+  // original three reasons only covered the upstream-x402 post-retry
+  // window, which is how two settled 502s bypassed the queue
+  // (morning-report 20260612, payer 0x9CC42f…, $0.30).
+  //
+  // post_settle_upstream_5xx — the upstream (or internal handler)
+  //   answered with a 5xx after the buyer settled.
+  | "post_settle_upstream_5xx"
+  // post_settle_unreachable — we could not reach the upstream at all
+  //   after the buyer settled (fetch threw / 5xx-after-retries).
+  | "post_settle_unreachable"
+  // post_settle_proxy_error — proxy-side failure after settlement
+  //   (header decrypt failed, unknown internal handler, handler
+  //   threw, upstream-x402 misconfiguration, challenge unusable).
+  | "post_settle_proxy_error";
 
 export interface RecordRefundPendingInput {
   proxyConfigId: string;

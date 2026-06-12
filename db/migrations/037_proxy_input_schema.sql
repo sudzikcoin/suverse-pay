@@ -1,0 +1,34 @@
+-- 037_proxy_input_schema.sql — per-config input schema for pre-settle
+-- body validation (Task 57).
+--
+-- Background: proxied / OATP-wrapped endpoints settle the buyer's
+-- payment FIRST and only then call the upstream. When the upstream
+-- rejects the request shape with a 400, the buyer has paid for
+-- garbage (4 settled+400 observed within 24h around 2026-06-05; the
+-- pattern persisted). The three aggregated first-party endpoints
+-- already solve this with in-code validators + preflights; this
+-- column ports the same philosophy to arbitrary proxy configs.
+--
+-- `input_schema` is a minimal JSON-schema-ish object:
+--
+--   {
+--     "type": "object",
+--     "required": ["txid"],
+--     "properties": {
+--       "txid": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+--     }
+--   }
+--
+-- Supported property constraints: type (string/number/boolean/
+-- object/array), pattern, enum, minLength, maxLength. Validation
+-- lives in apps/proxy/src/input-schema.ts and follows the discovery
+-- decision table from handlers/discovery.ts (commit 0e4ff10):
+-- empty/placeholder bodies still get the 402 discovery challenge;
+-- only present-but-schema-invalid bodies are rejected with 422
+-- BEFORE settlement.
+--
+-- NULL (the default) means "no schema" — current behavior, no
+-- validation, no regression.
+
+ALTER TABLE seller_proxy_configs
+  ADD COLUMN IF NOT EXISTS input_schema jsonb;

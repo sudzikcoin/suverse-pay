@@ -37,6 +37,7 @@
  */
 
 import { randomBytes } from "node:crypto";
+import type { RefundPendingReason } from "./refunds.js";
 import { SuverseClient } from "@suverselabs/x402-client";
 import type {
   AcceptedRequirement,
@@ -114,7 +115,7 @@ export interface OutboundFinishInput {
  */
 export interface RefundPendingRecorder {
   record(input: {
-    reason: "upstream_post_payment_500" | "upstream_post_payment_timeout" | "upstream_post_payment_network";
+    reason: RefundPendingReason;
     upstreamStatus: number | null;
     upstreamErrorSnippet: string | null;
   }): Promise<void>;
@@ -231,8 +232,19 @@ export async function callUpstreamWithX402(
   // surface the original error semantics (network_error / upstream_5xx)
   // unchanged so the handler's logging path doesn't have to learn new
   // shapes.
+  // NOTE (Task 57, Defect B): the BUYER has already settled by the
+  // time this function runs — every error exit below leaves them
+  // charged with nothing to show for it. Pre-payment errors ("pre"
+  // relative to OUR outbound spend) therefore record a refund too,
+  // not just the post-retry failures the original migration-027 flow
+  // covered.
   const fetchResult = await fetchInitialWithRetry(args.upstreamUrl, initialInit, deps);
   if (fetchResult.kind === "network_error") {
+    await recordRefundIfWired(deps, {
+      reason: "post_settle_unreachable",
+      upstreamStatus: null,
+      upstreamErrorSnippet: fetchResult.message.slice(0, 500),
+    });
     return {
       kind: "error",
       reason: "network_error",
@@ -240,6 +252,11 @@ export async function callUpstreamWithX402(
     };
   }
   if (fetchResult.kind === "upstream_5xx") {
+    await recordRefundIfWired(deps, {
+      reason: "post_settle_unreachable",
+      upstreamStatus: fetchResult.status,
+      upstreamErrorSnippet: `upstream returned ${fetchResult.status} after ${fetchResult.attempts} attempts`,
+    });
     return {
       kind: "error",
       reason: "upstream_5xx",
@@ -274,6 +291,11 @@ export async function callUpstreamWithX402(
   try {
     challenge = await readChallenge(first, args.upstreamUrl);
   } catch (err) {
+    await recordRefundIfWired(deps, {
+      reason: "post_settle_proxy_error",
+      upstreamStatus: 402,
+      upstreamErrorSnippet: `parse_challenge_failed: ${(err as Error).message}`.slice(0, 500),
+    });
     return {
       kind: "error",
       reason: "parse_challenge_failed",
@@ -286,6 +308,11 @@ export async function callUpstreamWithX402(
   );
   if (!matching) {
     const seen = challenge.accepts.map((a) => a.network).join(",") || "(none)";
+    await recordRefundIfWired(deps, {
+      reason: "post_settle_proxy_error",
+      upstreamStatus: 402,
+      upstreamErrorSnippet: `no_matching_accept: upstream did not offer ${args.requiredNetwork}`.slice(0, 500),
+    });
     return {
       kind: "error",
       reason: "no_matching_accept",
@@ -296,6 +323,11 @@ export async function callUpstreamWithX402(
   if (args.maxPriceHumanUsdc !== null) {
     const cap = parseHumanUsdcToAtomic(args.maxPriceHumanUsdc, matching.asset);
     if (cap !== null && BigInt(matching.amount) > cap) {
+      await recordRefundIfWired(deps, {
+        reason: "post_settle_proxy_error",
+        upstreamStatus: 402,
+        upstreamErrorSnippet: `price_cap_exceeded: upstream price ${matching.amount} > cap ${cap.toString()}`.slice(0, 500),
+      });
       return {
         kind: "error",
         reason: "price_cap_exceeded",
@@ -306,6 +338,11 @@ export async function callUpstreamWithX402(
 
   const payerAddress = deps.addresses[args.signerNamespace as keyof ServiceAddresses];
   if (!payerAddress) {
+    await recordRefundIfWired(deps, {
+      reason: "post_settle_proxy_error",
+      upstreamStatus: null,
+      upstreamErrorSnippet: `missing_signer: no service wallet for namespace ${args.signerNamespace}`,
+    });
     return {
       kind: "error",
       reason: "missing_signer",
@@ -319,6 +356,11 @@ export async function callUpstreamWithX402(
       resource: challenge.resource.url,
     });
   } catch (err) {
+    await recordRefundIfWired(deps, {
+      reason: "post_settle_proxy_error",
+      upstreamStatus: null,
+      upstreamErrorSnippet: `sign_failed: ${(err as Error).message}`.slice(0, 500),
+    });
     return {
       kind: "error",
       reason: "sign_failed",
@@ -544,7 +586,7 @@ function sleep(ms: number): Promise<void> {
 async function recordRefundIfWired(
   deps: UpstreamX402Deps,
   info: {
-    reason: "upstream_post_payment_500" | "upstream_post_payment_timeout" | "upstream_post_payment_network";
+    reason: RefundPendingReason;
     upstreamStatus: number | null;
     upstreamErrorSnippet: string | null;
   },

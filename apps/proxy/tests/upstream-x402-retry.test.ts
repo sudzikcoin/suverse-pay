@@ -304,7 +304,11 @@ describe("upstream-x402 refund-pending recording", () => {
     expect(refund.record).toHaveBeenCalled();
   });
 
-  it("does NOT invoke recorder when initial fetch hits 5xx (no payment sent)", async () => {
+  // Task 57 (Defect B) inverted the next assertion: the BUYER settles
+  // with us before callUpstreamWithX402 runs, so "no payment sent"
+  // was only true of OUR outbound spend — the buyer was already
+  // charged. Every error exit must now record a refund.
+  it("DOES invoke recorder when initial fetch exhausts retries on 5xx (buyer already settled)", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValue(emptyResponse(500)) as unknown as typeof fetch;
@@ -317,6 +321,91 @@ describe("upstream-x402 refund-pending recording", () => {
     const result = await promise;
 
     expect(result.kind).toBe("error");
-    expect(refund.record).not.toHaveBeenCalled();
+    expect(refund.record).toHaveBeenCalledTimes(1);
+    expect(refund.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: "post_settle_unreachable",
+        upstreamStatus: 500,
+      }),
+    );
+  });
+
+  it("invokes recorder with post_settle_unreachable when initial fetch network-errors out", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValue(new Error("ECONNREFUSED")) as unknown as typeof fetch;
+    const refund = makeRefundRecorder();
+    const deps = makeServiceDeps(fetchImpl, refund);
+
+    const promise = callUpstreamWithX402(makeArgs(), deps);
+    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(800);
+    const result = await promise;
+
+    expect(result.kind).toBe("error");
+    expect(refund.record).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: "post_settle_unreachable" }),
+    );
+  });
+
+  it("invokes recorder with post_settle_proxy_error when the price cap blocks the upstream payment", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse(402, {
+        x402Version: 2,
+        resource: { url: UPSTREAM_URL },
+        accepts: [
+          {
+            scheme: "exact",
+            network: SVM_NETWORK,
+            asset: SVM_USDC,
+            payTo: "upstreamPayTo11111111111111111111111111111",
+            amount: "99000000", // 99 USDC ≫ the 0.5 cap below
+            maxAmountRequired: "99000000",
+          },
+        ],
+      }),
+    ) as unknown as typeof fetch;
+    const refund = makeRefundRecorder();
+    const deps = makeServiceDeps(fetchImpl, refund);
+
+    const result = await callUpstreamWithX402(
+      { ...makeArgs(), maxPriceHumanUsdc: "0.500000" },
+      deps,
+    );
+
+    expect(result.kind).toBe("error");
+    expect((result as { reason: string }).reason).toBe("price_cap_exceeded");
+    expect(refund.record).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: "post_settle_proxy_error" }),
+    );
+  });
+
+  it("invokes recorder with post_settle_proxy_error when no accept matches the required network", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse(402, {
+        x402Version: 2,
+        resource: { url: UPSTREAM_URL },
+        accepts: [
+          {
+            scheme: "exact",
+            network: "eip155:8453",
+            asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            payTo: "0x" + "2".repeat(40),
+            amount: "1000",
+            maxAmountRequired: "1000",
+          },
+        ],
+      }),
+    ) as unknown as typeof fetch;
+    const refund = makeRefundRecorder();
+    const deps = makeServiceDeps(fetchImpl, refund);
+
+    const result = await callUpstreamWithX402(makeArgs(), deps);
+
+    expect(result.kind).toBe("error");
+    expect((result as { reason: string }).reason).toBe("no_matching_accept");
+    expect(refund.record).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: "post_settle_proxy_error" }),
+    );
   });
 });

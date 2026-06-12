@@ -40,6 +40,11 @@ import {
   type BrandingApplicator,
 } from "./middleware/response-branding.js";
 import {
+  classifyBodyAgainstSchema,
+  parseProxyInputSchema,
+  type ProxyInputSchema,
+} from "./input-schema.js";
+import {
   isMppAuthorization,
   type MppChallengeInput,
   type MppRail,
@@ -56,7 +61,7 @@ import {
   type ProxyConfigStore,
   type ProxyOutcome,
 } from "./store.js";
-import { recordRefundPending } from "./refunds.js";
+import { recordRefundPending, type RefundPendingReason } from "./refunds.js";
 import { checkUpstreamHealth } from "./upstream-health.js";
 import {
   callUpstreamWithX402,
@@ -344,6 +349,57 @@ export async function handle(
   const noPaymentHeader =
     (args.paymentHeader === undefined || args.paymentHeader.trim() === "") &&
     mppAuthorization === undefined;
+
+  // Per-config input-schema gate (Task 57, migration 037). Same
+  // decision table as the internal-handler validators/preflights
+  // (handlers/discovery.ts, commit 0e4ff10), applied to ANY config
+  // whose row carries an input_schema:
+  //
+  //   present + schema-invalid body → 4xx HERE, before the 402 / the
+  //     settle path. The buyer is never charged for a request the
+  //     upstream was always going to reject.
+  //   empty / placeholder body, unpaid → fall through to the 402
+  //     challenge (catalog crawlers read price + input_schema off it).
+  //   empty / placeholder body, PAID → 422 before settlement — the
+  //     anti-"pay for garbage" guarantee has no preflight to fall
+  //     back on here, unlike internal handlers.
+  //   schema NULL/unusable, or non-body method → unchanged behavior.
+  const configInputSchema = hasBodyMethod(config.originalMethod)
+    ? parseProxyInputSchema(config.inputSchema)
+    : null;
+  if (configInputSchema !== null) {
+    const verdict = classifyBodyAgainstSchema(args.body, configInputSchema);
+    const rejection =
+      verdict.kind === "invalid"
+        ? { status: verdict.status, body: verdict.body }
+        : verdict.kind === "discovery" && !noPaymentHeader
+        ? {
+            status: 422,
+            body: { error: "required_input_missing" } as Record<string, unknown>,
+          }
+        : null;
+    if (rejection !== null) {
+      await logProxyRequest(deps.pool, {
+        proxyConfigId: config.id,
+        resourceKeyId: config.resourceKeyId,
+        outcome: "invalid_config",
+        errorCode: "client_invalid_body_schema",
+        ipHash,
+        userAgent,
+        requestBody: loggedBody,
+      });
+      return {
+        status: rejection.status,
+        body: {
+          ...rejection.body,
+          input_schema: configSchemaForChallenge(config, configInputSchema),
+        },
+        headers: { "content-type": "application/json" },
+        outcome: "invalid_config",
+      };
+    }
+  }
+
   if (noPaymentHeader && !config.internalHandler) {
     const probe = await checkUpstreamHealth({
       url: config.originalUrl,
@@ -589,12 +645,20 @@ export async function handle(
       // spending. Body and `payment-required` header carry the same
       // augmented JSON.
       let challengeBody: unknown = protocol.body;
-      if (protocol.kind === "challenge" && config.internalHandler) {
-        const inputSchema = getInternalHandlerInputSchema(
-          config.internalHandler,
-        );
-        if (inputSchema !== undefined) {
-          challengeBody = { ...protocol.body, input_schema: inputSchema };
+      if (protocol.kind === "challenge") {
+        const handlerSchema = config.internalHandler
+          ? getInternalHandlerInputSchema(config.internalHandler)
+          : undefined;
+        if (handlerSchema !== undefined) {
+          challengeBody = { ...protocol.body, input_schema: handlerSchema };
+        } else if (configInputSchema !== null) {
+          // Config-level schema (migration 037) — publish the contract
+          // on the challenge so schema-blind probes and paying agents
+          // learn the required fields before spending.
+          challengeBody = {
+            ...protocol.body,
+            input_schema: configSchemaForChallenge(config, configInputSchema),
+          };
         }
       }
       const headers: Record<string, string> = {
@@ -651,6 +715,10 @@ export async function handle(
         userAgent,
         requestBody: loggedBody,
       });
+      await enqueueRefundPending(deps, config, receipt, {
+        reason: "post_settle_proxy_error",
+        upstreamErrorSnippet: `unknown_internal_handler:${config.internalHandler}`,
+      });
       return {
         status: 503,
         body: { error: "proxy_misconfigured" },
@@ -687,6 +755,11 @@ export async function handle(
         userAgent,
         requestBody: loggedBody,
       });
+      await enqueueRefundPending(deps, config, receipt, {
+        reason: "post_settle_proxy_error",
+        upstreamStatus: 500,
+        upstreamErrorSnippet: `internal_handler_threw:${config.internalHandler}: ${(err as Error)?.message ?? String(err)}`.slice(0, 500),
+      });
       return {
         status: 500,
         body: { error: "internal_handler_error" },
@@ -695,14 +768,32 @@ export async function handle(
       };
     }
     const latencyMsInternal = Date.now() - startedAtInternal;
-    await recordSettledWithInboundLink(deps, config, receipt, args, {
-      upstreamStatus: handlerResult.status,
-      upstreamLatencyMs: latencyMsInternal,
-      ipHash,
-      userAgent,
-      requestBody: loggedBody,
-      settledViaMpp,
-    });
+    const fpIdInternal = await recordSettledWithInboundLink(
+      deps,
+      config,
+      receipt,
+      args,
+      {
+        upstreamStatus: handlerResult.status,
+        upstreamLatencyMs: latencyMsInternal,
+        ipHash,
+        userAgent,
+        requestBody: loggedBody,
+        settledViaMpp,
+      },
+    );
+    // Settled buyer + internal handler answered 5xx → the buyer paid
+    // for a verdict we failed to produce. Queue the refund (Defect B —
+    // this exact shape is how cosmos_wallet_balance burned crawler
+    // 0x9CC42f… $0.10 on 2026-06-12 without a queue row).
+    if (handlerResult.status >= 500) {
+      await enqueueRefundPending(deps, config, receipt, {
+        reason: "post_settle_upstream_5xx",
+        upstreamStatus: handlerResult.status,
+        upstreamErrorSnippet: safeBodySnippet(handlerResult.body),
+        inboundFacilitatorPaymentId: fpIdInternal,
+      });
+    }
     const paymentResponseInternal = encodeHeaderJson({
       success: true,
       transaction: receipt.txHash ?? "",
@@ -758,6 +849,10 @@ export async function handle(
       userAgent,
       requestBody: loggedBody,
     });
+    await enqueueRefundPending(deps, config, receipt, {
+      reason: "post_settle_proxy_error",
+      upstreamErrorSnippet: "forward_headers_decrypt_failed",
+    });
     return {
       status: 500,
       body: { error: "proxy_misconfigured" },
@@ -793,6 +888,10 @@ export async function handle(
         userAgent,
         requestBody: loggedBody,
       });
+      await enqueueRefundPending(deps, config, receipt, {
+        reason: "post_settle_proxy_error",
+        upstreamErrorSnippet: "upstream_x402_no_service_client",
+      });
       return {
         status: 503,
         body: { error: "proxy_misconfigured" },
@@ -812,6 +911,10 @@ export async function handle(
         ipHash,
         userAgent,
         requestBody: loggedBody,
+      });
+      await enqueueRefundPending(deps, config, receipt, {
+        reason: "post_settle_proxy_error",
+        upstreamErrorSnippet: "upstream_x402_incomplete_config",
       });
       return {
         status: 503,
@@ -941,6 +1044,10 @@ export async function handle(
         userAgent,
         requestBody: loggedBody,
       });
+      await enqueueRefundPending(deps, config, receipt, {
+        reason: "post_settle_unreachable",
+        upstreamErrorSnippet: `fetch_error: ${(err as Error)?.message ?? String(err)}`.slice(0, 500),
+      });
       return {
         status: 502,
         body: { error: "upstream_unreachable" },
@@ -953,14 +1060,32 @@ export async function handle(
 
   const latencyMs = Date.now() - startedAt;
 
-  await recordSettledWithInboundLink(deps, config, receipt, args, {
-    upstreamStatus: upstreamRes.status,
-    upstreamLatencyMs: latencyMs,
-    ipHash,
-    userAgent,
-    requestBody: loggedBody,
-    settledViaMpp,
-  });
+  const fpIdUpstream = await recordSettledWithInboundLink(
+    deps,
+    config,
+    receipt,
+    args,
+    {
+      upstreamStatus: upstreamRes.status,
+      upstreamLatencyMs: latencyMs,
+      ipHash,
+      userAgent,
+      requestBody: loggedBody,
+      settledViaMpp,
+    },
+  );
+  // Settled buyer + upstream 5xx passed through → the buyer paid for
+  // a failure. Queue the refund (Defect B — the settled+502 rows from
+  // 0x9CC42f… on 2026-06-12 took exactly this branch and bypassed the
+  // queue because no enqueue existed here).
+  if (upstreamRes.status >= 500) {
+    await enqueueRefundPending(deps, config, receipt, {
+      reason: "post_settle_upstream_5xx",
+      upstreamStatus: upstreamRes.status,
+      upstreamErrorSnippet: upstreamBody.slice(0, 500).toString("utf8"),
+      inboundFacilitatorPaymentId: fpIdUpstream,
+    });
+  }
 
   const respHeaders = stripHopByHop(upstreamRes.headers);
   const paymentResponse = encodeHeaderJson({
@@ -1302,7 +1427,7 @@ async function recordSettledWithInboundLink(
      */
     settledViaMpp?: boolean;
   },
-): Promise<void> {
+): Promise<string | null> {
   let fpId: string | null = null;
   if (log.settledViaMpp !== true) {
     try {
@@ -1357,6 +1482,88 @@ async function recordSettledWithInboundLink(
     deps.logger?.error?.(
       `proxy: logProxyRequest failed for settled row config=${config.id} ` +
         `tx=${receipt.txHash ?? "(none)"}`,
+      err,
+    );
+  }
+  return fpId;
+}
+
+/** First ≤500 chars of a handler/upstream body for refund triage. */
+function safeBodySnippet(body: unknown): string | null {
+  try {
+    const s = typeof body === "string" ? body : JSON.stringify(body);
+    return typeof s === "string" ? s.slice(0, 500) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Methods that carry a request body the input-schema gate can judge. */
+function hasBodyMethod(method: string): boolean {
+  return method === "POST" || method === "PUT" || method === "PATCH";
+}
+
+/**
+ * Wrap a config-level input schema in the same envelope shape the
+ * internal handlers publish (`InternalHandlerInputSchema`-like), so
+ * buyers see one consistent `input_schema` contract regardless of
+ * whether the route is first-party or proxied.
+ */
+function configSchemaForChallenge(
+  config: ProxyConfigRow,
+  schema: ProxyInputSchema,
+): Record<string, unknown> {
+  return {
+    method: config.originalMethod,
+    content_type: "application/json",
+    body: schema,
+  };
+}
+
+/**
+ * Best-effort refund enqueue for a SETTLED payment whose final
+ * response is a failure we caused (Task 57, Defect B). Every post-
+ * settle failure path in `handle()` funnels through here so a buyer
+ * can never pay for a response we did not deliver without leaving a
+ * `refunds_pending` row behind. DB errors are logged and swallowed —
+ * bookkeeping must never mask the error response the buyer is owed.
+ */
+async function enqueueRefundPending(
+  deps: HandleDeps,
+  config: ProxyConfigRow,
+  receipt: {
+    payer: string;
+    network: string;
+    asset: string;
+    amount: string;
+    txHash: string | null;
+  },
+  info: {
+    reason: RefundPendingReason;
+    upstreamStatus?: number | null;
+    upstreamErrorSnippet?: string | null;
+    inboundFacilitatorPaymentId?: string | null;
+  },
+): Promise<void> {
+  try {
+    await recordRefundPending(deps.pool, {
+      proxyConfigId: config.id,
+      resourceKeyId: config.resourceKeyId,
+      buyerAddress: receipt.payer,
+      buyerNetwork: receipt.network,
+      buyerAsset: receipt.asset,
+      buyerAmountAtomic: receipt.amount,
+      buyerTxHash: receipt.txHash,
+      reason: info.reason,
+      upstreamStatus: info.upstreamStatus ?? null,
+      upstreamErrorSnippet: info.upstreamErrorSnippet ?? null,
+      inboundFacilitatorPaymentId: info.inboundFacilitatorPaymentId ?? null,
+    });
+  } catch (err) {
+    deps.logger?.error?.(
+      `proxy: refund enqueue failed config=${config.id} payer=${receipt.payer} ` +
+        `reason=${info.reason} tx=${receipt.txHash ?? "(none)"} — ` +
+        `MANUAL REFUND NEEDED`,
       err,
     );
   }
