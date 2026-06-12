@@ -313,7 +313,8 @@ describe("classifyTrade", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Pre-payment validator — buyer must never pay for garbage input
+// Pre-payment validator — discovery probes pass through to the 402
+// challenge; PRESENT-but-invalid input is 422 and must never settle.
 // ─────────────────────────────────────────────────────────────────────
 
 describe("walletReputationValidator", () => {
@@ -324,9 +325,35 @@ describe("walletReputationValidator", () => {
     expect(validate(JSON.stringify({ wallet: ELITE_WALLET }))).toBeNull();
   });
 
-  it("rejects an empty body with 422", () => {
-    expect(validate(null)?.status).toBe(422);
-    expect(validate("")?.status).toBe(422);
+  it("passes an empty body through to the 402 challenge (discovery)", () => {
+    expect(validate(null)).toBeNull();
+    expect(validate("")).toBeNull();
+  });
+
+  it("passes a missing / non-string / empty wallet through (discovery)", () => {
+    expect(validate("{}")).toBeNull();
+    expect(validate(JSON.stringify({ wallet: 42 }))).toBeNull();
+    expect(validate(JSON.stringify({ wallet: "" }))).toBeNull();
+    expect(validate("null")).toBeNull();
+  });
+
+  it("passes known schema placeholders through (discovery)", () => {
+    for (const placeholder of [
+      "string",
+      "<solana base58 address>",
+      "YOUR_WALLET",
+      "your-wallet-here",
+      "{wallet}",
+      "${WALLET}",
+      "example",
+      "xxxxxxxx",
+      "YourWalletAddressHere1234567890123456", // accidentally valid base58
+    ]) {
+      expect(
+        validate(JSON.stringify({ wallet: placeholder })),
+        `expected discovery pass-through for ${placeholder}`,
+      ).toBeNull();
+    }
   });
 
   it("rejects invalid JSON with 400", () => {
@@ -337,19 +364,13 @@ describe("walletReputationValidator", () => {
     expect(validate("[1,2]")?.status).toBe(422);
   });
 
-  it("rejects a missing / non-string wallet with 422", () => {
-    expect(validate("{}")?.status).toBe(422);
-    expect(validate(JSON.stringify({ wallet: 42 }))?.status).toBe(422);
-    expect(validate(JSON.stringify({ wallet: "" }))?.status).toBe(422);
-  });
-
-  it("rejects non-base58 garbage with 422", () => {
+  it("rejects present non-base58 garbage with 422", () => {
     for (const bad of [
       "hello",
       "0x260fbe1ec46968ee02e5b972507d7bb7f09f82b0", // EVM address: 0 and x illegal
       "O0Il" + "a".repeat(30), // 0, O, I, l are not base58
       "CBjwziSG9Z48MSAfqXNuKHyQ3JqrC963pNeivoUSAV5b!!",
-      "abc", // too short
+      "abcd", // too short, but a real attempt — not a placeholder
       "1".repeat(45), // too long
     ]) {
       const res = validate(JSON.stringify({ wallet: bad }));
@@ -520,6 +541,28 @@ describe("walletReputationPreflight (fail-closed)", () => {
     );
     expect(pf.proceed).toBe(false);
     if (!pf.proceed) expect(pf.status).toBe(422);
+  });
+
+  it("blocks a PAID discovery-class body (empty/placeholder) with 422 — never settles", async () => {
+    // The validator passes these through so unpaid crawlers get the
+    // 402 challenge; if someone actually pays with such a body, the
+    // preflight is the gate that keeps the no-settle guarantee.
+    for (const body of [null, {}, { wallet: "string" }, { wallet: "" }]) {
+      const pf = await walletReputationPreflight({
+        body: body === null ? null : Buffer.from(JSON.stringify(body)),
+        method: "POST",
+        db: makeDbStub({ throwOnScoring: true }),
+        fetchImpl: makeFetchStub(),
+      });
+      expect(pf.proceed, `expected no-proceed for ${JSON.stringify(body)}`).toBe(
+        false,
+      );
+      if (!pf.proceed) {
+        expect(pf.status).toBe(422);
+        // The rejection teaches the schema so the agent can self-correct.
+        expect((pf.body as { input_schema?: unknown }).input_schema).toBeDefined();
+      }
+    }
   });
 });
 

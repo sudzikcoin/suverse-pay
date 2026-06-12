@@ -338,3 +338,176 @@ describe("handle: pre-payment validator wiring", () => {
     expect(result.outcome).toBe("challenge");
   });
 });
+
+// ──────────────────────────────────────────────────────────────────
+// Discovery split — catalog crawlers probing with empty/placeholder
+// bodies must reach the 402 challenge (with `input_schema`), while a
+// present-but-invalid base58 value stays a pre-challenge 422 that
+// never settles. (morning-report 20260612: crawler 0x9CC42f hit 422
+// before the 402 on wallet-reputation/token-check → invisible in
+// Bazaar discovery.)
+// ──────────────────────────────────────────────────────────────────
+
+function makeChallengeFetch() {
+  return vi.fn().mockImplementation((url: string) => {
+    const u = String(url);
+    if (u.endsWith("/facilitator/supported")) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ kinds: [] }), { status: 200 }),
+      );
+    }
+    return Promise.resolve(new Response("{}", { status: 200 }));
+  }) as unknown as typeof fetch;
+}
+
+function walletRepDeps(over: Partial<HandleDeps> = {}) {
+  return makeDeps({
+    store: makeStore(
+      makeConfig({
+        internalHandler: "wallet_reputation",
+        publicSlug: "suverse-wallet-reputation",
+      }),
+    ),
+    fetchImpl: makeChallengeFetch(),
+    ...over,
+  });
+}
+
+async function callWalletRep(deps: HandleDeps, body: Buffer | null) {
+  return handle(
+    {
+      resourceKeyId: "reskey_test",
+      slug: "simulator",
+      method: "POST",
+      resourceUrl: "https://proxy/v1/data/suverse-wallet-reputation",
+      paymentHeader: undefined,
+      idempotencyKey: undefined,
+      incomingHeaders: { "content-type": "application/json" },
+      body,
+      clientIp: "1.2.3.4",
+    },
+    deps,
+  );
+}
+
+describe("handle: discovery probes reach the 402 challenge", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it.each([
+    ["empty body", null],
+    ["empty object", Buffer.from("{}")],
+    ["placeholder wallet", Buffer.from(JSON.stringify({ wallet: "string" }))],
+    [
+      "angle-bracket placeholder",
+      Buffer.from(JSON.stringify({ wallet: "<solana base58 address>" })),
+    ],
+  ])(
+    "wallet_reputation: %s -> 402 challenge with input_schema",
+    async (_label, body) => {
+      const deps = walletRepDeps();
+      const result = await callWalletRep(deps, body);
+      expect(result.status).toBe(402);
+      expect(result.outcome).toBe("challenge");
+      const challenge = result.body as Record<string, any>;
+      // Machine-readable contract the crawler/agent can read.
+      expect(challenge["input_schema"]).toBeDefined();
+      expect(challenge["input_schema"]["body"]["required"]).toEqual(["wallet"]);
+      expect(typeof challenge["input_schema"]["example"]["wallet"]).toBe(
+        "string",
+      );
+      // The same augmented JSON rides the payment-required header.
+      const headerJson = JSON.parse(
+        Buffer.from(
+          result.headers!["payment-required"]!,
+          "base64",
+        ).toString("utf8"),
+      ) as Record<string, unknown>;
+      expect(headerJson["input_schema"]).toBeDefined();
+    },
+  );
+
+  it("token_check: empty body -> 402 challenge with input_schema", async () => {
+    const deps = makeDeps({
+      store: makeStore(
+        makeConfig({
+          internalHandler: "token_check",
+          publicSlug: "suverse-token-check",
+        }),
+      ),
+      fetchImpl: makeChallengeFetch(),
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "simulator",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/data/suverse-token-check",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: { "content-type": "application/json" },
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(402);
+    expect(result.outcome).toBe("challenge");
+    const challenge = result.body as Record<string, any>;
+    expect(challenge["input_schema"]["body"]["required"]).toEqual(["token"]);
+  });
+
+  it("wallet_reputation: present-but-invalid base58 -> 422, no settle attempt", async () => {
+    const fetchSpy = vi.fn();
+    const deps = walletRepDeps({ fetchImpl: fetchSpy as unknown as typeof fetch });
+    const result = await callWalletRep(
+      deps,
+      Buffer.from(JSON.stringify({ wallet: "0xdeadbeef-not-base58" })),
+    );
+    expect(result.status).toBe(422);
+    expect(result.outcome).toBe("invalid_config");
+    expect(result.body).toMatchObject({ error: "invalid_wallet_address" });
+    // Facilitator never consulted — nothing could possibly settle.
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const poolQuery = (deps.pool as unknown as { query: ReturnType<typeof vi.fn> })
+      .query;
+    const prlInserts = poolQuery.mock.calls.filter(([sql]) =>
+      String(sql).includes("INSERT INTO proxy_request_logs"),
+    );
+    expect(prlInserts.length).toBe(1);
+    expect(prlInserts[0]![1]).toEqual(
+      expect.arrayContaining(["invalid_config", "client_invalid_body"]),
+    );
+  });
+
+  it("crypto_market_pulse (no required input): challenge body untouched", async () => {
+    const deps = makeDeps({
+      store: makeStore(
+        makeConfig({
+          internalHandler: "crypto_market_pulse",
+          publicSlug: "suverse-crypto-market-pulse",
+        }),
+      ),
+      fetchImpl: makeChallengeFetch(),
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "simulator",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/data/suverse-crypto-market-pulse",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: { "content-type": "application/json" },
+        body: null,
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+    expect(result.status).toBe(402);
+    expect(
+      (result.body as Record<string, unknown>)["input_schema"],
+    ).toBeUndefined();
+  });
+});

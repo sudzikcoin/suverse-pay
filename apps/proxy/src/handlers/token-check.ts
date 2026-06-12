@@ -43,6 +43,10 @@ import type {
   InternalHandlerResult,
   InternalHandlerValidator,
 } from "./types.js";
+import {
+  classifyRequiredBase58Field,
+  type InternalHandlerInputSchema,
+} from "./discovery.js";
 
 // ─────────────────────────────────────────────────────────────────────
 // Tunables — empirically derived in the token-check research report.
@@ -1047,52 +1051,66 @@ async function computeCriticalData(
 }
 
 /**
- * Pre-payment validator. Invalid JSON → 400; a missing or non-base58
- * `token` → 422. Either way the buyer never sees the 402 challenge
- * and never pays for a call that was always going to fail.
+ * Machine-readable input contract, merged into the 402 challenge body
+ * (top-level `input_schema`) by the dispatcher so catalog crawlers and
+ * schema-aware agents learn the request shape from the challenge.
+ */
+export const tokenCheckInputSchema: InternalHandlerInputSchema = {
+  method: "POST",
+  content_type: "application/json",
+  body: {
+    type: "object",
+    required: ["token"],
+    properties: {
+      token: {
+        type: "string",
+        description:
+          "Solana token mint address to evaluate (base58, 32-44 chars)",
+        pattern: BASE58_RE.source,
+      },
+    },
+  },
+  example: { token: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263" },
+};
+
+/**
+ * Pre-payment validator with the discovery split (see discovery.ts):
+ * an empty / missing / placeholder `token` passes through (null) so
+ * the request reaches the 402 challenge — that is what catalog
+ * crawlers read, and an actually-paid request with such a body is
+ * still stopped pre-settlement by the preflight. Only a PRESENT
+ * non-placeholder string failing base58 gets the 422 before the
+ * challenge; invalid JSON stays a 400.
  */
 export const tokenCheckValidator: InternalHandlerValidator = (
   body,
   _method,
 ) => {
-  if (!body || body.length === 0) {
-    return {
-      status: 422,
-      body: {
-        error: "token_required",
-        expected: '{"token":"<solana mint address>"}',
-      },
-    };
+  const c = classifyRequiredBase58Field(body, "token");
+  switch (c.kind) {
+    case "discovery":
+    case "valid":
+      return null;
+    case "invalid_json":
+      return { status: 400, body: { error: "invalid_json_body" } };
+    case "malformed":
+      return {
+        status: 422,
+        body: {
+          error: "token_required",
+          expected: '{"token":"<solana mint address>"}',
+        },
+      };
+    case "invalid_value":
+      return {
+        status: 422,
+        body: {
+          error: "invalid_token_mint",
+          detail: "token must be a base58 Solana mint address (32-44 chars)",
+          expected: tokenCheckInputSchema.example,
+        },
+      };
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(body.toString("utf8"));
-  } catch {
-    return { status: 400, body: { error: "invalid_json_body" } };
-  }
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    return {
-      status: 422,
-      body: {
-        error: "token_required",
-        expected: '{"token":"<solana mint address>"}',
-      },
-    };
-  }
-  const token = (parsed as Record<string, unknown>)["token"];
-  if (typeof token !== "string" || token.length === 0) {
-    return { status: 422, body: { error: "token_required" } };
-  }
-  if (!BASE58_RE.test(token)) {
-    return {
-      status: 422,
-      body: {
-        error: "invalid_token_mint",
-        detail: "token must be a base58 Solana mint address (32-44 chars)",
-      },
-    };
-  }
-  return null;
 };
 
 /**
@@ -1106,12 +1124,17 @@ export const tokenCheckValidator: InternalHandlerValidator = (
 export const tokenCheckPreflight: InternalHandlerPreflight = async (input) => {
   const mint = parseMint(input.body);
   if (mint === null) {
-    // The validator runs first in the dispatcher, so this is only a
-    // belt-and-braces guard for direct invocation.
+    // PRIMARY anti-"pay for garbage" gate for discovery-class bodies:
+    // the validator deliberately lets empty/placeholder bodies through
+    // to the 402 challenge, so a buyer who then PAYS with such a body
+    // lands here — 422, never settles.
     return {
       status: 422,
       proceed: false,
-      body: { error: "invalid_token_mint" },
+      body: {
+        error: "invalid_token_mint",
+        input_schema: tokenCheckInputSchema,
+      },
     };
   }
   const critical = await computeCriticalData(input, mint);

@@ -31,6 +31,7 @@ import { buildBazaarExtension } from "./bazaar.js";
 import { decryptHeaders } from "./crypto.js";
 import {
   getInternalHandler,
+  getInternalHandlerInputSchema,
   getInternalHandlerPreflight,
   getInternalHandlerValidator,
 } from "./handlers/registry.js";
@@ -247,9 +248,13 @@ export async function handle(
 
   // P2 pre-payment body validation. When the proxy endpoint is backed
   // by an internal handler that registered a validator, run it BEFORE
-  // the 402 challenge. Bot probes with empty / malformed bodies get a
-  // clean 400 and never see the 402 prompt — they stop retrying,
+  // the 402 challenge. Probes with PRESENT-but-malformed bodies get a
+  // clean 4xx and never see the 402 prompt — they stop retrying,
   // which keeps the published error rate clean for legitimate buyers.
+  // Validators deliberately pass empty/placeholder discovery probes
+  // through to the 402 challenge (catalog crawlers read it for price
+  // + schema); the handler's preflight still blocks such bodies from
+  // ever settling. See handlers/discovery.ts for the decision table.
   //
   // `outcome: "invalid_config"` is the closest existing prl outcome
   // for "client sent unusable input". It's deliberately excluded from
@@ -577,10 +582,25 @@ export async function handle(
         userAgent,
         requestBody: loggedBody,
       });
+      // Internal handlers with a required input field publish their
+      // machine-readable contract on the challenge itself, so catalog
+      // crawlers probing with empty bodies see field/type/example next
+      // to the price, and paying agents can self-correct before
+      // spending. Body and `payment-required` header carry the same
+      // augmented JSON.
+      let challengeBody: unknown = protocol.body;
+      if (protocol.kind === "challenge" && config.internalHandler) {
+        const inputSchema = getInternalHandlerInputSchema(
+          config.internalHandler,
+        );
+        if (inputSchema !== undefined) {
+          challengeBody = { ...protocol.body, input_schema: inputSchema };
+        }
+      }
       const headers: Record<string, string> = {
         "content-type": "application/json",
         "cache-control": "no-store",
-        "payment-required": encodeHeaderJson(protocol.body),
+        "payment-required": encodeHeaderJson(challengeBody),
       };
       // Additive MPP challenge: MPP lives entirely in headers, so
       // emitting it next to the x402 JSON body is non-breaking for
@@ -602,7 +622,7 @@ export async function handle(
       }
       return {
         status: protocol.status,
-        body: protocol.body,
+        body: challengeBody,
         headers,
         outcome: protocol.kind === "challenge" ? "challenge" : "settle_failed",
       };

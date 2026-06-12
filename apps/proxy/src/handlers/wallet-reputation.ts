@@ -36,6 +36,10 @@ import type {
   InternalHandlerResult,
   InternalHandlerValidator,
 } from "./types.js";
+import {
+  classifyRequiredBase58Field,
+  type InternalHandlerInputSchema,
+} from "./discovery.js";
 
 // ─────────────────────────────────────────────────────────────────────
 // Tunables
@@ -605,46 +609,66 @@ async function computeCriticalData(
 }
 
 /**
- * Pre-payment validator. Invalid JSON → 400; a missing or non-base58
- * `wallet` → 422. Either way the buyer never sees the 402 challenge
- * and never pays for a call that was always going to fail.
+ * Machine-readable input contract, merged into the 402 challenge body
+ * (top-level `input_schema`) by the dispatcher so catalog crawlers and
+ * schema-aware agents learn the request shape from the challenge.
+ */
+export const walletReputationInputSchema: InternalHandlerInputSchema = {
+  method: "POST",
+  content_type: "application/json",
+  body: {
+    type: "object",
+    required: ["wallet"],
+    properties: {
+      wallet: {
+        type: "string",
+        description:
+          "Solana wallet address to evaluate (base58, 32-44 chars)",
+        pattern: BASE58_RE.source,
+      },
+    },
+  },
+  example: { wallet: "26edvkZ99Lfs6LEwfSbfbJG17NM6z4BqrWMk7Z8hTe4D" },
+};
+
+/**
+ * Pre-payment validator with the discovery split (see discovery.ts):
+ * an empty / missing / placeholder `wallet` passes through (null) so
+ * the request reaches the 402 challenge — that is what catalog
+ * crawlers read, and an actually-paid request with such a body is
+ * still stopped pre-settlement by the preflight. Only a PRESENT
+ * non-placeholder string failing base58 gets the 422 before the
+ * challenge; invalid JSON stays a 400.
  */
 export const walletReputationValidator: InternalHandlerValidator = (
   body,
   _method,
 ) => {
-  if (!body || body.length === 0) {
-    return {
-      status: 422,
-      body: { error: "wallet_required", expected: '{"wallet":"<solana base58 address>"}' },
-    };
+  const c = classifyRequiredBase58Field(body, "wallet");
+  switch (c.kind) {
+    case "discovery":
+    case "valid":
+      return null;
+    case "invalid_json":
+      return { status: 400, body: { error: "invalid_json_body" } };
+    case "malformed":
+      return {
+        status: 422,
+        body: {
+          error: "wallet_required",
+          expected: '{"wallet":"<solana base58 address>"}',
+        },
+      };
+    case "invalid_value":
+      return {
+        status: 422,
+        body: {
+          error: "invalid_wallet_address",
+          detail: "wallet must be a base58 Solana address (32-44 chars)",
+          expected: walletReputationInputSchema.example,
+        },
+      };
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(body.toString("utf8"));
-  } catch {
-    return { status: 400, body: { error: "invalid_json_body" } };
-  }
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    return {
-      status: 422,
-      body: { error: "wallet_required", expected: '{"wallet":"<solana base58 address>"}' },
-    };
-  }
-  const wallet = (parsed as Record<string, unknown>)["wallet"];
-  if (typeof wallet !== "string" || wallet.length === 0) {
-    return { status: 422, body: { error: "wallet_required" } };
-  }
-  if (!BASE58_RE.test(wallet)) {
-    return {
-      status: 422,
-      body: {
-        error: "invalid_wallet_address",
-        detail: "wallet must be a base58 Solana address (32-44 chars)",
-      },
-    };
-  }
-  return null;
 };
 
 /**
@@ -659,12 +683,17 @@ export const walletReputationPreflight: InternalHandlerPreflight = async (
 ) => {
   const wallet = parseWallet(input.body);
   if (wallet === null) {
-    // The validator runs first in the dispatcher, so this is only a
-    // belt-and-braces guard for direct invocation.
+    // PRIMARY anti-"pay for garbage" gate for discovery-class bodies:
+    // the validator deliberately lets empty/placeholder bodies through
+    // to the 402 challenge, so a buyer who then PAYS with such a body
+    // lands here — 422, never settles.
     return {
       status: 422,
       proceed: false,
-      body: { error: "invalid_wallet_address" },
+      body: {
+        error: "invalid_wallet_address",
+        input_schema: walletReputationInputSchema,
+      },
     };
   }
   const critical = await computeCriticalData(input, wallet);

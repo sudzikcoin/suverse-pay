@@ -80,11 +80,13 @@ import { swapSolanaExecute } from "./swap-solana-execute.js";
 import { swapBaseExecute } from "./swap-base-execute.js";
 import {
   tokenCheck,
+  tokenCheckInputSchema,
   tokenCheckPreflight,
   tokenCheckValidator,
 } from "./token-check.js";
 import {
   walletReputation,
+  walletReputationInputSchema,
   walletReputationPreflight,
   walletReputationValidator,
 } from "./wallet-reputation.js";
@@ -94,6 +96,7 @@ import type {
   InternalHandlerPreflight,
   InternalHandlerValidator,
 } from "./types.js";
+import type { InternalHandlerInputSchema } from "./discovery.js";
 
 export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   helius_tx_decoder: heliusTxDecoder,
@@ -204,4 +207,25 @@ export function getInternalHandlerPreflight(
   name: string,
 ): InternalHandlerPreflight | undefined {
   return INTERNAL_HANDLER_PREFLIGHTS[name];
+}
+
+/**
+ * Machine-readable input contracts keyed by handler name. The
+ * dispatcher merges a registered schema into the 402 challenge body
+ * as top-level `input_schema`, so catalog crawlers probing with empty
+ * bodies — and schema-aware agents about to pay — learn the required
+ * field, type and an example without paying first.
+ */
+export const INTERNAL_HANDLER_INPUT_SCHEMAS: Record<
+  string,
+  InternalHandlerInputSchema
+> = {
+  wallet_reputation: walletReputationInputSchema,
+  token_check: tokenCheckInputSchema,
+};
+
+export function getInternalHandlerInputSchema(
+  name: string,
+): InternalHandlerInputSchema | undefined {
+  return INTERNAL_HANDLER_INPUT_SCHEMAS[name];
 }

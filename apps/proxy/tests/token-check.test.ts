@@ -407,17 +407,37 @@ describe("buildTokenSummary", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Validator — 422 before any payment
+// Validator — discovery probes pass to the 402 challenge; present-but-
+// invalid input is 422 before any payment.
 // ─────────────────────────────────────────────────────────────────────
 
 describe("tokenCheckValidator", () => {
-  it("empty body -> 422 token_required", () => {
-    const res = tokenCheckValidator(null, "POST");
-    expect(res?.status).toBe(422);
+  it("empty body -> null (discovery — crawler gets the 402 challenge)", () => {
+    expect(tokenCheckValidator(null, "POST")).toBeNull();
+    expect(tokenCheckValidator(Buffer.from(""), "POST")).toBeNull();
+  });
+  it("missing / empty / placeholder token -> null (discovery)", () => {
+    for (const body of [
+      {},
+      { token: "" },
+      { token: "string" },
+      { token: "<solana mint address>" },
+      { token: "YOUR_TOKEN_MINT" },
+      { token: 0 },
+    ]) {
+      expect(
+        tokenCheckValidator(Buffer.from(JSON.stringify(body)), "POST"),
+        `expected discovery pass-through for ${JSON.stringify(body)}`,
+      ).toBeNull();
+    }
   });
   it("invalid JSON -> 400", () => {
     const res = tokenCheckValidator(Buffer.from("{nope"), "POST");
     expect(res?.status).toBe(400);
+  });
+  it("JSON array body -> 422", () => {
+    const res = tokenCheckValidator(Buffer.from("[1,2]"), "POST");
+    expect(res?.status).toBe(422);
   });
   it("non-base58 token -> 422", () => {
     const res = tokenCheckValidator(
@@ -429,7 +449,7 @@ describe("tokenCheckValidator", () => {
   });
   it("too-short base58 -> 422", () => {
     const res = tokenCheckValidator(
-      Buffer.from(JSON.stringify({ token: "abc" })),
+      Buffer.from(JSON.stringify({ token: "abcd" })),
       "POST",
     );
     expect(res?.status).toBe(422);
@@ -677,6 +697,24 @@ describe("tokenCheckPreflight", () => {
     });
     expect(pf.proceed).toBe(false);
     if (!pf.proceed) expect(pf.status).toBe(422);
+  });
+  it("PAID discovery-class body (empty/placeholder) -> 422, never settles", async () => {
+    // The validator passes these through so unpaid crawlers get the
+    // 402 challenge; if someone actually pays with such a body, the
+    // preflight keeps the no-settle guarantee.
+    for (const raw of [null, "{}", JSON.stringify({ token: "string" })]) {
+      const pf = await tokenCheckPreflight({
+        body: raw === null ? null : Buffer.from(raw),
+        method: "POST",
+        db: stubDb({}),
+        fetchImpl: stubFetch({}),
+      });
+      expect(pf.proceed, `expected no-proceed for ${raw}`).toBe(false);
+      if (!pf.proceed) {
+        expect(pf.status).toBe(422);
+        expect((pf.body as { input_schema?: unknown }).input_schema).toBeDefined();
+      }
+    }
   });
 });
 
