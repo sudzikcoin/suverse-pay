@@ -88,3 +88,49 @@ UPDATE seller_proxy_configs SET input_schema = '{
     "address": {"type": "string", "pattern": "^(cosmos|noble|osmo|juno|stride)1[a-z0-9]{38,58}$", "description": "bech32 Cosmos-ecosystem address; the chain is detected from the prefix"}
   }
 }'::jsonb WHERE endpoint_slug = 'cosmos-wallet-balance';
+
+-- ── Round 2 (2026-06-12 evening) — the configs the crawler 0x9CC42f
+-- and new buyer 0xfEe7578f paid 4xx on during their Jun 12 sweeps.
+-- All six are internal-handler configs WITHOUT registered validators;
+-- schemas mirror the handlers' own parsing exactly (handlers/*.ts),
+-- so paid garbage now stops pre-settle instead of charging for a 400.
+
+UPDATE seller_proxy_configs SET input_schema = '{
+  "type": "object", "required": ["address"],
+  "properties": {
+    "address": {"type": "string", "pattern": "^0x[0-9a-fA-F]{40}$", "description": "EVM address on Base"},
+    "limit": {"type": "integer", "minimum": 1, "maximum": 50, "description": "Max transactions returned (default 20)"}
+  }
+}'::jsonb WHERE internal_handler = 'blockscout_base_wallet_history';
+
+UPDATE seller_proxy_configs SET input_schema = '{
+  "type": "object", "required": ["contract_address"],
+  "properties": {
+    "contract_address": {"type": "string", "pattern": "^0x[0-9a-fA-F]{40}$", "description": "Contract address on Base"}
+  }
+}'::jsonb WHERE internal_handler IN ('etherscan_base_contract_info', 'blockscout_base_token_holders');
+
+UPDATE seller_proxy_configs SET input_schema = '{
+  "type": "object", "required": ["tx_hash"],
+  "properties": {
+    "tx_hash": {"type": "string", "pattern": "^0x[0-9a-fA-F]{64}$", "description": "Base transaction hash"}
+  }
+}'::jsonb WHERE internal_handler = 'base_rpc_tx_decoder';
+
+UPDATE seller_proxy_configs SET input_schema = '{
+  "type": "object", "required": ["address"],
+  "properties": {
+    "address": {"type": "string", "minLength": 25, "maxLength": 90, "description": "Bitcoin address (legacy, P2SH, bech32)"}
+  }
+}'::jsonb WHERE internal_handler = 'bitcoin_address_info';
+
+-- days has NO maximum on purpose: the handler clamps >365 to 365
+-- rather than rejecting, and the schema must never 422 a body the
+-- handler would accept.
+UPDATE seller_proxy_configs SET input_schema = '{
+  "type": "object", "required": ["coin_id"],
+  "properties": {
+    "coin_id": {"type": "string", "pattern": "^[a-z0-9-]{1,80}$", "description": "CoinGecko coin id, e.g. bitcoin"},
+    "days": {"type": "integer", "minimum": 1, "description": "Lookback days 1-365 (default 30; values above 365 are clamped)"}
+  }
+}'::jsonb WHERE internal_handler = 'coingecko_ohlc_history';
