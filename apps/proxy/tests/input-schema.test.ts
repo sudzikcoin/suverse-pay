@@ -202,6 +202,51 @@ describe("classifyBodyAgainstSchema", () => {
     );
   });
 
+  it("integer type: rejects floats and out-of-range, accepts in-range ints", () => {
+    const schema: ProxyInputSchema = {
+      type: "object",
+      required: ["limit"],
+      properties: { limit: { type: "integer", minimum: 1, maximum: 100 } },
+    };
+    expect(
+      classifyBodyAgainstSchema(buf({ limit: 2.5 }), schema),
+    ).toMatchObject({ kind: "invalid", status: 422 });
+    expect(
+      classifyBodyAgainstSchema(buf({ limit: 0 }), schema),
+    ).toMatchObject({ kind: "invalid", status: 422 });
+    expect(
+      classifyBodyAgainstSchema(buf({ limit: 500 }), schema),
+    ).toMatchObject({ kind: "invalid", status: 422 });
+    expect(classifyBodyAgainstSchema(buf({ limit: 20 }), schema).kind).toBe(
+      "valid",
+    );
+  });
+
+  it("minimum/maximum enforced for number type", () => {
+    const schema: ProxyInputSchema = {
+      type: "object",
+      required: ["size"],
+      properties: { size: { type: "number", minimum: 100, maximum: 100000 } },
+    };
+    expect(
+      classifyBodyAgainstSchema(buf({ size: 99.9 }), schema),
+    ).toMatchObject({ kind: "invalid", status: 422 });
+    expect(classifyBodyAgainstSchema(buf({ size: 5000.5 }), schema).kind).toBe(
+      "valid",
+    );
+  });
+
+  it("unknown type string in a seller schema is skipped (fail-open)", () => {
+    const schema = {
+      type: "object",
+      required: ["q"],
+      properties: { q: { type: "int" } },
+    } as unknown as ProxyInputSchema;
+    expect(classifyBodyAgainstSchema(buf({ q: 7 }), schema).kind).toBe(
+      "valid",
+    );
+  });
+
   it("invalid seller regex is skipped (fail-open), not fatal", () => {
     const schema: ProxyInputSchema = {
       type: "object",

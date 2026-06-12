@@ -34,6 +34,7 @@ import { isPlaceholderValue } from "./handlers/discovery.js";
 export type ProxyInputSchemaType =
   | "string"
   | "number"
+  | "integer"
   | "boolean"
   | "object"
   | "array";
@@ -45,6 +46,9 @@ export interface ProxyInputSchemaProperty {
   enum?: (string | number)[];
   minLength?: number;
   maxLength?: number;
+  /** Inclusive bounds (number/integer-typed fields only). */
+  minimum?: number;
+  maximum?: number;
   description?: string;
 }
 
@@ -242,6 +246,14 @@ function classifyValue(
       }
     }
   }
+  if (typeof value === "number") {
+    if (typeof prop.minimum === "number" && value < prop.minimum) {
+      return { detail: `below minimum ${prop.minimum}` };
+    }
+    if (typeof prop.maximum === "number" && value > prop.maximum) {
+      return { detail: `above maximum ${prop.maximum}` };
+    }
+  }
   if (Array.isArray(prop.enum) && prop.enum.length > 0) {
     const allowed = prop.enum as unknown[];
     if (!allowed.includes(value)) {
@@ -257,6 +269,8 @@ function matchesType(value: unknown, type: ProxyInputSchemaType): boolean {
       return typeof value === "string";
     case "number":
       return typeof value === "number" && Number.isFinite(value);
+    case "integer":
+      return typeof value === "number" && Number.isInteger(value);
     case "boolean":
       return typeof value === "boolean";
     case "object":
@@ -265,5 +279,9 @@ function matchesType(value: unknown, type: ProxyInputSchemaType): boolean {
       );
     case "array":
       return Array.isArray(value);
+    default:
+      // Unknown type string in a seller-saved schema — skip the check
+      // (fail-open, same policy as invalid regex patterns).
+      return true;
   }
 }
