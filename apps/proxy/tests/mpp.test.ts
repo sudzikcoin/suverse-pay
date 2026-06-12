@@ -451,3 +451,211 @@ describe("MppTempoRail (real mppx, local-only operations)", () => {
     }
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────
+// MPP × Task 57 interactions. The input-schema gate (mig 037) and the
+// post-settle refund funnel landed AFTER the rail shipped (955d10c)
+// and rewrote handle() around it — these tests pin the contracts the
+// rail must keep: the schema gate runs BEFORE verifyAndSettle (an MPP
+// credential counts as payment for the decision table), and an MPP
+// settle whose response then fails 5xx enqueues a refund exactly like
+// an x402 settle does.
+// ─────────────────────────────────────────────────────────────────────
+
+const TXID_SCHEMA = {
+  type: "object",
+  required: ["txid"],
+  properties: { txid: { type: "string", pattern: "^[0-9a-f]{64}$" } },
+};
+
+function refundInserts(deps: HandleDeps) {
+  const poolQuery = (deps.pool as unknown as { query: ReturnType<typeof vi.fn> }).query;
+  return poolQuery.mock.calls.filter(([sql]) =>
+    String(sql).includes("INSERT INTO refunds_pending"),
+  );
+}
+
+describe("MPP × input-schema gate (Task 57)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  function schemaConfig(over: Partial<ProxyConfigRow> = {}): ProxyConfigRow {
+    return makeConfig({ mppTempoEnabled: true, inputSchema: TXID_SCHEMA, ...over });
+  }
+
+  it("empty body + MPP credential → 422 BEFORE verifyAndSettle (never charges)", async () => {
+    const rail = makeRail();
+    const fetchSpy = vi.fn(); // nothing may be fetched at all
+    const deps = makeDeps({
+      store: makeStore(schemaConfig()),
+      mppRail: rail,
+      fetchImpl: fetchSpy as unknown as typeof fetch,
+    });
+    const result = await handle(
+      makeArgs({
+        incomingHeaders: { authorization: "Payment fake-credential" },
+        body: null,
+      }),
+      deps,
+    );
+    expect(result.status).toBe(422);
+    expect(result.outcome).toBe("invalid_config");
+    expect(result.body).toMatchObject({ error: "required_input_missing" });
+    expect(rail.verifyAndSettle).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("schema-invalid body + MPP credential → 422 BEFORE verifyAndSettle", async () => {
+    const rail = makeRail();
+    const deps = makeDeps({
+      store: makeStore(schemaConfig()),
+      mppRail: rail,
+      fetchImpl: vi.fn() as unknown as typeof fetch,
+    });
+    const result = await handle(
+      makeArgs({
+        incomingHeaders: { authorization: "Payment fake-credential" },
+        body: Buffer.from(JSON.stringify({ txid: "not-hex" })),
+      }),
+      deps,
+    );
+    expect(result.status).toBe(422);
+    expect(result.body).toMatchObject({ error: "invalid_request_body" });
+    expect(rail.verifyAndSettle).not.toHaveBeenCalled();
+  });
+
+  it("schema-valid body + MPP credential → settles and serves", async () => {
+    const rail = makeRail();
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url === "https://upstream.example.com/forecast" && init?.method === "POST") {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({
+      store: makeStore(schemaConfig()),
+      mppRail: rail,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    const result = await handle(
+      makeArgs({
+        incomingHeaders: { authorization: "Payment fake-credential" },
+        body: Buffer.from(JSON.stringify({ txid: "a".repeat(64) })),
+      }),
+      deps,
+    );
+    expect(result.status).toBe(200);
+    expect(result.outcome).toBe("settled");
+    expect(rail.verifyAndSettle).toHaveBeenCalledTimes(1);
+    expect(result.headers["payment-receipt"]).toBe("Payment fake-receipt");
+  });
+
+  it("unpaid empty body on an MPP row → 402 with BOTH the MPP header and input_schema", async () => {
+    const rail = makeRail();
+    const deps = makeDeps({
+      store: makeStore(schemaConfig()),
+      mppRail: rail,
+    });
+    const result = await handle(makeArgs({ body: null }), deps);
+    expect(result.status).toBe(402);
+    expect(result.outcome).toBe("challenge");
+    expect(result.headers["www-authenticate"]).toContain("Payment");
+    expect(
+      (result.body as Record<string, unknown>)["input_schema"],
+    ).toMatchObject({ method: "POST" });
+    expect(rail.verifyAndSettle).not.toHaveBeenCalled();
+  });
+});
+
+describe("MPP settle × post-settle refund funnel (Task 57 Defect B)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("settled via MPP + upstream 5xx passthrough → refunds_pending row on the Tempo network", async () => {
+    const rail = makeRail();
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url === "https://upstream.example.com/forecast" && init?.method === "POST") {
+        return new Response(JSON.stringify({ error: "boom" }), { status: 502 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({
+      store: makeStore(makeConfig({ mppTempoEnabled: true })),
+      mppRail: rail,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    const result = await handle(
+      makeArgs({
+        incomingHeaders: { authorization: "Payment fake-credential" },
+        body: Buffer.from("{}"),
+      }),
+      deps,
+    );
+    expect(result.status).toBe(502);
+    expect(result.outcome).toBe("settled");
+    const inserts = refundInserts(deps);
+    expect(inserts.length).toBe(1);
+    const params = inserts[0]![1] as unknown[];
+    expect(params).toEqual(
+      expect.arrayContaining([
+        "post_settle_upstream_5xx",
+        502,
+        // buyer identity from the MPP receipt, network = Tempo CAIP-2
+        "0x" + "2".repeat(40),
+        "eip155:42431",
+        "0x" + "ab".repeat(32),
+      ]),
+    );
+  });
+
+  it("settled via MPP + upstream fetch error → refunds_pending row (post_settle_unreachable)", async () => {
+    const rail = makeRail();
+    const fetchMock = vi.fn().mockImplementation(async () => {
+      throw new Error("ECONNREFUSED upstream");
+    });
+    const deps = makeDeps({
+      store: makeStore(makeConfig({ mppTempoEnabled: true })),
+      mppRail: rail,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    const result = await handle(
+      makeArgs({
+        incomingHeaders: { authorization: "Payment fake-credential" },
+        body: Buffer.from("{}"),
+      }),
+      deps,
+    );
+    expect(result.status).toBe(502);
+    expect(result.outcome).toBe("upstream_error");
+    const inserts = refundInserts(deps);
+    expect(inserts.length).toBe(1);
+    expect(inserts[0]![1]).toEqual(
+      expect.arrayContaining(["post_settle_unreachable", "eip155:42431"]),
+    );
+  });
+
+  it("settled via MPP + upstream 200 → NO refund row (control)", async () => {
+    const rail = makeRail();
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
+      if (url === "https://upstream.example.com/forecast" && init?.method === "POST") {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const deps = makeDeps({
+      store: makeStore(makeConfig({ mppTempoEnabled: true })),
+      mppRail: rail,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    const result = await handle(
+      makeArgs({
+        incomingHeaders: { authorization: "Payment fake-credential" },
+        body: Buffer.from("{}"),
+      }),
+      deps,
+    );
+    expect(result.status).toBe(200);
+    expect(refundInserts(deps).length).toBe(0);
+  });
+});
