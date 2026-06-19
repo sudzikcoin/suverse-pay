@@ -1,0 +1,18 @@
+{
+  "cap": 80,
+  "activePayTo": "0x2d50131399DDb89de63eEe353EeDa2c7AB97DFBA",
+  "wallets": [
+    {
+      "address": "0x260fbe1ec46968ee02e5b972507d7bb7f09f82b0",
+      "keyPath": null,
+      "cap": 80,
+      "note": "original macro-seed merchant; CDP ceiling ~93 reached (external key)"
+    },
+    {
+      "address": "0x2d50131399DDb89de63eEe353EeDa2c7AB97DFBA",
+      "keyPath": "<chmod600 in /etc/suverse-pay>",
+      "cap": 80,
+      "note": "rotation payTo"
+    }
+  ]
+}
