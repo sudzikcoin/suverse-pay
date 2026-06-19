@@ -1,0 +1,197 @@
+[
+  {
+    "slug": "suverse-treasury-avg-rates",
+    "priceUsdc": "0.005000",
+    "category": "treasury",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-treasury-debt-to-penny",
+    "priceUsdc": "0.005000",
+    "category": "treasury",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-treasury-exchange-rates",
+    "priceUsdc": "0.004000",
+    "category": "treasury",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-macro-indicator",
+    "priceUsdc": "0.005000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US",
+      "indicator": "NY.GDP.MKTP.CD"
+    }
+  },
+  {
+    "slug": "suverse-macro-gdp",
+    "priceUsdc": "0.004000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-macro-cpi-inflation",
+    "priceUsdc": "0.004000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-macro-unemployment",
+    "priceUsdc": "0.004000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-sec-company-concept",
+    "priceUsdc": "0.008000",
+    "category": "sec-filings",
+    "sampleRequest": {
+      "cik": "320193",
+      "tag": "Revenues"
+    }
+  },
+  {
+    "slug": "suverse-sec-company-facts",
+    "priceUsdc": "0.009000",
+    "category": "sec-filings",
+    "sampleRequest": {
+      "cik": "320193"
+    }
+  },
+  {
+    "slug": "suverse-sec-submissions",
+    "priceUsdc": "0.007000",
+    "category": "sec-filings",
+    "sampleRequest": {
+      "cik": "320193"
+    }
+  },
+  {
+    "slug": "suverse-weather-current",
+    "priceUsdc": "0.003000",
+    "category": "weather",
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01
+    }
+  },
+  {
+    "slug": "suverse-weather-forecast",
+    "priceUsdc": "0.003000",
+    "category": "weather",
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01
+    }
+  },
+  {
+    "slug": "suverse-weather-historical",
+    "priceUsdc": "0.004000",
+    "category": "weather",
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01,
+      "start_date": "2025-01-01",
+      "end_date": "2025-01-31"
+    }
+  },
+  {
+    "slug": "suverse-air-quality",
+    "priceUsdc": "0.003000",
+    "category": "weather",
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01
+    }
+  },
+  {
+    "slug": "suverse-marine-forecast",
+    "priceUsdc": "0.003000",
+    "category": "weather",
+    "sampleRequest": {
+      "latitude": 40.5,
+      "longitude": -69.5
+    }
+  },
+  {
+    "slug": "suverse-weather-alerts",
+    "priceUsdc": "0.003000",
+    "category": "weather",
+    "sampleRequest": {
+      "area": "CA"
+    }
+  },
+  {
+    "slug": "suverse-cve-lookup",
+    "priceUsdc": "0.004000",
+    "category": "cybersecurity",
+    "sampleRequest": {
+      "cve_id": "CVE-2021-44228"
+    }
+  },
+  {
+    "slug": "suverse-cve-search",
+    "priceUsdc": "0.004000",
+    "category": "cybersecurity",
+    "sampleRequest": {
+      "keyword": "log4j"
+    }
+  },
+  {
+    "slug": "suverse-cisa-kev",
+    "priceUsdc": "0.004000",
+    "category": "cybersecurity",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-sports-team",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "team": "Arsenal"
+    }
+  },
+  {
+    "slug": "suverse-sports-league-table",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "league_id": "4328",
+      "season": "2025-2026"
+    }
+  },
+  {
+    "slug": "suverse-sports-events-day",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "date": "2026-06-19",
+      "sport": "Soccer"
+    }
+  },
+  {
+    "slug": "suverse-mlb-schedule",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "date": "2026-06-19"
+    }
+  },
+  {
+    "slug": "suverse-mlb-standings",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "season": "2026"
+    }
+  }
+]

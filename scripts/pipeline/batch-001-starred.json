@@ -1,0 +1,1369 @@
+[
+  {
+    "slug": "suverse-treasury-avg-rates",
+    "category": "treasury",
+    "source": "treasury.fiscaldata",
+    "title": "US Treasury Average Interest Rates",
+    "description": "Average interest rates paid on US Treasury securities including bills, notes, bonds, TIPS, and Floating Rate Notes from the official Treasury FiscalData service, most recent records first. Returns security type, security description, average interest rate, and record date. Critical for AI agents tracking the cost of federal debt, rate trends, and macro yield analysis.",
+    "descriptionBazaar": "Average interest rates on US Treasury securities (bills, notes, bonds, TIPS, FRNs) from official Treasury FiscalData, latest first: security type, rate, and record date. For AI agents tracking federal debt cost, yields, and macro rate trends.",
+    "tags": [
+      "treasury",
+      "yields",
+      "rates",
+      "bonds",
+      "macro"
+    ],
+    "priceUsdcAtomic": 5000,
+    "upstream": {
+      "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "sort": "-record_date",
+        "page[size]": "16",
+        "format": "json"
+      },
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "treasury.fiscaldata",
+      "data": {
+        "data": [
+          {
+            "record_date": "2026-05-31",
+            "security_desc": "Treasury Notes",
+            "avg_interest_rate_amt": "3.012"
+          }
+        ],
+        "meta": {
+          "count": 16
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-treasury-debt-to-penny",
+    "category": "treasury",
+    "source": "treasury.fiscaldata",
+    "title": "US National Debt To The Penny",
+    "description": "The total US public debt outstanding to the penny from the official Treasury FiscalData service, most recent record first. Returns total public debt outstanding, debt held by the public, intragovernmental holdings, and record date. Critical for AI agents tracking the federal debt ceiling, fiscal trajectory, and macro risk signals tied to government borrowing.",
+    "descriptionBazaar": "Total US public debt outstanding to the penny from official Treasury FiscalData, latest record: total debt, debt held by public, intragovernmental holdings, record date. For AI agents tracking the debt ceiling, fiscal trajectory, and macro risk.",
+    "tags": [
+      "treasury",
+      "national-debt",
+      "fiscal",
+      "macro",
+      "government"
+    ],
+    "priceUsdcAtomic": 5000,
+    "upstream": {
+      "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "sort": "-record_date",
+        "page[size]": "1",
+        "format": "json"
+      },
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "treasury.fiscaldata",
+      "data": {
+        "data": [
+          {
+            "record_date": "2026-06-17",
+            "tot_pub_debt_out_amt": "37210000000000.00",
+            "debt_held_public_amt": "29000000000000.00"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-treasury-exchange-rates",
+    "category": "treasury",
+    "source": "treasury.fiscaldata",
+    "title": "US Treasury Reporting Rates Of Exchange",
+    "description": "Official US Treasury quarterly reporting rates of exchange used by federal agencies to convert foreign currency balances to US dollars, filtered by country. Returns country, currency, exchange rate, and effective date. Useful for AI agents performing government grade currency conversion, cross border accounting, and treasury compliant FX reference lookups.",
+    "descriptionBazaar": "Official US Treasury quarterly reporting rates of exchange by country: currency, exchange rate, effective date. For AI agents doing government grade FX conversion, cross border accounting, and treasury compliant currency reference lookups.",
+    "tags": [
+      "treasury",
+      "forex",
+      "exchange-rates",
+      "government",
+      "fx"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/rates_of_exchange",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "sort": "-effective_date",
+        "page[size]": "20",
+        "format": "json"
+      },
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "query",
+        "upstreamName": "filter",
+        "required": false,
+        "type": "string",
+        "description": "Optional country name filter passed to the Treasury filter param, e.g. country:eq:Canada",
+        "example": "country:eq:Canada"
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "treasury.fiscaldata",
+      "data": {
+        "data": [
+          {
+            "country": "Canada",
+            "currency": "Dollar",
+            "exchange_rate": "1.36",
+            "effective_date": "2026-03-31"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-macro-indicator",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "World Bank Macro Indicator Time Series",
+    "description": "Any World Bank macroeconomic indicator time series for any country by ISO code and indicator code, such as GDP, inflation, population, or trade. Returns yearly values with indicator name, country, year, and value from the World Bank Open Data service. Critical for AI agents performing country macro analysis, sovereign risk scoring, and cross country economic comparison.",
+    "descriptionBazaar": "Any World Bank macroeconomic indicator time series for any country by ISO code and indicator code (GDP, inflation, population, trade): yearly values with name, country, year, value. For AI agents doing macro analysis, sovereign risk, and country comparison.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "gdp",
+      "inflation"
+    ],
+    "priceUsdcAtomic": 5000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/{indicator}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "60"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper",
+        "description": "ISO 2 or 3 letter country code, e.g. US, GBR, JPN",
+        "example": "US"
+      },
+      "indicator": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9.]{3,40}$",
+        "transform": "upper",
+        "description": "World Bank indicator code, e.g. NY.GDP.MKTP.CD for GDP",
+        "example": "NY.GDP.MKTP.CD"
+      }
+    },
+    "sampleRequest": {
+      "country": "US",
+      "indicator": "NY.GDP.MKTP.CD"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1,
+          "pages": 1
+        },
+        [
+          {
+            "country": {
+              "value": "United States"
+            },
+            "date": "2024",
+            "value": 29200000000000
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-macro-gdp",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country GDP Time Series",
+    "description": "Gross Domestic Product in current US dollars for any country by ISO code as a yearly time series from World Bank Open Data. Returns country name, year, and GDP value for trend and growth analysis. Critical for AI agents sizing economies, computing growth rates, building macro dashboards, and comparing national output across countries and years.",
+    "descriptionBazaar": "Gross Domestic Product in current US dollars for any country by ISO code as a yearly time series from World Bank: country, year, GDP value. For AI agents sizing economies, computing growth, building macro dashboards, and comparing national output.",
+    "tags": [
+      "macro",
+      "gdp",
+      "worldbank",
+      "economy",
+      "growth"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NY.GDP.MKTP.CD",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper",
+        "description": "ISO 2 or 3 letter country code, e.g. US, GBR, JPN",
+        "example": "US"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "country": {
+              "value": "United States"
+            },
+            "date": "2024",
+            "value": 29200000000000
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-macro-cpi-inflation",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country CPI Inflation Time Series",
+    "description": "Annual consumer price inflation as a percentage for any country by ISO code as a yearly time series from World Bank Open Data. Returns country name, year, and inflation rate for macro and monetary analysis. Critical for AI agents tracking inflation regimes, real return adjustments, central bank policy context, and cross country price stability comparison.",
+    "descriptionBazaar": "Annual consumer price inflation percent for any country by ISO code as a yearly time series from World Bank: country, year, inflation rate. For AI agents tracking inflation regimes, real returns, monetary policy context, and price stability comparison.",
+    "tags": [
+      "macro",
+      "inflation",
+      "cpi",
+      "worldbank",
+      "monetary"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/FP.CPI.TOTL.ZG",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper",
+        "description": "ISO 2 or 3 letter country code, e.g. US, GBR, JPN",
+        "example": "US"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "country": {
+              "value": "United States"
+            },
+            "date": "2024",
+            "value": 2.9
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-macro-unemployment",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Unemployment Rate Time Series",
+    "description": "Total unemployment as a percentage of the labor force for any country by ISO code as a yearly time series from World Bank Open Data modeled ILO estimates. Returns country name, year, and unemployment rate. Critical for AI agents assessing labor market health, recession signals, macro regime context, and cross country employment comparison.",
+    "descriptionBazaar": "Total unemployment percent of labor force for any country by ISO code as a yearly time series from World Bank ILO estimates: country, year, rate. For AI agents assessing labor health, recession signals, macro regime, and employment comparison.",
+    "tags": [
+      "macro",
+      "unemployment",
+      "labor",
+      "worldbank",
+      "jobs"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SL.UEM.TOTL.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper",
+        "description": "ISO 2 or 3 letter country code, e.g. US, GBR, JPN",
+        "example": "US"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "country": {
+              "value": "United States"
+            },
+            "date": "2024",
+            "value": 4.1
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-sec-company-concept",
+    "category": "sec-filings",
+    "source": "sec.edgar",
+    "title": "SEC EDGAR Company XBRL Concept",
+    "description": "Full reported history of one XBRL financial concept for a US public company by SEC CIK number, such as Revenues or Assets, from SEC EDGAR company concept data. Returns every period, value, unit, form, and filing for that concept. Critical for AI agents extracting structured fundamentals, building financial models, and tracking a single line item across filings.",
+    "descriptionBazaar": "Full reported history of one XBRL financial concept (Revenues, Assets, NetIncomeLoss) for a US public company by SEC CIK from SEC EDGAR: every period, value, unit, form, filing. For AI agents extracting structured fundamentals and building models.",
+    "tags": [
+      "sec",
+      "edgar",
+      "xbrl",
+      "fundamentals",
+      "stocks"
+    ],
+    "priceUsdcAtomic": 8000,
+    "upstream": {
+      "url": "https://data.sec.gov/api/xbrl/companyconcept/CIK{cik}/{taxonomy}/{tag}.json",
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      },
+      "timeoutMs": 12000
+    },
+    "params": {
+      "cik": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{1,10}$",
+        "transform": "pad10",
+        "description": "SEC Central Index Key, digits only, zero padded to 10 automatically. Apple is 320193",
+        "example": "320193"
+      },
+      "taxonomy": {
+        "in": "path",
+        "required": false,
+        "type": "string",
+        "default": "us-gaap",
+        "pattern": "^[a-z-]+$",
+        "description": "XBRL taxonomy, defaults to us-gaap",
+        "example": "us-gaap"
+      },
+      "tag": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2,60}$",
+        "description": "XBRL concept tag, e.g. Revenues, Assets, NetIncomeLoss",
+        "example": "Revenues"
+      }
+    },
+    "sampleRequest": {
+      "cik": "320193",
+      "tag": "Revenues"
+    },
+    "sampleResponse": {
+      "source": "sec.edgar",
+      "data": {
+        "cik": 320193,
+        "taxonomy": "us-gaap",
+        "tag": "Revenues",
+        "units": {
+          "USD": [
+            {
+              "fy": 2025,
+              "fp": "FY",
+              "form": "10-K",
+              "val": 416000000000
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-sec-company-facts",
+    "category": "sec-filings",
+    "source": "sec.edgar",
+    "title": "SEC EDGAR Company Facts Bundle",
+    "description": "All XBRL company facts for a US public company by SEC CIK number in one call from SEC EDGAR, covering every reported financial concept across all filings. Returns the entity name and the full us-gaap and dei fact set with periods and values. Critical for AI agents pulling a complete fundamentals snapshot, screening, or seeding a financial knowledge base.",
+    "descriptionBazaar": "All XBRL company facts for a US public company by SEC CIK in one call from SEC EDGAR: entity name plus the full us-gaap and dei fact set with periods and values. For AI agents pulling complete fundamentals, screening, or seeding a knowledge base.",
+    "tags": [
+      "sec",
+      "edgar",
+      "xbrl",
+      "fundamentals",
+      "financials"
+    ],
+    "priceUsdcAtomic": 9000,
+    "upstream": {
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json",
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      },
+      "timeoutMs": 15000
+    },
+    "params": {
+      "cik": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{1,10}$",
+        "transform": "pad10",
+        "description": "SEC Central Index Key, digits only, zero padded to 10 automatically. Apple is 320193",
+        "example": "320193"
+      }
+    },
+    "sampleRequest": {
+      "cik": "320193"
+    },
+    "sampleResponse": {
+      "source": "sec.edgar",
+      "data": {
+        "cik": 320193,
+        "entityName": "Apple Inc.",
+        "facts": {
+          "us-gaap": {
+            "Assets": {
+              "units": {
+                "USD": [
+                  {
+                    "fy": 2025,
+                    "val": 365000000000
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-sec-submissions",
+    "category": "sec-filings",
+    "source": "sec.edgar",
+    "title": "SEC EDGAR Company Submissions",
+    "description": "Recent SEC EDGAR submission history for a US public company by CIK number, including 10-K, 10-Q, 8-K, and other forms with accession numbers and dates. Returns entity profile fields plus the recent filings index of form types, filing dates, and document references. Critical for AI agents monitoring corporate disclosures, material events, and filing cadence.",
+    "descriptionBazaar": "Recent SEC EDGAR submission history for a US public company by CIK: 10-K, 10-Q, 8-K and other forms with accession numbers and dates, plus entity profile. For AI agents monitoring corporate disclosures, material events, and filing cadence.",
+    "tags": [
+      "sec",
+      "edgar",
+      "filings",
+      "disclosures",
+      "stocks"
+    ],
+    "priceUsdcAtomic": 7000,
+    "upstream": {
+      "url": "https://data.sec.gov/submissions/CIK{cik}.json",
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      },
+      "timeoutMs": 12000
+    },
+    "params": {
+      "cik": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{1,10}$",
+        "transform": "pad10",
+        "description": "SEC Central Index Key, digits only, zero padded to 10 automatically. Apple is 320193",
+        "example": "320193"
+      }
+    },
+    "sampleRequest": {
+      "cik": "320193"
+    },
+    "sampleResponse": {
+      "source": "sec.edgar",
+      "data": {
+        "cik": "320193",
+        "name": "Apple Inc.",
+        "tickers": [
+          "AAPL"
+        ],
+        "filings": {
+          "recent": {
+            "form": [
+              "10-Q",
+              "8-K"
+            ],
+            "filingDate": [
+              "2026-05-02",
+              "2026-04-30"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-weather-current",
+    "category": "weather",
+    "source": "open-meteo",
+    "title": "Current Weather Conditions",
+    "description": "Current weather conditions for any latitude and longitude from the Open-Meteo forecast service, no key required. Returns temperature, wind speed, wind direction, and weather code for the requested point. Critical for AI agents that condition decisions on real time weather, such as logistics, travel, energy demand, agriculture, and outdoor event planning.",
+    "descriptionBazaar": "Current weather conditions for any latitude and longitude from Open-Meteo: temperature, wind speed, wind direction, weather code. For AI agents conditioning on real time weather, such as logistics, travel, energy demand, agriculture, and event planning.",
+    "tags": [
+      "weather",
+      "current",
+      "temperature",
+      "wind",
+      "meteorology"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "timeoutMs": 8000,
+      "staticQuery": {
+        "current_weather": "true"
+      }
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude between -90 and 90",
+        "example": 40.71
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude between -180 and 180",
+        "example": -74.01
+      }
+    },
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01
+    },
+    "sampleResponse": {
+      "source": "open-meteo",
+      "data": {
+        "latitude": 40.71,
+        "longitude": -74.01,
+        "current_weather": {
+          "temperature": 21.3,
+          "windspeed": 11.2,
+          "winddirection": 200,
+          "weathercode": 1
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-weather-forecast",
+    "category": "weather",
+    "source": "open-meteo",
+    "title": "Seven Day Weather Forecast",
+    "description": "Seven day daily weather forecast for any latitude and longitude from the Open-Meteo forecast service, no key required. Returns daily maximum and minimum temperature and total precipitation per day in the local timezone. Critical for AI agents planning ahead on weather sensitive operations such as travel, agriculture, construction, retail demand, and energy load forecasting.",
+    "descriptionBazaar": "Seven day daily weather forecast for any latitude and longitude from Open-Meteo: daily max and min temperature and total precipitation per day in local time. For AI agents planning weather sensitive operations like travel, agriculture, retail, and energy load.",
+    "tags": [
+      "weather",
+      "forecast",
+      "temperature",
+      "precipitation",
+      "planning"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.open-meteo.com/v1/forecast",
+      "timeoutMs": 8000,
+      "staticQuery": {
+        "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+        "timezone": "auto",
+        "forecast_days": "7"
+      }
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude between -90 and 90",
+        "example": 40.71
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude between -180 and 180",
+        "example": -74.01
+      }
+    },
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01
+    },
+    "sampleResponse": {
+      "source": "open-meteo",
+      "data": {
+        "daily": {
+          "time": [
+            "2026-06-19"
+          ],
+          "temperature_2m_max": [
+            28.1
+          ],
+          "temperature_2m_min": [
+            19.4
+          ],
+          "precipitation_sum": [
+            0.0
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-weather-historical",
+    "category": "weather",
+    "source": "open-meteo",
+    "title": "Historical Daily Weather",
+    "description": "Historical daily weather for any latitude and longitude over a date range from the Open-Meteo archive service, no key required. Returns daily maximum and minimum temperature and precipitation for each day in the requested window. Critical for AI agents backtesting weather sensitive strategies, building climatology baselines, and reconciling past events with conditions.",
+    "descriptionBazaar": "Historical daily weather for any latitude and longitude over a date range from the Open-Meteo archive: daily max and min temperature and precipitation per day. For AI agents backtesting weather strategies, building climatology baselines, and event reconciliation.",
+    "tags": [
+      "weather",
+      "historical",
+      "climate",
+      "archive",
+      "backtest"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://archive-api.open-meteo.com/v1/archive",
+      "timeoutMs": 12000,
+      "staticQuery": {
+        "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+        "timezone": "auto"
+      }
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude between -90 and 90",
+        "example": 40.71
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude between -180 and 180",
+        "example": -74.01
+      },
+      "start_date": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Start date YYYY-MM-DD",
+        "example": "2025-01-01"
+      },
+      "end_date": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "End date YYYY-MM-DD",
+        "example": "2025-01-31"
+      }
+    },
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01,
+      "start_date": "2025-01-01",
+      "end_date": "2025-01-31"
+    },
+    "sampleResponse": {
+      "source": "open-meteo",
+      "data": {
+        "daily": {
+          "time": [
+            "2025-01-01"
+          ],
+          "temperature_2m_max": [
+            3.2
+          ],
+          "temperature_2m_min": [
+            -2.1
+          ],
+          "precipitation_sum": [
+            1.4
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-air-quality",
+    "category": "weather",
+    "source": "open-meteo",
+    "title": "Air Quality Pollutant Levels",
+    "description": "Hourly air quality for any latitude and longitude from the Open-Meteo air quality service, no key required. Returns particulate matter PM10 and PM2.5 plus carbon monoxide, ozone, and nitrogen dioxide concentrations. Critical for AI agents in health, environmental, logistics, and insurance contexts that need pollutant exposure data without paying for a commercial air quality provider.",
+    "descriptionBazaar": "Hourly air quality for any latitude and longitude from Open-Meteo: PM10, PM2.5, carbon monoxide, ozone, nitrogen dioxide concentrations. For AI agents in health, environmental, logistics, and insurance contexts needing pollutant exposure data.",
+    "tags": [
+      "air-quality",
+      "pollution",
+      "pm25",
+      "environment",
+      "health"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://air-quality-api.open-meteo.com/v1/air-quality",
+      "timeoutMs": 8000,
+      "staticQuery": {
+        "hourly": "pm10,pm2_5,carbon_monoxide,ozone,nitrogen_dioxide",
+        "timezone": "auto",
+        "forecast_days": "1"
+      }
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude between -90 and 90",
+        "example": 40.71
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude between -180 and 180",
+        "example": -74.01
+      }
+    },
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01
+    },
+    "sampleResponse": {
+      "source": "open-meteo",
+      "data": {
+        "hourly": {
+          "time": [
+            "2026-06-19T00:00"
+          ],
+          "pm2_5": [
+            8.1
+          ],
+          "pm10": [
+            14.2
+          ],
+          "ozone": [
+            62.0
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-marine-forecast",
+    "category": "weather",
+    "source": "open-meteo",
+    "title": "Marine Wave Forecast",
+    "description": "Hourly marine wave forecast for any coastal latitude and longitude from the Open-Meteo marine service, no key required. Returns wave height, wave direction, and wave period for the requested point. Critical for AI agents in shipping, maritime logistics, offshore energy, fishing, and coastal risk that need sea state data without a commercial marine weather subscription.",
+    "descriptionBazaar": "Hourly marine wave forecast for any coastal latitude and longitude from Open-Meteo: wave height, direction, and period. For AI agents in shipping, maritime logistics, offshore energy, fishing, and coastal risk needing sea state data.",
+    "tags": [
+      "marine",
+      "waves",
+      "maritime",
+      "shipping",
+      "ocean"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://marine-api.open-meteo.com/v1/marine",
+      "timeoutMs": 8000,
+      "staticQuery": {
+        "hourly": "wave_height,wave_direction,wave_period",
+        "timezone": "auto",
+        "forecast_days": "1"
+      }
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Coastal latitude between -90 and 90",
+        "example": 40.5
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Coastal longitude between -180 and 180",
+        "example": -69.5
+      }
+    },
+    "sampleRequest": {
+      "latitude": 40.5,
+      "longitude": -69.5
+    },
+    "sampleResponse": {
+      "source": "open-meteo",
+      "data": {
+        "hourly": {
+          "time": [
+            "2026-06-19T00:00"
+          ],
+          "wave_height": [
+            1.2
+          ],
+          "wave_period": [
+            7.1
+          ],
+          "wave_direction": [
+            180
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-weather-alerts",
+    "category": "weather",
+    "source": "nws.weather.gov",
+    "title": "US Active Weather Alerts",
+    "description": "Active US National Weather Service alerts for a state, including warnings, watches, and advisories for severe storms, floods, heat, and winter weather. Returns each alert event, severity, urgency, area description, and effective and expiry times. Critical for AI agents in logistics, insurance, travel, and safety that must react to official hazard alerts in real time.",
+    "descriptionBazaar": "Active US National Weather Service alerts for a state: warnings, watches, advisories for storms, floods, heat, winter weather, with event, severity, urgency, area, and timing. For AI agents in logistics, insurance, travel, and safety reacting to hazards.",
+    "tags": [
+      "weather",
+      "alerts",
+      "nws",
+      "hazards",
+      "safety"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.weather.gov/alerts/active",
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      },
+      "timeoutMs": 10000,
+      "staticQuery": {}
+    },
+    "params": {
+      "area": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2}$",
+        "transform": "upper",
+        "description": "Two letter US state or territory code, e.g. CA, TX, FL",
+        "example": "CA"
+      }
+    },
+    "sampleRequest": {
+      "area": "CA"
+    },
+    "sampleResponse": {
+      "source": "nws.weather.gov",
+      "data": {
+        "features": [
+          {
+            "properties": {
+              "event": "Heat Advisory",
+              "severity": "Moderate",
+              "areaDesc": "Los Angeles County",
+              "expires": "2026-06-20T03:00:00-07:00"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-cve-lookup",
+    "category": "cybersecurity",
+    "source": "nvd.nist",
+    "title": "CVE Vulnerability Lookup",
+    "description": "Full detail for a single CVE vulnerability by identifier from the NIST National Vulnerability Database. Returns the description, CVSS severity scores and vector, affected configurations, references, and published and modified dates. Critical for AI agents in security operations triaging vulnerabilities, enriching alerts, prioritizing patching, and answering is this CVE exploitable questions.",
+    "descriptionBazaar": "Full detail for a single CVE by identifier from the NIST National Vulnerability Database: description, CVSS scores and vector, affected configs, references, dates. For AI security agents triaging vulnerabilities, enriching alerts, and prioritizing patching.",
+    "tags": [
+      "cybersecurity",
+      "cve",
+      "vulnerability",
+      "nvd",
+      "cvss"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+      "timeoutMs": 12000
+    },
+    "params": {
+      "cve_id": {
+        "in": "query",
+        "upstreamName": "cveId",
+        "required": true,
+        "type": "string",
+        "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$",
+        "transform": "upper",
+        "description": "CVE identifier, e.g. CVE-2021-44228",
+        "example": "CVE-2021-44228"
+      }
+    },
+    "sampleRequest": {
+      "cve_id": "CVE-2021-44228"
+    },
+    "sampleResponse": {
+      "source": "nvd.nist",
+      "data": {
+        "totalResults": 1,
+        "vulnerabilities": [
+          {
+            "cve": {
+              "id": "CVE-2021-44228",
+              "metrics": {
+                "cvssMetricV31": [
+                  {
+                    "cvssData": {
+                      "baseScore": 10.0,
+                      "baseSeverity": "CRITICAL"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-cve-search",
+    "category": "cybersecurity",
+    "source": "nvd.nist",
+    "title": "CVE Keyword Search",
+    "description": "Search the NIST National Vulnerability Database for CVE vulnerabilities matching a keyword such as a product, vendor, or technology name. Returns up to twenty matching CVEs with identifiers, descriptions, and CVSS severity. Critical for AI agents doing security research, software bill of materials risk checks, vendor due diligence, and mapping a product name to known vulnerabilities.",
+    "descriptionBazaar": "Search the NIST National Vulnerability Database for CVEs matching a keyword (product, vendor, technology): up to twenty CVEs with ids, descriptions, CVSS severity. For AI agents doing security research, SBOM risk checks, and vendor due diligence.",
+    "tags": [
+      "cybersecurity",
+      "cve",
+      "search",
+      "nvd",
+      "vulnerability"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+      "timeoutMs": 12000,
+      "staticQuery": {
+        "resultsPerPage": "20"
+      }
+    },
+    "params": {
+      "keyword": {
+        "in": "query",
+        "upstreamName": "keywordSearch",
+        "required": true,
+        "type": "string",
+        "pattern": "^.{2,80}$",
+        "description": "Keyword to search CVE descriptions, e.g. log4j, openssl, apache",
+        "example": "log4j"
+      }
+    },
+    "sampleRequest": {
+      "keyword": "log4j"
+    },
+    "sampleResponse": {
+      "source": "nvd.nist",
+      "data": {
+        "totalResults": 42,
+        "vulnerabilities": [
+          {
+            "cve": {
+              "id": "CVE-2021-44228"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-cisa-kev",
+    "category": "cybersecurity",
+    "source": "cisa.kev",
+    "title": "CISA Known Exploited Vulnerabilities",
+    "description": "The full CISA Known Exploited Vulnerabilities catalog, the authoritative US government list of CVEs confirmed exploited in the wild. Returns each catalog entry with CVE id, vendor, product, vulnerability name, date added, and required action due date. Critical for AI agents prioritizing patching by real world exploitation, feeding risk scoring, and enforcing the CISA remediation deadlines.",
+    "descriptionBazaar": "The full CISA Known Exploited Vulnerabilities catalog, the US government list of CVEs confirmed exploited in the wild: CVE id, vendor, product, name, date added, due date. For AI agents prioritizing patching by real exploitation and enforcing deadlines.",
+    "tags": [
+      "cybersecurity",
+      "cisa",
+      "kev",
+      "exploited",
+      "patching"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+      "timeoutMs": 15000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "cisa.kev",
+      "data": {
+        "count": 1100,
+        "vulnerabilities": [
+          {
+            "cveID": "CVE-2021-44228",
+            "vendorProject": "Apache",
+            "product": "Log4j",
+            "dueDate": "2021-12-24"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-sports-team",
+    "category": "sports",
+    "source": "thesportsdb",
+    "title": "Sports Team Profile Lookup",
+    "description": "Profile lookup for any sports team by name across soccer, basketball, baseball, American football, and more from TheSportsDB. Returns team identifier, league, sport, formed year, stadium, country, and descriptive metadata. Useful for AI agents enriching sports queries, resolving team names to identifiers, and building sports knowledge for chat, fantasy, and analytics use cases.",
+    "descriptionBazaar": "Profile lookup for any sports team by name across soccer, basketball, baseball, American football and more from TheSportsDB: id, league, sport, formed year, stadium, country. For AI agents enriching sports queries and resolving team names to ids.",
+    "tags": [
+      "sports",
+      "teams",
+      "soccer",
+      "basketball",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thesportsdb.com/api/v1/json/3/searchteams.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "team": {
+        "in": "query",
+        "upstreamName": "t",
+        "required": true,
+        "type": "string",
+        "pattern": "^.{2,60}$",
+        "description": "Team name to search, e.g. Arsenal, Lakers, Yankees",
+        "example": "Arsenal"
+      }
+    },
+    "sampleRequest": {
+      "team": "Arsenal"
+    },
+    "sampleResponse": {
+      "source": "thesportsdb",
+      "data": {
+        "teams": [
+          {
+            "idTeam": "133604",
+            "strTeam": "Arsenal",
+            "strLeague": "English Premier League",
+            "strStadium": "Emirates Stadium"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-sports-league-table",
+    "category": "sports",
+    "source": "thesportsdb",
+    "title": "Sports League Standings Table",
+    "description": "League standings table for a given league and season from TheSportsDB, covering major soccer and other team sport leagues. Returns each team with rank, played, win, draw, loss, goals for and against, goal difference, and points. Useful for AI agents answering standings questions, building sports dashboards, and powering fantasy and prediction features.",
+    "descriptionBazaar": "League standings table for a league and season from TheSportsDB: each team with rank, played, win, draw, loss, goals for and against, goal difference, points. For AI agents answering standings questions and powering sports dashboards and fantasy.",
+    "tags": [
+      "sports",
+      "standings",
+      "league-table",
+      "soccer",
+      "stats"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thesportsdb.com/api/v1/json/3/lookuptable.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "league_id": {
+        "in": "query",
+        "upstreamName": "l",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{3,7}$",
+        "description": "TheSportsDB numeric league id, e.g. 4328 for English Premier League",
+        "example": "4328"
+      },
+      "season": {
+        "in": "query",
+        "upstreamName": "s",
+        "required": false,
+        "type": "string",
+        "pattern": "^[0-9]{4}(-[0-9]{4})?$",
+        "description": "Season, e.g. 2025-2026",
+        "example": "2025-2026"
+      }
+    },
+    "sampleRequest": {
+      "league_id": "4328",
+      "season": "2025-2026"
+    },
+    "sampleResponse": {
+      "source": "thesportsdb",
+      "data": {
+        "table": [
+          {
+            "intRank": "1",
+            "strTeam": "Arsenal",
+            "intPoints": "75",
+            "intGoalDifference": "40"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-sports-events-day",
+    "category": "sports",
+    "source": "thesportsdb",
+    "title": "Sports Events By Date",
+    "description": "All sports events scheduled on a given date, optionally filtered by sport, from TheSportsDB. Returns each event with the two teams, league, sport, venue, scheduled time, and final score when available. Useful for AI agents building daily sports briefings, answering what games are on questions, and feeding schedule context into fantasy and betting research workflows.",
+    "descriptionBazaar": "All sports events on a given date, optionally filtered by sport, from TheSportsDB: teams, league, sport, venue, time, and final score when available. For AI agents building daily sports briefings and answering what games are on questions.",
+    "tags": [
+      "sports",
+      "schedule",
+      "events",
+      "scores",
+      "fixtures"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thesportsdb.com/api/v1/json/3/eventsday.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "date": {
+        "in": "query",
+        "upstreamName": "d",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Date YYYY-MM-DD",
+        "example": "2026-06-19"
+      },
+      "sport": {
+        "in": "query",
+        "upstreamName": "s",
+        "required": false,
+        "type": "string",
+        "pattern": "^[A-Za-z_ ]{3,30}$",
+        "description": "Optional sport filter, e.g. Soccer, Basketball, Baseball",
+        "example": "Soccer"
+      }
+    },
+    "sampleRequest": {
+      "date": "2026-06-19",
+      "sport": "Soccer"
+    },
+    "sampleResponse": {
+      "source": "thesportsdb",
+      "data": {
+        "events": [
+          {
+            "strEvent": "Arsenal vs Chelsea",
+            "strLeague": "English Premier League",
+            "dateEvent": "2026-06-19"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-mlb-schedule",
+    "category": "sports",
+    "source": "mlb.statsapi",
+    "title": "MLB Game Schedule By Date",
+    "description": "Official Major League Baseball game schedule for a given date from the MLB StatsAPI, no key required. Returns each game with the home and away teams, scheduled time, venue, game status, and score when the game is live or final. Useful for AI agents building baseball briefings, tracking live games, and feeding schedule and result context into fantasy and analytics workflows.",
+    "descriptionBazaar": "Official MLB game schedule for a given date from MLB StatsAPI: each game with home and away teams, time, venue, status, and score when live or final. For AI agents building baseball briefings, tracking live games, and feeding fantasy and analytics.",
+    "tags": [
+      "sports",
+      "mlb",
+      "baseball",
+      "schedule",
+      "scores"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://statsapi.mlb.com/api/v1/schedule",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "sportId": "1"
+      }
+    },
+    "params": {
+      "date": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Date YYYY-MM-DD",
+        "example": "2026-06-19"
+      }
+    },
+    "sampleRequest": {
+      "date": "2026-06-19"
+    },
+    "sampleResponse": {
+      "source": "mlb.statsapi",
+      "data": {
+        "totalGames": 15,
+        "dates": [
+          {
+            "date": "2026-06-19",
+            "games": [
+              {
+                "teams": {
+                  "home": {
+                    "team": {
+                      "name": "New York Yankees"
+                    }
+                  },
+                  "away": {
+                    "team": {
+                      "name": "Boston Red Sox"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-mlb-standings",
+    "category": "sports",
+    "source": "mlb.statsapi",
+    "title": "MLB Standings By Season",
+    "description": "Official Major League Baseball standings for a season from the MLB StatsAPI, no key required, covering the American and National leagues. Returns each team with wins, losses, winning percentage, games back, and division rank. Useful for AI agents answering standings and playoff race questions, building baseball dashboards, and powering fantasy and prediction features.",
+    "descriptionBazaar": "Official MLB standings for a season from MLB StatsAPI across the American and National leagues: each team with wins, losses, win percentage, games back, division rank. For AI agents answering playoff race questions and building baseball dashboards.",
+    "tags": [
+      "sports",
+      "mlb",
+      "baseball",
+      "standings",
+      "stats"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://statsapi.mlb.com/api/v1/standings",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "leagueId": "103,104"
+      }
+    },
+    "params": {
+      "season": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}$",
+        "description": "Season year YYYY",
+        "example": "2026"
+      }
+    },
+    "sampleRequest": {
+      "season": "2026"
+    },
+    "sampleResponse": {
+      "source": "mlb.statsapi",
+      "data": {
+        "records": [
+          {
+            "division": {
+              "id": 201
+            },
+            "teamRecords": [
+              {
+                "team": {
+                  "name": "New York Yankees"
+                },
+                "wins": 50,
+                "losses": 28,
+                "divisionRank": "1"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+]
