@@ -1,0 +1,10 @@
+[
+  {
+    "slug": "suverse-e2e-worldbank-population",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  }
+]

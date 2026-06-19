@@ -1,0 +1,22 @@
+[
+  {
+    "slug": "suverse-e2e-worldbank-population",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Population Time Series",
+    "description": "Total population for any country by ISO code as a yearly time series from World Bank Open Data, no key. Returns country, year, and population. End to end pipeline auto indexing test endpoint for the wrap pipeline; also a genuinely useful macro series for AI agents sizing markets and demographics.",
+    "descriptionBazaar": "Total population for any country by ISO code as a yearly time series from World Bank Open Data, no key: country, year, population. For AI agents sizing markets and demographics. Pipeline auto-index verification endpoint.",
+    "tags": ["macro", "population", "worldbank", "demographics", "economy"],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SP.POP.TOTL",
+      "timeoutMs": 10000,
+      "staticQuery": { "format": "json", "per_page": "30" }
+    },
+    "params": {
+      "country": { "in": "path", "required": true, "type": "string", "pattern": "^[A-Za-z]{2,3}$", "transform": "upper", "description": "ISO 2 or 3 letter country code", "example": "US" }
+    },
+    "sampleRequest": { "country": "US" },
+    "sampleResponse": { "source": "worldbank", "data": [{ "page": 1 }, [{ "country": { "value": "United States" }, "date": "2024", "value": 335000000 }]] }
+  }
+]
