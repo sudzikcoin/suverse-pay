@@ -1,0 +1,4560 @@
+[
+  {
+    "slug": "suverse-wb-pop-density",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Population Density",
+    "description": "Population Density for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Population Density for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "pop",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/EN.POP.DNST",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-life-expectancy",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Life Expectancy",
+    "description": "Life Expectancy for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Life Expectancy for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "life",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SP.DYN.LE00.IN",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-gdp-per-capita",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country GDP Per Capita",
+    "description": "GDP Per Capita for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "GDP Per Capita for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "gdp",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NY.GDP.PCAP.CD",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-gni-per-capita",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country GNI Per Capita",
+    "description": "GNI Per Capita for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "GNI Per Capita for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "gni",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NY.GNP.PCAP.CD",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-poverty-headcount",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Poverty Headcount Ratio",
+    "description": "Poverty Headcount Ratio for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Poverty Headcount Ratio for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "poverty",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SI.POV.DDAY",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-gdp-growth",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country GDP Growth Rate",
+    "description": "GDP Growth Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "GDP Growth Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "gdp",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NY.GDP.MKTP.KD.ZG",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-exports-share",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Exports Share Of GDP",
+    "description": "Exports Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Exports Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "exports",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NE.EXP.GNFS.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-imports-share",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Imports Share Of GDP",
+    "description": "Imports Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Imports Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "imports",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NE.IMP.GNFS.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-fdi-inflows",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Foreign Direct Investment Inflows",
+    "description": "Foreign Direct Investment Inflows for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Foreign Direct Investment Inflows for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "fdi",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/BX.KLT.DINV.CD.WD",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-co2-per-capita",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country CO2 Emissions Per Capita",
+    "description": "CO2 Emissions Per Capita for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "CO2 Emissions Per Capita for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "co2",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/EN.ATM.CO2E.PC",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-internet-users",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Internet Users Share",
+    "description": "Internet Users Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Internet Users Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "internet",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/IT.NET.USER.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-mobile-subscriptions",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Mobile Subscriptions Per 100",
+    "description": "Mobile Subscriptions Per 100 for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Mobile Subscriptions Per 100 for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "mobile",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/IT.CEL.SETS.P2",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-urban-population",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Urban Population Share",
+    "description": "Urban Population Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Urban Population Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "urban",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SP.URB.TOTL.IN.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-gov-debt",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Central Government Debt Share Of GDP",
+    "description": "Central Government Debt Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Central Government Debt Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "gov",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/GC.DOD.TOTL.GD.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-labor-force",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Total Labor Force",
+    "description": "Total Labor Force for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Total Labor Force for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "labor",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SL.TLF.TOTL.IN",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-health-expenditure",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Health Expenditure Share Of GDP",
+    "description": "Health Expenditure Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Health Expenditure Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "health",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SH.XPD.CHEX.GD.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-military-expenditure",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Military Expenditure Share Of GDP",
+    "description": "Military Expenditure Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Military Expenditure Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "military",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/MS.MIL.XPND.GD.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-electricity-access",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Access To Electricity Share",
+    "description": "Access To Electricity Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Access To Electricity Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "electricity",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/EG.ELC.ACCS.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-renewable-energy",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Renewable Energy Share",
+    "description": "Renewable Energy Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Renewable Energy Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "renewable",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/EG.FEC.RNEW.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-tertiary-enrollment",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Tertiary School Enrollment",
+    "description": "Tertiary School Enrollment for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Tertiary School Enrollment for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "tertiary",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SE.TER.ENRR",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-agriculture-value",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Agriculture Value Added Share",
+    "description": "Agriculture Value Added Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Agriculture Value Added Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "agriculture",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NV.AGR.TOTL.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-manufacturing-value",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Manufacturing Value Added Share",
+    "description": "Manufacturing Value Added Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Manufacturing Value Added Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "manufacturing",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NV.IND.MANF.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-services-value",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Services Value Added Share",
+    "description": "Services Value Added Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Services Value Added Share for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "services",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/NV.SRV.TOTL.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-tax-revenue",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Tax Revenue Share Of GDP",
+    "description": "Tax Revenue Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Tax Revenue Share Of GDP for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "tax",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/GC.TAX.TOTL.GD.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-birth-rate",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Birth Rate Per 1000",
+    "description": "Birth Rate Per 1000 for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Birth Rate Per 1000 for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "birth",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SP.DYN.CBRT.IN",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-death-rate",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Death Rate Per 1000",
+    "description": "Death Rate Per 1000 for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Death Rate Per 1000 for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "death",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SP.DYN.CDRT.IN",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-fertility-rate",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Fertility Rate",
+    "description": "Fertility Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Fertility Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "fertility",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SP.DYN.TFRT.IN",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-population-growth",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Population Growth Rate",
+    "description": "Population Growth Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Population Growth Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "population",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SP.POP.GROW",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-real-interest-rate",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Real Interest Rate",
+    "description": "Real Interest Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Real Interest Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "real",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/FR.INR.RINR",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-wb-youth-unemployment",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "Country Youth Unemployment Rate",
+    "description": "Youth Unemployment Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "descriptionBazaar": "Youth Unemployment Rate for any country by ISO code as a yearly World Bank Open Data time series, no key. Returns country, year, and value. For AI agents doing macro, demographic, and cross country analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "economic-indicators",
+      "youth",
+      "country"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}/indicator/SL.UEM.1524.ZS",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "per_page": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "date": "2023",
+            "value": 123
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-nlm-icd10cm",
+    "category": "health",
+    "source": "nlm-clinicaltables",
+    "title": "ICD-10-CM Diagnosis Codes Search",
+    "description": "Search ICD-10-CM Diagnosis Codes from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "descriptionBazaar": "Search ICD-10-CM Diagnosis Codes from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "tags": [
+      "health",
+      "nlm",
+      "clinical",
+      "codes",
+      "icd10cm"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "maxList": "10"
+      }
+    },
+    "params": {
+      "terms": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search terms",
+        "example": "diabetes"
+      }
+    },
+    "sampleRequest": {
+      "terms": "diabetes"
+    },
+    "sampleResponse": {
+      "source": "nlm-clinicaltables",
+      "data": [
+        1,
+        [
+          "E11.9"
+        ],
+        null,
+        [
+          [
+            "E11.9",
+            "Type 2 diabetes mellitus"
+          ]
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-nlm-conditions",
+    "category": "health",
+    "source": "nlm-clinicaltables",
+    "title": "Medical Conditions Search",
+    "description": "Search Medical Conditions from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "descriptionBazaar": "Search Medical Conditions from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "tags": [
+      "health",
+      "nlm",
+      "clinical",
+      "codes",
+      "conditions"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://clinicaltables.nlm.nih.gov/api/conditions/v3/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "maxList": "10"
+      }
+    },
+    "params": {
+      "terms": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search terms",
+        "example": "asthma"
+      }
+    },
+    "sampleRequest": {
+      "terms": "asthma"
+    },
+    "sampleResponse": {
+      "source": "nlm-clinicaltables",
+      "data": [
+        1,
+        [
+          "E11.9"
+        ],
+        null,
+        [
+          [
+            "E11.9",
+            "Type 2 diabetes mellitus"
+          ]
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-nlm-rxterms",
+    "category": "health",
+    "source": "nlm-clinicaltables",
+    "title": "Prescribable Drug Names Search",
+    "description": "Search Prescribable Drug Names from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "descriptionBazaar": "Search Prescribable Drug Names from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "tags": [
+      "health",
+      "nlm",
+      "clinical",
+      "codes",
+      "rxterms"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://clinicaltables.nlm.nih.gov/api/rxterms/v3/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "maxList": "10"
+      }
+    },
+    "params": {
+      "terms": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search terms",
+        "example": "metformin"
+      }
+    },
+    "sampleRequest": {
+      "terms": "metformin"
+    },
+    "sampleResponse": {
+      "source": "nlm-clinicaltables",
+      "data": [
+        1,
+        [
+          "E11.9"
+        ],
+        null,
+        [
+          [
+            "E11.9",
+            "Type 2 diabetes mellitus"
+          ]
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-nlm-npi-individual",
+    "category": "health",
+    "source": "nlm-clinicaltables",
+    "title": "Individual Healthcare Providers (NPI) Search",
+    "description": "Search Individual Healthcare Providers (NPI) from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "descriptionBazaar": "Search Individual Healthcare Providers (NPI) from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "tags": [
+      "health",
+      "nlm",
+      "clinical",
+      "codes",
+      "npi-individual"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://clinicaltables.nlm.nih.gov/api/npi_idv/v3/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "maxList": "10"
+      }
+    },
+    "params": {
+      "terms": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search terms",
+        "example": "john smith"
+      }
+    },
+    "sampleRequest": {
+      "terms": "john smith"
+    },
+    "sampleResponse": {
+      "source": "nlm-clinicaltables",
+      "data": [
+        1,
+        [
+          "E11.9"
+        ],
+        null,
+        [
+          [
+            "E11.9",
+            "Type 2 diabetes mellitus"
+          ]
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-nlm-npi-organization",
+    "category": "health",
+    "source": "nlm-clinicaltables",
+    "title": "Healthcare Organizations (NPI) Search",
+    "description": "Search Healthcare Organizations (NPI) from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "descriptionBazaar": "Search Healthcare Organizations (NPI) from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "tags": [
+      "health",
+      "nlm",
+      "clinical",
+      "codes",
+      "npi-organization"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://clinicaltables.nlm.nih.gov/api/npi_org/v3/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "maxList": "10"
+      }
+    },
+    "params": {
+      "terms": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search terms",
+        "example": "mayo clinic"
+      }
+    },
+    "sampleRequest": {
+      "terms": "mayo clinic"
+    },
+    "sampleResponse": {
+      "source": "nlm-clinicaltables",
+      "data": [
+        1,
+        [
+          "E11.9"
+        ],
+        null,
+        [
+          [
+            "E11.9",
+            "Type 2 diabetes mellitus"
+          ]
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-nlm-hcpcs",
+    "category": "health",
+    "source": "nlm-clinicaltables",
+    "title": "HCPCS Procedure And Supply Codes Search",
+    "description": "Search HCPCS Procedure And Supply Codes from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "descriptionBazaar": "Search HCPCS Procedure And Supply Codes from the NIH NLM Clinical Tables service by terms, no key. Returns matching codes and display names. For AI agents in health, coding, and clinical workflows.",
+    "tags": [
+      "health",
+      "nlm",
+      "clinical",
+      "codes",
+      "hcpcs"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://clinicaltables.nlm.nih.gov/api/hcpcs/v3/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "maxList": "10"
+      }
+    },
+    "params": {
+      "terms": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search terms",
+        "example": "wheelchair"
+      }
+    },
+    "sampleRequest": {
+      "terms": "wheelchair"
+    },
+    "sampleResponse": {
+      "source": "nlm-clinicaltables",
+      "data": [
+        1,
+        [
+          "E11.9"
+        ],
+        null,
+        [
+          [
+            "E11.9",
+            "Type 2 diabetes mellitus"
+          ]
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-openfda-drug-ndc",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Drug NDC Directory",
+    "description": "Query the openFDA Drug NDC Directory dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "descriptionBazaar": "Query the openFDA Drug NDC Directory dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "safety",
+      "drug"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/drug/ndc.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-device-510k",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Device 510(k) Clearances",
+    "description": "Query the openFDA Device 510(k) Clearances dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "descriptionBazaar": "Query the openFDA Device 510(k) Clearances dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "safety",
+      "device"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/device/510k.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-device-classification",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Device Classifications",
+    "description": "Query the openFDA Device Classifications dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "descriptionBazaar": "Query the openFDA Device Classifications dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "safety",
+      "device"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/device/classification.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-food-event",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Food Adverse Events",
+    "description": "Query the openFDA Food Adverse Events dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "descriptionBazaar": "Query the openFDA Food Adverse Events dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "safety",
+      "food"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/food/event.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-tobacco-problem",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Tobacco Problem Reports",
+    "description": "Query the openFDA Tobacco Problem Reports dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "descriptionBazaar": "Query the openFDA Tobacco Problem Reports dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "safety",
+      "tobacco"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/tobacco/problem.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-animalvet-event",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Animal And Veterinary Adverse Events",
+    "description": "Query the openFDA Animal And Veterinary Adverse Events dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "descriptionBazaar": "Query the openFDA Animal And Veterinary Adverse Events dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, device, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "safety",
+      "animalvet"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/animalandveterinary/event.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-rxnorm-approximate",
+    "category": "health",
+    "source": "rxnorm",
+    "title": "RxNorm Approximate Match",
+    "description": "Approximate-match a drug name string to RxNorm concepts from NIH RxNav, no key. Returns ranked candidate RxCUIs and names. For AI agents normalizing messy or misspelled medication names.",
+    "descriptionBazaar": "Approximate-match a drug name string to RxNorm concepts from NIH RxNav, no key. Returns ranked candidate RxCUIs and names. For AI agents normalizing messy or misspelled medication names.",
+    "tags": [
+      "health",
+      "rxnorm",
+      "drugs",
+      "match",
+      "nih"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://rxnav.nlm.nih.gov/REST/approximateTerm.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "maxEntries": "5"
+      }
+    },
+    "params": {
+      "term": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Drug name term",
+        "example": "ibuprofin"
+      }
+    },
+    "sampleRequest": {
+      "term": "ibuprofin"
+    },
+    "sampleResponse": {
+      "source": "rxnorm",
+      "data": {
+        "approximateGroup": {
+          "candidate": [
+            {
+              "rxcui": "5640"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-rxnorm-spelling",
+    "category": "health",
+    "source": "rxnorm",
+    "title": "RxNorm Spelling Suggestions",
+    "description": "Spelling suggestions for a drug name from NIH RxNav, no key. Returns corrected drug name candidates. For AI agents validating and correcting medication name input.",
+    "descriptionBazaar": "Spelling suggestions for a drug name from NIH RxNav, no key. Returns corrected drug name candidates. For AI agents validating and correcting medication name input.",
+    "tags": [
+      "health",
+      "rxnorm",
+      "spelling",
+      "drugs",
+      "nih"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://rxnav.nlm.nih.gov/REST/spellingsuggestions.json",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Drug name",
+        "example": "ibuprofin"
+      }
+    },
+    "sampleRequest": {
+      "name": "ibuprofin"
+    },
+    "sampleResponse": {
+      "source": "rxnorm",
+      "data": {
+        "suggestionGroup": {
+          "suggestionList": {
+            "suggestion": [
+              "ibuprofen"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-disease-covid-global",
+    "category": "health",
+    "source": "disease.sh",
+    "title": "COVID Global Totals",
+    "description": "Global COVID-19 totals from the disease.sh aggregator, no key. Returns worldwide cases, deaths, recovered, active, tests, and per million metrics. For AI agents in public health dashboards.",
+    "descriptionBazaar": "Global COVID-19 totals from the disease.sh aggregator, no key. Returns worldwide cases, deaths, recovered, active, tests, and per million metrics. For AI agents in public health dashboards.",
+    "tags": [
+      "health",
+      "covid",
+      "global",
+      "disease",
+      "stats"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://disease.sh/v3/covid-19/all",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "disease.sh",
+      "data": {
+        "cases": 700000000,
+        "deaths": 7000000
+      }
+    }
+  },
+  {
+    "slug": "suverse-disease-covid-historical",
+    "category": "health",
+    "source": "disease.sh",
+    "title": "COVID Historical By Country",
+    "description": "Historical COVID-19 case timeline for a country from disease.sh, no key, last 30 days. Returns daily cases, deaths, and recovered. For AI agents charting pandemic trends.",
+    "descriptionBazaar": "Historical COVID-19 case timeline for a country from disease.sh, no key, last 30 days. Returns daily cases, deaths, and recovered. For AI agents charting pandemic trends.",
+    "tags": [
+      "health",
+      "covid",
+      "historical",
+      "disease",
+      "timeline"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://disease.sh/v3/covid-19/historical/{country}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "lastdays": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Country name or ISO code",
+        "example": "USA"
+      }
+    },
+    "sampleRequest": {
+      "country": "USA"
+    },
+    "sampleResponse": {
+      "source": "disease.sh",
+      "data": {
+        "timeline": {
+          "cases": {}
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-disease-vaccine-coverage",
+    "category": "health",
+    "source": "disease.sh",
+    "title": "COVID Vaccine Coverage By Country",
+    "description": "COVID-19 vaccine doses administered timeline for a country from disease.sh, no key, last 30 days. Returns daily cumulative doses. For AI agents tracking vaccination progress.",
+    "descriptionBazaar": "COVID-19 vaccine doses administered timeline for a country from disease.sh, no key, last 30 days. Returns daily cumulative doses. For AI agents tracking vaccination progress.",
+    "tags": [
+      "health",
+      "covid",
+      "vaccine",
+      "coverage",
+      "disease"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://disease.sh/v3/covid-19/vaccine/coverage/countries/{country}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "lastdays": "30"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Country name or ISO code",
+        "example": "USA"
+      }
+    },
+    "sampleRequest": {
+      "country": "USA"
+    },
+    "sampleResponse": {
+      "source": "disease.sh",
+      "data": {
+        "country": "USA",
+        "timeline": {}
+      }
+    }
+  },
+  {
+    "slug": "suverse-openlibrary-search",
+    "category": "books",
+    "source": "openlibrary",
+    "title": "Open Library Book Search",
+    "description": "Search Open Library books by title, author, or keyword, no key. Returns matching works with title, author, first publish year, and edition counts. For AI agents in books, research, and library use cases.",
+    "descriptionBazaar": "Search Open Library books by title, author, or keyword, no key. Returns matching works with title, author, first publish year, and edition counts. For AI agents in books, research, and library use cases.",
+    "tags": [
+      "books",
+      "openlibrary",
+      "search",
+      "literature",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://openlibrary.org/search.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "10"
+      }
+    },
+    "params": {
+      "q": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search query",
+        "example": "the hobbit"
+      }
+    },
+    "sampleRequest": {
+      "q": "the hobbit"
+    },
+    "sampleResponse": {
+      "source": "openlibrary",
+      "data": {
+        "numFound": 100,
+        "docs": [
+          {
+            "title": "The Hobbit"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openlibrary-isbn",
+    "category": "books",
+    "source": "openlibrary",
+    "title": "Open Library ISBN Lookup",
+    "description": "Look up a book by ISBN from Open Library, no key. Returns title, authors, publisher, publish date, and page count. For AI agents resolving ISBNs to book metadata.",
+    "descriptionBazaar": "Look up a book by ISBN from Open Library, no key. Returns title, authors, publisher, publish date, and page count. For AI agents resolving ISBNs to book metadata.",
+    "tags": [
+      "books",
+      "openlibrary",
+      "isbn",
+      "metadata",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://openlibrary.org/isbn/{isbn}.json",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "isbn": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "ISBN-10 or ISBN-13",
+        "example": "9780261103283",
+        "pattern": "^[0-9Xx-]{10,17}$"
+      }
+    },
+    "sampleRequest": {
+      "isbn": "9780261103283"
+    },
+    "sampleResponse": {
+      "source": "openlibrary",
+      "data": {
+        "title": "The Hobbit"
+      }
+    }
+  },
+  {
+    "slug": "suverse-openlibrary-subject",
+    "category": "books",
+    "source": "openlibrary",
+    "title": "Open Library Books By Subject",
+    "description": "Books for a subject from Open Library, no key. Returns works tagged with the subject plus counts. For AI agents discovering books by topic.",
+    "descriptionBazaar": "Books for a subject from Open Library, no key. Returns works tagged with the subject plus counts. For AI agents discovering books by topic.",
+    "tags": [
+      "books",
+      "openlibrary",
+      "subject",
+      "topic",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://openlibrary.org/subjects/{subject}.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "10"
+      }
+    },
+    "params": {
+      "subject": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Subject keyword",
+        "example": "science_fiction",
+        "transform": "lower",
+        "pattern": "^[a-zA-Z_]+$"
+      }
+    },
+    "sampleRequest": {
+      "subject": "science_fiction"
+    },
+    "sampleResponse": {
+      "source": "openlibrary",
+      "data": {
+        "name": "science fiction",
+        "works": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-openlibrary-authors",
+    "category": "books",
+    "source": "openlibrary",
+    "title": "Open Library Author Search",
+    "description": "Search Open Library authors by name, no key. Returns matching authors with name, birth date, and work counts. For AI agents resolving author identities.",
+    "descriptionBazaar": "Search Open Library authors by name, no key. Returns matching authors with name, birth date, and work counts. For AI agents resolving author identities.",
+    "tags": [
+      "books",
+      "openlibrary",
+      "authors",
+      "search",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://openlibrary.org/search/authors.json",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "q": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Author name",
+        "example": "tolkien"
+      }
+    },
+    "sampleRequest": {
+      "q": "tolkien"
+    },
+    "sampleResponse": {
+      "source": "openlibrary",
+      "data": {
+        "docs": [
+          {
+            "name": "J. R. R. Tolkien"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-gutenberg-books",
+    "category": "books",
+    "source": "gutendex",
+    "title": "Project Gutenberg Book Search",
+    "description": "Search free public-domain ebooks from Project Gutenberg via Gutendex, no key. Returns books with title, authors, subjects, and download links. For AI agents sourcing free full-text literature.",
+    "descriptionBazaar": "Search free public-domain ebooks from Project Gutenberg via Gutendex, no key. Returns books with title, authors, subjects, and download links. For AI agents sourcing free full-text literature.",
+    "tags": [
+      "books",
+      "gutenberg",
+      "public-domain",
+      "ebooks",
+      "literature"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://gutendex.com/books",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search query",
+        "example": "shakespeare"
+      }
+    },
+    "sampleRequest": {
+      "search": "shakespeare"
+    },
+    "sampleResponse": {
+      "source": "gutendex",
+      "data": {
+        "count": 100,
+        "results": [
+          {
+            "title": "Hamlet"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-wiki-random",
+    "category": "knowledge",
+    "source": "wikipedia",
+    "title": "Wikipedia Random Article",
+    "description": "A random English Wikipedia article summary via the REST API, no key. Returns title, extract, and URL. For AI agents generating discovery, trivia, and serendipity content.",
+    "descriptionBazaar": "A random English Wikipedia article summary via the REST API, no key. Returns title, extract, and URL. For AI agents generating discovery, trivia, and serendipity content.",
+    "tags": [
+      "knowledge",
+      "wikipedia",
+      "random",
+      "encyclopedia",
+      "trivia"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://en.wikipedia.org/api/rest_v1/page/random/summary",
+      "timeoutMs": 10000,
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "wikipedia",
+      "data": {
+        "title": "Some Article",
+        "extract": "..."
+      }
+    }
+  },
+  {
+    "slug": "suverse-wikidata-search",
+    "category": "knowledge",
+    "source": "wikidata",
+    "title": "Wikidata Entity Search",
+    "description": "Search Wikidata entities by label, no key. Returns matching entity IDs, labels, and descriptions. For AI agents resolving names to structured knowledge-graph entities.",
+    "descriptionBazaar": "Search Wikidata entities by label, no key. Returns matching entity IDs, labels, and descriptions. For AI agents resolving names to structured knowledge-graph entities.",
+    "tags": [
+      "knowledge",
+      "wikidata",
+      "entities",
+      "search",
+      "graph"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.wikidata.org/w/api.php",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "action": "wbsearchentities",
+        "language": "en",
+        "format": "json"
+      },
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Entity label to search",
+        "example": "Ethereum"
+      }
+    },
+    "sampleRequest": {
+      "search": "Ethereum"
+    },
+    "sampleResponse": {
+      "source": "wikidata",
+      "data": {
+        "search": [
+          {
+            "id": "Q131723"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-dictionary",
+    "category": "language",
+    "source": "dictionaryapi",
+    "title": "English Dictionary Lookup",
+    "description": "Definitions, phonetics, and examples for an English word from the free Dictionary API, no key. Returns meanings, parts of speech, and synonyms. For AI agents in language, education, and writing tools.",
+    "descriptionBazaar": "Definitions, phonetics, and examples for an English word from the free Dictionary API, no key. Returns meanings, parts of speech, and synonyms. For AI agents in language, education, and writing tools.",
+    "tags": [
+      "language",
+      "dictionary",
+      "definitions",
+      "english",
+      "lexical"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "word": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "English word",
+        "example": "serendipity",
+        "pattern": "^[a-zA-Z-]{1,40}$",
+        "transform": "lower"
+      }
+    },
+    "sampleRequest": {
+      "word": "serendipity"
+    },
+    "sampleResponse": {
+      "source": "dictionaryapi",
+      "data": [
+        {
+          "word": "serendipity"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-datamuse-related",
+    "category": "language",
+    "source": "datamuse",
+    "title": "Word Association Finder",
+    "description": "Words related in meaning to a given word from the Datamuse API, no key. Returns ranked associated words with scores. For AI agents in writing assistance, search expansion, and word games.",
+    "descriptionBazaar": "Words related in meaning to a given word from the Datamuse API, no key. Returns ranked associated words with scores. For AI agents in writing assistance, search expansion, and word games.",
+    "tags": [
+      "language",
+      "datamuse",
+      "words",
+      "thesaurus",
+      "nlp"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.datamuse.com/words",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "ml": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Word to find associations for",
+        "example": "ocean"
+      }
+    },
+    "sampleRequest": {
+      "ml": "ocean"
+    },
+    "sampleResponse": {
+      "source": "datamuse",
+      "data": [
+        {
+          "word": "sea",
+          "score": 5000
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-openalex-sources",
+    "category": "academic",
+    "source": "openalex",
+    "title": "OpenAlex Sources Search",
+    "description": "Search OpenAlex sources (journals, conferences, repositories) by name, no key. Returns matching venues with ID, name, and metadata. For AI agents discovering and validating publication venues.",
+    "descriptionBazaar": "Search OpenAlex sources (journals, conferences, repositories) by name, no key. Returns matching venues with ID, name, and metadata. For AI agents discovering and validating publication venues.",
+    "tags": [
+      "academic",
+      "openalex",
+      "sources",
+      "journals",
+      "research"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.openalex.org/sources",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "per-page": "10",
+        "mailto": "data@suverse.io"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Source name",
+        "example": "nature"
+      }
+    },
+    "sampleRequest": {
+      "search": "nature"
+    },
+    "sampleResponse": {
+      "source": "openalex",
+      "data": {
+        "results": [
+          {
+            "display_name": "Nature"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-meal-search",
+    "category": "food",
+    "source": "themealdb",
+    "title": "Recipe Search By Name",
+    "description": "Search recipes by name from TheMealDB, no key. Returns meals with ingredients, instructions, category, and image. For AI agents in cooking, meal planning, and food apps.",
+    "descriptionBazaar": "Search recipes by name from TheMealDB, no key. Returns meals with ingredients, instructions, category, and image. For AI agents in cooking, meal planning, and food apps.",
+    "tags": [
+      "food",
+      "recipes",
+      "themealdb",
+      "cooking",
+      "meals"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.themealdb.com/api/json/v1/1/search.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "s": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Meal name",
+        "example": "arrabiata"
+      }
+    },
+    "sampleRequest": {
+      "s": "arrabiata"
+    },
+    "sampleResponse": {
+      "source": "themealdb",
+      "data": {
+        "meals": [
+          {
+            "strMeal": "Spicy Arrabiata Penne"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-meal-lookup",
+    "category": "food",
+    "source": "themealdb",
+    "title": "Recipe By ID",
+    "description": "Look up a full recipe by its TheMealDB id, no key. Returns the meal with ingredients, measures, and instructions. For AI agents fetching a specific recipe.",
+    "descriptionBazaar": "Look up a full recipe by its TheMealDB id, no key. Returns the meal with ingredients, measures, and instructions. For AI agents fetching a specific recipe.",
+    "tags": [
+      "food",
+      "recipes",
+      "themealdb",
+      "lookup",
+      "meals"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.themealdb.com/api/json/v1/1/lookup.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "i": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Meal id",
+        "example": "52771",
+        "pattern": "^[0-9]{4,7}$"
+      }
+    },
+    "sampleRequest": {
+      "i": "52771"
+    },
+    "sampleResponse": {
+      "source": "themealdb",
+      "data": {
+        "meals": [
+          {
+            "idMeal": "52771"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-meal-random",
+    "category": "food",
+    "source": "themealdb",
+    "title": "Random Recipe",
+    "description": "A random recipe from TheMealDB, no key. Returns one meal with full ingredients and instructions. For AI agents suggesting meals and generating food content.",
+    "descriptionBazaar": "A random recipe from TheMealDB, no key. Returns one meal with full ingredients and instructions. For AI agents suggesting meals and generating food content.",
+    "tags": [
+      "food",
+      "recipes",
+      "themealdb",
+      "random",
+      "meals"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.themealdb.com/api/json/v1/1/random.php",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "themealdb",
+      "data": {
+        "meals": [
+          {
+            "strMeal": "Teriyaki Chicken"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-meal-by-category",
+    "category": "food",
+    "source": "themealdb",
+    "title": "Recipes By Category",
+    "description": "Recipes filtered by category from TheMealDB, no key. Returns meals in the category with thumbnails and ids. For AI agents browsing recipes by type.",
+    "descriptionBazaar": "Recipes filtered by category from TheMealDB, no key. Returns meals in the category with thumbnails and ids. For AI agents browsing recipes by type.",
+    "tags": [
+      "food",
+      "recipes",
+      "themealdb",
+      "category",
+      "meals"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.themealdb.com/api/json/v1/1/filter.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "c": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Category, e.g. Seafood, Dessert, Vegetarian",
+        "example": "Seafood",
+        "pattern": "^[A-Za-z ]{3,20}$"
+      }
+    },
+    "sampleRequest": {
+      "c": "Seafood"
+    },
+    "sampleResponse": {
+      "source": "themealdb",
+      "data": {
+        "meals": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-meal-by-ingredient",
+    "category": "food",
+    "source": "themealdb",
+    "title": "Recipes By Ingredient",
+    "description": "Recipes that use a main ingredient from TheMealDB, no key. Returns meals containing the ingredient. For AI agents building recipes around what is on hand.",
+    "descriptionBazaar": "Recipes that use a main ingredient from TheMealDB, no key. Returns meals containing the ingredient. For AI agents building recipes around what is on hand.",
+    "tags": [
+      "food",
+      "recipes",
+      "themealdb",
+      "ingredient",
+      "meals"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.themealdb.com/api/json/v1/1/filter.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "i": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Main ingredient",
+        "example": "chicken_breast",
+        "pattern": "^[A-Za-z_ ]{3,30}$"
+      }
+    },
+    "sampleRequest": {
+      "i": "chicken_breast"
+    },
+    "sampleResponse": {
+      "source": "themealdb",
+      "data": {
+        "meals": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-meal-categories",
+    "category": "food",
+    "source": "themealdb",
+    "title": "Recipe Categories List",
+    "description": "The list of recipe categories from TheMealDB, no key. Returns category names, thumbnails, and descriptions. For AI agents building food navigation.",
+    "descriptionBazaar": "The list of recipe categories from TheMealDB, no key. Returns category names, thumbnails, and descriptions. For AI agents building food navigation.",
+    "tags": [
+      "food",
+      "recipes",
+      "themealdb",
+      "categories",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.themealdb.com/api/json/v1/1/categories.php",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "themealdb",
+      "data": {
+        "categories": [
+          {
+            "strCategory": "Seafood"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-cocktail-search",
+    "category": "food",
+    "source": "thecocktaildb",
+    "title": "Cocktail Search By Name",
+    "description": "Search cocktails by name from TheCocktailDB, no key. Returns drinks with ingredients, measures, glass, and instructions. For AI agents in bartending and beverage apps.",
+    "descriptionBazaar": "Search cocktails by name from TheCocktailDB, no key. Returns drinks with ingredients, measures, glass, and instructions. For AI agents in bartending and beverage apps.",
+    "tags": [
+      "food",
+      "cocktails",
+      "drinks",
+      "thecocktaildb",
+      "bartending"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thecocktaildb.com/api/json/v1/1/search.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "s": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Cocktail name",
+        "example": "margarita"
+      }
+    },
+    "sampleRequest": {
+      "s": "margarita"
+    },
+    "sampleResponse": {
+      "source": "thecocktaildb",
+      "data": {
+        "drinks": [
+          {
+            "strDrink": "Margarita"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-cocktail-random",
+    "category": "food",
+    "source": "thecocktaildb",
+    "title": "Random Cocktail",
+    "description": "A random cocktail from TheCocktailDB, no key. Returns one drink with full ingredients and instructions. For AI agents suggesting drinks.",
+    "descriptionBazaar": "A random cocktail from TheCocktailDB, no key. Returns one drink with full ingredients and instructions. For AI agents suggesting drinks.",
+    "tags": [
+      "food",
+      "cocktails",
+      "drinks",
+      "random",
+      "thecocktaildb"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thecocktaildb.com/api/json/v1/1/random.php",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "thecocktaildb",
+      "data": {
+        "drinks": [
+          {
+            "strDrink": "Mojito"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-cocktail-by-ingredient",
+    "category": "food",
+    "source": "thecocktaildb",
+    "title": "Cocktails By Ingredient",
+    "description": "Cocktails that use an ingredient from TheCocktailDB, no key. Returns drinks containing the ingredient. For AI agents building drinks around available ingredients.",
+    "descriptionBazaar": "Cocktails that use an ingredient from TheCocktailDB, no key. Returns drinks containing the ingredient. For AI agents building drinks around available ingredients.",
+    "tags": [
+      "food",
+      "cocktails",
+      "ingredient",
+      "drinks",
+      "thecocktaildb"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thecocktaildb.com/api/json/v1/1/filter.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "i": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Ingredient",
+        "example": "Gin",
+        "pattern": "^[A-Za-z ]{2,30}$"
+      }
+    },
+    "sampleRequest": {
+      "i": "Gin"
+    },
+    "sampleResponse": {
+      "source": "thecocktaildb",
+      "data": {
+        "drinks": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-food-barcode",
+    "category": "food",
+    "source": "openfoodfacts",
+    "title": "Food Product By Barcode",
+    "description": "Look up a food product by barcode from Open Food Facts, no key. Returns product name, brand, ingredients, nutrition grade, and Nutri-Score. For AI agents in nutrition, grocery, and health apps.",
+    "descriptionBazaar": "Look up a food product by barcode from Open Food Facts, no key. Returns product name, brand, ingredients, nutrition grade, and Nutri-Score. For AI agents in nutrition, grocery, and health apps.",
+    "tags": [
+      "food",
+      "nutrition",
+      "barcode",
+      "openfoodfacts",
+      "grocery"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://world.openfoodfacts.org/api/v2/product/{barcode}.json",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "barcode": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Product barcode (EAN/UPC)",
+        "example": "737628064502",
+        "pattern": "^[0-9]{8,14}$"
+      }
+    },
+    "sampleRequest": {
+      "barcode": "737628064502"
+    },
+    "sampleResponse": {
+      "source": "openfoodfacts",
+      "data": {
+        "product": {
+          "product_name": "Rice noodles"
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-sports-player",
+    "category": "sports",
+    "source": "thesportsdb",
+    "title": "Sports Player Search",
+    "description": "Search sports players by name from TheSportsDB, no key. Returns player id, team, sport, nationality, and position. For AI agents enriching sports queries and fantasy tools.",
+    "descriptionBazaar": "Search sports players by name from TheSportsDB, no key. Returns player id, team, sport, nationality, and position. For AI agents enriching sports queries and fantasy tools.",
+    "tags": [
+      "sports",
+      "players",
+      "thesportsdb",
+      "search",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thesportsdb.com/api/v1/json/3/searchplayers.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "p": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Player name",
+        "example": "Messi"
+      }
+    },
+    "sampleRequest": {
+      "p": "Messi"
+    },
+    "sampleResponse": {
+      "source": "thesportsdb",
+      "data": {
+        "player": [
+          {
+            "strPlayer": "Lionel Messi"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-sports-leagues",
+    "category": "sports",
+    "source": "thesportsdb",
+    "title": "All Sports Leagues",
+    "description": "The list of all leagues from TheSportsDB, no key. Returns league id, name, and sport. For AI agents resolving league ids and building sports navigation.",
+    "descriptionBazaar": "The list of all leagues from TheSportsDB, no key. Returns league id, name, and sport. For AI agents resolving league ids and building sports navigation.",
+    "tags": [
+      "sports",
+      "leagues",
+      "thesportsdb",
+      "list",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thesportsdb.com/api/v1/json/3/all_leagues.php",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "thesportsdb",
+      "data": {
+        "leagues": [
+          {
+            "idLeague": "4328",
+            "strLeague": "English Premier League"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-sports-next-events",
+    "category": "sports",
+    "source": "thesportsdb",
+    "title": "Next Team Events",
+    "description": "Upcoming events for a team by team id from TheSportsDB, no key. Returns the next fixtures with opponents, date, and venue. For AI agents tracking a team schedule.",
+    "descriptionBazaar": "Upcoming events for a team by team id from TheSportsDB, no key. Returns the next fixtures with opponents, date, and venue. For AI agents tracking a team schedule.",
+    "tags": [
+      "sports",
+      "fixtures",
+      "thesportsdb",
+      "upcoming",
+      "schedule"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thesportsdb.com/api/v1/json/3/eventsnext.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "id": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Team id",
+        "example": "133604",
+        "pattern": "^[0-9]{5,8}$"
+      }
+    },
+    "sampleRequest": {
+      "id": "133604"
+    },
+    "sampleResponse": {
+      "source": "thesportsdb",
+      "data": {
+        "events": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-sports-last-events",
+    "category": "sports",
+    "source": "thesportsdb",
+    "title": "Last Team Events",
+    "description": "Recent past events for a team by team id from TheSportsDB, no key. Returns the last results with scores and dates. For AI agents reviewing team form.",
+    "descriptionBazaar": "Recent past events for a team by team id from TheSportsDB, no key. Returns the last results with scores and dates. For AI agents reviewing team form.",
+    "tags": [
+      "sports",
+      "results",
+      "thesportsdb",
+      "recent",
+      "form"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thesportsdb.com/api/v1/json/3/eventslast.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "id": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Team id",
+        "example": "133604",
+        "pattern": "^[0-9]{5,8}$"
+      }
+    },
+    "sampleRequest": {
+      "id": "133604"
+    },
+    "sampleResponse": {
+      "source": "thesportsdb",
+      "data": {
+        "results": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-sports-league-detail",
+    "category": "sports",
+    "source": "thesportsdb",
+    "title": "League Detail",
+    "description": "Details for a league by id from TheSportsDB, no key. Returns league name, sport, country, formed year, and description. For AI agents enriching league context.",
+    "descriptionBazaar": "Details for a league by id from TheSportsDB, no key. Returns league name, sport, country, formed year, and description. For AI agents enriching league context.",
+    "tags": [
+      "sports",
+      "leagues",
+      "thesportsdb",
+      "detail",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.thesportsdb.com/api/v1/json/3/lookupleague.php",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "id": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "League id",
+        "example": "4328",
+        "pattern": "^[0-9]{3,7}$"
+      }
+    },
+    "sampleRequest": {
+      "id": "4328"
+    },
+    "sampleResponse": {
+      "source": "thesportsdb",
+      "data": {
+        "leagues": [
+          {
+            "strLeague": "English Premier League"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-nhl-standings",
+    "category": "sports",
+    "source": "nhl",
+    "title": "NHL Standings Now",
+    "description": "Current NHL standings from the official NHL web API, no key. Returns each team with wins, losses, points, and division. For AI agents answering hockey standings questions.",
+    "descriptionBazaar": "Current NHL standings from the official NHL web API, no key. Returns each team with wins, losses, points, and division. For AI agents answering hockey standings questions.",
+    "tags": [
+      "sports",
+      "nhl",
+      "hockey",
+      "standings",
+      "stats"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api-web.nhle.com/v1/standings/now",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "nhl",
+      "data": {
+        "standings": [
+          {
+            "teamName": {
+              "default": "Bruins"
+            },
+            "points": 90
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-nhl-scores",
+    "category": "sports",
+    "source": "nhl",
+    "title": "NHL Scores By Date",
+    "description": "NHL game scores for a date from the official NHL web API, no key. Returns games with teams, scores, and status. For AI agents building hockey briefings.",
+    "descriptionBazaar": "NHL game scores for a date from the official NHL web API, no key. Returns games with teams, scores, and status. For AI agents building hockey briefings.",
+    "tags": [
+      "sports",
+      "nhl",
+      "hockey",
+      "scores",
+      "schedule"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api-web.nhle.com/v1/score/{date}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "date": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Date YYYY-MM-DD",
+        "example": "2026-01-15",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      }
+    },
+    "sampleRequest": {
+      "date": "2026-01-15"
+    },
+    "sampleResponse": {
+      "source": "nhl",
+      "data": {
+        "games": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-reverse-geocode",
+    "category": "geo",
+    "source": "bigdatacloud",
+    "title": "Reverse Geocode",
+    "description": "Reverse geocode a latitude and longitude to a place from BigDataCloud, no key. Returns city, locality, principal subdivision, country, and codes. For AI agents turning coordinates into place names.",
+    "descriptionBazaar": "Reverse geocode a latitude and longitude to a place from BigDataCloud, no key. Returns city, locality, principal subdivision, country, and codes. For AI agents turning coordinates into place names.",
+    "tags": [
+      "geo",
+      "reverse-geocode",
+      "places",
+      "coordinates",
+      "location"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.bigdatacloud.net/data/reverse-geocode-client",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "localityLanguage": "en"
+      }
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude",
+        "example": 48.85
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude",
+        "example": 2.35
+      }
+    },
+    "sampleRequest": {
+      "latitude": 48.85,
+      "longitude": 2.35
+    },
+    "sampleResponse": {
+      "source": "bigdatacloud",
+      "data": {
+        "city": "Paris",
+        "countryName": "France"
+      }
+    }
+  },
+  {
+    "slug": "suverse-country-by-name",
+    "category": "geo",
+    "source": "restcountries",
+    "title": "Country By Name",
+    "description": "Look up a country by name from REST Countries, no key. Returns capital, region, population, currencies, languages, and flags. For AI agents enriching country context.",
+    "descriptionBazaar": "Look up a country by name from REST Countries, no key. Returns capital, region, population, currencies, languages, and flags. For AI agents enriching country context.",
+    "tags": [
+      "geo",
+      "countries",
+      "restcountries",
+      "reference",
+      "demographics"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://restcountries.com/v3.1/name/{name}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "fields": "name,capital,region,population,currencies,languages"
+      }
+    },
+    "params": {
+      "name": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Country name",
+        "example": "france",
+        "pattern": "^[A-Za-z ]{2,40}$",
+        "transform": "lower"
+      }
+    },
+    "sampleRequest": {
+      "name": "france"
+    },
+    "sampleResponse": {
+      "source": "restcountries",
+      "data": [
+        {
+          "name": {
+            "common": "France"
+          },
+          "capital": [
+            "Paris"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-countries-by-region",
+    "category": "geo",
+    "source": "restcountries",
+    "title": "Countries By Region",
+    "description": "Countries in a region from REST Countries, no key. Returns each country with capital and population. For AI agents listing and comparing countries by region.",
+    "descriptionBazaar": "Countries in a region from REST Countries, no key. Returns each country with capital and population. For AI agents listing and comparing countries by region.",
+    "tags": [
+      "geo",
+      "countries",
+      "restcountries",
+      "region",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://restcountries.com/v3.1/region/{region}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "fields": "name,capital,population"
+      }
+    },
+    "params": {
+      "region": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Region, e.g. europe, asia, africa",
+        "example": "europe",
+        "pattern": "^[A-Za-z]{3,15}$",
+        "transform": "lower"
+      }
+    },
+    "sampleRequest": {
+      "region": "europe"
+    },
+    "sampleResponse": {
+      "source": "restcountries",
+      "data": [
+        {
+          "name": {
+            "common": "France"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-sunrise-sunset",
+    "category": "geo",
+    "source": "sunrise-sunset",
+    "title": "Sunrise And Sunset Times",
+    "description": "Sunrise, sunset, and twilight times for a latitude and longitude from the Sunrise-Sunset API, no key. Returns UTC times for solar events. For AI agents in scheduling, photography, and energy planning.",
+    "descriptionBazaar": "Sunrise, sunset, and twilight times for a latitude and longitude from the Sunrise-Sunset API, no key. Returns UTC times for solar events. For AI agents in scheduling, photography, and energy planning.",
+    "tags": [
+      "geo",
+      "sunrise",
+      "sunset",
+      "solar",
+      "astronomy"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.sunrise-sunset.org/json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "formatted": "0"
+      }
+    },
+    "params": {
+      "lat": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude",
+        "example": 36.72
+      },
+      "lng": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude",
+        "example": -4.42
+      }
+    },
+    "sampleRequest": {
+      "lat": 36.72,
+      "lng": -4.42
+    },
+    "sampleResponse": {
+      "source": "sunrise-sunset",
+      "data": {
+        "results": {
+          "sunrise": "2026-06-19T05:00:00+00:00"
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-uk-postcode",
+    "category": "geo",
+    "source": "postcodes.io",
+    "title": "UK Postcode Lookup",
+    "description": "Look up a UK postcode from Postcodes.io, no key. Returns the latitude, longitude, district, region, and administrative areas. For AI agents validating and enriching UK addresses.",
+    "descriptionBazaar": "Look up a UK postcode from Postcodes.io, no key. Returns the latitude, longitude, district, region, and administrative areas. For AI agents validating and enriching UK addresses.",
+    "tags": [
+      "geo",
+      "postcode",
+      "uk",
+      "address",
+      "location"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.postcodes.io/postcodes/{postcode}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "postcode": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "UK postcode",
+        "example": "SW1A1AA",
+        "pattern": "^[A-Za-z0-9 ]{5,8}$"
+      }
+    },
+    "sampleRequest": {
+      "postcode": "SW1A1AA"
+    },
+    "sampleResponse": {
+      "source": "postcodes.io",
+      "data": {
+        "result": {
+          "region": "London"
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-us-address-geocode",
+    "category": "geo",
+    "source": "census",
+    "title": "US Address Geocoder",
+    "description": "Geocode a US street address via the Census Bureau geocoder, no key. Returns matched address, coordinates, and census geography. For AI agents standardizing and geocoding US addresses.",
+    "descriptionBazaar": "Geocode a US street address via the Census Bureau geocoder, no key. Returns matched address, coordinates, and census geography. For AI agents standardizing and geocoding US addresses.",
+    "tags": [
+      "geo",
+      "geocoding",
+      "census",
+      "address",
+      "usa"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "benchmark": "Public_AR_Current",
+        "format": "json"
+      }
+    },
+    "params": {
+      "address": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "One-line US street address",
+        "example": "1600 Pennsylvania Ave NW, Washington DC"
+      }
+    },
+    "sampleRequest": {
+      "address": "1600 Pennsylvania Ave NW, Washington DC"
+    },
+    "sampleResponse": {
+      "source": "census",
+      "data": {
+        "result": {
+          "addressMatches": []
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-river-discharge",
+    "category": "geo",
+    "source": "open-meteo",
+    "title": "River Discharge Forecast",
+    "description": "River discharge (flood) forecast for a latitude and longitude from the Open-Meteo flood API, no key. Returns daily river discharge in cubic meters per second. For AI agents in flood risk, insurance, and water management.",
+    "descriptionBazaar": "River discharge (flood) forecast for a latitude and longitude from the Open-Meteo flood API, no key. Returns daily river discharge in cubic meters per second. For AI agents in flood risk, insurance, and water management.",
+    "tags": [
+      "geo",
+      "flood",
+      "river",
+      "hydrology",
+      "water"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://flood-api.open-meteo.com/v1/flood",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "daily": "river_discharge"
+      }
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude",
+        "example": 52.52
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude",
+        "example": 13.41
+      }
+    },
+    "sampleRequest": {
+      "latitude": 52.52,
+      "longitude": 13.41
+    },
+    "sampleResponse": {
+      "source": "open-meteo",
+      "data": {
+        "daily": {
+          "river_discharge": [
+            12.3
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-federal-register-search",
+    "category": "government",
+    "source": "federalregister",
+    "title": "Federal Register Document Search",
+    "description": "Search US Federal Register documents (rules, proposed rules, notices, executive orders) by term, no key. Returns documents with title, type, agency, and publication date. For AI agents monitoring US regulatory activity.",
+    "descriptionBazaar": "Search US Federal Register documents (rules, proposed rules, notices, executive orders) by term, no key. Returns documents with title, type, agency, and publication date. For AI agents monitoring US regulatory activity.",
+    "tags": [
+      "government",
+      "federal-register",
+      "regulations",
+      "policy",
+      "law"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.federalregister.gov/api/v1/documents.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "per_page": "10",
+        "conditions[term]": ""
+      }
+    },
+    "params": {
+      "term": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search term",
+        "example": "artificial intelligence",
+        "upstreamName": "conditions[term]"
+      }
+    },
+    "sampleRequest": {
+      "term": "artificial intelligence"
+    },
+    "sampleResponse": {
+      "source": "federalregister",
+      "data": {
+        "count": 100,
+        "results": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-federal-agencies",
+    "category": "government",
+    "source": "federalregister",
+    "title": "US Federal Agencies List",
+    "description": "The list of US federal agencies from the Federal Register API, no key. Returns agency names, ids, and slugs. For AI agents resolving and navigating US agencies.",
+    "descriptionBazaar": "The list of US federal agencies from the Federal Register API, no key. Returns agency names, ids, and slugs. For AI agents resolving and navigating US agencies.",
+    "tags": [
+      "government",
+      "agencies",
+      "federal-register",
+      "reference",
+      "usa"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.federalregister.gov/api/v1/agencies",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "federalregister",
+      "data": [
+        {
+          "id": 1,
+          "name": "Department of State"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-name-age",
+    "category": "social",
+    "source": "agify",
+    "title": "Name To Age Estimate",
+    "description": "Estimate the likely age for a first name from Agify, no key. Returns the predicted age and sample size. For AI agents enriching profiles and demographic guessing.",
+    "descriptionBazaar": "Estimate the likely age for a first name from Agify, no key. Returns the predicted age and sample size. For AI agents enriching profiles and demographic guessing.",
+    "tags": [
+      "social",
+      "names",
+      "age",
+      "demographics",
+      "enrichment"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.agify.io",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "First name",
+        "example": "michael"
+      }
+    },
+    "sampleRequest": {
+      "name": "michael"
+    },
+    "sampleResponse": {
+      "source": "agify",
+      "data": {
+        "name": "michael",
+        "age": 62
+      }
+    }
+  },
+  {
+    "slug": "suverse-name-gender",
+    "category": "social",
+    "source": "genderize",
+    "title": "Name To Gender Estimate",
+    "description": "Estimate the likely gender for a first name from Genderize, no key. Returns predicted gender and probability. For AI agents enriching profiles.",
+    "descriptionBazaar": "Estimate the likely gender for a first name from Genderize, no key. Returns predicted gender and probability. For AI agents enriching profiles.",
+    "tags": [
+      "social",
+      "names",
+      "gender",
+      "demographics",
+      "enrichment"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.genderize.io",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "First name",
+        "example": "alex"
+      }
+    },
+    "sampleRequest": {
+      "name": "alex"
+    },
+    "sampleResponse": {
+      "source": "genderize",
+      "data": {
+        "name": "alex",
+        "gender": "male",
+        "probability": 0.9
+      }
+    }
+  },
+  {
+    "slug": "suverse-name-nationality",
+    "category": "social",
+    "source": "nationalize",
+    "title": "Name To Nationality Estimate",
+    "description": "Estimate likely nationalities for a first name from Nationalize, no key. Returns ranked country codes with probabilities. For AI agents enriching profiles and localization.",
+    "descriptionBazaar": "Estimate likely nationalities for a first name from Nationalize, no key. Returns ranked country codes with probabilities. For AI agents enriching profiles and localization.",
+    "tags": [
+      "social",
+      "names",
+      "nationality",
+      "demographics",
+      "enrichment"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.nationalize.io",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "First name",
+        "example": "wei"
+      }
+    },
+    "sampleRequest": {
+      "name": "wei"
+    },
+    "sampleResponse": {
+      "source": "nationalize",
+      "data": {
+        "name": "wei",
+        "country": [
+          {
+            "country_id": "CN",
+            "probability": 0.7
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-bls-series",
+    "category": "macro",
+    "source": "bls",
+    "title": "BLS Time Series Data",
+    "description": "US Bureau of Labor Statistics time series data by series id (CPI, employment, wages) from the public v1 API, no key. Returns recent periods and values. For AI agents tracking US labor and price data.",
+    "descriptionBazaar": "US Bureau of Labor Statistics time series data by series id (CPI, employment, wages) from the public v1 API, no key. Returns recent periods and values. For AI agents tracking US labor and price data.",
+    "tags": [
+      "macro",
+      "bls",
+      "labor",
+      "cpi",
+      "economics"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.bls.gov/publicAPI/v1/timeseries/data/{seriesid}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "seriesid": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "BLS series id, e.g. CUUR0000SA0 (CPI-U)",
+        "example": "CUUR0000SA0",
+        "pattern": "^[A-Za-z0-9]{6,20}$"
+      }
+    },
+    "sampleRequest": {
+      "seriesid": "CUUR0000SA0"
+    },
+    "sampleResponse": {
+      "source": "bls",
+      "data": {
+        "Results": {
+          "series": [
+            {
+              "data": [
+                {
+                  "year": "2026",
+                  "value": "320"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-coinbase-rates",
+    "category": "forex",
+    "source": "coinbase",
+    "title": "Coinbase Exchange Rates",
+    "description": "Exchange rates for a base currency against fiat and crypto from the public Coinbase API, no key. Returns the rate map for the base currency. For AI agents doing multi-currency conversion including crypto.",
+    "descriptionBazaar": "Exchange rates for a base currency against fiat and crypto from the public Coinbase API, no key. Returns the rate map for the base currency. For AI agents doing multi-currency conversion including crypto.",
+    "tags": [
+      "forex",
+      "exchange-rate",
+      "coinbase",
+      "crypto",
+      "currency"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.coinbase.com/v2/exchange-rates",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "currency": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "default": "USD",
+        "pattern": "^[A-Za-z]{2,6}$",
+        "transform": "upper",
+        "description": "Base currency code",
+        "example": "USD"
+      }
+    },
+    "sampleRequest": {
+      "currency": "USD"
+    },
+    "sampleResponse": {
+      "source": "coinbase",
+      "data": {
+        "data": {
+          "currency": "USD",
+          "rates": {
+            "EUR": "0.92"
+          }
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-treasury-gold-reserves",
+    "category": "treasury",
+    "source": "treasury.fiscaldata",
+    "title": "US Treasury Gold Reserves",
+    "description": "US Treasury-owned gold reserves by facility from the official Treasury FiscalData service, no key, latest records. Returns location, fine troy ounces, and book value. For AI agents tracking sovereign gold holdings.",
+    "descriptionBazaar": "US Treasury-owned gold reserves by facility from the official Treasury FiscalData service, no key, latest records. Returns location, fine troy ounces, and book value. For AI agents tracking sovereign gold holdings.",
+    "tags": [
+      "treasury",
+      "gold",
+      "reserves",
+      "government",
+      "commodities"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/gold_reserve",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "sort": "-record_date",
+        "page[size]": "20",
+        "format": "json"
+      },
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "treasury.fiscaldata",
+      "data": {
+        "data": [
+          {
+            "facility_description": "Fort Knox",
+            "fine_troy_ounce_qty": "147341858.382"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-treasury-savings-bonds",
+    "category": "treasury",
+    "source": "treasury.fiscaldata",
+    "title": "US Treasury Savings Bonds Issued",
+    "description": "US savings bonds issued and redeemed from the official Treasury FiscalData service, no key, latest records. Returns series, issue amounts, and redemptions. For AI agents tracking retail government debt.",
+    "descriptionBazaar": "US savings bonds issued and redeemed from the official Treasury FiscalData service, no key, latest records. Returns series, issue amounts, and redemptions. For AI agents tracking retail government debt.",
+    "tags": [
+      "treasury",
+      "savings-bonds",
+      "debt",
+      "government",
+      "fiscal"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/savings_bonds_pcs",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "sort": "-record_date",
+        "page[size]": "12",
+        "format": "json"
+      },
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "treasury.fiscaldata",
+      "data": {
+        "data": [
+          {
+            "record_date": "2026-05-31"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-sec-tickers",
+    "category": "sec-filings",
+    "source": "sec.edgar",
+    "title": "SEC Ticker To CIK Map",
+    "description": "The full SEC ticker-to-CIK mapping for all US public companies, no key. Returns ticker, company name, and CIK for every registrant. For AI agents resolving stock tickers to SEC identifiers before fetching filings.",
+    "descriptionBazaar": "The full SEC ticker-to-CIK mapping for all US public companies, no key. Returns ticker, company name, and CIK for every registrant. For AI agents resolving stock tickers to SEC identifiers before fetching filings.",
+    "tags": [
+      "sec",
+      "edgar",
+      "tickers",
+      "cik",
+      "stocks"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://www.sec.gov/files/company_tickers.json",
+      "timeoutMs": 15000,
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "sec.edgar",
+      "data": {
+        "0": {
+          "cik_str": 320193,
+          "ticker": "AAPL",
+          "title": "Apple Inc."
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-sec-frames",
+    "category": "sec-filings",
+    "source": "sec.edgar",
+    "title": "SEC XBRL Frame Across Companies",
+    "description": "One XBRL concept reported by ALL US public companies for a single period from SEC EDGAR frames, no key. Returns each company CIK, entity name, and value. For AI agents screening or comparing a financial metric across the market.",
+    "descriptionBazaar": "One XBRL concept reported by ALL US public companies for a single period from SEC EDGAR frames, no key. Returns each company CIK, entity name, and value. For AI agents screening or comparing a financial metric across the market.",
+    "tags": [
+      "sec",
+      "edgar",
+      "xbrl",
+      "frames",
+      "screening"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/{tag}/USD/CY{period}.json",
+      "timeoutMs": 15000,
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {
+      "tag": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "XBRL concept tag",
+        "example": "Assets",
+        "pattern": "^[A-Za-z]{2,60}$"
+      },
+      "period": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Period, e.g. 2023Q4I or 2023",
+        "example": "2023Q4I",
+        "pattern": "^[0-9]{4}(Q[1-4]I?)?$"
+      }
+    },
+    "sampleRequest": {
+      "tag": "Assets",
+      "period": "2023Q4I"
+    },
+    "sampleResponse": {
+      "source": "sec.edgar",
+      "data": {
+        "tag": "Assets",
+        "data": [
+          {
+            "cik": 320193,
+            "val": 352755000000
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-quakes-week-major",
+    "category": "science",
+    "source": "usgs",
+    "title": "Major Earthquakes Past Week",
+    "description": "Earthquakes of magnitude 4.5 and above worldwide in the past week from the USGS feed, no key. Returns magnitude, place, time, and coordinates. For AI agents monitoring significant seismic activity.",
+    "descriptionBazaar": "Earthquakes of magnitude 4.5 and above worldwide in the past week from the USGS feed, no key. Returns magnitude, place, time, and coordinates. For AI agents monitoring significant seismic activity.",
+    "tags": [
+      "earthquakes",
+      "usgs",
+      "seismic",
+      "weekly",
+      "science"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "usgs",
+      "data": {
+        "metadata": {
+          "count": 40
+        },
+        "features": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-usgs-streamflow",
+    "category": "science",
+    "source": "usgs",
+    "title": "USGS River Streamflow",
+    "description": "Real-time river streamflow for a USGS monitoring site, no key. Returns the latest discharge in cubic feet per second with timestamp. For AI agents in hydrology, flood, and water management.",
+    "descriptionBazaar": "Real-time river streamflow for a USGS monitoring site, no key. Returns the latest discharge in cubic feet per second with timestamp. For AI agents in hydrology, flood, and water management.",
+    "tags": [
+      "science",
+      "usgs",
+      "streamflow",
+      "water",
+      "hydrology"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://waterservices.usgs.gov/nwis/iv",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json",
+        "parameterCd": "00060"
+      }
+    },
+    "params": {
+      "sites": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "USGS site number",
+        "example": "01646500",
+        "pattern": "^[0-9]{8,15}$"
+      }
+    },
+    "sampleRequest": {
+      "sites": "01646500"
+    },
+    "sampleResponse": {
+      "source": "usgs",
+      "data": {
+        "value": {
+          "timeSeries": []
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-eonet-categories",
+    "category": "science",
+    "source": "nasa-eonet",
+    "title": "NASA EONET Event Categories",
+    "description": "The categories of natural events tracked by NASA EONET, no key, such as wildfires, severe storms, and volcanoes. Returns category id, title, and description. For AI agents navigating natural-event data.",
+    "descriptionBazaar": "The categories of natural events tracked by NASA EONET, no key, such as wildfires, severe storms, and volcanoes. Returns category id, title, and description. For AI agents navigating natural-event data.",
+    "tags": [
+      "science",
+      "nasa",
+      "eonet",
+      "categories",
+      "hazards"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://eonet.gsfc.nasa.gov/api/v3/categories",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "nasa-eonet",
+      "data": {
+        "categories": [
+          {
+            "id": "wildfires",
+            "title": "Wildfires"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-met-search",
+    "category": "culture",
+    "source": "metmuseum",
+    "title": "Met Museum Art Search",
+    "description": "Search The Metropolitan Museum of Art open collection by keyword, no key. Returns matching object ids and a total count. For AI agents building art discovery and culture content.",
+    "descriptionBazaar": "Search The Metropolitan Museum of Art open collection by keyword, no key. Returns matching object ids and a total count. For AI agents building art discovery and culture content.",
+    "tags": [
+      "culture",
+      "art",
+      "metmuseum",
+      "search",
+      "museum"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://collectionapi.metmuseum.org/public/collection/v1/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "hasImages": "true"
+      }
+    },
+    "params": {
+      "q": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search keyword",
+        "example": "sunflowers"
+      }
+    },
+    "sampleRequest": {
+      "q": "sunflowers"
+    },
+    "sampleResponse": {
+      "source": "metmuseum",
+      "data": {
+        "total": 50,
+        "objectIDs": [
+          436524
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-met-object",
+    "category": "culture",
+    "source": "metmuseum",
+    "title": "Met Museum Artwork Detail",
+    "description": "Details for a Metropolitan Museum of Art object by id, no key. Returns title, artist, date, medium, and image url. For AI agents fetching a specific artwork.",
+    "descriptionBazaar": "Details for a Metropolitan Museum of Art object by id, no key. Returns title, artist, date, medium, and image url. For AI agents fetching a specific artwork.",
+    "tags": [
+      "culture",
+      "art",
+      "metmuseum",
+      "artwork",
+      "museum"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://collectionapi.metmuseum.org/public/collection/v1/objects/{objectID}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "objectID": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Met object id",
+        "example": "436524",
+        "pattern": "^[0-9]{1,7}$"
+      }
+    },
+    "sampleRequest": {
+      "objectID": "436524"
+    },
+    "sampleResponse": {
+      "source": "metmuseum",
+      "data": {
+        "title": "Wheat Field with Cypresses",
+        "artistDisplayName": "Vincent van Gogh"
+      }
+    }
+  },
+  {
+    "slug": "suverse-artic-search",
+    "category": "culture",
+    "source": "artic",
+    "title": "Art Institute Of Chicago Search",
+    "description": "Search the Art Institute of Chicago collection by keyword, no key. Returns matching artworks with title, artist, and date. For AI agents building art discovery experiences.",
+    "descriptionBazaar": "Search the Art Institute of Chicago collection by keyword, no key. Returns matching artworks with title, artist, and date. For AI agents building art discovery experiences.",
+    "tags": [
+      "culture",
+      "art",
+      "artic",
+      "search",
+      "museum"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.artic.edu/api/v1/artworks/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "10"
+      }
+    },
+    "params": {
+      "q": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search keyword",
+        "example": "monet"
+      }
+    },
+    "sampleRequest": {
+      "q": "monet"
+    },
+    "sampleResponse": {
+      "source": "artic",
+      "data": {
+        "data": [
+          {
+            "title": "Water Lilies"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-pokemon",
+    "category": "games",
+    "source": "pokeapi",
+    "title": "Pokemon Data Lookup",
+    "description": "Look up a Pokemon by name from PokeAPI, no key. Returns types, stats, abilities, height, and weight. For AI agents in games, trivia, and entertainment apps.",
+    "descriptionBazaar": "Look up a Pokemon by name from PokeAPI, no key. Returns types, stats, abilities, height, and weight. For AI agents in games, trivia, and entertainment apps.",
+    "tags": [
+      "games",
+      "pokemon",
+      "pokeapi",
+      "entertainment",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://pokeapi.co/api/v2/pokemon/{name}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "Pokemon name",
+        "example": "pikachu",
+        "pattern": "^[a-zA-Z-]{2,30}$",
+        "transform": "lower"
+      }
+    },
+    "sampleRequest": {
+      "name": "pikachu"
+    },
+    "sampleResponse": {
+      "source": "pokeapi",
+      "data": {
+        "name": "pikachu",
+        "types": [
+          {
+            "type": {
+              "name": "electric"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-nws-station-obs",
+    "category": "weather",
+    "source": "nws.weather.gov",
+    "title": "NWS Station Latest Observation",
+    "description": "Latest weather observation from a US National Weather Service station, no key. Returns temperature, wind, humidity, and conditions. For AI agents needing official US ground-truth weather.",
+    "descriptionBazaar": "Latest weather observation from a US National Weather Service station, no key. Returns temperature, wind, humidity, and conditions. For AI agents needing official US ground-truth weather.",
+    "tags": [
+      "weather",
+      "nws",
+      "observation",
+      "station",
+      "usa"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.weather.gov/stations/{stationId}/observations/latest",
+      "timeoutMs": 10000,
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {
+      "stationId": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "description": "NWS station id, e.g. KNYC",
+        "example": "KNYC",
+        "pattern": "^[A-Za-z0-9]{3,6}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "stationId": "KNYC"
+    },
+    "sampleResponse": {
+      "source": "nws.weather.gov",
+      "data": {
+        "properties": {
+          "temperature": {
+            "value": 21
+          }
+        }
+      }
+    }
+  }
+]

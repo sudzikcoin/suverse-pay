@@ -21,7 +21,7 @@
  *   node scripts/pipeline/index-batch.mjs --batch batch-001,batch-002 [--force] [--poll]
  *   node scripts/pipeline/index-batch.mjs --manifest path1,path2 [--payto 0x..]
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SuverseClient } from "@suverselabs/x402-client";
@@ -95,7 +95,24 @@ async function main() {
   const onlyArg = arg("only", null);
   const onlySet = onlyArg ? new Set(String(onlyArg).split(",")) : null;
   const pool = onlySet ? rows.filter((r) => onlySet.has(r.slug)) : rows;
-  const targets = force ? pool : pool.filter((r) => !before.slugs.has(r.slug));
+
+  // Campaign state file: slugs this campaign already settled on-chain.
+  // CDP indexing latency can exceed the inter-pass wait, so a re-run's
+  // CDP skip-set may still be stale and re-settle a slug — wasting USDC
+  // AND re-calling the upstream (which is where the only 2 settled-then-
+  // 504s on the batch-003 run came from). Persisting settled slugs makes
+  // re-runs skip them regardless of CDP lag: settle each endpoint AT MOST
+  // ONCE per campaign.
+  const statePath = arg("state", null);
+  const stateSettled = new Set();
+  if (statePath) {
+    try { for (const s of JSON.parse(readFileSync(statePath, "utf8"))) stateSettled.add(s); } catch {}
+  }
+  const persistState = () => {
+    if (statePath) { try { writeFileSync(statePath, JSON.stringify([...stateSettled])); } catch {} }
+  };
+  const skip = (slug) => !force && (before.slugs.has(slug) || stateSettled.has(slug));
+  const targets = pool.filter((r) => !skip(r.slug));
   console.log(`${pool.length} endpoints in scope; ${targets.length} need indexing settle\n`);
   // Gentle pacing avoids the CDP-facilitator burst-rate 502s seen on a
   // 60-settle backfire (settle_failed, no charge, but wasted attempts).
@@ -113,7 +130,8 @@ async function main() {
       });
       const tx = res.payment?.txHash ?? null;
       console.log(`  + ${ep.slug.padEnd(34)} HTTP ${res.response.status} tx=${tx ?? "-"}`);
-      tx ? settled.push({ slug: ep.slug, tx }) : failed.push({ slug: ep.slug, why: "no-tx" });
+      if (tx) { settled.push({ slug: ep.slug, tx }); stateSettled.add(ep.slug); persistState(); }
+      else failed.push({ slug: ep.slug, why: "no-tx" });
     } catch (e) {
       // A settle that fired but hit an upstream 4xx still wakes the indexer;
       // a true settle_failed (facilitator transient) does not. Record both.

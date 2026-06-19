@@ -1,0 +1,768 @@
+[
+  {
+    "slug": "suverse-wb-pop-density",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-life-expectancy",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-gdp-per-capita",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-gni-per-capita",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-poverty-headcount",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-gdp-growth",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-exports-share",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-imports-share",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-fdi-inflows",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-co2-per-capita",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-internet-users",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-mobile-subscriptions",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-urban-population",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-gov-debt",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-labor-force",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-health-expenditure",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-military-expenditure",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-electricity-access",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-renewable-energy",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-tertiary-enrollment",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-agriculture-value",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-manufacturing-value",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-services-value",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-tax-revenue",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-birth-rate",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-death-rate",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-fertility-rate",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-population-growth",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-real-interest-rate",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-wb-youth-unemployment",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-nlm-icd10cm",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "diabetes"
+    }
+  },
+  {
+    "slug": "suverse-nlm-conditions",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "asthma"
+    }
+  },
+  {
+    "slug": "suverse-nlm-rxterms",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "metformin"
+    }
+  },
+  {
+    "slug": "suverse-nlm-npi-individual",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "john smith"
+    }
+  },
+  {
+    "slug": "suverse-nlm-npi-organization",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "mayo clinic"
+    }
+  },
+  {
+    "slug": "suverse-nlm-hcpcs",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "wheelchair"
+    }
+  },
+  {
+    "slug": "suverse-openfda-drug-ndc",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-openfda-device-510k",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-openfda-device-classification",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-openfda-food-event",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-openfda-tobacco-problem",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-openfda-animalvet-event",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-rxnorm-approximate",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "term": "ibuprofin"
+    }
+  },
+  {
+    "slug": "suverse-rxnorm-spelling",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "name": "ibuprofin"
+    }
+  },
+  {
+    "slug": "suverse-disease-covid-global",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-disease-covid-historical",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "country": "USA"
+    }
+  },
+  {
+    "slug": "suverse-disease-vaccine-coverage",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "country": "USA"
+    }
+  },
+  {
+    "slug": "suverse-openlibrary-search",
+    "priceUsdc": "0.002000",
+    "category": "books",
+    "sampleRequest": {
+      "q": "the hobbit"
+    }
+  },
+  {
+    "slug": "suverse-openlibrary-isbn",
+    "priceUsdc": "0.002000",
+    "category": "books",
+    "sampleRequest": {
+      "isbn": "9780261103283"
+    }
+  },
+  {
+    "slug": "suverse-openlibrary-subject",
+    "priceUsdc": "0.002000",
+    "category": "books",
+    "sampleRequest": {
+      "subject": "science_fiction"
+    }
+  },
+  {
+    "slug": "suverse-openlibrary-authors",
+    "priceUsdc": "0.002000",
+    "category": "books",
+    "sampleRequest": {
+      "q": "tolkien"
+    }
+  },
+  {
+    "slug": "suverse-gutenberg-books",
+    "priceUsdc": "0.002000",
+    "category": "books",
+    "sampleRequest": {
+      "search": "shakespeare"
+    }
+  },
+  {
+    "slug": "suverse-wiki-random",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-wikidata-search",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "search": "Ethereum"
+    }
+  },
+  {
+    "slug": "suverse-dictionary",
+    "priceUsdc": "0.002000",
+    "category": "language",
+    "sampleRequest": {
+      "word": "serendipity"
+    }
+  },
+  {
+    "slug": "suverse-datamuse-related",
+    "priceUsdc": "0.002000",
+    "category": "language",
+    "sampleRequest": {
+      "ml": "ocean"
+    }
+  },
+  {
+    "slug": "suverse-openalex-sources",
+    "priceUsdc": "0.002000",
+    "category": "academic",
+    "sampleRequest": {
+      "search": "nature"
+    }
+  },
+  {
+    "slug": "suverse-meal-search",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {
+      "s": "arrabiata"
+    }
+  },
+  {
+    "slug": "suverse-meal-lookup",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {
+      "i": "52771"
+    }
+  },
+  {
+    "slug": "suverse-meal-random",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-meal-by-category",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {
+      "c": "Seafood"
+    }
+  },
+  {
+    "slug": "suverse-meal-by-ingredient",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {
+      "i": "chicken_breast"
+    }
+  },
+  {
+    "slug": "suverse-meal-categories",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-cocktail-search",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {
+      "s": "margarita"
+    }
+  },
+  {
+    "slug": "suverse-cocktail-random",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-cocktail-by-ingredient",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {
+      "i": "Gin"
+    }
+  },
+  {
+    "slug": "suverse-food-barcode",
+    "priceUsdc": "0.002000",
+    "category": "food",
+    "sampleRequest": {
+      "barcode": "737628064502"
+    }
+  },
+  {
+    "slug": "suverse-sports-player",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "p": "Messi"
+    }
+  },
+  {
+    "slug": "suverse-sports-leagues",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-sports-next-events",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "id": "133604"
+    }
+  },
+  {
+    "slug": "suverse-sports-last-events",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "id": "133604"
+    }
+  },
+  {
+    "slug": "suverse-sports-league-detail",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "id": "4328"
+    }
+  },
+  {
+    "slug": "suverse-nhl-standings",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-nhl-scores",
+    "priceUsdc": "0.002000",
+    "category": "sports",
+    "sampleRequest": {
+      "date": "2026-01-15"
+    }
+  },
+  {
+    "slug": "suverse-reverse-geocode",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "latitude": 48.85,
+      "longitude": 2.35
+    }
+  },
+  {
+    "slug": "suverse-country-by-name",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "name": "france"
+    }
+  },
+  {
+    "slug": "suverse-countries-by-region",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "region": "europe"
+    }
+  },
+  {
+    "slug": "suverse-sunrise-sunset",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "lat": 36.72,
+      "lng": -4.42
+    }
+  },
+  {
+    "slug": "suverse-uk-postcode",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "postcode": "SW1A1AA"
+    }
+  },
+  {
+    "slug": "suverse-us-address-geocode",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "address": "1600 Pennsylvania Ave NW, Washington DC"
+    }
+  },
+  {
+    "slug": "suverse-river-discharge",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "latitude": 52.52,
+      "longitude": 13.41
+    }
+  },
+  {
+    "slug": "suverse-federal-register-search",
+    "priceUsdc": "0.002000",
+    "category": "government",
+    "sampleRequest": {
+      "term": "artificial intelligence"
+    }
+  },
+  {
+    "slug": "suverse-federal-agencies",
+    "priceUsdc": "0.002000",
+    "category": "government",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-name-age",
+    "priceUsdc": "0.002000",
+    "category": "social",
+    "sampleRequest": {
+      "name": "michael"
+    }
+  },
+  {
+    "slug": "suverse-name-gender",
+    "priceUsdc": "0.002000",
+    "category": "social",
+    "sampleRequest": {
+      "name": "alex"
+    }
+  },
+  {
+    "slug": "suverse-name-nationality",
+    "priceUsdc": "0.002000",
+    "category": "social",
+    "sampleRequest": {
+      "name": "wei"
+    }
+  },
+  {
+    "slug": "suverse-bls-series",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "seriesid": "CUUR0000SA0"
+    }
+  },
+  {
+    "slug": "suverse-coinbase-rates",
+    "priceUsdc": "0.002000",
+    "category": "forex",
+    "sampleRequest": {
+      "currency": "USD"
+    }
+  },
+  {
+    "slug": "suverse-treasury-gold-reserves",
+    "priceUsdc": "0.002000",
+    "category": "treasury",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-treasury-savings-bonds",
+    "priceUsdc": "0.002000",
+    "category": "treasury",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-sec-tickers",
+    "priceUsdc": "0.002000",
+    "category": "sec-filings",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-sec-frames",
+    "priceUsdc": "0.002000",
+    "category": "sec-filings",
+    "sampleRequest": {
+      "tag": "Assets",
+      "period": "2023Q4I"
+    }
+  },
+  {
+    "slug": "suverse-quakes-week-major",
+    "priceUsdc": "0.002000",
+    "category": "science",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-usgs-streamflow",
+    "priceUsdc": "0.002000",
+    "category": "science",
+    "sampleRequest": {
+      "sites": "01646500"
+    }
+  },
+  {
+    "slug": "suverse-eonet-categories",
+    "priceUsdc": "0.002000",
+    "category": "science",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-met-search",
+    "priceUsdc": "0.002000",
+    "category": "culture",
+    "sampleRequest": {
+      "q": "sunflowers"
+    }
+  },
+  {
+    "slug": "suverse-met-object",
+    "priceUsdc": "0.002000",
+    "category": "culture",
+    "sampleRequest": {
+      "objectID": "436524"
+    }
+  },
+  {
+    "slug": "suverse-artic-search",
+    "priceUsdc": "0.002000",
+    "category": "culture",
+    "sampleRequest": {
+      "q": "monet"
+    }
+  },
+  {
+    "slug": "suverse-pokemon",
+    "priceUsdc": "0.002000",
+    "category": "games",
+    "sampleRequest": {
+      "name": "pikachu"
+    }
+  },
+  {
+    "slug": "suverse-nws-station-obs",
+    "priceUsdc": "0.002000",
+    "category": "weather",
+    "sampleRequest": {
+      "stationId": "KNYC"
+    }
+  }
+]

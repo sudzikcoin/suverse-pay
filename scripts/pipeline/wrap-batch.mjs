@@ -201,9 +201,25 @@ DB="$(grep -hoP '^DATABASE_URL=\\K.*' /etc/suverse-pay/proxy.env | tr -d '"')"
 echo "1/4 dry-run seed (rollback)"; sed 's/^COMMIT;/ROLLBACK;/' "$REPO/scripts/seed/insert-${batchIdArg}.sql" | psql "$DB" -v ON_ERROR_STOP=1 -q
 echo "2/4 apply seed";            psql "$DB" -v ON_ERROR_STOP=1 -q -f "$REPO/scripts/seed/insert-${batchIdArg}.sql"
 echo "3/4 restart proxy";         kill "$(systemctl show -p MainPID --value suverse-pay-proxy.service)"; sleep 6
-echo "4/4 per-endpoint indexing settle (auto)"
-PAYER_BASE_PRIVATE_KEY_PATH=\${PAYER_BASE_PRIVATE_KEY_PATH:-/etc/suverse-pay/base-payer.key} \\
-  node "$REPO/apps/proxy/scripts/index-batch.mjs" --batch ${batchIdArg} --delay 3000 --poll
+echo "4/4 per-endpoint indexing settle (auto, convergence loop)"
+# CDP indexing is eventually-consistent and the facilitator throws transient
+# 502s under sustained settle load, so one pass leaves laggards. index-batch
+# is idempotent (skips already-indexed), so we loop: settle -> wait out CDP
+# latency -> re-settle only the still-unindexed, breaking when a pass has
+# nothing left to settle.
+export PAYER_BASE_PRIVATE_KEY_PATH=\${PAYER_BASE_PRIVATE_KEY_PATH:-/etc/suverse-pay/base-payer.key}
+STATE="/tmp/settled-${batchIdArg}.json"; rm -f "$STATE"
+for pass in 1 2 3 4 5 6 7 8; do
+  echo "  -- indexing pass \$pass --"
+  # --state makes each endpoint settle AT MOST ONCE per campaign even when
+  # CDP indexing lags the inter-pass wait — no wasted re-settles, no
+  # re-settle-induced upstream errors.
+  out="$(node "$REPO/apps/proxy/scripts/index-batch.mjs" --batch ${batchIdArg} --delay 3000 --state "$STATE")"
+  echo "$out" | tail -2
+  echo "$out" | grep -qE 'scope; 0 need indexing settle' && { echo "converged on pass \$pass"; break; }
+  echo "  waiting 240s for CDP indexing latency..."; sleep 240
+done
+echo "done"
 `,
   { mode: 0o755 },
 );
