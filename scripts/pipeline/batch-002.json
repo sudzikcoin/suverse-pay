@@ -1,0 +1,2364 @@
+[
+  {
+    "slug": "suverse-fx-latest-pair",
+    "category": "forex",
+    "source": "frankfurter",
+    "title": "Latest FX Rate For A Pair",
+    "description": "Latest ECB reference exchange rate from one currency to another via Frankfurter, no key. Returns base, date, and the converted rate. For AI agents doing reliable fiat conversion, treasury, and pricing math.",
+    "descriptionBazaar": "Latest ECB reference exchange rate from one currency to another via Frankfurter, no key. Returns base, date, and the converted rate. For AI agents doing reliable fiat conversion, treasury, and pricing math.",
+    "tags": [
+      "forex",
+      "fx",
+      "exchange-rate",
+      "ecb",
+      "currency"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.frankfurter.app/latest",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "from": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Base currency ISO code",
+        "example": "USD",
+        "pattern": "^[A-Za-z]{3}$",
+        "transform": "upper"
+      },
+      "to": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Quote currency ISO code",
+        "example": "EUR",
+        "pattern": "^[A-Za-z]{3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "from": "USD",
+      "to": "EUR"
+    },
+    "sampleResponse": {
+      "source": "frankfurter",
+      "data": {
+        "amount": 1,
+        "base": "USD",
+        "date": "2026-06-18",
+        "rates": {
+          "EUR": 0.92
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-fx-timeseries",
+    "category": "forex",
+    "source": "frankfurter",
+    "title": "FX Rate Time Series",
+    "description": "Daily ECB reference exchange rate time series between two currencies over a date range via Frankfurter, no key. For AI agents backtesting FX, computing volatility, and charting currency trends.",
+    "descriptionBazaar": "Daily ECB reference exchange rate time series between two currencies over a date range via Frankfurter, no key. For AI agents backtesting FX, computing volatility, and charting currency trends.",
+    "tags": [
+      "forex",
+      "fx",
+      "timeseries",
+      "historical",
+      "ecb"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.frankfurter.app/{start_date}..{end_date}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "start_date": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Start date YYYY-MM-DD",
+        "example": "2025-01-01"
+      },
+      "end_date": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "End date YYYY-MM-DD",
+        "example": "2025-01-31"
+      },
+      "from": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Base currency ISO code",
+        "example": "USD",
+        "pattern": "^[A-Za-z]{3}$",
+        "transform": "upper"
+      },
+      "to": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Quote currency ISO code",
+        "example": "EUR",
+        "pattern": "^[A-Za-z]{3}$",
+        "transform": "upper"
+      }
+    },
+    "sampleRequest": {
+      "start_date": "2025-01-01",
+      "end_date": "2025-01-31",
+      "from": "USD",
+      "to": "EUR"
+    },
+    "sampleResponse": {
+      "source": "frankfurter",
+      "data": {
+        "base": "USD",
+        "rates": {
+          "2025-01-02": {
+            "EUR": 0.96
+          }
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-fx-currencies",
+    "category": "forex",
+    "source": "frankfurter",
+    "title": "Supported FX Currencies",
+    "description": "List of currencies supported by the Frankfurter ECB rate service with full currency names, no key. For AI agents validating currency codes and building dropdowns and conversion UIs.",
+    "descriptionBazaar": "List of currencies supported by the Frankfurter ECB rate service with full currency names, no key. For AI agents validating currency codes and building dropdowns and conversion UIs.",
+    "tags": [
+      "forex",
+      "fx",
+      "currencies",
+      "reference",
+      "ecb"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.frankfurter.app/currencies",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "frankfurter",
+      "data": {
+        "USD": "United States Dollar",
+        "EUR": "Euro"
+      }
+    }
+  },
+  {
+    "slug": "suverse-fx-historical-date",
+    "category": "forex",
+    "source": "frankfurter",
+    "title": "FX Rates On A Date",
+    "description": "ECB reference exchange rates on a specific historical date for a base currency via Frankfurter, no key. For AI agents reconciling past transactions and historical valuation.",
+    "descriptionBazaar": "ECB reference exchange rates on a specific historical date for a base currency via Frankfurter, no key. For AI agents reconciling past transactions and historical valuation.",
+    "tags": [
+      "forex",
+      "fx",
+      "historical",
+      "ecb",
+      "currency"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.frankfurter.app/{date}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "date": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Date YYYY-MM-DD",
+        "example": "2025-01-15"
+      },
+      "from": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "pattern": "^[A-Za-z]{3}$",
+        "transform": "upper",
+        "description": "Base currency ISO code",
+        "example": "USD"
+      }
+    },
+    "sampleRequest": {
+      "date": "2025-01-15",
+      "from": "USD"
+    },
+    "sampleResponse": {
+      "source": "frankfurter",
+      "data": {
+        "base": "USD",
+        "date": "2025-01-15",
+        "rates": {
+          "EUR": 0.95
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-quakes-recent",
+    "category": "science",
+    "source": "usgs",
+    "title": "Recent Earthquakes Past Day",
+    "description": "All earthquakes detected worldwide in the past day from the USGS real time feed, no key. Returns magnitude, place, time, and coordinates per event. For AI agents in insurance, logistics, and risk monitoring.",
+    "descriptionBazaar": "All earthquakes detected worldwide in the past day from the USGS real time feed, no key. Returns magnitude, place, time, and coordinates per event. For AI agents in insurance, logistics, and risk monitoring.",
+    "tags": [
+      "earthquakes",
+      "usgs",
+      "seismic",
+      "hazards",
+      "science"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "usgs",
+      "data": {
+        "metadata": {
+          "count": 220
+        },
+        "features": [
+          {
+            "properties": {
+              "mag": 4.2,
+              "place": "off coast"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-quakes-significant",
+    "category": "science",
+    "source": "usgs",
+    "title": "Significant Earthquakes Past Month",
+    "description": "Significant earthquakes worldwide in the past month from the USGS feed, no key. Returns magnitude, place, tsunami flag, time, and coordinates. For AI agents tracking major seismic events and disaster response.",
+    "descriptionBazaar": "Significant earthquakes worldwide in the past month from the USGS feed, no key. Returns magnitude, place, tsunami flag, time, and coordinates. For AI agents tracking major seismic events and disaster response.",
+    "tags": [
+      "earthquakes",
+      "usgs",
+      "significant",
+      "tsunami",
+      "science"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "usgs",
+      "data": {
+        "metadata": {
+          "count": 8
+        },
+        "features": [
+          {
+            "properties": {
+              "mag": 6.5,
+              "place": "region",
+              "tsunami": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-quakes-search",
+    "category": "science",
+    "source": "usgs",
+    "title": "Earthquake Search By Magnitude",
+    "description": "Search USGS earthquakes by minimum magnitude and optional start time, no key. Returns matching events with magnitude, place, time, and coordinates, newest first. For AI agents querying seismic history on demand.",
+    "descriptionBazaar": "Search USGS earthquakes by minimum magnitude and optional start time, no key. Returns matching events with magnitude, place, time, and coordinates, newest first. For AI agents querying seismic history on demand.",
+    "tags": [
+      "earthquakes",
+      "usgs",
+      "search",
+      "seismic",
+      "science"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "geojson",
+        "orderby": "time",
+        "limit": "100"
+      }
+    },
+    "params": {
+      "minmagnitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Minimum magnitude",
+        "example": 4.5
+      },
+      "starttime": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Start date YYYY-MM-DD",
+        "example": "2026-06-01"
+      }
+    },
+    "sampleRequest": {
+      "minmagnitude": 5,
+      "starttime": "2026-06-01"
+    },
+    "sampleResponse": {
+      "source": "usgs",
+      "data": {
+        "features": [
+          {
+            "properties": {
+              "mag": 5.1
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-quakes-by-region",
+    "category": "science",
+    "source": "usgs",
+    "title": "Earthquakes Near A Location",
+    "description": "USGS earthquakes within a radius of a latitude and longitude, no key. Returns nearby events with magnitude, place, time, and distance ordering by time. For AI agents doing location specific seismic risk checks.",
+    "descriptionBazaar": "USGS earthquakes within a radius of a latitude and longitude, no key. Returns nearby events with magnitude, place, time, and distance ordering by time. For AI agents doing location specific seismic risk checks.",
+    "tags": [
+      "earthquakes",
+      "usgs",
+      "region",
+      "radius",
+      "science"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "geojson",
+        "orderby": "time",
+        "limit": "100"
+      }
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude",
+        "example": 35.7
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude",
+        "example": -117.6
+      },
+      "maxradiuskm": {
+        "in": "query",
+        "required": false,
+        "type": "number",
+        "description": "Max radius in km",
+        "example": 300
+      }
+    },
+    "sampleRequest": {
+      "latitude": 35.7,
+      "longitude": -117.6,
+      "maxradiuskm": 300
+    },
+    "sampleResponse": {
+      "source": "usgs",
+      "data": {
+        "features": [
+          {
+            "properties": {
+              "mag": 3.3
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openalex-works",
+    "category": "academic",
+    "source": "openalex",
+    "title": "OpenAlex Works Search",
+    "description": "Search the OpenAlex open scholarly graph for works by keyword, no key. Returns ranked matches with identifiers and metadata. For AI agents doing literature review, research enrichment, and citation analysis.",
+    "descriptionBazaar": "Search the OpenAlex open scholarly graph for works by keyword, no key. Returns ranked matches with identifiers and metadata. For AI agents doing literature review, research enrichment, and citation analysis.",
+    "tags": [
+      "academic",
+      "openalex",
+      "research",
+      "papers",
+      "works"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.openalex.org/works",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "per-page": "10",
+        "mailto": "data@suverse.io"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Works search query",
+        "example": "graph neural networks"
+      }
+    },
+    "sampleRequest": {
+      "search": "graph neural networks"
+    },
+    "sampleResponse": {
+      "source": "openalex",
+      "data": {
+        "meta": {
+          "count": 1000
+        },
+        "results": [
+          {
+            "id": "https://openalex.org/W1",
+            "display_name": "graph neural networks"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openalex-authors",
+    "category": "academic",
+    "source": "openalex",
+    "title": "OpenAlex Authors Search",
+    "description": "Search the OpenAlex open scholarly graph for authors by keyword, no key. Returns ranked matches with identifiers and metadata. For AI agents doing literature review, research enrichment, and citation analysis.",
+    "descriptionBazaar": "Search the OpenAlex open scholarly graph for authors by keyword, no key. Returns ranked matches with identifiers and metadata. For AI agents doing literature review, research enrichment, and citation analysis.",
+    "tags": [
+      "academic",
+      "openalex",
+      "research",
+      "papers",
+      "authors"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.openalex.org/authors",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "per-page": "10",
+        "mailto": "data@suverse.io"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Authors search query",
+        "example": "Yoshua Bengio"
+      }
+    },
+    "sampleRequest": {
+      "search": "Yoshua Bengio"
+    },
+    "sampleResponse": {
+      "source": "openalex",
+      "data": {
+        "meta": {
+          "count": 1000
+        },
+        "results": [
+          {
+            "id": "https://openalex.org/W1",
+            "display_name": "Yoshua Bengio"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openalex-institutions",
+    "category": "academic",
+    "source": "openalex",
+    "title": "OpenAlex Institutions Search",
+    "description": "Search the OpenAlex open scholarly graph for institutions by keyword, no key. Returns ranked matches with identifiers and metadata. For AI agents doing literature review, research enrichment, and citation analysis.",
+    "descriptionBazaar": "Search the OpenAlex open scholarly graph for institutions by keyword, no key. Returns ranked matches with identifiers and metadata. For AI agents doing literature review, research enrichment, and citation analysis.",
+    "tags": [
+      "academic",
+      "openalex",
+      "research",
+      "papers",
+      "institutions"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.openalex.org/institutions",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "per-page": "10",
+        "mailto": "data@suverse.io"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Institutions search query",
+        "example": "MIT"
+      }
+    },
+    "sampleRequest": {
+      "search": "MIT"
+    },
+    "sampleResponse": {
+      "source": "openalex",
+      "data": {
+        "meta": {
+          "count": 1000
+        },
+        "results": [
+          {
+            "id": "https://openalex.org/W1",
+            "display_name": "MIT"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openalex-concepts",
+    "category": "academic",
+    "source": "openalex",
+    "title": "OpenAlex Concepts Search",
+    "description": "Search the OpenAlex open scholarly graph for concepts by keyword, no key. Returns ranked matches with identifiers and metadata. For AI agents doing literature review, research enrichment, and citation analysis.",
+    "descriptionBazaar": "Search the OpenAlex open scholarly graph for concepts by keyword, no key. Returns ranked matches with identifiers and metadata. For AI agents doing literature review, research enrichment, and citation analysis.",
+    "tags": [
+      "academic",
+      "openalex",
+      "research",
+      "papers",
+      "concepts"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.openalex.org/concepts",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "per-page": "10",
+        "mailto": "data@suverse.io"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Concepts search query",
+        "example": "machine learning"
+      }
+    },
+    "sampleRequest": {
+      "search": "machine learning"
+    },
+    "sampleResponse": {
+      "source": "openalex",
+      "data": {
+        "meta": {
+          "count": 1000
+        },
+        "results": [
+          {
+            "id": "https://openalex.org/W1",
+            "display_name": "machine learning"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-crossref-works",
+    "category": "academic",
+    "source": "crossref",
+    "title": "Crossref Works Search",
+    "description": "Search Crossref scholarly metadata across journals, conferences, and books by query, no key. Returns matching works with DOI, title, authors, and publication. For AI agents resolving citations and enriching bibliographies.",
+    "descriptionBazaar": "Search Crossref scholarly metadata across journals, conferences, and books by query, no key. Returns matching works with DOI, title, authors, and publication. For AI agents resolving citations and enriching bibliographies.",
+    "tags": [
+      "academic",
+      "crossref",
+      "doi",
+      "citations",
+      "research"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.crossref.org/works",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "rows": "10",
+        "mailto": "data@suverse.io"
+      }
+    },
+    "params": {
+      "query": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search query",
+        "example": "attention is all you need"
+      }
+    },
+    "sampleRequest": {
+      "query": "attention is all you need"
+    },
+    "sampleResponse": {
+      "source": "crossref",
+      "data": {
+        "message": {
+          "items": [
+            {
+              "DOI": "10.5555/1",
+              "title": [
+                "..."
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-crossref-journals",
+    "category": "academic",
+    "source": "crossref",
+    "title": "Crossref Journals Search",
+    "description": "Search Crossref for academic journals by title or keyword, no key. Returns journals with title, publisher, ISSN, and article counts. For AI agents discovering venues and validating journal identifiers.",
+    "descriptionBazaar": "Search Crossref for academic journals by title or keyword, no key. Returns journals with title, publisher, ISSN, and article counts. For AI agents discovering venues and validating journal identifiers.",
+    "tags": [
+      "academic",
+      "crossref",
+      "journals",
+      "issn",
+      "research"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.crossref.org/journals",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "rows": "10"
+      }
+    },
+    "params": {
+      "query": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Journal search query",
+        "example": "nature"
+      }
+    },
+    "sampleRequest": {
+      "query": "nature"
+    },
+    "sampleResponse": {
+      "source": "crossref",
+      "data": {
+        "message": {
+          "items": [
+            {
+              "title": "Nature",
+              "ISSN": [
+                "0028-0836"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-vin-decode",
+    "category": "vehicles",
+    "source": "nhtsa",
+    "title": "VIN Decode",
+    "description": "Decode a vehicle identification number via the NHTSA vPIC service, no key. Returns make, model, year, body, engine, plant, and dozens of decoded attributes. For AI agents in automotive, insurance, fleet, and resale workflows.",
+    "descriptionBazaar": "Decode a vehicle identification number via the NHTSA vPIC service, no key. Returns make, model, year, body, engine, plant, and dozens of decoded attributes. For AI agents in automotive, insurance, fleet, and resale workflows.",
+    "tags": [
+      "vehicles",
+      "vin",
+      "nhtsa",
+      "automotive",
+      "decode"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/{vin}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json"
+      }
+    },
+    "params": {
+      "vin": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-HJ-NPR-Za-hj-npr-z0-9]{11,17}$",
+        "transform": "upper",
+        "description": "Vehicle identification number",
+        "example": "1HGCM82633A004352"
+      }
+    },
+    "sampleRequest": {
+      "vin": "1HGCM82633A004352"
+    },
+    "sampleResponse": {
+      "source": "nhtsa",
+      "data": {
+        "Results": [
+          {
+            "Variable": "Make",
+            "Value": "HONDA"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-vehicle-makes",
+    "category": "vehicles",
+    "source": "nhtsa",
+    "title": "All Vehicle Makes",
+    "description": "The full list of vehicle makes registered with NHTSA vPIC, no key. Returns make id and name for every manufacturer. For AI agents validating makes and building automotive reference data.",
+    "descriptionBazaar": "The full list of vehicle makes registered with NHTSA vPIC, no key. Returns make id and name for every manufacturer. For AI agents validating makes and building automotive reference data.",
+    "tags": [
+      "vehicles",
+      "makes",
+      "nhtsa",
+      "automotive",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json"
+      }
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "nhtsa",
+      "data": {
+        "Results": [
+          {
+            "Make_ID": 474,
+            "Make_Name": "HONDA"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-vehicle-models",
+    "category": "vehicles",
+    "source": "nhtsa",
+    "title": "Models For A Make",
+    "description": "All vehicle models for a given make from NHTSA vPIC, no key. Returns model id and name for the manufacturer. For AI agents populating make and model selectors and validating vehicle data.",
+    "descriptionBazaar": "All vehicle models for a given make from NHTSA vPIC, no key. Returns model id and name for the manufacturer. For AI agents populating make and model selectors and validating vehicle data.",
+    "tags": [
+      "vehicles",
+      "models",
+      "nhtsa",
+      "automotive",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsformake/{make}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json"
+      }
+    },
+    "params": {
+      "make": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z ]{2,30}$",
+        "description": "Vehicle make name",
+        "example": "honda"
+      }
+    },
+    "sampleRequest": {
+      "make": "honda"
+    },
+    "sampleResponse": {
+      "source": "nhtsa",
+      "data": {
+        "Results": [
+          {
+            "Model_Name": "Accord"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-vehicle-recalls",
+    "category": "vehicles",
+    "source": "nhtsa",
+    "title": "Vehicle Safety Recalls",
+    "description": "Safety recalls for a make, model, and year from the NHTSA recalls API, no key. Returns each recall campaign with component, summary, consequence, and remedy. For AI agents in safety, insurance, and resale due diligence.",
+    "descriptionBazaar": "Safety recalls for a make, model, and year from the NHTSA recalls API, no key. Returns each recall campaign with component, summary, consequence, and remedy. For AI agents in safety, insurance, and resale due diligence.",
+    "tags": [
+      "vehicles",
+      "recalls",
+      "nhtsa",
+      "safety",
+      "automotive"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://api.nhtsa.gov/recalls/recallsByVehicle",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "make": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Vehicle make",
+        "example": "honda"
+      },
+      "model": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Vehicle model",
+        "example": "accord"
+      },
+      "modelYear": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Model year YYYY",
+        "example": "2015",
+        "pattern": "^[0-9]{4}$"
+      }
+    },
+    "sampleRequest": {
+      "make": "honda",
+      "model": "accord",
+      "modelYear": "2015"
+    },
+    "sampleResponse": {
+      "source": "nhtsa",
+      "data": {
+        "Count": 2,
+        "results": [
+          {
+            "Component": "AIR BAGS"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-vehicle-types",
+    "category": "vehicles",
+    "source": "nhtsa",
+    "title": "Vehicle Types For A Make",
+    "description": "Vehicle types produced by a given make from NHTSA vPIC, no key. Returns type id and name such as passenger car or truck. For AI agents classifying vehicles by manufacturer.",
+    "descriptionBazaar": "Vehicle types produced by a given make from NHTSA vPIC, no key. Returns type id and name such as passenger car or truck. For AI agents classifying vehicles by manufacturer.",
+    "tags": [
+      "vehicles",
+      "types",
+      "nhtsa",
+      "automotive",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://vpic.nhtsa.dot.gov/api/vehicles/GetVehicleTypesForMake/{make}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json"
+      }
+    },
+    "params": {
+      "make": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z ]{2,30}$",
+        "description": "Vehicle make name",
+        "example": "honda"
+      }
+    },
+    "sampleRequest": {
+      "make": "honda"
+    },
+    "sampleResponse": {
+      "source": "nhtsa",
+      "data": {
+        "Results": [
+          {
+            "VehicleTypeName": "PASSENGER CAR"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-public-holidays",
+    "category": "calendar",
+    "source": "nager",
+    "title": "Public Holidays By Country Year",
+    "description": "Official public holidays for a country and year from Nager.Date, no key. Returns each holiday date, local and English name, and type. For AI agents scheduling, computing business days, and planning across regions.",
+    "descriptionBazaar": "Official public holidays for a country and year from Nager.Date, no key. Returns each holiday date, local and English name, and type. For AI agents scheduling, computing business days, and planning across regions.",
+    "tags": [
+      "holidays",
+      "calendar",
+      "nager",
+      "scheduling",
+      "dates"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://date.nager.at/api/v3/PublicHolidays/{year}/{country}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "year": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}$",
+        "description": "Year YYYY",
+        "example": "2026"
+      },
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2}$",
+        "transform": "upper",
+        "description": "ISO 2 letter country code",
+        "example": "US"
+      }
+    },
+    "sampleRequest": {
+      "year": "2026",
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "nager",
+      "data": [
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-next-holidays",
+    "category": "calendar",
+    "source": "nager",
+    "title": "Next Public Holidays",
+    "description": "Upcoming public holidays for a country in the next year from Nager.Date, no key. Returns each holiday date and name. For AI agents reminding users and planning around upcoming closures.",
+    "descriptionBazaar": "Upcoming public holidays for a country in the next year from Nager.Date, no key. Returns each holiday date and name. For AI agents reminding users and planning around upcoming closures.",
+    "tags": [
+      "holidays",
+      "calendar",
+      "nager",
+      "upcoming",
+      "dates"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://date.nager.at/api/v3/NextPublicHolidays/{country}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2}$",
+        "transform": "upper",
+        "description": "ISO 2 letter country code",
+        "example": "US"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "nager",
+      "data": [
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-holiday-countries",
+    "category": "calendar",
+    "source": "nager",
+    "title": "Holiday Supported Countries",
+    "description": "Countries supported by the Nager.Date public holiday service, no key. Returns country code and name for each. For AI agents validating coverage before querying holidays.",
+    "descriptionBazaar": "Countries supported by the Nager.Date public holiday service, no key. Returns country code and name for each. For AI agents validating coverage before querying holidays.",
+    "tags": [
+      "holidays",
+      "calendar",
+      "nager",
+      "countries",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://date.nager.at/api/v3/AvailableCountries",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "nager",
+      "data": [
+        {
+          "countryCode": "US",
+          "name": "United States"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-long-weekends",
+    "category": "calendar",
+    "source": "nager",
+    "title": "Long Weekends By Country Year",
+    "description": "Long weekends for a country and year from Nager.Date, no key. Returns each long weekend start date, end date, and day count. For AI agents in travel, retail, and staffing planning.",
+    "descriptionBazaar": "Long weekends for a country and year from Nager.Date, no key. Returns each long weekend start date, end date, and day count. For AI agents in travel, retail, and staffing planning.",
+    "tags": [
+      "holidays",
+      "calendar",
+      "nager",
+      "travel",
+      "long-weekend"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://date.nager.at/api/v3/LongWeekend/{year}/{country}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "year": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{4}$",
+        "description": "Year YYYY",
+        "example": "2026"
+      },
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2}$",
+        "transform": "upper",
+        "description": "ISO 2 letter country code",
+        "example": "US"
+      }
+    },
+    "sampleRequest": {
+      "year": "2026",
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "nager",
+      "data": [
+        {
+          "startDate": "2026-07-03",
+          "endDate": "2026-07-05",
+          "dayCount": 3
+        }
+      ]
+    }
+  },
+  {
+    "slug": "suverse-time-zone",
+    "category": "time",
+    "source": "timeapi",
+    "title": "Current Time By Timezone",
+    "description": "Current local date and time for an IANA timezone from TimeAPI.io, no key. Returns date, time, day of week, and DST flag. For AI agents scheduling and timestamping across regions.",
+    "descriptionBazaar": "Current local date and time for an IANA timezone from TimeAPI.io, no key. Returns date, time, day of week, and DST flag. For AI agents scheduling and timestamping across regions.",
+    "tags": [
+      "time",
+      "timezone",
+      "clock",
+      "scheduling",
+      "iana"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://timeapi.io/api/Time/current/zone",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "timeZone": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "IANA timezone name",
+        "example": "America/New_York",
+        "pattern": "^[A-Za-z]+/[A-Za-z_]+$"
+      }
+    },
+    "sampleRequest": {
+      "timeZone": "America/New_York"
+    },
+    "sampleResponse": {
+      "source": "timeapi",
+      "data": {
+        "dateTime": "2026-06-19T08:00:00",
+        "dayOfWeek": "Friday"
+      }
+    }
+  },
+  {
+    "slug": "suverse-time-coordinate",
+    "category": "time",
+    "source": "timeapi",
+    "title": "Current Time By Coordinate",
+    "description": "Current local date and time for a latitude and longitude from TimeAPI.io, no key. Resolves the timezone from coordinates and returns the local time and DST flag. For AI agents localizing time from a location.",
+    "descriptionBazaar": "Current local date and time for a latitude and longitude from TimeAPI.io, no key. Resolves the timezone from coordinates and returns the local time and DST flag. For AI agents localizing time from a location.",
+    "tags": [
+      "time",
+      "timezone",
+      "coordinate",
+      "geo",
+      "clock"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://timeapi.io/api/Time/current/coordinate",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude",
+        "example": 40.71
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude",
+        "example": -74.01
+      }
+    },
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01
+    },
+    "sampleResponse": {
+      "source": "timeapi",
+      "data": {
+        "timeZone": "America/New_York",
+        "dateTime": "2026-06-19T08:00:00"
+      }
+    }
+  },
+  {
+    "slug": "suverse-timezones-list",
+    "category": "time",
+    "source": "timeapi",
+    "title": "Available Timezones",
+    "description": "The list of IANA timezones supported by TimeAPI.io, no key. Returns timezone names. For AI agents validating timezone input and building pickers.",
+    "descriptionBazaar": "The list of IANA timezones supported by TimeAPI.io, no key. Returns timezone names. For AI agents validating timezone input and building pickers.",
+    "tags": [
+      "time",
+      "timezone",
+      "list",
+      "iana",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://timeapi.io/api/TimeZone/AvailableTimeZones",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "timeapi",
+      "data": [
+        "America/New_York",
+        "Europe/London"
+      ]
+    }
+  },
+  {
+    "slug": "suverse-dns-lookup",
+    "category": "network",
+    "source": "google-dns",
+    "title": "DNS Record Lookup",
+    "description": "Resolve DNS records for a domain over Google public DNS over HTTPS, no key. Returns answers for the requested record type such as A, AAAA, MX, TXT, or NS. For AI agents in security, deliverability, and infrastructure checks.",
+    "descriptionBazaar": "Resolve DNS records for a domain over Google public DNS over HTTPS, no key. Returns answers for the requested record type such as A, AAAA, MX, TXT, or NS. For AI agents in security, deliverability, and infrastructure checks.",
+    "tags": [
+      "dns",
+      "domain",
+      "network",
+      "lookup",
+      "doh"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://dns.google/resolve",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Domain name",
+        "example": "example.com",
+        "pattern": "^[a-zA-Z0-9.-]+$"
+      },
+      "type": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "default": "A",
+        "enum": [
+          "A",
+          "AAAA",
+          "MX",
+          "TXT",
+          "NS",
+          "CNAME",
+          "SOA"
+        ],
+        "description": "DNS record type",
+        "example": "MX"
+      }
+    },
+    "sampleRequest": {
+      "name": "example.com",
+      "type": "MX"
+    },
+    "sampleResponse": {
+      "source": "google-dns",
+      "data": {
+        "Status": 0,
+        "Answer": [
+          {
+            "type": 15,
+            "data": "10 mail.example.com."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-rdap-domain",
+    "category": "network",
+    "source": "rdap",
+    "title": "Domain RDAP Registration",
+    "description": "Structured domain registration data over RDAP, the modern WHOIS replacement, no key. Returns registrar, status, nameservers, and key event dates. For AI agents doing domain due diligence, fraud checks, and asset inventory.",
+    "descriptionBazaar": "Structured domain registration data over RDAP, the modern WHOIS replacement, no key. Returns registrar, status, nameservers, and key event dates. For AI agents doing domain due diligence, fraud checks, and asset inventory.",
+    "tags": [
+      "domain",
+      "rdap",
+      "whois",
+      "registration",
+      "network"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://rdap.org/domain/{domain}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "domain": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        "transform": "lower",
+        "description": "Domain name",
+        "example": "example.com"
+      }
+    },
+    "sampleRequest": {
+      "domain": "example.com"
+    },
+    "sampleResponse": {
+      "source": "rdap",
+      "data": {
+        "ldhName": "EXAMPLE.COM",
+        "status": [
+          "active"
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-rdap-ip",
+    "category": "network",
+    "source": "rdap",
+    "title": "IP RDAP Allocation",
+    "description": "Structured IP address allocation data over RDAP, no key. Returns the network range, holder organization, country, and registry. For AI agents enriching IPs for security, abuse, and geolocation context.",
+    "descriptionBazaar": "Structured IP address allocation data over RDAP, no key. Returns the network range, holder organization, country, and registry. For AI agents enriching IPs for security, abuse, and geolocation context.",
+    "tags": [
+      "ip",
+      "rdap",
+      "network",
+      "allocation",
+      "security"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://rdap.org/ip/{ip}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "ip": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}$",
+        "description": "IPv4 address",
+        "example": "8.8.8.8"
+      }
+    },
+    "sampleRequest": {
+      "ip": "8.8.8.8"
+    },
+    "sampleResponse": {
+      "source": "rdap",
+      "data": {
+        "handle": "NET-8-8-8-0-1",
+        "country": "US"
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-drug-label",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Drug Labels",
+    "description": "Query the openFDA drug labels dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "descriptionBazaar": "Query the openFDA drug labels dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "drugs",
+      "safety"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/drug/label.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": "openfda.brand_name:advil"
+      }
+    },
+    "sampleRequest": {
+      "search": "openfda.brand_name:advil"
+    },
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-drug-events",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Drug Adverse Events",
+    "description": "Query the openFDA drug adverse events dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "descriptionBazaar": "Query the openFDA drug adverse events dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "drugs",
+      "safety"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/drug/event.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": "patient.drug.medicinalproduct:aspirin"
+      }
+    },
+    "sampleRequest": {
+      "search": "patient.drug.medicinalproduct:aspirin"
+    },
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-drug-recalls",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Drug Recalls",
+    "description": "Query the openFDA drug recalls dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "descriptionBazaar": "Query the openFDA drug recalls dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "drugs",
+      "safety"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/drug/enforcement.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-food-recalls",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Food Recalls",
+    "description": "Query the openFDA food recalls dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "descriptionBazaar": "Query the openFDA food recalls dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "drugs",
+      "safety"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/food/enforcement.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-openfda-device-recalls",
+    "category": "health",
+    "source": "openfda",
+    "title": "openFDA Device Recalls",
+    "description": "Query the openFDA device recalls dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "descriptionBazaar": "Query the openFDA device recalls dataset by search expression, no key, US FDA public data. Returns matching records with structured fields. For AI agents in pharma, health, and safety research.",
+    "tags": [
+      "health",
+      "openfda",
+      "fda",
+      "drugs",
+      "safety"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://api.fda.gov/device/enforcement.json",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "5"
+      }
+    },
+    "params": {
+      "search": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "description": "openFDA search expression",
+        "example": ""
+      }
+    },
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "openfda",
+      "data": {
+        "meta": {
+          "results": {
+            "total": 100
+          }
+        },
+        "results": [
+          {}
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-rxnorm-rxcui",
+    "category": "health",
+    "source": "rxnorm",
+    "title": "RxNorm RxCUI Lookup",
+    "description": "Resolve a drug name to its RxNorm concept identifier RxCUI from the NIH RxNav service, no key. Returns the RxCUI list for the name. For AI agents normalizing medication names across systems.",
+    "descriptionBazaar": "Resolve a drug name to its RxNorm concept identifier RxCUI from the NIH RxNav service, no key. Returns the RxCUI list for the name. For AI agents normalizing medication names across systems.",
+    "tags": [
+      "health",
+      "rxnorm",
+      "drugs",
+      "rxcui",
+      "nih"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://rxnav.nlm.nih.gov/REST/rxcui.json",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Drug name",
+        "example": "ibuprofen"
+      }
+    },
+    "sampleRequest": {
+      "name": "ibuprofen"
+    },
+    "sampleResponse": {
+      "source": "rxnorm",
+      "data": {
+        "idGroup": {
+          "rxnormId": [
+            "5640"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-rxnorm-drugs",
+    "category": "health",
+    "source": "rxnorm",
+    "title": "RxNorm Drug Products",
+    "description": "Drug products related to a name from the NIH RxNav RxNorm service, no key. Returns concept groups with product names and RxCUIs. For AI agents enumerating formulations and strengths of a medication.",
+    "descriptionBazaar": "Drug products related to a name from the NIH RxNav RxNorm service, no key. Returns concept groups with product names and RxCUIs. For AI agents enumerating formulations and strengths of a medication.",
+    "tags": [
+      "health",
+      "rxnorm",
+      "drugs",
+      "products",
+      "nih"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://rxnav.nlm.nih.gov/REST/drugs.json",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Drug name",
+        "example": "ibuprofen"
+      }
+    },
+    "sampleRequest": {
+      "name": "ibuprofen"
+    },
+    "sampleResponse": {
+      "source": "rxnorm",
+      "data": {
+        "drugGroup": {
+          "conceptGroup": [
+            {
+              "tty": "SBD"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-clinicaltrials-search",
+    "category": "health",
+    "source": "clinicaltrials",
+    "title": "Clinical Trials Search",
+    "description": "Search ClinicalTrials.gov studies by term via the official v2 API, no key. Returns matching studies with NCT id, title, status, and conditions. For AI agents in clinical research, pharma intelligence, and patient matching.",
+    "descriptionBazaar": "Search ClinicalTrials.gov studies by term via the official v2 API, no key. Returns matching studies with NCT id, title, status, and conditions. For AI agents in clinical research, pharma intelligence, and patient matching.",
+    "tags": [
+      "health",
+      "clinical-trials",
+      "research",
+      "pharma",
+      "studies"
+    ],
+    "priceUsdcAtomic": 4000,
+    "upstream": {
+      "url": "https://clinicaltrials.gov/api/v2/studies",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "pageSize": "10",
+        "format": "json"
+      }
+    },
+    "params": {
+      "query.term": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search term",
+        "example": "diabetes"
+      }
+    },
+    "sampleRequest": {
+      "query.term": "diabetes"
+    },
+    "sampleResponse": {
+      "source": "clinicaltrials",
+      "data": {
+        "studies": [
+          {
+            "protocolSection": {
+              "identificationModule": {
+                "nctId": "NCT00000000"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-clinicaltrials-study",
+    "category": "health",
+    "source": "clinicaltrials",
+    "title": "Clinical Trial By NCT Id",
+    "description": "Full record for a single ClinicalTrials.gov study by NCT identifier via the v2 API, no key. Returns the protocol, status, sponsors, eligibility, and outcomes. For AI agents deep reading a specific trial.",
+    "descriptionBazaar": "Full record for a single ClinicalTrials.gov study by NCT identifier via the v2 API, no key. Returns the protocol, status, sponsors, eligibility, and outcomes. For AI agents deep reading a specific trial.",
+    "tags": [
+      "health",
+      "clinical-trials",
+      "nct",
+      "pharma",
+      "studies"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://clinicaltrials.gov/api/v2/studies/{nctId}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json"
+      }
+    },
+    "params": {
+      "nctId": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^NCT[0-9]{8}$",
+        "transform": "upper",
+        "description": "NCT identifier",
+        "example": "NCT04280705"
+      }
+    },
+    "sampleRequest": {
+      "nctId": "NCT04280705"
+    },
+    "sampleResponse": {
+      "source": "clinicaltrials",
+      "data": {
+        "protocolSection": {
+          "identificationModule": {
+            "nctId": "NCT04280705"
+          }
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-disease-covid-country",
+    "category": "health",
+    "source": "disease.sh",
+    "title": "COVID Stats By Country",
+    "description": "COVID-19 case statistics for a country from the disease.sh aggregator, no key. Returns cases, deaths, recovered, active, tests, and per million metrics. For AI agents in public health dashboards and risk context.",
+    "descriptionBazaar": "COVID-19 case statistics for a country from the disease.sh aggregator, no key. Returns cases, deaths, recovered, active, tests, and per million metrics. For AI agents in public health dashboards and risk context.",
+    "tags": [
+      "health",
+      "covid",
+      "disease",
+      "public-health",
+      "stats"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://disease.sh/v3/covid-19/countries/{country}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z ]{2,40}$",
+        "description": "Country name or ISO code",
+        "example": "USA"
+      }
+    },
+    "sampleRequest": {
+      "country": "USA"
+    },
+    "sampleResponse": {
+      "source": "disease.sh",
+      "data": {
+        "country": "USA",
+        "cases": 100000000,
+        "deaths": 1100000
+      }
+    }
+  },
+  {
+    "slug": "suverse-eonet-events",
+    "category": "science",
+    "source": "nasa-eonet",
+    "title": "NASA Natural Event Tracker",
+    "description": "Open natural events worldwide from NASA EONET, no key, including wildfires, severe storms, volcanoes, and floods. Returns each event with title, category, date, and coordinates. For AI agents monitoring natural hazards and earth observation.",
+    "descriptionBazaar": "Open natural events worldwide from NASA EONET, no key, including wildfires, severe storms, volcanoes, and floods. Returns each event with title, category, date, and coordinates. For AI agents monitoring natural hazards and earth observation.",
+    "tags": [
+      "science",
+      "nasa",
+      "eonet",
+      "natural-disasters",
+      "hazards"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://eonet.gsfc.nasa.gov/api/v3/events",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "limit": "20",
+        "status": "open"
+      }
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "nasa-eonet",
+      "data": {
+        "events": [
+          {
+            "title": "Wildfire",
+            "categories": [
+              {
+                "title": "Wildfires"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-uk-carbon-intensity",
+    "category": "energy",
+    "source": "carbonintensity",
+    "title": "UK Grid Carbon Intensity",
+    "description": "Current Great Britain electricity grid carbon intensity from the official Carbon Intensity API, no key. Returns forecast and actual gCO2 per kWh and an intensity index. For AI agents scheduling compute for lower carbon and energy analytics.",
+    "descriptionBazaar": "Current Great Britain electricity grid carbon intensity from the official Carbon Intensity API, no key. Returns forecast and actual gCO2 per kWh and an intensity index. For AI agents scheduling compute for lower carbon and energy analytics.",
+    "tags": [
+      "energy",
+      "carbon",
+      "grid",
+      "emissions",
+      "sustainability"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.carbonintensity.org.uk/intensity",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "carbonintensity",
+      "data": {
+        "data": [
+          {
+            "intensity": {
+              "actual": 180,
+              "forecast": 175,
+              "index": "moderate"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-pubchem-compound",
+    "category": "science",
+    "source": "pubchem",
+    "title": "PubChem Compound Properties",
+    "description": "Chemical properties for a compound by name from the NIH PubChem service, no key. Returns molecular formula, molecular weight, and IUPAC name. For AI agents in chemistry, drug discovery, and materials research.",
+    "descriptionBazaar": "Chemical properties for a compound by name from the NIH PubChem service, no key. Returns molecular formula, molecular weight, and IUPAC name. For AI agents in chemistry, drug discovery, and materials research.",
+    "tags": [
+      "science",
+      "chemistry",
+      "pubchem",
+      "compounds",
+      "nih"
+    ],
+    "priceUsdcAtomic": 3000,
+    "upstream": {
+      "url": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{name}/property/MolecularFormula,MolecularWeight,IUPACName/JSON",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9 ,-]{2,60}$",
+        "description": "Compound name",
+        "example": "aspirin"
+      }
+    },
+    "sampleRequest": {
+      "name": "aspirin"
+    },
+    "sampleResponse": {
+      "source": "pubchem",
+      "data": {
+        "PropertyTable": {
+          "Properties": [
+            {
+              "MolecularFormula": "C9H8O4",
+              "MolecularWeight": "180.16"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-worldbank-country",
+    "category": "macro",
+    "source": "worldbank",
+    "title": "World Bank Country Profile",
+    "description": "Country profile from World Bank Open Data by ISO code, no key. Returns region, income level, capital city, longitude, and latitude. For AI agents enriching country context for macro and geo analysis.",
+    "descriptionBazaar": "Country profile from World Bank Open Data by ISO code, no key. Returns region, income level, capital city, longitude, and latitude. For AI agents enriching country context for macro and geo analysis.",
+    "tags": [
+      "macro",
+      "worldbank",
+      "country",
+      "reference",
+      "economy"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.worldbank.org/v2/country/{country}",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "format": "json"
+      }
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z]{2,3}$",
+        "transform": "upper",
+        "description": "ISO 2 or 3 letter country code",
+        "example": "US"
+      }
+    },
+    "sampleRequest": {
+      "country": "US"
+    },
+    "sampleResponse": {
+      "source": "worldbank",
+      "data": [
+        {
+          "page": 1
+        },
+        [
+          {
+            "name": "United States",
+            "region": {
+              "value": "North America"
+            },
+            "incomeLevel": {
+              "value": "High income"
+            }
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "slug": "suverse-iss-position",
+    "category": "space",
+    "source": "wheretheiss",
+    "title": "ISS Live Position",
+    "description": "The live position of the International Space Station from the wheretheiss.at service, no key. Returns latitude, longitude, altitude, velocity, and timestamp. For AI agents tracking the ISS and computing passes.",
+    "descriptionBazaar": "The live position of the International Space Station from the wheretheiss.at service, no key. Returns latitude, longitude, altitude, velocity, and timestamp. For AI agents tracking the ISS and computing passes.",
+    "tags": [
+      "space",
+      "iss",
+      "satellite",
+      "tracking",
+      "live"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.wheretheiss.at/v1/satellites/25544",
+      "timeoutMs": 10000
+    },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": {
+      "source": "wheretheiss",
+      "data": {
+        "latitude": 12.3,
+        "longitude": 45.6,
+        "altitude": 420,
+        "velocity": 27600
+      }
+    }
+  },
+  {
+    "slug": "suverse-wiki-summary",
+    "category": "knowledge",
+    "source": "wikipedia",
+    "title": "Wikipedia Page Summary",
+    "description": "Concise summary of an English Wikipedia article by title via the REST API, no key. Returns the extract, description, thumbnail, and canonical URL. For AI agents grounding answers and enriching entities with encyclopedic context.",
+    "descriptionBazaar": "Concise summary of an English Wikipedia article by title via the REST API, no key. Returns the extract, description, thumbnail, and canonical URL. For AI agents grounding answers and enriching entities with encyclopedic context.",
+    "tags": [
+      "knowledge",
+      "wikipedia",
+      "encyclopedia",
+      "summary",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
+      "timeoutMs": 10000,
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {
+      "title": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^.{1,120}$",
+        "description": "Article title",
+        "example": "Bitcoin"
+      }
+    },
+    "sampleRequest": {
+      "title": "Bitcoin"
+    },
+    "sampleResponse": {
+      "source": "wikipedia",
+      "data": {
+        "title": "Bitcoin",
+        "extract": "Bitcoin is a decentralized digital currency..."
+      }
+    }
+  },
+  {
+    "slug": "suverse-wiki-search",
+    "category": "knowledge",
+    "source": "wikipedia",
+    "title": "Wikipedia Search",
+    "description": "Full text search of English Wikipedia via the MediaWiki API, no key. Returns ranked page titles, snippets, and word counts for the query. For AI agents finding the right article before fetching a summary.",
+    "descriptionBazaar": "Full text search of English Wikipedia via the MediaWiki API, no key. Returns ranked page titles, snippets, and word counts for the query. For AI agents finding the right article before fetching a summary.",
+    "tags": [
+      "knowledge",
+      "wikipedia",
+      "search",
+      "encyclopedia",
+      "reference"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://en.wikipedia.org/w/api.php",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "action": "query",
+        "list": "search",
+        "format": "json"
+      },
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {
+      "srsearch": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Search query",
+        "example": "ethereum blockchain"
+      }
+    },
+    "sampleRequest": {
+      "srsearch": "ethereum blockchain"
+    },
+    "sampleResponse": {
+      "source": "wikipedia",
+      "data": {
+        "query": {
+          "search": [
+            {
+              "title": "Ethereum",
+              "snippet": "..."
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "suverse-wiki-on-this-day",
+    "category": "knowledge",
+    "source": "wikipedia",
+    "title": "Wikipedia On This Day",
+    "description": "Notable historical events, births, deaths, and holidays for a given month and day from Wikipedia, no key. Returns dated entries with descriptions and related pages. For AI agents building on this day content and trivia.",
+    "descriptionBazaar": "Notable historical events, births, deaths, and holidays for a given month and day from Wikipedia, no key. Returns dated entries with descriptions and related pages. For AI agents building on this day content and trivia.",
+    "tags": [
+      "knowledge",
+      "wikipedia",
+      "history",
+      "on-this-day",
+      "events"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://en.wikipedia.org/api/rest_v1/feed/onthisday/all/{month}/{day}",
+      "timeoutMs": 10000,
+      "headers": {
+        "User-Agent": "SuVersePay data@suverse.io"
+      }
+    },
+    "params": {
+      "month": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^(0?[1-9]|1[0-2])$",
+        "description": "Month 1-12",
+        "example": "07"
+      },
+      "day": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^(0?[1-9]|[12][0-9]|3[01])$",
+        "description": "Day 1-31",
+        "example": "04"
+      }
+    },
+    "sampleRequest": {
+      "month": "07",
+      "day": "04"
+    },
+    "sampleResponse": {
+      "source": "wikipedia",
+      "data": {
+        "events": [
+          {
+            "year": 1776,
+            "text": "US Declaration of Independence"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-geocode-place",
+    "category": "geo",
+    "source": "open-meteo",
+    "title": "Place Name Geocoding",
+    "description": "Geocode a place name to coordinates via the Open-Meteo geocoding service, no key. Returns ranked matches with latitude, longitude, country, admin region, and population. For AI agents turning place names into coordinates for downstream lookups.",
+    "descriptionBazaar": "Geocode a place name to coordinates via the Open-Meteo geocoding service, no key. Returns ranked matches with latitude, longitude, country, admin region, and population. For AI agents turning place names into coordinates for downstream lookups.",
+    "tags": [
+      "geo",
+      "geocoding",
+      "places",
+      "coordinates",
+      "search"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://geocoding-api.open-meteo.com/v1/search",
+      "timeoutMs": 10000,
+      "staticQuery": {
+        "count": "5",
+        "language": "en",
+        "format": "json"
+      }
+    },
+    "params": {
+      "name": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "description": "Place name",
+        "example": "Paris"
+      }
+    },
+    "sampleRequest": {
+      "name": "Paris"
+    },
+    "sampleResponse": {
+      "source": "open-meteo",
+      "data": {
+        "results": [
+          {
+            "name": "Paris",
+            "latitude": 48.85,
+            "longitude": 2.35,
+            "country": "France"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-elevation",
+    "category": "geo",
+    "source": "open-meteo",
+    "title": "Elevation By Coordinate",
+    "description": "Ground elevation in meters for a latitude and longitude via the Open-Meteo elevation service, no key. Returns the elevation for the point. For AI agents in mapping, terrain, drone, and outdoor planning use cases.",
+    "descriptionBazaar": "Ground elevation in meters for a latitude and longitude via the Open-Meteo elevation service, no key. Returns the elevation for the point. For AI agents in mapping, terrain, drone, and outdoor planning use cases.",
+    "tags": [
+      "geo",
+      "elevation",
+      "terrain",
+      "coordinates",
+      "mapping"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.open-meteo.com/v1/elevation",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "latitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Latitude",
+        "example": 27.99
+      },
+      "longitude": {
+        "in": "query",
+        "required": true,
+        "type": "number",
+        "description": "Longitude",
+        "example": 86.92
+      }
+    },
+    "sampleRequest": {
+      "latitude": 27.99,
+      "longitude": 86.92
+    },
+    "sampleResponse": {
+      "source": "open-meteo",
+      "data": {
+        "elevation": [
+          8729
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-zip-lookup",
+    "category": "geo",
+    "source": "zippopotam",
+    "title": "Postal Code Lookup",
+    "description": "Resolve a postal code to its place names, state, and coordinates via Zippopotam, no key. Returns places with city, state, latitude, and longitude. For AI agents validating addresses and enriching postal codes.",
+    "descriptionBazaar": "Resolve a postal code to its place names, state, and coordinates via Zippopotam, no key. Returns places with city, state, latitude, and longitude. For AI agents validating addresses and enriching postal codes.",
+    "tags": [
+      "geo",
+      "postal-code",
+      "zip",
+      "places",
+      "address"
+    ],
+    "priceUsdcAtomic": 2000,
+    "upstream": {
+      "url": "https://api.zippopotam.us/{country}/{zip}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "country": {
+        "in": "path",
+        "required": false,
+        "type": "string",
+        "default": "us",
+        "pattern": "^[a-zA-Z]{2}$",
+        "transform": "lower",
+        "description": "ISO 2 letter country code",
+        "example": "us"
+      },
+      "zip": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9 -]{3,10}$",
+        "description": "Postal code",
+        "example": "90210"
+      }
+    },
+    "sampleRequest": {
+      "country": "us",
+      "zip": "90210"
+    },
+    "sampleResponse": {
+      "source": "zippopotam",
+      "data": {
+        "post code": "90210",
+        "places": [
+          {
+            "place name": "Beverly Hills",
+            "state": "California"
+          }
+        ]
+      }
+    }
+  }
+]

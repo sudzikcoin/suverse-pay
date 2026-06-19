@@ -1,0 +1,395 @@
+[
+  {
+    "slug": "suverse-fx-latest-pair",
+    "priceUsdc": "0.002000",
+    "category": "forex",
+    "sampleRequest": {
+      "from": "USD",
+      "to": "EUR"
+    }
+  },
+  {
+    "slug": "suverse-fx-timeseries",
+    "priceUsdc": "0.003000",
+    "category": "forex",
+    "sampleRequest": {
+      "start_date": "2025-01-01",
+      "end_date": "2025-01-31",
+      "from": "USD",
+      "to": "EUR"
+    }
+  },
+  {
+    "slug": "suverse-fx-currencies",
+    "priceUsdc": "0.002000",
+    "category": "forex",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-fx-historical-date",
+    "priceUsdc": "0.002000",
+    "category": "forex",
+    "sampleRequest": {
+      "date": "2025-01-15",
+      "from": "USD"
+    }
+  },
+  {
+    "slug": "suverse-quakes-recent",
+    "priceUsdc": "0.003000",
+    "category": "science",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-quakes-significant",
+    "priceUsdc": "0.003000",
+    "category": "science",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-quakes-search",
+    "priceUsdc": "0.004000",
+    "category": "science",
+    "sampleRequest": {
+      "minmagnitude": 5,
+      "starttime": "2026-06-01"
+    }
+  },
+  {
+    "slug": "suverse-quakes-by-region",
+    "priceUsdc": "0.004000",
+    "category": "science",
+    "sampleRequest": {
+      "latitude": 35.7,
+      "longitude": -117.6,
+      "maxradiuskm": 300
+    }
+  },
+  {
+    "slug": "suverse-openalex-works",
+    "priceUsdc": "0.003000",
+    "category": "academic",
+    "sampleRequest": {
+      "search": "graph neural networks"
+    }
+  },
+  {
+    "slug": "suverse-openalex-authors",
+    "priceUsdc": "0.003000",
+    "category": "academic",
+    "sampleRequest": {
+      "search": "Yoshua Bengio"
+    }
+  },
+  {
+    "slug": "suverse-openalex-institutions",
+    "priceUsdc": "0.003000",
+    "category": "academic",
+    "sampleRequest": {
+      "search": "MIT"
+    }
+  },
+  {
+    "slug": "suverse-openalex-concepts",
+    "priceUsdc": "0.003000",
+    "category": "academic",
+    "sampleRequest": {
+      "search": "machine learning"
+    }
+  },
+  {
+    "slug": "suverse-crossref-works",
+    "priceUsdc": "0.003000",
+    "category": "academic",
+    "sampleRequest": {
+      "query": "attention is all you need"
+    }
+  },
+  {
+    "slug": "suverse-crossref-journals",
+    "priceUsdc": "0.003000",
+    "category": "academic",
+    "sampleRequest": {
+      "query": "nature"
+    }
+  },
+  {
+    "slug": "suverse-vin-decode",
+    "priceUsdc": "0.003000",
+    "category": "vehicles",
+    "sampleRequest": {
+      "vin": "1HGCM82633A004352"
+    }
+  },
+  {
+    "slug": "suverse-vehicle-makes",
+    "priceUsdc": "0.002000",
+    "category": "vehicles",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-vehicle-models",
+    "priceUsdc": "0.002000",
+    "category": "vehicles",
+    "sampleRequest": {
+      "make": "honda"
+    }
+  },
+  {
+    "slug": "suverse-vehicle-recalls",
+    "priceUsdc": "0.003000",
+    "category": "vehicles",
+    "sampleRequest": {
+      "make": "honda",
+      "model": "accord",
+      "modelYear": "2015"
+    }
+  },
+  {
+    "slug": "suverse-vehicle-types",
+    "priceUsdc": "0.002000",
+    "category": "vehicles",
+    "sampleRequest": {
+      "make": "honda"
+    }
+  },
+  {
+    "slug": "suverse-public-holidays",
+    "priceUsdc": "0.002000",
+    "category": "calendar",
+    "sampleRequest": {
+      "year": "2026",
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-next-holidays",
+    "priceUsdc": "0.002000",
+    "category": "calendar",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-holiday-countries",
+    "priceUsdc": "0.002000",
+    "category": "calendar",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-long-weekends",
+    "priceUsdc": "0.002000",
+    "category": "calendar",
+    "sampleRequest": {
+      "year": "2026",
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-time-zone",
+    "priceUsdc": "0.002000",
+    "category": "time",
+    "sampleRequest": {
+      "timeZone": "America/New_York"
+    }
+  },
+  {
+    "slug": "suverse-time-coordinate",
+    "priceUsdc": "0.002000",
+    "category": "time",
+    "sampleRequest": {
+      "latitude": 40.71,
+      "longitude": -74.01
+    }
+  },
+  {
+    "slug": "suverse-timezones-list",
+    "priceUsdc": "0.002000",
+    "category": "time",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-dns-lookup",
+    "priceUsdc": "0.002000",
+    "category": "network",
+    "sampleRequest": {
+      "name": "example.com",
+      "type": "MX"
+    }
+  },
+  {
+    "slug": "suverse-rdap-domain",
+    "priceUsdc": "0.003000",
+    "category": "network",
+    "sampleRequest": {
+      "domain": "example.com"
+    }
+  },
+  {
+    "slug": "suverse-rdap-ip",
+    "priceUsdc": "0.003000",
+    "category": "network",
+    "sampleRequest": {
+      "ip": "8.8.8.8"
+    }
+  },
+  {
+    "slug": "suverse-openfda-drug-label",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {
+      "search": "openfda.brand_name:advil"
+    }
+  },
+  {
+    "slug": "suverse-openfda-drug-events",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {
+      "search": "patient.drug.medicinalproduct:aspirin"
+    }
+  },
+  {
+    "slug": "suverse-openfda-drug-recalls",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-openfda-food-recalls",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-openfda-device-recalls",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-rxnorm-rxcui",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "name": "ibuprofen"
+    }
+  },
+  {
+    "slug": "suverse-rxnorm-drugs",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "name": "ibuprofen"
+    }
+  },
+  {
+    "slug": "suverse-clinicaltrials-search",
+    "priceUsdc": "0.004000",
+    "category": "health",
+    "sampleRequest": {
+      "query.term": "diabetes"
+    }
+  },
+  {
+    "slug": "suverse-clinicaltrials-study",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "nctId": "NCT04280705"
+    }
+  },
+  {
+    "slug": "suverse-disease-covid-country",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "country": "USA"
+    }
+  },
+  {
+    "slug": "suverse-eonet-events",
+    "priceUsdc": "0.003000",
+    "category": "science",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-uk-carbon-intensity",
+    "priceUsdc": "0.002000",
+    "category": "energy",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-pubchem-compound",
+    "priceUsdc": "0.003000",
+    "category": "science",
+    "sampleRequest": {
+      "name": "aspirin"
+    }
+  },
+  {
+    "slug": "suverse-worldbank-country",
+    "priceUsdc": "0.002000",
+    "category": "macro",
+    "sampleRequest": {
+      "country": "US"
+    }
+  },
+  {
+    "slug": "suverse-iss-position",
+    "priceUsdc": "0.002000",
+    "category": "space",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-wiki-summary",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "title": "Bitcoin"
+    }
+  },
+  {
+    "slug": "suverse-wiki-search",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "srsearch": "ethereum blockchain"
+    }
+  },
+  {
+    "slug": "suverse-wiki-on-this-day",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "month": "07",
+      "day": "04"
+    }
+  },
+  {
+    "slug": "suverse-geocode-place",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "name": "Paris"
+    }
+  },
+  {
+    "slug": "suverse-elevation",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "latitude": 27.99,
+      "longitude": 86.92
+    }
+  },
+  {
+    "slug": "suverse-zip-lookup",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "country": "us",
+      "zip": "90210"
+    }
+  }
+]
