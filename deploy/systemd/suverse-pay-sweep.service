@@ -1,0 +1,42 @@
+# suverse-pay payTo auto-sweep (apps/proxy/scripts/sweep-payto.mjs) — one-shot, fired by the timer.
+#
+# Gaslessly sweeps every key-backed payTo merchant wallet to the operator's
+# main wallet via USDC EIP-3009 transferWithAuthorization once its balance
+# reaches the threshold ($1 default). payTo wallets sign (no gas); the
+# base-payer relayer broadcasts and pays the (tiny) Base gas.
+#
+# Apply (requires sudo):
+#   sudo cp deploy/systemd/suverse-pay-sweep.* /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now suverse-pay-sweep.timer
+# Dry-run by hand first:
+#   cd apps/proxy && node scripts/sweep-payto.mjs --dry-run
+# Logs: journalctl -u suverse-pay-sweep -f  AND  /var/log/suverse-pay/sweep.log
+#
+# /etc/suverse-pay/sweep.env (optional, chmod 600) may set:
+#   SWEEP_MAIN_WALLET=0x...   (sweep destination; defaults to the script constant)
+#   BASE_RPC_URL=https://...  (STRONGLY recommended: a dedicated RPC; the public
+#                              mainnet.base.org rate-limits bursts)
+[Unit]
+Description=Suverse Pay payTo auto-sweep (gasless EIP-3009 -> main wallet)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=govhub
+WorkingDirectory=/home/govhub/suverse-pay/apps/proxy
+EnvironmentFile=-/etc/suverse-pay/sweep.env
+ExecStart=/usr/bin/node scripts/sweep-payto.mjs
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=10min
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/log/suverse-pay
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true

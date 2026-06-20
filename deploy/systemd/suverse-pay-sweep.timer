@@ -1,0 +1,16 @@
+# Sweeps every 10 minutes. payTo balances accrue slowly (sub-cent per
+# settle), so 10min is responsive without hammering the RPC. The job is
+# idempotent (lock + balance recheck + on-chain nonce), so an extra fire
+# while a sweep is unconfirmed is a safe no-op.
+[Unit]
+Description=Suverse Pay payTo auto-sweep (every 10min)
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+AccuracySec=1min
+Persistent=true
+Unit=suverse-pay-sweep.service
+
+[Install]
+WantedBy=timers.target
