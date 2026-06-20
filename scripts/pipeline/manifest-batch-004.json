@@ -1,0 +1,805 @@
+[
+  {
+    "slug": "suverse-civic-nonprofit-search",
+    "priceUsdc": "0.002000",
+    "category": "civic",
+    "sampleRequest": {
+      "q": "red cross"
+    }
+  },
+  {
+    "slug": "suverse-civic-nonprofit-org",
+    "priceUsdc": "0.002000",
+    "category": "civic",
+    "sampleRequest": {
+      "ein": "530196605"
+    }
+  },
+  {
+    "slug": "suverse-civic-fedreg-docs-by-type",
+    "priceUsdc": "0.002000",
+    "category": "civic",
+    "sampleRequest": {
+      "type": "PRESDOCU"
+    }
+  },
+  {
+    "slug": "suverse-civic-fedreg-public-inspection",
+    "priceUsdc": "0.002000",
+    "category": "civic",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-civic-fedreg-agency",
+    "priceUsdc": "0.002000",
+    "category": "civic",
+    "sampleRequest": {
+      "slug": "environmental-protection-agency"
+    }
+  },
+  {
+    "slug": "suverse-veh-mpg-years",
+    "priceUsdc": "0.001000",
+    "category": "vehicles",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-veh-mpg-makes",
+    "priceUsdc": "0.001000",
+    "category": "vehicles",
+    "sampleRequest": {
+      "year": "2024"
+    }
+  },
+  {
+    "slug": "suverse-veh-mpg-models",
+    "priceUsdc": "0.001000",
+    "category": "vehicles",
+    "sampleRequest": {
+      "year": "2024",
+      "make": "Toyota"
+    }
+  },
+  {
+    "slug": "suverse-veh-mpg-detail",
+    "priceUsdc": "0.002000",
+    "category": "vehicles",
+    "sampleRequest": {
+      "id": "47368"
+    }
+  },
+  {
+    "slug": "suverse-veh-emissions",
+    "priceUsdc": "0.002000",
+    "category": "vehicles",
+    "sampleRequest": {
+      "id": "47368"
+    }
+  },
+  {
+    "slug": "suverse-veh-fuel-prices",
+    "priceUsdc": "0.001000",
+    "category": "vehicles",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-energy-uk-generation-mix",
+    "priceUsdc": "0.001000",
+    "category": "energy",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-game-deals",
+    "priceUsdc": "0.002000",
+    "category": "games",
+    "sampleRequest": {
+      "upperPrice": "15"
+    }
+  },
+  {
+    "slug": "suverse-game-stores",
+    "priceUsdc": "0.001000",
+    "category": "games",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-game-price-search",
+    "priceUsdc": "0.002000",
+    "category": "games",
+    "sampleRequest": {
+      "title": "witcher"
+    }
+  },
+  {
+    "slug": "suverse-game-free-list",
+    "priceUsdc": "0.002000",
+    "category": "games",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-game-free-by-category",
+    "priceUsdc": "0.002000",
+    "category": "games",
+    "sampleRequest": {
+      "category": "shooter"
+    }
+  },
+  {
+    "slug": "suverse-game-free-detail",
+    "priceUsdc": "0.002000",
+    "category": "games",
+    "sampleRequest": {
+      "id": "452"
+    }
+  },
+  {
+    "slug": "suverse-anime-top",
+    "priceUsdc": "0.002000",
+    "category": "anime",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-anime-search",
+    "priceUsdc": "0.002000",
+    "category": "anime",
+    "sampleRequest": {
+      "q": "naruto"
+    }
+  },
+  {
+    "slug": "suverse-anime-season-now",
+    "priceUsdc": "0.002000",
+    "category": "anime",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-anime-detail",
+    "priceUsdc": "0.002000",
+    "category": "anime",
+    "sampleRequest": {
+      "id": "1"
+    }
+  },
+  {
+    "slug": "suverse-anime-manga-search",
+    "priceUsdc": "0.002000",
+    "category": "anime",
+    "sampleRequest": {
+      "q": "berserk"
+    }
+  },
+  {
+    "slug": "suverse-anime-character-search",
+    "priceUsdc": "0.002000",
+    "category": "anime",
+    "sampleRequest": {
+      "q": "goku"
+    }
+  },
+  {
+    "slug": "suverse-anime-schedule",
+    "priceUsdc": "0.002000",
+    "category": "anime",
+    "sampleRequest": {
+      "filter": "monday"
+    }
+  },
+  {
+    "slug": "suverse-geo-osrm-route",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "coords": "13.388,52.517;13.397,52.529"
+    }
+  },
+  {
+    "slug": "suverse-geo-osrm-nearest",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "coord": "13.388,52.517",
+      "number": "3"
+    }
+  },
+  {
+    "slug": "suverse-geo-reverse-bdc",
+    "priceUsdc": "0.002000",
+    "category": "geo",
+    "sampleRequest": {
+      "latitude": "52.517",
+      "longitude": "13.388"
+    }
+  },
+  {
+    "slug": "suverse-geo-zip-germany",
+    "priceUsdc": "0.001000",
+    "category": "geo",
+    "sampleRequest": {
+      "postcode": "10117"
+    }
+  },
+  {
+    "slug": "suverse-geo-place-by-name",
+    "priceUsdc": "0.001000",
+    "category": "geo",
+    "sampleRequest": {
+      "state": "ny",
+      "city": "new york"
+    }
+  },
+  {
+    "slug": "suverse-time-by-zone",
+    "priceUsdc": "0.001000",
+    "category": "time",
+    "sampleRequest": {
+      "timeZone": "Europe/Berlin"
+    }
+  },
+  {
+    "slug": "suverse-time-by-coordinate",
+    "priceUsdc": "0.001000",
+    "category": "time",
+    "sampleRequest": {
+      "latitude": "52.5",
+      "longitude": "13.4"
+    }
+  },
+  {
+    "slug": "suverse-time-by-ip",
+    "priceUsdc": "0.001000",
+    "category": "time",
+    "sampleRequest": {
+      "ipAddress": "8.8.8.8"
+    }
+  },
+  {
+    "slug": "suverse-time-available-zones",
+    "priceUsdc": "0.001000",
+    "category": "time",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-net-ip-geo",
+    "priceUsdc": "0.001500",
+    "category": "net",
+    "sampleRequest": {
+      "ip": "8.8.8.8"
+    }
+  },
+  {
+    "slug": "suverse-net-client-ip",
+    "priceUsdc": "0.001000",
+    "category": "net",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-net-dns-mx",
+    "priceUsdc": "0.001000",
+    "category": "net",
+    "sampleRequest": {
+      "name": "gmail.com"
+    }
+  },
+  {
+    "slug": "suverse-net-dns-txt",
+    "priceUsdc": "0.001000",
+    "category": "net",
+    "sampleRequest": {
+      "name": "cloudflare.com"
+    }
+  },
+  {
+    "slug": "suverse-health-covid-vaccine-country",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "country": "USA",
+      "lastdays": "30"
+    }
+  },
+  {
+    "slug": "suverse-health-covid-us-state",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "state": "California"
+    }
+  },
+  {
+    "slug": "suverse-health-covid-countries-all",
+    "priceUsdc": "0.003000",
+    "category": "health",
+    "sampleRequest": {
+      "sort": "cases"
+    }
+  },
+  {
+    "slug": "suverse-health-icd9-diagnosis",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "diabetes"
+    }
+  },
+  {
+    "slug": "suverse-health-loinc-search",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "glucose"
+    }
+  },
+  {
+    "slug": "suverse-health-disease-names",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "asthma"
+    }
+  },
+  {
+    "slug": "suverse-health-procedures-search",
+    "priceUsdc": "0.002000",
+    "category": "health",
+    "sampleRequest": {
+      "terms": "biopsy"
+    }
+  },
+  {
+    "slug": "suverse-bio-pubmed-search",
+    "priceUsdc": "0.002000",
+    "category": "genomics",
+    "sampleRequest": {
+      "term": "crispr",
+      "retmax": "5"
+    }
+  },
+  {
+    "slug": "suverse-bio-pubmed-summary",
+    "priceUsdc": "0.002000",
+    "category": "genomics",
+    "sampleRequest": {
+      "id": "38000000"
+    }
+  },
+  {
+    "slug": "suverse-bio-ncbi-gene-summary",
+    "priceUsdc": "0.002000",
+    "category": "genomics",
+    "sampleRequest": {
+      "id": "672"
+    }
+  },
+  {
+    "slug": "suverse-bio-ncbi-snp-summary",
+    "priceUsdc": "0.002000",
+    "category": "genomics",
+    "sampleRequest": {
+      "id": "328"
+    }
+  },
+  {
+    "slug": "suverse-bio-ensembl-gene-lookup",
+    "priceUsdc": "0.002000",
+    "category": "genomics",
+    "sampleRequest": {
+      "symbol": "BRCA2"
+    }
+  },
+  {
+    "slug": "suverse-bio-ensembl-gene-phenotypes",
+    "priceUsdc": "0.002000",
+    "category": "genomics",
+    "sampleRequest": {
+      "symbol": "BRCA2"
+    }
+  },
+  {
+    "slug": "suverse-kb-media-list",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "title": "Albert_Einstein"
+    }
+  },
+  {
+    "slug": "suverse-kb-featured-feed",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "year": "2024",
+      "month": "06",
+      "day": "01"
+    }
+  },
+  {
+    "slug": "suverse-kb-pageviews-article",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "article": "Bitcoin",
+      "start": "20240101",
+      "end": "20240131"
+    }
+  },
+  {
+    "slug": "suverse-kb-pageviews-top",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "year": "2024",
+      "month": "06",
+      "day": "01"
+    }
+  },
+  {
+    "slug": "suverse-kb-new-pages",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "start": "20240101",
+      "end": "20240107"
+    }
+  },
+  {
+    "slug": "suverse-kb-wikidata-entity",
+    "priceUsdc": "0.002000",
+    "category": "knowledge",
+    "sampleRequest": {
+      "ids": "Q42"
+    }
+  },
+  {
+    "slug": "suverse-word-means-like",
+    "priceUsdc": "0.001000",
+    "category": "language",
+    "sampleRequest": {
+      "ml": "ocean"
+    }
+  },
+  {
+    "slug": "suverse-word-rhymes",
+    "priceUsdc": "0.001000",
+    "category": "language",
+    "sampleRequest": {
+      "rel_rhy": "blue"
+    }
+  },
+  {
+    "slug": "suverse-word-synonyms",
+    "priceUsdc": "0.001000",
+    "category": "language",
+    "sampleRequest": {
+      "rel_syn": "fast"
+    }
+  },
+  {
+    "slug": "suverse-word-antonyms",
+    "priceUsdc": "0.001000",
+    "category": "language",
+    "sampleRequest": {
+      "rel_ant": "hot"
+    }
+  },
+  {
+    "slug": "suverse-lang-translate-pair",
+    "priceUsdc": "0.002000",
+    "category": "language",
+    "sampleRequest": {
+      "q": "guten tag",
+      "langpair": "de|en"
+    }
+  },
+  {
+    "slug": "suverse-word-sounds-like",
+    "priceUsdc": "0.001000",
+    "category": "language",
+    "sampleRequest": {
+      "sl": "jirraf"
+    }
+  },
+  {
+    "slug": "suverse-ocean-tide-predictions",
+    "priceUsdc": "0.002000",
+    "category": "marine",
+    "sampleRequest": {
+      "station": "9414290"
+    }
+  },
+  {
+    "slug": "suverse-ocean-water-level",
+    "priceUsdc": "0.002000",
+    "category": "marine",
+    "sampleRequest": {
+      "station": "9414290"
+    }
+  },
+  {
+    "slug": "suverse-ocean-water-temp",
+    "priceUsdc": "0.002000",
+    "category": "marine",
+    "sampleRequest": {
+      "station": "8454000"
+    }
+  },
+  {
+    "slug": "suverse-ocean-wind",
+    "priceUsdc": "0.002000",
+    "category": "marine",
+    "sampleRequest": {
+      "station": "9414290"
+    }
+  },
+  {
+    "slug": "suverse-ocean-currents-predictions",
+    "priceUsdc": "0.002000",
+    "category": "marine",
+    "sampleRequest": {
+      "station": "SFB1203"
+    }
+  },
+  {
+    "slug": "suverse-ocean-station-info",
+    "priceUsdc": "0.001000",
+    "category": "marine",
+    "sampleRequest": {
+      "station": "9414290"
+    }
+  },
+  {
+    "slug": "suverse-ocean-stations-list",
+    "priceUsdc": "0.001000",
+    "category": "marine",
+    "sampleRequest": {
+      "type": "waterlevels"
+    }
+  },
+  {
+    "slug": "suverse-ocean-wave-forecast",
+    "priceUsdc": "0.002000",
+    "category": "marine",
+    "sampleRequest": {
+      "latitude": "37.8",
+      "longitude": "-122.5"
+    }
+  },
+  {
+    "slug": "suverse-ocean-wave-daily",
+    "priceUsdc": "0.002000",
+    "category": "marine",
+    "sampleRequest": {
+      "latitude": "37.8",
+      "longitude": "-122.5"
+    }
+  },
+  {
+    "slug": "suverse-avwx-metar",
+    "priceUsdc": "0.002000",
+    "category": "aviation",
+    "sampleRequest": {
+      "ids": "KJFK"
+    }
+  },
+  {
+    "slug": "suverse-avwx-taf",
+    "priceUsdc": "0.002000",
+    "category": "aviation",
+    "sampleRequest": {
+      "ids": "KJFK"
+    }
+  },
+  {
+    "slug": "suverse-avwx-pirep",
+    "priceUsdc": "0.002000",
+    "category": "aviation",
+    "sampleRequest": {
+      "id": "KJFK"
+    }
+  },
+  {
+    "slug": "suverse-avwx-airsigmet",
+    "priceUsdc": "0.002000",
+    "category": "aviation",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-rel-prayer-times",
+    "priceUsdc": "0.002000",
+    "category": "religion",
+    "sampleRequest": {
+      "address": "London,UK",
+      "method": 2
+    }
+  },
+  {
+    "slug": "suverse-rel-prayer-times-coords",
+    "priceUsdc": "0.002000",
+    "category": "religion",
+    "sampleRequest": {
+      "date": "20-06-2026",
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "method": 2
+    }
+  },
+  {
+    "slug": "suverse-rel-qibla-direction",
+    "priceUsdc": "0.001000",
+    "category": "religion",
+    "sampleRequest": {
+      "latitude": 51.5,
+      "longitude": -0.12
+    }
+  },
+  {
+    "slug": "suverse-rel-quran-ayah",
+    "priceUsdc": "0.001000",
+    "category": "religion",
+    "sampleRequest": {
+      "number": 262,
+      "edition": "en.asad"
+    }
+  },
+  {
+    "slug": "suverse-rel-quran-surah",
+    "priceUsdc": "0.002000",
+    "category": "religion",
+    "sampleRequest": {
+      "number": 2,
+      "edition": "en.asad"
+    }
+  },
+  {
+    "slug": "suverse-rel-quran-99-names",
+    "priceUsdc": "0.001000",
+    "category": "religion",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-rel-bible-verse",
+    "priceUsdc": "0.001000",
+    "category": "religion",
+    "sampleRequest": {
+      "reference": "John 3:16",
+      "translation": "kjv"
+    }
+  },
+  {
+    "slug": "suverse-rel-bible-random",
+    "priceUsdc": "0.001000",
+    "category": "religion",
+    "sampleRequest": {
+      "translation": "web"
+    }
+  },
+  {
+    "slug": "suverse-cal-hijri-from-gregorian",
+    "priceUsdc": "0.001000",
+    "category": "calendar",
+    "sampleRequest": {
+      "date": "20-06-2026"
+    }
+  },
+  {
+    "slug": "suverse-cal-gregorian-from-hijri",
+    "priceUsdc": "0.001000",
+    "category": "calendar",
+    "sampleRequest": {
+      "date": "15-12-1447"
+    }
+  },
+  {
+    "slug": "suverse-cal-prayer-month",
+    "priceUsdc": "0.002000",
+    "category": "calendar",
+    "sampleRequest": {
+      "year": 2026,
+      "month": 6,
+      "latitude": 51.5,
+      "longitude": -0.12,
+      "method": 2
+    }
+  },
+  {
+    "slug": "suverse-cal-hebrew-date",
+    "priceUsdc": "0.001000",
+    "category": "calendar",
+    "sampleRequest": {
+      "gy": 2026,
+      "gm": 6,
+      "gd": 20
+    }
+  },
+  {
+    "slug": "suverse-space-people-in-space",
+    "priceUsdc": "0.001000",
+    "category": "space",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-space-close-approaches",
+    "priceUsdc": "0.002000",
+    "category": "space",
+    "sampleRequest": {
+      "date-min": "2026-01-01",
+      "date-max": "2026-12-31",
+      "dist-max": "0.05"
+    }
+  },
+  {
+    "slug": "suverse-space-fireballs",
+    "priceUsdc": "0.002000",
+    "category": "space",
+    "sampleRequest": {
+      "limit": "20"
+    }
+  },
+  {
+    "slug": "suverse-space-impact-risk",
+    "priceUsdc": "0.002000",
+    "category": "space",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-space-accessible-asteroids",
+    "priceUsdc": "0.002000",
+    "category": "space",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-space-neo-tracking",
+    "priceUsdc": "0.002000",
+    "category": "space",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-space-moon-phases",
+    "priceUsdc": "0.001000",
+    "category": "space",
+    "sampleRequest": {
+      "date": "2026-06-20",
+      "nump": "4"
+    }
+  },
+  {
+    "slug": "suverse-space-seasons",
+    "priceUsdc": "0.001000",
+    "category": "space",
+    "sampleRequest": {
+      "year": "2026"
+    }
+  },
+  {
+    "slug": "suverse-space-solar-eclipses",
+    "priceUsdc": "0.001000",
+    "category": "space",
+    "sampleRequest": {
+      "year": "2026"
+    }
+  },
+  {
+    "slug": "suverse-space-sun-moon-times",
+    "priceUsdc": "0.001000",
+    "category": "space",
+    "sampleRequest": {
+      "date": "2026-06-20",
+      "coords": "38.9,-77.0"
+    }
+  },
+  {
+    "slug": "suverse-space-sidereal-time",
+    "priceUsdc": "0.001000",
+    "category": "space",
+    "sampleRequest": {
+      "date": "2026-06-20",
+      "coords": "38.9,-77.0",
+      "time": "12:00:00"
+    }
+  },
+  {
+    "slug": "suverse-space-iss-orbit",
+    "priceUsdc": "0.001000",
+    "category": "space",
+    "sampleRequest": {}
+  }
+]

@@ -1,0 +1,5037 @@
+[
+ {
+  "slug": "suverse-civic-nonprofit-search",
+  "category": "civic",
+  "source": "propublica",
+  "title": "Nonprofit Organization Search",
+  "description": "Search US tax-exempt nonprofit organizations by name or keyword. Returns EIN, name, city, state, and NTEE classification from the IRS Exempt Organizations Business Master File via ProPublica Nonprofit Explorer.",
+  "descriptionBazaar": "Search US tax-exempt nonprofits by name/keyword. Returns EIN, name, city, state, NTEE code. Keyless ProPublica Nonprofit Explorer backed by IRS data. For agents doing charity due diligence.",
+  "tags": [
+   "civic",
+   "nonprofit",
+   "irs",
+   "charity",
+   "legal"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://projects.propublica.org/nonprofits/api/v2/search.json",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Search term (organization name or keyword)",
+    "example": "red cross"
+   }
+  },
+  "sampleRequest": {
+   "q": "red cross"
+  },
+  "sampleResponse": {
+   "total_results": 190,
+   "organizations": [
+    {
+     "ein": 530196605,
+     "name": "American National Red Cross",
+     "city": "Washington",
+     "state": "DC",
+     "ntee_code": "P12"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-civic-nonprofit-org",
+  "category": "civic",
+  "source": "propublica",
+  "title": "Nonprofit Organization Profile by EIN",
+  "description": "Retrieve a full US nonprofit organization profile by EIN (Employer Identification Number). Returns address, subsection code, ruling date, asset/income codes, and recent IRS filing summaries from ProPublica Nonprofit Explorer.",
+  "descriptionBazaar": "Full US nonprofit profile by EIN: address, subsection code, ruling date, asset and income codes, recent IRS filings. Keyless ProPublica Nonprofit Explorer. For agents auditing tax-exempt orgs.",
+  "tags": [
+   "civic",
+   "nonprofit",
+   "irs",
+   "ein",
+   "filings"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://projects.propublica.org/nonprofits/api/v2/organizations/{ein}.json",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "ein": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{9}$",
+    "description": "9-digit Employer Identification Number, no dash",
+    "example": "530196605"
+   }
+  },
+  "sampleRequest": {
+   "ein": "530196605"
+  },
+  "sampleResponse": {
+   "organization": {
+    "ein": 530196605,
+    "name": "American National Red Cross",
+    "address": "431 18TH ST NW",
+    "city": "Washington",
+    "state": "DC",
+    "subsection_code": 3,
+    "ruling_date": "1938-12-01"
+   }
+  }
+ },
+ {
+  "slug": "suverse-civic-fedreg-docs-by-type",
+  "category": "civic",
+  "source": "federalregister",
+  "title": "Federal Register Documents by Type",
+  "description": "List recent US Federal Register documents filtered by type (PRORULE proposed rule, RULE final rule, NOTICE, PRESDOCU presidential document). Returns titles, document numbers, agencies, and publication dates from the official Federal Register API.",
+  "descriptionBazaar": "Recent US Federal Register documents by type (PRORULE, RULE, NOTICE, PRESDOCU). Returns titles, doc numbers, agencies, publication dates. Keyless Federal Register API. For agents tracking regulations.",
+  "tags": [
+   "civic",
+   "legal",
+   "regulation",
+   "federal-register",
+   "government"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.federalregister.gov/api/v1/documents.json",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "per_page": "20"
+   }
+  },
+  "params": {
+   "type": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "upstreamName": "conditions[type][]",
+    "enum": [
+     "RULE",
+     "PRORULE",
+     "NOTICE",
+     "PRESDOCU"
+    ],
+    "transform": "upper",
+    "description": "Document type code",
+    "example": "PRESDOCU"
+   }
+  },
+  "sampleRequest": {
+   "type": "PRESDOCU"
+  },
+  "sampleResponse": {
+   "count": 8505,
+   "total_pages": 50,
+   "results": [
+    {
+     "title": "Modification of Records System",
+     "document_number": "2026-12282",
+     "type": "Presidential Document",
+     "publication_date": "2026-06-12"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-civic-fedreg-public-inspection",
+  "category": "civic",
+  "source": "federalregister",
+  "title": "Federal Register Public Inspection Documents",
+  "description": "List documents currently on public inspection at the US Federal Register, available before official publication. Returns titles, agencies, document numbers, and filing details from the official Federal Register API.",
+  "descriptionBazaar": "Documents currently on public inspection at the US Federal Register, ahead of official publication. Returns titles, agencies, doc numbers, filing details. Keyless Federal Register API. For agents tracking pending rules.",
+  "tags": [
+   "civic",
+   "legal",
+   "regulation",
+   "federal-register",
+   "government"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.federalregister.gov/api/v1/public-inspection-documents/current.json",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "count": 165,
+   "results": [
+    {
+     "title": "Notice of Meeting",
+     "agencies": [
+      {
+       "name": "Railroad Retirement Board",
+       "id": 444
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-civic-fedreg-agency",
+  "category": "civic",
+  "source": "federalregister",
+  "title": "Federal Register Agency Detail",
+  "description": "Retrieve details for a single US federal agency by its Federal Register slug. Returns agency name, description, parent and child agencies, and short name from the official Federal Register API.",
+  "descriptionBazaar": "Single US federal agency detail by slug: name, description, parent/child agencies, short name. Keyless Federal Register API. For agents resolving regulatory authorities.",
+  "tags": [
+   "civic",
+   "legal",
+   "agency",
+   "federal-register",
+   "government"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.federalregister.gov/api/v1/agencies/{slug}.json",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "slug": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[a-z0-9-]+$",
+    "description": "Federal Register agency slug",
+    "example": "environmental-protection-agency"
+   }
+  },
+  "sampleRequest": {
+   "slug": "environmental-protection-agency"
+  },
+  "sampleResponse": {
+   "name": "Environmental Protection Agency",
+   "short_name": "EPA",
+   "agency_url": "http://www.epa.gov/",
+   "description": "The Environmental Protection Agency protects human health and safeguards the natural environment."
+  }
+ },
+ {
+  "slug": "suverse-veh-mpg-years",
+  "category": "vehicles",
+  "source": "fueleconomy",
+  "title": "Vehicle MPG Model Years",
+  "description": "List all model years available in the US EPA/DOE FuelEconomy.gov vehicle fuel-economy database. Returns each year as a selectable menu value. Keyless source for building vehicle MPG lookups.",
+  "descriptionBazaar": "All model years available in the US EPA/DOE FuelEconomy.gov vehicle database. Returns selectable year values. Keyless FuelEconomy.gov. For agents building vehicle MPG and emissions lookups.",
+  "tags": [
+   "vehicles",
+   "mpg",
+   "fuel-economy",
+   "epa",
+   "cars"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://www.fueleconomy.gov/ws/rest/vehicle/menu/year",
+   "timeoutMs": 12000,
+   "headers": {
+    "accept": "application/json"
+   }
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "menuItem": [
+    {
+     "text": "2026",
+     "value": "2026"
+    },
+    {
+     "text": "2025",
+     "value": "2025"
+    },
+    {
+     "text": "2024",
+     "value": "2024"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-veh-mpg-makes",
+  "category": "vehicles",
+  "source": "fueleconomy",
+  "title": "Vehicle Makes by Year",
+  "description": "List all vehicle makes available for a given model year in the US EPA/DOE FuelEconomy.gov database. Returns each make as a selectable menu value. Keyless source for vehicle MPG lookups.",
+  "descriptionBazaar": "All vehicle makes for a given model year from US EPA/DOE FuelEconomy.gov. Returns selectable make values. Keyless FuelEconomy.gov. For agents drilling into vehicle MPG and emissions data.",
+  "tags": [
+   "vehicles",
+   "mpg",
+   "fuel-economy",
+   "epa",
+   "cars"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://www.fueleconomy.gov/ws/rest/vehicle/menu/make",
+   "timeoutMs": 12000,
+   "headers": {
+    "accept": "application/json"
+   }
+  },
+  "params": {
+   "year": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}$",
+    "description": "Model year",
+    "example": "2024"
+   }
+  },
+  "sampleRequest": {
+   "year": "2024"
+  },
+  "sampleResponse": {
+   "menuItem": [
+    {
+     "text": "Acura",
+     "value": "Acura"
+    },
+    {
+     "text": "Audi",
+     "value": "Audi"
+    },
+    {
+     "text": "BMW",
+     "value": "BMW"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-veh-mpg-models",
+  "category": "vehicles",
+  "source": "fueleconomy",
+  "title": "Vehicle Models by Year and Make",
+  "description": "List all vehicle models for a given model year and make in the US EPA/DOE FuelEconomy.gov database. Returns each model as a selectable menu value. Keyless source for vehicle MPG lookups.",
+  "descriptionBazaar": "All vehicle models for a given year and make from US EPA/DOE FuelEconomy.gov. Returns selectable model values. Keyless FuelEconomy.gov. For agents narrowing to a specific vehicle for MPG data.",
+  "tags": [
+   "vehicles",
+   "mpg",
+   "fuel-economy",
+   "epa",
+   "cars"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://www.fueleconomy.gov/ws/rest/vehicle/menu/model",
+   "timeoutMs": 12000,
+   "headers": {
+    "accept": "application/json"
+   }
+  },
+  "params": {
+   "year": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}$",
+    "description": "Model year",
+    "example": "2024"
+   },
+   "make": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Vehicle make",
+    "example": "Toyota"
+   }
+  },
+  "sampleRequest": {
+   "year": "2024",
+   "make": "Toyota"
+  },
+  "sampleResponse": {
+   "menuItem": [
+    {
+     "text": "Camry",
+     "value": "Camry"
+    },
+    {
+     "text": "Corolla",
+     "value": "Corolla"
+    },
+    {
+     "text": "4Runner 2WD",
+     "value": "4Runner 2WD"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-veh-mpg-detail",
+  "category": "vehicles",
+  "source": "fueleconomy",
+  "title": "Vehicle Fuel Economy Detail",
+  "description": "Retrieve full fuel-economy details for a specific vehicle by its FuelEconomy.gov vehicle ID. Returns city/highway/combined MPG, CO2 grams per mile, annual fuel cost, fuel type, and powertrain data from the US EPA/DOE.",
+  "descriptionBazaar": "Full fuel-economy detail for a vehicle by FuelEconomy.gov ID: city/highway/combined MPG, CO2 g/mi, annual fuel cost, fuel type, powertrain. Keyless US EPA/DOE FuelEconomy.gov. For agents scoring vehicle efficiency.",
+  "tags": [
+   "vehicles",
+   "mpg",
+   "fuel-economy",
+   "co2",
+   "cars"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.fueleconomy.gov/ws/rest/vehicle/{id}",
+   "timeoutMs": 12000,
+   "headers": {
+    "accept": "application/json"
+   }
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]+$",
+    "description": "FuelEconomy.gov vehicle ID",
+    "example": "47368"
+   }
+  },
+  "sampleRequest": {
+   "id": "47368"
+  },
+  "sampleResponse": {
+   "city08": "21",
+   "highway08": "29",
+   "comb08": "22",
+   "co2": "402",
+   "fuelType": "Regular",
+   "make": "Toyota",
+   "model": "Camry",
+   "year": "2024"
+  }
+ },
+ {
+  "slug": "suverse-veh-emissions",
+  "category": "vehicles",
+  "source": "fueleconomy",
+  "title": "Vehicle Emissions Standards",
+  "description": "Retrieve EPA emissions-standard information for a specific vehicle by its FuelEconomy.gov vehicle ID. Returns emission scores, SmartWay score, sales area, and the federal/California emission standard text.",
+  "descriptionBazaar": "EPA emissions standards for a vehicle by FuelEconomy.gov ID: emission score, SmartWay score, sales area, federal/California standard text. Keyless US EPA/DOE FuelEconomy.gov. For agents assessing vehicle emissions.",
+  "tags": [
+   "vehicles",
+   "emissions",
+   "epa",
+   "smartway",
+   "cars"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.fueleconomy.gov/ws/rest/vehicle/emissions/{id}",
+   "timeoutMs": 12000,
+   "headers": {
+    "accept": "application/json"
+   }
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]+$",
+    "description": "FuelEconomy.gov vehicle ID",
+    "example": "47368"
+   }
+  },
+  "sampleRequest": {
+   "id": "47368"
+  },
+  "sampleResponse": {
+   "emissionsInfo": [
+    {
+     "id": "47368",
+     "salesArea": "3",
+     "score": "6.0",
+     "smartwayScore": "-1",
+     "standard": "T3B50",
+     "stdText": "Federal Tier 3 Bin 50"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-veh-fuel-prices",
+  "category": "vehicles",
+  "source": "fueleconomy",
+  "title": "Current US Fuel Prices",
+  "description": "Retrieve current national average US fuel prices used by FuelEconomy.gov for annual fuel-cost estimates. Returns prices for regular, midgrade, premium, diesel, E85, CNG, LPG, and electricity.",
+  "descriptionBazaar": "Current national-average US fuel prices from FuelEconomy.gov: regular, midgrade, premium, diesel, E85, CNG, LPG, electricity. Keyless US EPA/DOE source. For agents estimating fuel costs.",
+  "tags": [
+   "vehicles",
+   "fuel",
+   "prices",
+   "energy",
+   "epa"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://www.fueleconomy.gov/ws/rest/fuelprices",
+   "timeoutMs": 12000,
+   "headers": {
+    "accept": "application/json"
+   }
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "regular": "4.15",
+   "midgrade": "4.76",
+   "premium": "5.14",
+   "diesel": "5.21",
+   "e85": "2.63",
+   "cng": "2.96",
+   "lpg": "3.42",
+   "electric": "0.15"
+  }
+ },
+ {
+  "slug": "suverse-energy-uk-generation-mix",
+  "category": "energy",
+  "source": "carbonintensity",
+  "title": "UK Electricity Generation Mix",
+  "description": "Retrieve the current half-hourly Great Britain electricity generation mix as a percentage by fuel: gas, nuclear, wind, solar, hydro, biomass, coal, and imports. Keyless UK Carbon Intensity API from National Grid ESO.",
+  "descriptionBazaar": "Current GB electricity generation mix by fuel percentage: gas, nuclear, wind, solar, hydro, biomass, coal, imports. Keyless UK Carbon Intensity API (National Grid ESO). For agents tracking the grid.",
+  "tags": [
+   "energy",
+   "electricity",
+   "grid",
+   "renewables",
+   "uk"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.carbonintensity.org.uk/generation",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "data": {
+    "from": "2026-06-20T02:00Z",
+    "to": "2026-06-20T02:30Z",
+    "generationmix": [
+     {
+      "fuel": "gas",
+      "perc": 39.4
+     },
+     {
+      "fuel": "wind",
+      "perc": 22.6
+     },
+     {
+      "fuel": "nuclear",
+      "perc": 13
+     }
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-game-deals",
+  "category": "games",
+  "source": "cheapshark",
+  "title": "PC Game Deals",
+  "description": "Current PC game price deals across major stores (Steam, GreenManGaming, GOG, Fanatical and more), sorted by deal rating. Keyless CheapShark.",
+  "descriptionBazaar": "Live PC game price deals across major stores: title, sale vs normal price, savings percent, store, Metacritic and Steam rating. Keyless CheapShark. For agents tracking game discounts.",
+  "tags": [
+   "games",
+   "deals",
+   "prices",
+   "pc",
+   "steam"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.cheapshark.com/api/1.0/deals",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "pageSize": "20"
+   }
+  },
+  "params": {
+   "storeID": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Filter by CheapShark store ID (e.g. 1=Steam)",
+    "example": "1"
+   },
+   "upperPrice": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Maximum sale price in USD",
+    "example": "15"
+   },
+   "sortBy": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Sort field: Deal Rating, Title, Savings, Price, Metacritic",
+    "example": "Savings"
+   },
+   "title": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Filter deals by game title substring",
+    "example": "witcher"
+   }
+  },
+  "sampleRequest": {
+   "upperPrice": "15"
+  },
+  "sampleResponse": [
+   {
+    "title": "NBA 2K26",
+    "storeID": "3",
+    "salePrice": "8.72",
+    "normalPrice": "69.99",
+    "savings": "87.54",
+    "metacriticScore": "83",
+    "steamRatingText": "Mostly Positive",
+    "dealRating": "10.0"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-game-stores",
+  "category": "games",
+  "source": "cheapshark",
+  "title": "Game Stores List",
+  "description": "List of digital PC game stores tracked by CheapShark, with store ID, name, active flag and logo/banner images. Keyless. Use the IDs to filter deals.",
+  "descriptionBazaar": "Directory of PC game stores tracked by CheapShark with store ID, name, active flag and image assets. Keyless. Useful for mapping store IDs in deal queries.",
+  "tags": [
+   "games",
+   "stores",
+   "directory",
+   "pc"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://www.cheapshark.com/api/1.0/stores",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": [
+   {
+    "storeID": "1",
+    "storeName": "Steam",
+    "isActive": 1
+   },
+   {
+    "storeID": "3",
+    "storeName": "GreenManGaming",
+    "isActive": 1
+   }
+  ]
+ },
+ {
+  "slug": "suverse-game-price-search",
+  "category": "games",
+  "source": "cheapshark",
+  "title": "Game Price Search",
+  "description": "Search games by title and get the cheapest current price plus a deal link for each match. Keyless CheapShark game lookup.",
+  "descriptionBazaar": "Search PC games by title; returns gameID, Steam app ID, cheapest current price and a cheapest-deal link per match. Keyless CheapShark. For agents pricing a specific game.",
+  "tags": [
+   "games",
+   "prices",
+   "search",
+   "pc"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.cheapshark.com/api/1.0/games",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "limit": "10"
+   }
+  },
+  "params": {
+   "title": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Game title to search for",
+    "example": "witcher"
+   }
+  },
+  "sampleRequest": {
+   "title": "witcher"
+  },
+  "sampleResponse": [
+   {
+    "gameID": "112330",
+    "steamAppID": "292030",
+    "cheapest": "3.99",
+    "external": "The Witcher 3: Wild Hunt"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-game-free-list",
+  "category": "games",
+  "source": "freetogame",
+  "title": "Free-to-Play Games",
+  "description": "Browse free-to-play games with title, genre, platform, publisher, developer, short description and release date. Keyless FreeToGame.",
+  "descriptionBazaar": "Catalog of free-to-play games: title, genre, platform, publisher, developer, short description and release date. Keyless FreeToGame. For agents discovering F2P titles.",
+  "tags": [
+   "games",
+   "free-to-play",
+   "catalog",
+   "pc"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.freetogame.com/api/games",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "platform": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "pc",
+     "browser",
+     "all"
+    ],
+    "description": "Platform filter",
+    "example": "pc"
+   },
+   "sort-by": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Sort: release-date, popularity, alphabetical, relevance",
+    "example": "popularity"
+   }
+  },
+  "sampleRequest": {},
+  "sampleResponse": [
+   {
+    "id": 540,
+    "title": "Overwatch",
+    "genre": "Shooter",
+    "platform": "PC (Windows)",
+    "publisher": "Activision Blizzard",
+    "release_date": "2022-10-04"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-game-free-by-category",
+  "category": "games",
+  "source": "freetogame",
+  "title": "Free Games by Category",
+  "description": "List free-to-play games in a specific genre/category such as shooter, mmorpg, strategy, card, racing, fighting or moba. Keyless FreeToGame.",
+  "descriptionBazaar": "Free-to-play games filtered by genre (shooter, mmorpg, strategy, card, racing, moba, etc) with title, platform, publisher and release date. Keyless FreeToGame.",
+  "tags": [
+   "games",
+   "free-to-play",
+   "genre",
+   "category"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.freetogame.com/api/games",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "category": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Genre/category, e.g. shooter, mmorpg, strategy, card, racing, moba",
+    "example": "shooter"
+   }
+  },
+  "sampleRequest": {
+   "category": "shooter"
+  },
+  "sampleResponse": [
+   {
+    "id": 540,
+    "title": "Overwatch",
+    "genre": "Shooter",
+    "platform": "PC (Windows)",
+    "publisher": "Activision Blizzard"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-game-free-detail",
+  "category": "games",
+  "source": "freetogame",
+  "title": "Free Game Detail",
+  "description": "Full detail for one free-to-play game by FreeToGame ID: long description, status, minimum system requirements, screenshots and publisher. Keyless.",
+  "descriptionBazaar": "Detailed info for a single free-to-play game by ID: full description, status, system requirements and screenshots. Keyless FreeToGame. For agents deep-diving one title.",
+  "tags": [
+   "games",
+   "free-to-play",
+   "detail"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.freetogame.com/api/game",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "FreeToGame game ID",
+    "example": "452"
+   }
+  },
+  "sampleRequest": {
+   "id": "452"
+  },
+  "sampleResponse": {
+   "id": 452,
+   "title": "Call of Duty: Warzone",
+   "status": "Live",
+   "short_description": "A standalone free-to-play battle royale."
+  }
+ },
+ {
+  "slug": "suverse-anime-top",
+  "category": "anime",
+  "source": "jikan",
+  "title": "Top Anime Ranking",
+  "description": "Top-ranked anime from MyAnimeList with title, score, rank, popularity, type, episodes and synopsis. Keyless Jikan v4.",
+  "descriptionBazaar": "Top anime ranked from MyAnimeList: title, score, rank, popularity, type, episode count and synopsis. Keyless Jikan v4. For agents surfacing the best-rated anime.",
+  "tags": [
+   "anime",
+   "ranking",
+   "myanimelist",
+   "top"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/top/anime",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "limit": "15"
+   }
+  },
+  "params": {
+   "type": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Filter by type: tv, movie, ova, special, ona, music",
+    "example": "tv"
+   },
+   "filter": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "airing, upcoming, bypopularity or favorite",
+    "example": "bypopularity"
+   }
+  },
+  "sampleRequest": {},
+  "sampleResponse": {
+   "data": [
+    {
+     "mal_id": 52991,
+     "title": "Sousou no Frieren",
+     "score": 9.3,
+     "rank": 1,
+     "type": "TV",
+     "episodes": 28
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-anime-search",
+  "category": "anime",
+  "source": "jikan",
+  "title": "Anime Search",
+  "description": "Search MyAnimeList anime by title; returns matches with score, type, episodes, status, aired dates and synopsis. Keyless Jikan v4.",
+  "descriptionBazaar": "Search anime by title on MyAnimeList; returns score, type, episodes, status, aired dates and synopsis per match. Keyless Jikan v4. For agents finding an anime by name.",
+  "tags": [
+   "anime",
+   "search",
+   "myanimelist"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/anime",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "limit": "10"
+   }
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Anime title search query",
+    "example": "naruto"
+   }
+  },
+  "sampleRequest": {
+   "q": "naruto"
+  },
+  "sampleResponse": {
+   "data": [
+    {
+     "mal_id": 20,
+     "title": "Naruto",
+     "type": "TV",
+     "episodes": 220,
+     "score": 8
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-anime-season-now",
+  "category": "anime",
+  "source": "jikan",
+  "title": "Currently Airing Anime",
+  "description": "Anime airing in the current season with title, type, episodes, score and broadcast info. Keyless Jikan v4 seasons/now.",
+  "descriptionBazaar": "Anime airing this season from MyAnimeList: title, type, episode count, score and broadcast info. Keyless Jikan v4. For agents tracking what is currently airing.",
+  "tags": [
+   "anime",
+   "season",
+   "airing",
+   "myanimelist"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/seasons/now",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "limit": "20"
+   }
+  },
+  "params": {
+   "filter": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Filter by type: tv, movie, ova, special, ona, music",
+    "example": "tv"
+   }
+  },
+  "sampleRequest": {},
+  "sampleResponse": {
+   "data": [
+    {
+     "mal_id": 51553,
+     "title": "Tongari Boushi no Atelier",
+     "type": "TV"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-anime-detail",
+  "category": "anime",
+  "source": "jikan",
+  "title": "Anime Detail",
+  "description": "Full detail for one anime by MyAnimeList ID: titles, synopsis, score, ranking, genres, studios, aired dates, episodes and trailer. Keyless Jikan v4.",
+  "descriptionBazaar": "Complete details for a single anime by MAL ID: titles, synopsis, score, rank, genres, studios, aired dates and episodes. Keyless Jikan v4. For agents enriching one anime.",
+  "tags": [
+   "anime",
+   "detail",
+   "myanimelist"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/anime/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "MyAnimeList anime ID",
+    "example": "1"
+   }
+  },
+  "sampleRequest": {
+   "id": "1"
+  },
+  "sampleResponse": {
+   "data": {
+    "mal_id": 1,
+    "title": "Cowboy Bebop",
+    "type": "TV",
+    "episodes": 26,
+    "score": 8.75
+   }
+  }
+ },
+ {
+  "slug": "suverse-anime-manga-search",
+  "category": "anime",
+  "source": "jikan",
+  "title": "Manga Search",
+  "description": "Search MyAnimeList manga by title; returns matches with score, chapters, volumes, status, published dates and synopsis. Keyless Jikan v4.",
+  "descriptionBazaar": "Search manga by title on MyAnimeList; returns score, chapters, volumes, status, published dates and synopsis. Keyless Jikan v4. For agents finding a manga by name.",
+  "tags": [
+   "manga",
+   "search",
+   "myanimelist"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/manga",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "limit": "10"
+   }
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Manga title search query",
+    "example": "berserk"
+   }
+  },
+  "sampleRequest": {
+   "q": "berserk"
+  },
+  "sampleResponse": {
+   "data": [
+    {
+     "mal_id": 2,
+     "title": "Berserk",
+     "type": "Manga"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-anime-character-search",
+  "category": "anime",
+  "source": "jikan",
+  "title": "Anime Character Search",
+  "description": "Search anime/manga characters by name on MyAnimeList; returns character ID, name, nicknames, favorites and image. Keyless Jikan v4.",
+  "descriptionBazaar": "Search anime and manga characters by name on MyAnimeList; returns character ID, name, nicknames and favorites count. Keyless Jikan v4. For agents looking up a character.",
+  "tags": [
+   "anime",
+   "characters",
+   "search",
+   "myanimelist"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/characters",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "limit": "10"
+   }
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Character name search query",
+    "example": "goku"
+   }
+  },
+  "sampleRequest": {
+   "q": "goku"
+  },
+  "sampleResponse": {
+   "data": [
+    {
+     "mal_id": 178510,
+     "name": "Goku"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-anime-schedule",
+  "category": "anime",
+  "source": "jikan",
+  "title": "Anime Broadcast Schedule",
+  "description": "Anime broadcast schedule for a given weekday from MyAnimeList, with title, type, score and airing info. Keyless Jikan v4 schedules.",
+  "descriptionBazaar": "Anime airing schedule by weekday from MyAnimeList: title, type, score and broadcast time. Keyless Jikan v4. For agents building a weekly anime calendar.",
+  "tags": [
+   "anime",
+   "schedule",
+   "airing",
+   "myanimelist"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/schedules",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "limit": "20"
+   }
+  },
+  "params": {
+   "filter": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "monday",
+     "tuesday",
+     "wednesday",
+     "thursday",
+     "friday",
+     "saturday",
+     "sunday",
+     "unknown",
+     "other"
+    ],
+    "description": "Weekday filter",
+    "example": "monday"
+   }
+  },
+  "sampleRequest": {
+   "filter": "monday"
+  },
+  "sampleResponse": {
+   "data": [
+    {
+     "mal_id": 54871,
+     "title": "Shin Nippon History",
+     "type": "TV"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-geo-osrm-route",
+  "category": "geo",
+  "source": "osrm",
+  "title": "Driving Route Between Coordinates",
+  "description": "Fastest driving route between an ordered list of lon,lat coordinates using the public OSRM engine. Returns total distance (meters), duration (seconds), and per-leg breakdown. Keyless.",
+  "descriptionBazaar": "Driving route between lon,lat coordinates via public OSRM. Returns distance (m), duration (s), and per-leg legs/waypoints. Keyless OpenStreetMap routing for agents computing travel time and distance.",
+  "tags": [
+   "geo",
+   "routing",
+   "osrm",
+   "directions",
+   "distance"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://router.project-osrm.org/route/v1/driving/{coords}",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "overview": "false"
+   }
+  },
+  "params": {
+   "coords": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Semicolon-separated lon,lat pairs (at least two), e.g. start;end",
+    "example": "13.388,52.517;13.397,52.529"
+   }
+  },
+  "sampleRequest": {
+   "coords": "13.388,52.517;13.397,52.529"
+  },
+  "sampleResponse": {
+   "code": "Ok",
+   "routes": [
+    {
+     "weight_name": "routability",
+     "weight": 296.7,
+     "duration": 296.7,
+     "distance": 2067.4,
+     "legs": [
+      {
+       "summary": "",
+       "weight": 296.7,
+       "duration": 296.7,
+       "distance": 2067.4,
+       "steps": []
+      }
+     ]
+    }
+   ],
+   "waypoints": [
+    {
+     "name": "Unter den Linden",
+     "location": [
+      13.387983,
+      52.517094
+     ],
+     "distance": 10.52
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-geo-osrm-nearest",
+  "category": "geo",
+  "source": "osrm",
+  "title": "Snap Coordinate to Nearest Road",
+  "description": "Snaps a single lon,lat coordinate to the nearest point(s) on the routable road network using the public OSRM nearest service. Returns matched location, road name, and snap distance. Keyless.",
+  "descriptionBazaar": "Snap a lon,lat coordinate to the nearest routable road via public OSRM. Returns matched location, road name and snap distance for the closest N points. Keyless OpenStreetMap map-matching for agents.",
+  "tags": [
+   "geo",
+   "routing",
+   "osrm",
+   "snap",
+   "nearest"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://router.project-osrm.org/nearest/v1/driving/{coord}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "coord": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "A single lon,lat coordinate to snap",
+    "example": "13.388,52.517"
+   },
+   "number": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "default": "1",
+    "description": "Number of nearest segments to return",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "coord": "13.388,52.517",
+   "number": "3"
+  },
+  "sampleResponse": {
+   "code": "Ok",
+   "waypoints": [
+    {
+     "nodes": [
+      272408975,
+      272408975
+     ],
+     "name": "Unter den Linden",
+     "location": [
+      13.387983,
+      52.517094
+     ],
+     "distance": 10.52
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-geo-reverse-bdc",
+  "category": "geo",
+  "source": "bigdatacloud",
+  "title": "Reverse Geocode (BigDataCloud)",
+  "description": "Reverse-geocodes a latitude/longitude into administrative names: continent, country, principal subdivision (state), city, locality, and postcode. Keyless BigDataCloud client endpoint.",
+  "descriptionBazaar": "Reverse-geocode lat/lon to country, state, city, locality and postcode via keyless BigDataCloud. Returns ISO codes and admin hierarchy. For agents turning coordinates into human-readable place names.",
+  "tags": [
+   "geo",
+   "geocoding",
+   "reverse",
+   "location",
+   "bigdatacloud"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api-bdc.io/data/reverse-geocode-client",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "localityLanguage": "en"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude in decimal degrees",
+    "example": "52.517"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude in decimal degrees",
+    "example": "13.388"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "52.517",
+   "longitude": "13.388"
+  },
+  "sampleResponse": {
+   "latitude": 52.517,
+   "longitude": 13.388,
+   "continent": "Europe",
+   "continentCode": "EU",
+   "countryName": "Germany",
+   "countryCode": "DE",
+   "principalSubdivision": "Land Berlin",
+   "principalSubdivisionCode": "DE-BE",
+   "city": "Berlin",
+   "locality": "Mitte",
+   "postcode": "10117",
+   "plusCode": "9F4MG98Q+R6"
+  }
+ },
+ {
+  "slug": "suverse-geo-zip-germany",
+  "category": "geo",
+  "source": "zippopotam",
+  "title": "German Postcode Lookup",
+  "description": "Looks up a German (DE) postal code via Zippopotam and returns the associated place name(s) with latitude, longitude, and state. Keyless.",
+  "descriptionBazaar": "Resolve a German (DE) postcode to place name, state, latitude and longitude via keyless Zippopotam. For agents geocoding German addresses by postal code.",
+  "tags": [
+   "geo",
+   "postcode",
+   "zipcode",
+   "germany",
+   "zippopotam"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.zippopotam.us/de/{postcode}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "postcode": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "German postal code (5 digits)",
+    "example": "10117"
+   }
+  },
+  "sampleRequest": {
+   "postcode": "10117"
+  },
+  "sampleResponse": {
+   "country": "Germany",
+   "country abbreviation": "DE",
+   "post code": "10117",
+   "places": [
+    {
+     "place name": "Berlin",
+     "longitude": "13.3874",
+     "latitude": "52.5161",
+     "state": "Berlin",
+     "state abbreviation": "BE"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-geo-place-by-name",
+  "category": "geo",
+  "source": "zippopotam",
+  "title": "US Place Lookup by City Name",
+  "description": "Looks up US postal codes by state and city name via Zippopotam. Returns matching place names with latitude, longitude, and post code. Keyless.",
+  "descriptionBazaar": "Resolve a US city by state + name to its postal codes with latitude and longitude via keyless Zippopotam. For agents geocoding US places by name instead of ZIP.",
+  "tags": [
+   "geo",
+   "geocoding",
+   "city",
+   "usa",
+   "zippopotam"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.zippopotam.us/us/{state}/{city}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "state": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Two-letter US state abbreviation",
+    "example": "ny"
+   },
+   "city": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "City name (URL-encode spaces)",
+    "example": "new york"
+   }
+  },
+  "sampleRequest": {
+   "state": "ny",
+   "city": "new york"
+  },
+  "sampleResponse": {
+   "country": "United States",
+   "country abbreviation": "US",
+   "state": "New York",
+   "state abbreviation": "NY",
+   "place name": "New York City",
+   "places": [
+    {
+     "place name": "New York City",
+     "longitude": "-73.9967",
+     "latitude": "40.7484",
+     "post code": "10001"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-time-by-zone",
+  "category": "time",
+  "source": "timeapi",
+  "title": "Current Time by Timezone",
+  "description": "Current local date and time for an IANA timezone name via TimeAPI. Returns year, month, day, hour, minute, weekday, DST status, and a full ISO date-time string. Keyless.",
+  "descriptionBazaar": "Current local date and time for any IANA timezone (e.g. Europe/Berlin) via keyless TimeAPI. Returns ISO date-time, weekday and DST flag. For agents scheduling across timezones.",
+  "tags": [
+   "time",
+   "timezone",
+   "clock",
+   "datetime",
+   "dst"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://timeapi.io/api/time/current/zone",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "timeZone": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "IANA timezone identifier",
+    "example": "Europe/Berlin"
+   }
+  },
+  "sampleRequest": {
+   "timeZone": "Europe/Berlin"
+  },
+  "sampleResponse": {
+   "year": 2026,
+   "month": 6,
+   "day": 20,
+   "hour": 4,
+   "minute": 27,
+   "seconds": 49,
+   "milliSeconds": 306,
+   "dateTime": "2026-06-20T04:27:49.3069112",
+   "date": "06/20/2026",
+   "time": "04:27",
+   "timeZone": "Europe/Berlin",
+   "dayOfWeek": "Saturday",
+   "dstActive": true
+  }
+ },
+ {
+  "slug": "suverse-time-by-coordinate",
+  "category": "time",
+  "source": "timeapi",
+  "title": "Current Time by Coordinate",
+  "description": "Current local date and time at a latitude/longitude via TimeAPI, which resolves the coordinate to its timezone. Returns ISO date-time, weekday, timezone, and DST status. Keyless.",
+  "descriptionBazaar": "Current local time at a lat/lon coordinate via keyless TimeAPI (auto-resolves timezone). Returns ISO date-time, weekday, timezone and DST flag. For agents that only have coordinates, not zone names.",
+  "tags": [
+   "time",
+   "timezone",
+   "coordinate",
+   "datetime",
+   "location"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://timeapi.io/api/time/current/coordinate",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude in decimal degrees",
+    "example": "52.5"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude in decimal degrees",
+    "example": "13.4"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "52.5",
+   "longitude": "13.4"
+  },
+  "sampleResponse": {
+   "year": 2026,
+   "month": 6,
+   "day": 20,
+   "hour": 4,
+   "minute": 27,
+   "seconds": 49,
+   "milliSeconds": 442,
+   "dateTime": "2026-06-20T04:27:49.4420576",
+   "date": "06/20/2026",
+   "time": "04:27",
+   "timeZone": "Europe/Berlin",
+   "dayOfWeek": "Saturday",
+   "dstActive": true
+  }
+ },
+ {
+  "slug": "suverse-time-by-ip",
+  "category": "time",
+  "source": "timeapi",
+  "title": "Current Time by IP Address",
+  "description": "Current local date and time for the location of an IPv4/IPv6 address via TimeAPI. Returns ISO date-time, weekday, resolved timezone, and DST status. Keyless.",
+  "descriptionBazaar": "Current local time for an IP address's location via keyless TimeAPI. Returns ISO date-time, weekday, timezone and DST flag. For agents inferring a user's local time from their IP.",
+  "tags": [
+   "time",
+   "timezone",
+   "ip",
+   "datetime",
+   "geo"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://timeapi.io/api/time/current/ip",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "ipAddress": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "IPv4 or IPv6 address",
+    "example": "8.8.8.8"
+   }
+  },
+  "sampleRequest": {
+   "ipAddress": "8.8.8.8"
+  },
+  "sampleResponse": {
+   "year": 2026,
+   "month": 6,
+   "day": 19,
+   "hour": 19,
+   "minute": 27,
+   "seconds": 49,
+   "milliSeconds": 761,
+   "dateTime": "2026-06-19T19:27:49.7610048",
+   "date": "06/19/2026",
+   "time": "19:27",
+   "timeZone": "America/Los_Angeles",
+   "dayOfWeek": "Friday",
+   "dstActive": true
+  }
+ },
+ {
+  "slug": "suverse-time-available-zones",
+  "category": "time",
+  "source": "timeapi",
+  "title": "List of IANA Timezones",
+  "description": "Full list of supported IANA timezone identifiers via TimeAPI. Useful for validating or enumerating timezone names. Keyless.",
+  "descriptionBazaar": "Complete list of supported IANA timezone identifiers via keyless TimeAPI. For agents validating timezone input or building timezone pickers.",
+  "tags": [
+   "time",
+   "timezone",
+   "list",
+   "iana",
+   "reference"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://timeapi.io/api/timezone/availabletimezones",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": [
+   "Africa/Abidjan",
+   "Africa/Accra",
+   "Europe/Berlin",
+   "America/New_York",
+   "Asia/Tokyo"
+  ]
+ },
+ {
+  "slug": "suverse-net-ip-geo",
+  "category": "net",
+  "source": "ip-api",
+  "title": "IP Geolocation",
+  "description": "Geolocates an IPv4/IPv6 address via ip-api.com (free non-commercial). Returns country, region, city, zip, latitude/longitude, timezone, ISP, organization, and AS number. Keyless.",
+  "descriptionBazaar": "Geolocate an IP address via keyless ip-api.com. Returns country, region, city, zip, lat/lon, timezone, ISP, org and AS number. For agents enriching IPs with location and network owner.",
+  "tags": [
+   "net",
+   "ip",
+   "geolocation",
+   "asn",
+   "isp"
+  ],
+  "priceUsdcAtomic": 1500,
+  "upstream": {
+   "url": "http://ip-api.com/json/{ip}",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "fields": "status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query"
+   }
+  },
+  "params": {
+   "ip": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "IPv4 or IPv6 address to geolocate",
+    "example": "8.8.8.8"
+   }
+  },
+  "sampleRequest": {
+   "ip": "8.8.8.8"
+  },
+  "sampleResponse": {
+   "status": "success",
+   "country": "United States",
+   "countryCode": "US",
+   "region": "VA",
+   "regionName": "Virginia",
+   "city": "Ashburn",
+   "zip": "20149",
+   "lat": 39.03,
+   "lon": -77.5,
+   "timezone": "America/New_York",
+   "isp": "Google LLC",
+   "org": "Google Public DNS",
+   "as": "AS15169 Google LLC",
+   "query": "8.8.8.8"
+  }
+ },
+ {
+  "slug": "suverse-net-client-ip",
+  "category": "net",
+  "source": "bigdatacloud",
+  "title": "Detect Client Public IP",
+  "description": "Returns the public IP address of the caller as seen by the upstream, plus whether it is IPv4 or IPv6. Keyless BigDataCloud client-ip endpoint.",
+  "descriptionBazaar": "Detect the caller's public IP address and type (IPv4/IPv6) via keyless BigDataCloud. For agents discovering their own egress IP.",
+  "tags": [
+   "net",
+   "ip",
+   "client",
+   "detect",
+   "bigdatacloud"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api-bdc.io/data/client-ip",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "ipString": "185.218.126.38",
+   "ipType": "IPv4"
+  }
+ },
+ {
+  "slug": "suverse-net-dns-mx",
+  "category": "net",
+  "source": "google-doh",
+  "title": "DNS MX Record Lookup",
+  "description": "Resolves the mail-exchange (MX) records for a domain via Google DNS-over-HTTPS. Returns priority and mail server hostnames. Keyless.",
+  "descriptionBazaar": "Resolve a domain's MX (mail server) records via keyless Google DNS-over-HTTPS. Returns priority and mail host data. For agents checking email routing and deliverability.",
+  "tags": [
+   "net",
+   "dns",
+   "mx",
+   "email",
+   "doh"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://dns.google/resolve",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "type": "MX"
+   }
+  },
+  "params": {
+   "name": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Domain name to look up MX records for",
+    "example": "gmail.com"
+   }
+  },
+  "sampleRequest": {
+   "name": "gmail.com"
+  },
+  "sampleResponse": {
+   "Status": 0,
+   "TC": false,
+   "RD": true,
+   "RA": true,
+   "AD": false,
+   "CD": false,
+   "Question": [
+    {
+     "name": "gmail.com.",
+     "type": 15
+    }
+   ],
+   "Answer": [
+    {
+     "name": "gmail.com.",
+     "type": 15,
+     "TTL": 1942,
+     "data": "5 gmail-smtp-in.l.google.com."
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-net-dns-txt",
+  "category": "net",
+  "source": "cloudflare-doh",
+  "title": "DNS TXT Record Lookup",
+  "description": "Resolves the TXT records for a domain via Cloudflare DNS-over-HTTPS. Useful for SPF, DKIM, and domain-verification strings. Keyless.",
+  "descriptionBazaar": "Resolve a domain's TXT records (SPF, DKIM, verification strings) via keyless Cloudflare DNS-over-HTTPS. For agents auditing email auth and domain ownership records.",
+  "tags": [
+   "net",
+   "dns",
+   "txt",
+   "spf",
+   "doh"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://cloudflare-dns.com/dns-query",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "type": "TXT"
+   },
+   "headers": {
+    "accept": "application/dns-json"
+   }
+  },
+  "params": {
+   "name": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Domain name to look up TXT records for",
+    "example": "cloudflare.com"
+   }
+  },
+  "sampleRequest": {
+   "name": "cloudflare.com"
+  },
+  "sampleResponse": {
+   "Status": 0,
+   "TC": false,
+   "RD": true,
+   "RA": true,
+   "AD": true,
+   "CD": false,
+   "Question": [
+    {
+     "name": "cloudflare.com",
+     "type": 16
+    }
+   ],
+   "Answer": [
+    {
+     "name": "cloudflare.com",
+     "type": 16,
+     "TTL": 300,
+     "data": "\"MS=ms70274184\""
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-health-covid-vaccine-country",
+  "category": "health",
+  "source": "disease.sh",
+  "title": "COVID-19 Vaccine Coverage by Country",
+  "description": "Cumulative COVID-19 vaccine doses administered timeline for a single country over the last N days, sourced from disease.sh aggregating Our World in Data.",
+  "descriptionBazaar": "COVID-19 vaccine doses administered for one country as a daily cumulative timeline (last N days). Keyless disease.sh / OWID. For agents tracking public-health vaccination coverage.",
+  "tags": [
+   "health",
+   "covid",
+   "vaccine",
+   "public-health"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://disease.sh/v3/covid-19/vaccine/coverage/countries/{country}",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "fullData": "false"
+   }
+  },
+  "params": {
+   "country": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Country name, ISO2 or ISO3 code",
+    "example": "USA"
+   },
+   "lastdays": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "default": "30",
+    "description": "Number of trailing days to return (or 'all')",
+    "example": "30"
+   }
+  },
+  "sampleRequest": {
+   "country": "USA",
+   "lastdays": "30"
+  },
+  "sampleResponse": {
+   "country": "USA",
+   "timeline": {
+    "6/22/25": 676728782,
+    "6/23/25": 676728782
+   }
+  }
+ },
+ {
+  "slug": "suverse-health-covid-us-state",
+  "category": "health",
+  "source": "disease.sh",
+  "title": "COVID-19 Statistics by US State",
+  "description": "Current COVID-19 case, death, recovery and population statistics for a single US state, sourced from disease.sh aggregating Johns Hopkins / NYT data.",
+  "descriptionBazaar": "Current COVID-19 cases, deaths, recovered, and per-million rates for one US state. Keyless disease.sh. For agents needing state-level US public-health figures.",
+  "tags": [
+   "health",
+   "covid",
+   "us-states",
+   "public-health"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://disease.sh/v3/covid-19/states/{state}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "state": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Full US state name",
+    "example": "California"
+   }
+  },
+  "sampleRequest": {
+   "state": "California"
+  },
+  "sampleResponse": {
+   "state": "California",
+   "cases": 12711918,
+   "deaths": 112443,
+   "recovered": 0,
+   "casesPerOneMillion": 321721,
+   "deathsPerOneMillion": 2846,
+   "population": 39512223
+  }
+ },
+ {
+  "slug": "suverse-health-covid-countries-all",
+  "category": "health",
+  "source": "disease.sh",
+  "title": "COVID-19 Statistics for All Countries",
+  "description": "Current COVID-19 statistics for every country with optional sorting, sourced from disease.sh. Returns one record per country with cases, deaths, tests and per-million rates.",
+  "descriptionBazaar": "Current COVID-19 stats for all countries (sortable): cases, deaths, recovered, active, tests, and per-million rates with flag and ISO codes. Keyless disease.sh. For agents needing a global country comparison snapshot.",
+  "tags": [
+   "health",
+   "covid",
+   "countries",
+   "public-health"
+  ],
+  "priceUsdcAtomic": 3000,
+  "upstream": {
+   "url": "https://disease.sh/v3/covid-19/countries",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "sort": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Field to sort countries by (cases, deaths, tests, ...)",
+    "example": "cases"
+   }
+  },
+  "sampleRequest": {
+   "sort": "cases"
+  },
+  "sampleResponse": [
+   {
+    "country": "USA",
+    "countryInfo": {
+     "iso2": "US",
+     "iso3": "USA"
+    },
+    "cases": 111820082,
+    "deaths": 1219487,
+    "recovered": 109814428,
+    "active": 786167,
+    "population": 334805269
+   }
+  ]
+ },
+ {
+  "slug": "suverse-health-icd9-diagnosis",
+  "category": "health",
+  "source": "clinicaltables-nlm",
+  "title": "ICD-9-CM Diagnosis Code Search",
+  "description": "Search ICD-9-CM diagnosis codes by free text term, returning matching codes and descriptions from the NLM Clinical Table Search Service.",
+  "descriptionBazaar": "Search ICD-9-CM diagnosis codes by free-text term; returns matching codes plus descriptions. Keyless NLM Clinical Tables. For agents mapping clinical terms to legacy ICD-9 diagnosis codes.",
+  "tags": [
+   "health",
+   "icd9",
+   "medical-coding",
+   "diagnosis"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://clinicaltables.nlm.nih.gov/api/icd9cm_dx/v3/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "terms": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text search term",
+    "example": "diabetes"
+   }
+  },
+  "sampleRequest": {
+   "terms": "diabetes"
+  },
+  "sampleResponse": [
+   72,
+   [
+    "2535",
+    "64801"
+   ],
+   null,
+   [
+    [
+     "253.5",
+     " Diabetes insipidus"
+    ],
+    [
+     "648.01",
+     " Diabetes mellitus of mother, complicating pregnancy"
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "suverse-health-loinc-search",
+  "category": "health",
+  "source": "clinicaltables-nlm",
+  "title": "LOINC Lab Test Search",
+  "description": "Search LOINC laboratory and clinical observation codes by free text term, returning matching LOINC numbers and long common names from the NLM Clinical Table Search Service.",
+  "descriptionBazaar": "Search LOINC lab and clinical observation codes by free-text term; returns LOINC numbers and long common names. Keyless NLM Clinical Tables. For agents mapping lab tests to standardized LOINC codes.",
+  "tags": [
+   "health",
+   "loinc",
+   "lab-tests",
+   "medical-coding"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://clinicaltables.nlm.nih.gov/api/loinc_items/v3/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "terms": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text search term",
+    "example": "glucose"
+   }
+  },
+  "sampleRequest": {
+   "terms": "glucose"
+  },
+  "sampleResponse": [
+   1024,
+   [
+    "74790-7",
+    "2352-3"
+   ],
+   null,
+   [
+    [
+     "Glucose challenge panel"
+    ],
+    [
+     "Glucose CSF/SerPl"
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "suverse-health-disease-names",
+  "category": "health",
+  "source": "clinicaltables-nlm",
+  "title": "Disease Name Search (UMLS)",
+  "description": "Search disease and condition names by free text term, returning matching UMLS concept identifiers and display names from the NLM Clinical Table Search Service.",
+  "descriptionBazaar": "Search disease and condition names by free-text term; returns UMLS concept IDs and display names. Keyless NLM Clinical Tables. For agents normalizing disease terms to UMLS concepts.",
+  "tags": [
+   "health",
+   "diseases",
+   "umls",
+   "conditions"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://clinicaltables.nlm.nih.gov/api/disease_names/v3/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "terms": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text search term",
+    "example": "asthma"
+   }
+  },
+  "sampleRequest": {
+   "terms": "asthma"
+  },
+  "sampleResponse": [
+   34,
+   [
+    "C0004096",
+    "C0349790"
+   ],
+   null,
+   [
+    [
+     "Asthma"
+    ],
+    [
+     "Acute asthma"
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "suverse-health-procedures-search",
+  "category": "health",
+  "source": "clinicaltables-nlm",
+  "title": "Medical Procedure Name Search",
+  "description": "Search common medical procedure names by free text term, returning matching procedure codes and labels from the NLM Clinical Table Search Service.",
+  "descriptionBazaar": "Search common medical procedure names by free-text term; returns procedure codes and labels. Keyless NLM Clinical Tables. For agents resolving procedure terms to standardized entries.",
+  "tags": [
+   "health",
+   "procedures",
+   "medical",
+   "clinical"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://clinicaltables.nlm.nih.gov/api/procedures/v3/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "terms": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text search term",
+    "example": "biopsy"
+   }
+  },
+  "sampleRequest": {
+   "terms": "biopsy"
+  },
+  "sampleResponse": [
+   3,
+   [
+    "X100",
+    "4125"
+   ],
+   null,
+   [
+    [
+     "Biopsy"
+    ],
+    [
+     "Breast biopsy"
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "suverse-bio-pubmed-search",
+  "category": "genomics",
+  "source": "ncbi-eutils",
+  "title": "PubMed Literature Search",
+  "description": "Search PubMed for biomedical literature by query term, returning matching article PMIDs and the total result count via NCBI E-utilities esearch.",
+  "descriptionBazaar": "Search PubMed biomedical literature by term; returns matching PMIDs and total count. Keyless NCBI E-utilities. For agents discovering biomedical papers and citation IDs.",
+  "tags": [
+   "bio",
+   "pubmed",
+   "literature",
+   "ncbi"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "db": "pubmed",
+    "retmode": "json"
+   }
+  },
+  "params": {
+   "term": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "PubMed search term",
+    "example": "crispr"
+   },
+   "retmax": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "default": "10",
+    "description": "Max number of PMIDs to return",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "term": "crispr",
+   "retmax": "5"
+  },
+  "sampleResponse": {
+   "esearchresult": {
+    "count": "68365",
+    "retmax": "5",
+    "idlist": [
+     "42319824",
+     "42319782"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-bio-pubmed-summary",
+  "category": "genomics",
+  "source": "ncbi-eutils",
+  "title": "PubMed Article Summary",
+  "description": "Fetch document summary metadata (title, authors, journal, dates, identifiers) for one or more PubMed PMIDs via NCBI E-utilities esummary.",
+  "descriptionBazaar": "Fetch PubMed article summary metadata by PMID: title, authors, journal, dates, and identifiers. Keyless NCBI E-utilities. For agents retrieving citation details for papers.",
+  "tags": [
+   "bio",
+   "pubmed",
+   "citations",
+   "ncbi"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "db": "pubmed",
+    "retmode": "json"
+   }
+  },
+  "params": {
+   "id": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "One or more PubMed PMIDs (comma-separated)",
+    "example": "38000000"
+   }
+  },
+  "sampleRequest": {
+   "id": "38000000"
+  },
+  "sampleResponse": {
+   "result": {
+    "38000000": {
+     "uid": "38000000",
+     "pubdate": "2023 Nov 16",
+     "source": "Salud Colect",
+     "title": "Some present and future ethical dilemmas surrounding advancements in in vitro fertilization.",
+     "issn": "1669-2381"
+    },
+    "uids": [
+     "38000000"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-bio-ncbi-gene-summary",
+  "category": "genomics",
+  "source": "ncbi-eutils",
+  "title": "NCBI Gene Summary",
+  "description": "Fetch gene summary metadata (symbol, description, chromosome, map location, aliases, genomic coordinates) for an NCBI Entrez Gene ID via E-utilities esummary.",
+  "descriptionBazaar": "Fetch NCBI Gene summary by Entrez Gene ID: official symbol, description, chromosome, map location, aliases, and genomic coordinates. Keyless NCBI E-utilities. For agents resolving gene metadata.",
+  "tags": [
+   "bio",
+   "genomics",
+   "gene",
+   "ncbi"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "db": "gene",
+    "retmode": "json"
+   }
+  },
+  "params": {
+   "id": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "NCBI Entrez Gene ID",
+    "example": "672"
+   }
+  },
+  "sampleRequest": {
+   "id": "672"
+  },
+  "sampleResponse": {
+   "result": {
+    "672": {
+     "uid": "672",
+     "name": "BRCA1",
+     "description": "BRCA1 DNA repair associated",
+     "chromosome": "17",
+     "maplocation": "17q21.31",
+     "otheraliases": "BRCAI, BRCC1, FANCS"
+    },
+    "uids": [
+     "672"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-bio-ncbi-snp-summary",
+  "category": "genomics",
+  "source": "ncbi-eutils",
+  "title": "NCBI dbSNP Variant Summary",
+  "description": "Fetch dbSNP variant summary (rs identifier, alleles, global minor allele frequencies across reference studies) for a dbSNP record ID via NCBI E-utilities esummary.",
+  "descriptionBazaar": "Fetch dbSNP variant summary by rsID number: alleles and global minor allele frequencies across reference studies (1000 Genomes, ExAC, etc.). Keyless NCBI E-utilities. For agents querying SNP frequency data.",
+  "tags": [
+   "bio",
+   "genomics",
+   "snp",
+   "ncbi"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "db": "snp",
+    "retmode": "json"
+   }
+  },
+  "params": {
+   "id": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "dbSNP rsID number (without rs prefix)",
+    "example": "328"
+   }
+  },
+  "sampleRequest": {
+   "id": "328"
+  },
+  "sampleResponse": {
+   "result": {
+    "328": {
+     "snp_id": 328,
+     "global_mafs": [
+      {
+       "study": "1000Genomes",
+       "freq": "G=0.092452/463"
+      }
+     ]
+    },
+    "uids": [
+     "328"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-bio-ensembl-gene-lookup",
+  "category": "genomics",
+  "source": "ensembl",
+  "title": "Ensembl Gene Lookup by Symbol",
+  "description": "Look up a human gene by HGNC symbol in Ensembl, returning the Ensembl gene ID, biotype, genomic coordinates, strand, assembly and description.",
+  "descriptionBazaar": "Look up a human gene by HGNC symbol in Ensembl; returns Ensembl gene ID, biotype, chromosome, coordinates, strand, and assembly. Keyless Ensembl REST. For agents resolving gene symbols to genomic annotations.",
+  "tags": [
+   "bio",
+   "genomics",
+   "ensembl",
+   "gene"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://rest.ensembl.org/lookup/symbol/homo_sapiens/{symbol}",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "content-type": "application/json"
+   }
+  },
+  "params": {
+   "symbol": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Human gene HGNC symbol",
+    "example": "BRCA2"
+   }
+  },
+  "sampleRequest": {
+   "symbol": "BRCA2"
+  },
+  "sampleResponse": {
+   "object_type": "Gene",
+   "display_name": "BRCA2",
+   "assembly_name": "GRCh38",
+   "biotype": "protein_coding",
+   "seq_region_name": "13",
+   "start": 32315086,
+   "end": 32400268,
+   "id": "ENSG00000139618"
+  }
+ },
+ {
+  "slug": "suverse-bio-ensembl-gene-phenotypes",
+  "category": "genomics",
+  "source": "ensembl",
+  "title": "Ensembl Gene Phenotype Associations",
+  "description": "Retrieve phenotype and disease associations for a human gene by symbol from Ensembl, returning descriptions, ontology accessions and source annotations.",
+  "descriptionBazaar": "Retrieve phenotype and disease associations for a human gene by symbol from Ensembl: condition descriptions, ontology accessions (EFO/MONDO/HP), and sources. Keyless Ensembl REST. For agents mapping genes to disease phenotypes.",
+  "tags": [
+   "bio",
+   "genomics",
+   "ensembl",
+   "phenotype"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://rest.ensembl.org/phenotype/gene/homo_sapiens/{symbol}",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "content-type": "application/json"
+   }
+  },
+  "params": {
+   "symbol": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Human gene HGNC symbol",
+    "example": "BRCA2"
+   }
+  },
+  "sampleRequest": {
+   "symbol": "BRCA2"
+  },
+  "sampleResponse": [
+   {
+    "ontology_accessions": [
+     "EFO:0000094",
+     "MONDO:0020511"
+    ],
+    "location": "13:32315086-32400268",
+    "description": "B-cell acute lymphoblastic leukemia",
+    "Gene": "ENSG00000139618",
+    "source": "Cancer Gene Census"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-kb-media-list",
+  "category": "knowledge",
+  "source": "wikimedia",
+  "title": "Wikipedia Page Media List",
+  "description": "List of media (images, audio, video) used on an English Wikipedia article by title via the Wikimedia REST API, no key. Returns each item with type, title, and source URLs at multiple resolutions. For AI agents enriching entities with imagery and media references.",
+  "descriptionBazaar": "Media items (images, audio, video) on an English Wikipedia article by title via the Wikimedia REST API, no key. Each item has type, title, and source URLs at multiple resolutions. For agents enriching entities with imagery.",
+  "tags": [
+   "knowledge",
+   "wikipedia",
+   "media",
+   "images",
+   "reference"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://en.wikipedia.org/api/rest_v1/page/media-list/{title}",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay data@suverse.io"
+   }
+  },
+  "params": {
+   "title": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^.{1,120}$",
+    "description": "Article title",
+    "example": "Albert_Einstein"
+   }
+  },
+  "sampleRequest": {
+   "title": "Albert_Einstein"
+  },
+  "sampleResponse": {
+   "revision": "123456",
+   "items": [
+    {
+     "title": "File:Albert_Einstein.jpg",
+     "type": "image",
+     "showInGallery": true
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-kb-featured-feed",
+  "category": "knowledge",
+  "source": "wikimedia",
+  "title": "Wikipedia Featured Content By Date",
+  "description": "Wikipedia featured content for a given date via the Wikimedia REST API, no key. Returns the featured article of the day, most-read pages, picture of the day, news, and on-this-day events. For AI agents building daily digests and trivia.",
+  "descriptionBazaar": "Wikipedia featured content for a date via the Wikimedia REST API, no key. Returns the featured article of the day, most-read pages, picture of the day, news, and on-this-day events. For agents building daily digests.",
+  "tags": [
+   "knowledge",
+   "wikipedia",
+   "featured",
+   "daily",
+   "reference"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://en.wikipedia.org/api/rest_v1/feed/featured/{year}/{month}/{day}",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay data@suverse.io"
+   }
+  },
+  "params": {
+   "year": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}$",
+    "description": "Four-digit year",
+    "example": "2024"
+   },
+   "month": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^(0[1-9]|1[0-2])$",
+    "description": "Two-digit month 01-12",
+    "example": "06"
+   },
+   "day": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^(0[1-9]|[12][0-9]|3[01])$",
+    "description": "Two-digit day 01-31",
+    "example": "01"
+   }
+  },
+  "sampleRequest": {
+   "year": "2024",
+   "month": "06",
+   "day": "01"
+  },
+  "sampleResponse": {
+   "tfa": {
+    "title": "Ludwigsburg_Palace",
+    "extract": "Ludwigsburg Palace is a..."
+   },
+   "mostread": {
+    "articles": [
+     {
+      "title": "Main_Page",
+      "views": 4614408
+     }
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-kb-pageviews-article",
+  "category": "knowledge",
+  "source": "wikimedia",
+  "title": "Wikipedia Article Daily Pageviews",
+  "description": "Daily pageview counts for a single English Wikipedia article over a date range via the Wikimedia metrics REST API, no key. Returns one record per day with timestamp and view count. For AI agents measuring topic popularity and attention trends.",
+  "descriptionBazaar": "Daily pageview counts for an English Wikipedia article over a date range via the Wikimedia metrics REST API, no key. One record per day with timestamp and view count. For agents measuring topic popularity trends.",
+  "tags": [
+   "knowledge",
+   "wikipedia",
+   "pageviews",
+   "metrics",
+   "trends"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{article}/daily/{start}/{end}",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay data@suverse.io"
+   }
+  },
+  "params": {
+   "article": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^.{1,120}$",
+    "description": "Article title (underscores for spaces)",
+    "example": "Bitcoin"
+   },
+   "start": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{8}$",
+    "description": "Start date YYYYMMDD",
+    "example": "20240101"
+   },
+   "end": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{8}$",
+    "description": "End date YYYYMMDD",
+    "example": "20240131"
+   }
+  },
+  "sampleRequest": {
+   "article": "Bitcoin",
+   "start": "20240101",
+   "end": "20240131"
+  },
+  "sampleResponse": {
+   "items": [
+    {
+     "article": "Bitcoin",
+     "timestamp": "2024010100",
+     "views": 12345
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-kb-pageviews-top",
+  "category": "knowledge",
+  "source": "wikimedia",
+  "title": "Wikipedia Top Articles By Day",
+  "description": "Top viewed English Wikipedia articles for a given day via the Wikimedia metrics REST API, no key. Returns up to 1000 articles ranked by daily view count. For AI agents tracking what the world is reading and trending topics.",
+  "descriptionBazaar": "Top viewed English Wikipedia articles for a day via the Wikimedia metrics REST API, no key. Up to 1000 articles ranked by daily view count. For agents tracking trending topics and what the world is reading.",
+  "tags": [
+   "knowledge",
+   "wikipedia",
+   "trending",
+   "pageviews",
+   "metrics"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/{year}/{month}/{day}",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay data@suverse.io"
+   }
+  },
+  "params": {
+   "year": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}$",
+    "description": "Four-digit year",
+    "example": "2024"
+   },
+   "month": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^(0[1-9]|1[0-2])$",
+    "description": "Two-digit month 01-12",
+    "example": "06"
+   },
+   "day": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^(0[1-9]|[12][0-9]|3[01])$",
+    "description": "Two-digit day 01-31",
+    "example": "01"
+   }
+  },
+  "sampleRequest": {
+   "year": "2024",
+   "month": "06",
+   "day": "01"
+  },
+  "sampleResponse": {
+   "items": [
+    {
+     "articles": [
+      {
+       "article": "Main_Page",
+       "views": 4614408,
+       "rank": 1
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-kb-new-pages",
+  "category": "knowledge",
+  "source": "wikimedia",
+  "title": "Wikipedia New Pages Created Daily",
+  "description": "Count of new content pages created on English Wikipedia per day over a date range via the Wikimedia metrics REST API, no key. Returns one record per day with timestamp and new page count. For AI agents tracking encyclopedia growth and editing activity.",
+  "descriptionBazaar": "Count of new content pages created on English Wikipedia per day over a date range via the Wikimedia metrics REST API, no key. One record per day with timestamp and new_pages count. For agents tracking editing activity.",
+  "tags": [
+   "knowledge",
+   "wikipedia",
+   "editing",
+   "metrics",
+   "growth"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://wikimedia.org/api/rest_v1/metrics/edited-pages/new/en.wikipedia/all-editor-types/content/daily/{start}/{end}",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay data@suverse.io"
+   }
+  },
+  "params": {
+   "start": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{8}$",
+    "description": "Start date YYYYMMDD",
+    "example": "20240101"
+   },
+   "end": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{8}$",
+    "description": "End date YYYYMMDD",
+    "example": "20240107"
+   }
+  },
+  "sampleRequest": {
+   "start": "20240101",
+   "end": "20240107"
+  },
+  "sampleResponse": {
+   "items": [
+    {
+     "results": [
+      {
+       "timestamp": "2024-01-01T00:00:00.000Z",
+       "new_pages": 490
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-kb-wikidata-entity",
+  "category": "knowledge",
+  "source": "wikidata",
+  "title": "Wikidata Entity Lookup",
+  "description": "Structured Wikidata entity data for a given Q-id via the Wikidata API, no key. Returns labels, descriptions, aliases, claims, and sitelinks for the entity. For AI agents resolving entities to canonical facts and cross-language labels.",
+  "descriptionBazaar": "Structured Wikidata entity data by Q-id via the Wikidata API, no key. Returns labels, descriptions, aliases, claims, and sitelinks. For agents resolving entities to canonical facts and cross-language labels.",
+  "tags": [
+   "knowledge",
+   "wikidata",
+   "entity",
+   "linked-data",
+   "reference"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://www.wikidata.org/w/api.php",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "action": "wbgetentities",
+    "format": "json"
+   },
+   "headers": {
+    "User-Agent": "SuVersePay data@suverse.io"
+   }
+  },
+  "params": {
+   "ids": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^Q[0-9]+(\\|Q[0-9]+)*$",
+    "description": "One or more Wikidata Q-ids, pipe-separated",
+    "example": "Q42"
+   }
+  },
+  "sampleRequest": {
+   "ids": "Q42"
+  },
+  "sampleResponse": {
+   "entities": {
+    "Q42": {
+     "id": "Q42",
+     "labels": {
+      "en": {
+       "language": "en",
+       "value": "Douglas Adams"
+      }
+     }
+    }
+   },
+   "success": 1
+  }
+ },
+ {
+  "slug": "suverse-word-means-like",
+  "category": "language",
+  "source": "datamuse",
+  "title": "Words With Similar Meaning",
+  "description": "Words and phrases with a meaning similar to a given word via the keyless Datamuse API. Returns ranked results with relevance scores and part-of-speech tags. For AI agents expanding concepts, building thesauri, and improving query recall.",
+  "descriptionBazaar": "Words with a meaning similar to a given word via the keyless Datamuse API. Ranked results with relevance scores and part-of-speech tags. For agents expanding concepts and building thesauri.",
+  "tags": [
+   "language",
+   "words",
+   "thesaurus",
+   "semantics",
+   "datamuse"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.datamuse.com/words",
+   "timeoutMs": 10000
+  },
+  "params": {
+   "ml": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Word or phrase to find similar meanings for",
+    "example": "ocean"
+   }
+  },
+  "sampleRequest": {
+   "ml": "ocean"
+  },
+  "sampleResponse": [
+   {
+    "word": "sea",
+    "score": 40041792,
+    "tags": [
+     "syn",
+     "n"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "suverse-word-rhymes",
+  "category": "language",
+  "source": "datamuse",
+  "title": "Rhyming Words",
+  "description": "Perfect rhymes for a given word via the keyless Datamuse API. Returns ranked rhyming words with frequency scores and syllable counts. For AI agents writing poetry, lyrics, slogans, and rhyme-based content.",
+  "descriptionBazaar": "Perfect rhymes for a given word via the keyless Datamuse API. Ranked rhyming words with frequency scores and syllable counts. For agents writing poetry, lyrics, and slogans.",
+  "tags": [
+   "language",
+   "words",
+   "rhymes",
+   "poetry",
+   "datamuse"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.datamuse.com/words",
+   "timeoutMs": 10000
+  },
+  "params": {
+   "rel_rhy": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Word to find rhymes for",
+    "example": "blue"
+   }
+  },
+  "sampleRequest": {
+   "rel_rhy": "blue"
+  },
+  "sampleResponse": [
+   {
+    "word": "true",
+    "score": 27050,
+    "numSyllables": 1
+   }
+  ]
+ },
+ {
+  "slug": "suverse-word-synonyms",
+  "category": "language",
+  "source": "datamuse",
+  "title": "Synonyms",
+  "description": "Synonyms for a given word via the keyless Datamuse API. Returns ranked synonyms with frequency scores. For AI agents rewriting text, varying vocabulary, and building synonym maps.",
+  "descriptionBazaar": "Synonyms for a given word via the keyless Datamuse API. Ranked synonyms with frequency scores. For agents rewriting text, varying vocabulary, and building synonym maps.",
+  "tags": [
+   "language",
+   "words",
+   "synonyms",
+   "thesaurus",
+   "datamuse"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.datamuse.com/words",
+   "timeoutMs": 10000
+  },
+  "params": {
+   "rel_syn": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Word to find synonyms for",
+    "example": "fast"
+   }
+  },
+  "sampleRequest": {
+   "rel_syn": "fast"
+  },
+  "sampleResponse": [
+   {
+    "word": "quick",
+    "score": 1001
+   }
+  ]
+ },
+ {
+  "slug": "suverse-word-antonyms",
+  "category": "language",
+  "source": "datamuse",
+  "title": "Antonyms",
+  "description": "Antonyms (opposites) for a given word via the keyless Datamuse API. Returns ranked opposite words with frequency scores. For AI agents handling negation, contrast, and sentiment polarity.",
+  "descriptionBazaar": "Antonyms (opposites) for a given word via the keyless Datamuse API. Ranked opposite words with frequency scores. For agents handling negation, contrast, and sentiment polarity.",
+  "tags": [
+   "language",
+   "words",
+   "antonyms",
+   "opposites",
+   "datamuse"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.datamuse.com/words",
+   "timeoutMs": 10000
+  },
+  "params": {
+   "rel_ant": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Word to find antonyms for",
+    "example": "hot"
+   }
+  },
+  "sampleRequest": {
+   "rel_ant": "hot"
+  },
+  "sampleResponse": [
+   {
+    "word": "cold",
+    "score": 1001
+   }
+  ]
+ },
+ {
+  "slug": "suverse-lang-translate-pair",
+  "category": "language",
+  "source": "mymemory",
+  "title": "Translate Between Any Language Pair",
+  "description": "Machine translation between any two languages via the keyless MyMemory free tier, with explicit source and target codes. Returns the translated text plus alternative matches with quality scores. For AI agents translating arbitrary language pairs.",
+  "descriptionBazaar": "Machine translation between any two languages via the keyless MyMemory free tier, with explicit source and target codes. Returns translated text plus alternative matches. For agents translating arbitrary pairs.",
+  "tags": [
+   "language",
+   "translation",
+   "multilingual",
+   "i18n",
+   "mymemory"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.mymemory.translated.net/get",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Text to translate",
+    "example": "guten tag"
+   },
+   "langpair": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[a-z]{2}\\|[a-z]{2}$",
+    "description": "Source and target ISO 639-1 codes joined by a pipe, e.g. de|en",
+    "example": "de|en"
+   }
+  },
+  "sampleRequest": {
+   "q": "guten tag",
+   "langpair": "de|en"
+  },
+  "sampleResponse": {
+   "responseData": {
+    "translatedText": "good day",
+    "match": 0.85
+   },
+   "responseStatus": 200
+  }
+ },
+ {
+  "slug": "suverse-word-sounds-like",
+  "category": "language",
+  "source": "datamuse",
+  "title": "Words That Sound Like",
+  "description": "Words that sound similar to a given word or spelling via the keyless Datamuse API. Returns ranked phonetic matches with scores and syllable counts. For AI agents correcting misspellings and handling homophones.",
+  "descriptionBazaar": "Words that sound similar to a given word or spelling via the keyless Datamuse API. Ranked phonetic matches with scores and syllable counts. For agents correcting misspellings and handling homophones.",
+  "tags": [
+   "language",
+   "words",
+   "phonetics",
+   "homophones",
+   "datamuse"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.datamuse.com/words",
+   "timeoutMs": 10000
+  },
+  "params": {
+   "sl": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Word or phonetic spelling to match by sound",
+    "example": "jirraf"
+   }
+  },
+  "sampleRequest": {
+   "sl": "jirraf"
+  },
+  "sampleResponse": [
+   {
+    "word": "giraffe",
+    "score": 95,
+    "numSyllables": 2
+   }
+  ]
+ },
+ {
+  "slug": "suverse-ocean-tide-predictions",
+  "category": "marine",
+  "source": "noaa-coops",
+  "title": "NOAA Tide Predictions (High/Low)",
+  "description": "Predicted high and low tides for a NOAA CO-OPS tidal station for today, with time, height, and type (H/L). Keyless NOAA Tides & Currents.",
+  "descriptionBazaar": "Predicted high/low tides for a NOAA CO-OPS station today: time, height (ft), and type (H/L). Keyless NOAA Tides and Currents. For agents planning coastal, boating, fishing, or surf activity.",
+  "tags": [
+   "marine",
+   "ocean",
+   "tides",
+   "noaa",
+   "weather"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "product": "predictions",
+    "application": "suverse-pay",
+    "date": "today",
+    "datum": "MLLW",
+    "interval": "hilo",
+    "time_zone": "lst_ldt",
+    "format": "json"
+   }
+  },
+  "params": {
+   "station": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9A-Za-z]+$",
+    "description": "NOAA CO-OPS station id",
+    "example": "9414290"
+   },
+   "units": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "english",
+     "metric"
+    ],
+    "default": "english",
+    "description": "Unit system",
+    "example": "english"
+   }
+  },
+  "sampleRequest": {
+   "station": "9414290"
+  },
+  "sampleResponse": {
+   "predictions": [
+    {
+     "t": "2026-06-20 03:50",
+     "v": "5.078",
+     "type": "H"
+    },
+    {
+     "t": "2026-06-20 10:24",
+     "v": "-0.195",
+     "type": "L"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-ocean-water-level",
+  "category": "marine",
+  "source": "noaa-coops",
+  "title": "NOAA Observed Water Level",
+  "description": "Observed water level (tide gauge) readings for today at a NOAA CO-OPS station, sampled at 6-minute intervals with quality flags.",
+  "descriptionBazaar": "Observed tide-gauge water levels for today at a NOAA CO-OPS station, 6-minute samples with sigma and quality flags. Keyless NOAA Tides and Currents. For agents monitoring real-time coastal water levels.",
+  "tags": [
+   "marine",
+   "ocean",
+   "tides",
+   "water-level",
+   "noaa"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "product": "water_level",
+    "application": "suverse-pay",
+    "date": "today",
+    "datum": "MLLW",
+    "time_zone": "lst_ldt",
+    "format": "json"
+   }
+  },
+  "params": {
+   "station": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9A-Za-z]+$",
+    "description": "NOAA CO-OPS station id",
+    "example": "9414290"
+   },
+   "units": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "english",
+     "metric"
+    ],
+    "default": "english",
+    "description": "Unit system",
+    "example": "english"
+   }
+  },
+  "sampleRequest": {
+   "station": "9414290"
+  },
+  "sampleResponse": {
+   "metadata": {
+    "id": "9414290",
+    "name": "San Francisco",
+    "lat": "37.8063",
+    "lon": "-122.4659"
+   },
+   "data": [
+    {
+     "t": "2026-06-19 00:00",
+     "v": "4.68",
+     "s": "0.217",
+     "f": "0,0,0,0",
+     "q": "p"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-ocean-water-temp",
+  "category": "marine",
+  "source": "noaa-coops",
+  "title": "NOAA Sea Water Temperature",
+  "description": "Observed sea water temperature for today at a NOAA CO-OPS station (where the sensor is offered), at 6-minute intervals.",
+  "descriptionBazaar": "Observed sea water temperature for today at a NOAA CO-OPS station, 6-minute samples. Keyless NOAA Tides and Currents. For agents tracking ocean/bay water temperature. Not all stations carry this sensor.",
+  "tags": [
+   "marine",
+   "ocean",
+   "water-temperature",
+   "noaa"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "product": "water_temperature",
+    "application": "suverse-pay",
+    "date": "today",
+    "time_zone": "lst_ldt",
+    "format": "json"
+   }
+  },
+  "params": {
+   "station": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9A-Za-z]+$",
+    "description": "NOAA CO-OPS station id with a water-temperature sensor",
+    "example": "8454000"
+   },
+   "units": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "english",
+     "metric"
+    ],
+    "default": "english",
+    "description": "Unit system",
+    "example": "english"
+   }
+  },
+  "sampleRequest": {
+   "station": "8454000"
+  },
+  "sampleResponse": {
+   "metadata": {
+    "id": "8454000",
+    "name": "Providence",
+    "lat": "41.8072",
+    "lon": "-71.4007"
+   },
+   "data": [
+    {
+     "t": "2026-06-19 00:00",
+     "v": "66.2",
+     "f": "0,0,0"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-ocean-wind",
+  "category": "marine",
+  "source": "noaa-coops",
+  "title": "NOAA Coastal Wind Observations",
+  "description": "Observed wind speed, direction, and gusts for today at a NOAA CO-OPS coastal station, at 6-minute intervals.",
+  "descriptionBazaar": "Observed coastal wind speed, direction (deg + compass), and gusts for today at a NOAA CO-OPS station, 6-minute samples. Keyless NOAA Tides and Currents. For agents planning sailing, boating, or coastal operations.",
+  "tags": [
+   "marine",
+   "ocean",
+   "wind",
+   "weather",
+   "noaa"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "product": "wind",
+    "application": "suverse-pay",
+    "date": "today",
+    "time_zone": "lst_ldt",
+    "format": "json"
+   }
+  },
+  "params": {
+   "station": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9A-Za-z]+$",
+    "description": "NOAA CO-OPS station id",
+    "example": "9414290"
+   },
+   "units": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "english",
+     "metric"
+    ],
+    "default": "english",
+    "description": "Unit system",
+    "example": "english"
+   }
+  },
+  "sampleRequest": {
+   "station": "9414290"
+  },
+  "sampleResponse": {
+   "metadata": {
+    "id": "9414290",
+    "name": "San Francisco",
+    "lat": "37.8063",
+    "lon": "-122.4659"
+   },
+   "data": [
+    {
+     "t": "2026-06-19 00:00",
+     "s": "7.0",
+     "d": "247.0",
+     "dr": "WSW",
+     "g": "13.61",
+     "f": "0,0"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-ocean-currents-predictions",
+  "category": "marine",
+  "source": "noaa-coops",
+  "title": "NOAA Tidal Current Predictions",
+  "description": "Predicted tidal current velocities for today at a NOAA CO-OPS current station, with mean flood/ebb direction, depth, and major-axis velocity.",
+  "descriptionBazaar": "Predicted tidal current speed (knots) and direction for today at a NOAA CO-OPS current station, with mean flood/ebb bearing and depth. Keyless NOAA Tides and Currents. For agents routing vessels through tidal currents.",
+  "tags": [
+   "marine",
+   "ocean",
+   "currents",
+   "tides",
+   "noaa"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "product": "currents_predictions",
+    "application": "suverse-pay",
+    "date": "today",
+    "time_zone": "lst_ldt",
+    "format": "json"
+   }
+  },
+  "params": {
+   "station": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9A-Za-z]+$",
+    "description": "NOAA CO-OPS current station id",
+    "example": "SFB1203"
+   },
+   "units": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "english",
+     "metric"
+    ],
+    "default": "english",
+    "description": "Unit system",
+    "example": "english"
+   }
+  },
+  "sampleRequest": {
+   "station": "SFB1203"
+  },
+  "sampleResponse": {
+   "current_predictions": {
+    "units": "feet, knots",
+    "cp": [
+     {
+      "meanFloodDir": 69,
+      "Bin": "18",
+      "meanEbbDir": 257,
+      "Time": "2026-06-19 00:00",
+      "Depth": "30",
+      "Velocity_Major": 1.64
+     }
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-ocean-station-info",
+  "category": "marine",
+  "source": "noaa-coops",
+  "title": "NOAA Tide Station Metadata",
+  "description": "Metadata for a single NOAA CO-OPS station: name, location, tidal/great-lakes flags, and links to datums, sensors, and flood levels.",
+  "descriptionBazaar": "Metadata for one NOAA CO-OPS tide station: name, lat/lon, tidal and Great Lakes flags, SHEF code, and references to its datums and sensors. Keyless NOAA Tides and Currents. For agents resolving station details.",
+  "tags": [
+   "marine",
+   "ocean",
+   "stations",
+   "metadata",
+   "noaa"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/{station}.json",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "station": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9A-Za-z]+$",
+    "description": "NOAA CO-OPS station id",
+    "example": "9414290"
+   }
+  },
+  "sampleRequest": {
+   "station": "9414290"
+  },
+  "sampleResponse": {
+   "count": 1,
+   "stations": [
+    {
+     "tidal": true,
+     "greatlakes": false,
+     "shefcode": "FTPC1",
+     "id": "9414290",
+     "name": "San Francisco"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-ocean-stations-list",
+  "category": "marine",
+  "source": "noaa-coops",
+  "title": "NOAA Tide Stations Directory",
+  "description": "Directory of NOAA CO-OPS stations of a given type (e.g. water levels, currents), with ids, names, locations, and reference links.",
+  "descriptionBazaar": "Directory of NOAA CO-OPS stations by type (waterlevels, currents, etc.) with ids, names, and locations. Keyless NOAA Tides and Currents. For agents discovering which tide/current stations exist near a location.",
+  "tags": [
+   "marine",
+   "ocean",
+   "stations",
+   "directory",
+   "noaa"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "type": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "waterlevels",
+     "currents",
+     "currentpredictions",
+     "tidepredictions"
+    ],
+    "default": "waterlevels",
+    "description": "Station product type filter",
+    "example": "waterlevels"
+   }
+  },
+  "sampleRequest": {
+   "type": "waterlevels"
+  },
+  "sampleResponse": {
+   "count": 301,
+   "stations": [
+    {
+     "tidal": true,
+     "greatlakes": false,
+     "shefcode": "NWWH1",
+     "id": "1611400"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-ocean-wave-forecast",
+  "category": "marine",
+  "source": "open-meteo-marine",
+  "title": "Ocean Wave Forecast (Hourly)",
+  "description": "Hourly marine wave forecast for a lat/lon: significant wave height, period, direction, plus wind-wave and swell components, from Open-Meteo Marine.",
+  "descriptionBazaar": "Hourly ocean wave forecast for a coordinate: significant wave height, period, direction, plus wind-wave and swell components. Keyless Open-Meteo Marine. For agents planning surfing, sailing, or offshore operations.",
+  "tags": [
+   "marine",
+   "ocean",
+   "waves",
+   "swell",
+   "forecast"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://marine-api.open-meteo.com/v1/marine",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "hourly": "wave_height,wave_period,wave_direction,wind_wave_height,swell_wave_height",
+    "timezone": "auto"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude (decimal degrees)",
+    "example": "37.8"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude (decimal degrees)",
+    "example": "-122.5"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "37.8",
+   "longitude": "-122.5"
+  },
+  "sampleResponse": {
+   "latitude": 37.79,
+   "longitude": -122.54,
+   "hourly_units": {
+    "wave_height": "m",
+    "wave_period": "s",
+    "wave_direction": "deg"
+   },
+   "hourly": {
+    "time": [
+     "2026-06-20T00:00"
+    ],
+    "wave_height": [
+     1.2
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-ocean-wave-daily",
+  "category": "marine",
+  "source": "open-meteo-marine",
+  "title": "Ocean Wave Daily Summary",
+  "description": "Daily marine wave summary for a lat/lon: maximum wave height, maximum wave period, and dominant wave direction, from Open-Meteo Marine.",
+  "descriptionBazaar": "Daily ocean wave summary for a coordinate: max wave height, max period, and dominant direction. Keyless Open-Meteo Marine. For agents planning multi-day coastal trips or surf windows.",
+  "tags": [
+   "marine",
+   "ocean",
+   "waves",
+   "forecast",
+   "daily"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://marine-api.open-meteo.com/v1/marine",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "daily": "wave_height_max,wave_direction_dominant,wave_period_max",
+    "timezone": "auto"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude (decimal degrees)",
+    "example": "37.8"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude (decimal degrees)",
+    "example": "-122.5"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "37.8",
+   "longitude": "-122.5"
+  },
+  "sampleResponse": {
+   "latitude": 37.79,
+   "longitude": -122.54,
+   "daily_units": {
+    "wave_height_max": "m",
+    "wave_direction_dominant": "deg",
+    "wave_period_max": "s"
+   },
+   "daily": {
+    "time": [
+     "2026-06-20"
+    ],
+    "wave_height_max": [
+     1.6
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-avwx-metar",
+  "category": "aviation",
+  "source": "aviationweather-gov",
+  "title": "Aviation METAR (Current Conditions)",
+  "description": "Latest decoded METAR for one or more ICAO airport ids: wind, visibility, temperature, altimeter, clouds, flight category, and raw report.",
+  "descriptionBazaar": "Latest decoded METAR for ICAO airport id(s): wind, visibility, temp/dewpoint, altimeter, clouds, flight category (VFR/IFR), and raw text. Keyless aviationweather.gov. For agents checking real-time airport weather.",
+  "tags": [
+   "aviation",
+   "weather",
+   "metar",
+   "airport",
+   "avwx"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://aviationweather.gov/api/data/metar",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "ids": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "transform": "upper",
+    "description": "One or more ICAO ids, comma-separated",
+    "example": "KJFK"
+   }
+  },
+  "sampleRequest": {
+   "ids": "KJFK"
+  },
+  "sampleResponse": [
+   {
+    "icaoId": "KJFK",
+    "obsTime": 1781920260,
+    "temp": 25,
+    "dewp": 7.2,
+    "wdir": 300,
+    "wspd": 15,
+    "wgst": 25,
+    "visib": "10+",
+    "altim": 1006.9,
+    "rawOb": "METAR KJFK 200151Z 30015G25KT 10SM FEW070 SCT120 SCT250 25/07 A2973",
+    "fltCat": "VFR"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-avwx-taf",
+  "category": "aviation",
+  "source": "aviationweather-gov",
+  "title": "Aviation TAF (Terminal Forecast)",
+  "description": "Latest Terminal Aerodrome Forecast (TAF) for one or more ICAO airport ids: validity window, forecast periods, wind, visibility, and clouds, with raw text.",
+  "descriptionBazaar": "Latest TAF terminal aerodrome forecast for ICAO airport id(s): validity window and forecast periods with wind, visibility, and clouds, plus raw text. Keyless aviationweather.gov. For agents forecasting airport conditions.",
+  "tags": [
+   "aviation",
+   "weather",
+   "taf",
+   "forecast",
+   "avwx"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://aviationweather.gov/api/data/taf",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "ids": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "transform": "upper",
+    "description": "One or more ICAO ids, comma-separated",
+    "example": "KJFK"
+   }
+  },
+  "sampleRequest": {
+   "ids": "KJFK"
+  },
+  "sampleResponse": [
+   {
+    "icaoId": "KJFK",
+    "issueTime": "2026-06-19T23:27:00.000Z",
+    "validTimeFrom": 1781913600,
+    "validTimeTo": 1782021600,
+    "rawTAF": "TAF KJFK 192327Z 2000/2106 30013G20KT P6SM FEW070 SCT250",
+    "fcsts": [
+     {
+      "wdir": 300,
+      "wspd": 13
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "suverse-avwx-pirep",
+  "category": "aviation",
+  "source": "aviationweather-gov",
+  "title": "Aviation PIREPs (Pilot Reports)",
+  "description": "Recent pilot reports (PIREPs) near an airport: aircraft type, flight level, location, and reported icing, turbulence, cloud, and weather conditions.",
+  "descriptionBazaar": "Recent pilot reports (PIREPs) near an airport: aircraft type, flight level, position, and reported icing, turbulence, sky, and weather. Keyless aviationweather.gov. For agents assessing in-flight hazards along a route.",
+  "tags": [
+   "aviation",
+   "weather",
+   "pirep",
+   "turbulence",
+   "avwx"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://aviationweather.gov/api/data/pirep",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "id": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "transform": "upper",
+    "description": "ICAO airport id to center the search on",
+    "example": "KJFK"
+   }
+  },
+  "sampleRequest": {
+   "id": "KJFK"
+  },
+  "sampleResponse": [
+   {
+    "receiptTime": "2026-06-20T01:50:10.821Z",
+    "obsTime": 1781919600,
+    "acType": "A321",
+    "lat": 42.8693,
+    "lon": -76.4247,
+    "fltLvl": 290
+   }
+  ]
+ },
+ {
+  "slug": "suverse-avwx-airsigmet",
+  "category": "aviation",
+  "source": "aviationweather-gov",
+  "title": "Aviation AIRMET/SIGMET Advisories",
+  "description": "Active AIRMET and SIGMET advisories: hazard type, validity window, altitude band, movement, and raw advisory text, from aviationweather.gov.",
+  "descriptionBazaar": "Active AIRMET/SIGMET advisories: hazard type (convective, turbulence, icing), validity window, altitude band, movement, and raw text. Keyless aviationweather.gov. For agents avoiding hazardous airspace in flight planning.",
+  "tags": [
+   "aviation",
+   "weather",
+   "sigmet",
+   "airmet",
+   "avwx"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://aviationweather.gov/api/data/airsigmet",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "hazard": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "enum": [
+     "conv",
+     "turb",
+     "ice",
+     "ifr"
+    ],
+    "description": "Optional hazard type filter",
+    "example": "conv"
+   }
+  },
+  "sampleRequest": {},
+  "sampleResponse": [
+   {
+    "icaoId": "KKCI",
+    "airSigmetType": "SIGMET",
+    "hazard": "CONVECTIVE",
+    "altitudeHi1": 43000,
+    "movementDir": 200,
+    "movementSpd": 20,
+    "rawAirSigmet": "WSUS33 KKCI 200155 SIGW CONVECTIVE"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-rel-prayer-times",
+  "category": "religion",
+  "source": "aladhan",
+  "title": "Islamic Prayer Times by City/Address",
+  "description": "Daily Islamic prayer timings (Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha and more) for any city or address, using a configurable calculation method. Keyless Aladhan API.",
+  "descriptionBazaar": "Daily Islamic prayer times (Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha, Imsak, Midnight) for any city or address with a configurable calculation method. Keyless Aladhan. For agents building prayer reminders or schedules.",
+  "tags": [
+   "religion",
+   "islam",
+   "prayer-times",
+   "salah"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.aladhan.com/v1/timingsByAddress",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "address": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "City, address or place name to resolve",
+    "example": "London,UK"
+   },
+   "method": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "default": 2,
+    "description": "Prayer calculation method id (e.g. 2=ISNA, 3=MWL)",
+    "example": 2
+   }
+  },
+  "sampleRequest": {
+   "address": "London,UK",
+   "method": 2
+  },
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": {
+    "timings": {
+     "Fajr": "02:52",
+     "Dhuhr": "13:02",
+     "Asr": "17:25",
+     "Maghrib": "21:21",
+     "Isha": "23:12"
+    },
+    "date": {
+     "readable": "20 Jun 2026"
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-rel-prayer-times-coords",
+  "category": "religion",
+  "source": "aladhan",
+  "title": "Islamic Prayer Times by Coordinates",
+  "description": "Daily Islamic prayer timings for a specific date and latitude/longitude using a configurable calculation method. Keyless Aladhan API.",
+  "descriptionBazaar": "Islamic prayer times for an exact date and lat/lng with configurable method. Returns Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha. Keyless Aladhan. For agents needing precise location-based salah schedules.",
+  "tags": [
+   "religion",
+   "islam",
+   "prayer-times",
+   "geo"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.aladhan.com/v1/timings/{date}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "date": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Gregorian date as DD-MM-YYYY",
+    "example": "20-06-2026"
+   },
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude in decimal degrees",
+    "example": 51.5
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude in decimal degrees",
+    "example": -0.12
+   },
+   "method": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "default": 2,
+    "description": "Prayer calculation method id",
+    "example": 2
+   }
+  },
+  "sampleRequest": {
+   "date": "20-06-2026",
+   "latitude": 51.5,
+   "longitude": -0.12,
+   "method": 2
+  },
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": {
+    "timings": {
+     "Fajr": "02:53",
+     "Dhuhr": "13:02",
+     "Asr": "17:25",
+     "Maghrib": "21:21",
+     "Isha": "23:12"
+    },
+    "date": {
+     "readable": "20 Jun 2026"
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-rel-qibla-direction",
+  "category": "religion",
+  "source": "aladhan",
+  "title": "Qibla Direction from Coordinates",
+  "description": "Compute the Qibla (direction to the Kaaba in Mecca) in degrees from any latitude/longitude. Keyless Aladhan API.",
+  "descriptionBazaar": "Qibla compass direction in degrees toward the Kaaba from any lat/lng. Keyless Aladhan. For agents building prayer-direction or compass features.",
+  "tags": [
+   "religion",
+   "islam",
+   "qibla",
+   "geo"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.aladhan.com/v1/qibla/{latitude}/{longitude}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "latitude": {
+    "in": "path",
+    "required": true,
+    "type": "number",
+    "description": "Latitude in decimal degrees",
+    "example": 51.5
+   },
+   "longitude": {
+    "in": "path",
+    "required": true,
+    "type": "number",
+    "description": "Longitude in decimal degrees",
+    "example": -0.12
+   }
+  },
+  "sampleRequest": {
+   "latitude": 51.5,
+   "longitude": -0.12
+  },
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": {
+    "latitude": 51.5,
+    "longitude": -0.12,
+    "direction": 118.9889456464341
+   }
+  }
+ },
+ {
+  "slug": "suverse-rel-quran-ayah",
+  "category": "religion",
+  "source": "alquran-cloud",
+  "title": "Quran Ayah (Verse) by Number",
+  "description": "Fetch a single Quran ayah (verse) by its global number in a chosen edition/translation (e.g. en.asad English, quran-uthmani Arabic). Keyless Al Quran Cloud API.",
+  "descriptionBazaar": "Single Quran ayah by global verse number in any edition/translation (en.asad, quran-uthmani, etc). Keyless Al Quran Cloud. For agents quoting or studying scripture.",
+  "tags": [
+   "religion",
+   "islam",
+   "quran",
+   "scripture"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.alquran.cloud/v1/ayah/{number}/{edition}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "number": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Global ayah number (1-6236)",
+    "example": 262
+   },
+   "edition": {
+    "in": "path",
+    "required": false,
+    "type": "string",
+    "default": "en.asad",
+    "description": "Edition identifier (e.g. en.asad, quran-uthmani)",
+    "example": "en.asad"
+   }
+  },
+  "sampleRequest": {
+   "number": 262,
+   "edition": "en.asad"
+  },
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": {
+    "number": 262,
+    "text": "GOD - there is no deity save Him, the Ever-Living, the Self-Subsistent Fount of All Being.",
+    "edition": {
+     "identifier": "en.asad"
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-rel-quran-surah",
+  "category": "religion",
+  "source": "alquran-cloud",
+  "title": "Quran Surah (Chapter) by Number",
+  "description": "Fetch a full Quran surah (chapter) with all its ayahs in a chosen edition/translation. Keyless Al Quran Cloud API.",
+  "descriptionBazaar": "Full Quran surah (chapter) with every ayah in any edition/translation (en.asad, quran-uthmani, etc). Includes English name, revelation type, ayah count. Keyless Al Quran Cloud. For agents reading or analyzing scripture.",
+  "tags": [
+   "religion",
+   "islam",
+   "quran",
+   "scripture"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.alquran.cloud/v1/surah/{number}/{edition}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "number": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Surah number (1-114)",
+    "example": 2
+   },
+   "edition": {
+    "in": "path",
+    "required": false,
+    "type": "string",
+    "default": "en.asad",
+    "description": "Edition identifier (e.g. en.asad, quran-uthmani)",
+    "example": "en.asad"
+   }
+  },
+  "sampleRequest": {
+   "number": 2,
+   "edition": "en.asad"
+  },
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": {
+    "number": 2,
+    "englishName": "Al-Baqara",
+    "englishNameTranslation": "The Cow",
+    "revelationType": "Medinan",
+    "numberOfAyahs": 286,
+    "ayahs": [
+     {
+      "numberInSurah": 1,
+      "text": "Alif. Lam. Mim."
+     }
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-rel-quran-99-names",
+  "category": "religion",
+  "source": "aladhan",
+  "title": "99 Names of Allah (Asma al-Husna)",
+  "description": "The 99 names of Allah (Asma al-Husna) with Arabic, transliteration and English meaning. Keyless Aladhan API.",
+  "descriptionBazaar": "The 99 Names of Allah (Asma al-Husna) with Arabic script, transliteration and English meaning. Keyless Aladhan. For agents building Islamic reference or devotional content.",
+  "tags": [
+   "religion",
+   "islam",
+   "asma-al-husna",
+   "reference"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.aladhan.com/v1/asmaAlHusna",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": [
+    {
+     "name": "الرحمن",
+     "transliteration": "Ar Rahmaan",
+     "number": 1,
+     "en": {
+      "meaning": "The Beneficent"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-rel-bible-verse",
+  "category": "religion",
+  "source": "bible-api",
+  "title": "Bible Verse / Passage Lookup",
+  "description": "Look up any Bible verse or passage by reference (e.g. 'John 3:16', 'Romans 8:28-30') in a chosen translation. Keyless Bible API.",
+  "descriptionBazaar": "Any Bible verse or passage by reference (John 3:16, Romans 8:28-30) in a chosen public-domain translation (web, kjv). Returns book, chapter, verse and text. Keyless bible-api.com. For agents quoting scripture.",
+  "tags": [
+   "religion",
+   "christianity",
+   "bible",
+   "scripture"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://bible-api.com/{reference}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "reference": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Verse or passage reference (URL-encoded), e.g. 'John 3:16'",
+    "example": "John 3:16"
+   },
+   "translation": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "default": "web",
+    "description": "Translation id (e.g. web, kjv)",
+    "example": "kjv"
+   }
+  },
+  "sampleRequest": {
+   "reference": "John 3:16",
+   "translation": "kjv"
+  },
+  "sampleResponse": {
+   "reference": "John 3:16",
+   "verses": [
+    {
+     "book_name": "John",
+     "chapter": 3,
+     "verse": 16,
+     "text": "For God so loved the world..."
+    }
+   ],
+   "translation_name": "King James Version"
+  }
+ },
+ {
+  "slug": "suverse-rel-bible-random",
+  "category": "religion",
+  "source": "bible-api",
+  "title": "Random Bible Verse",
+  "description": "Return a random Bible verse from a chosen translation, useful for verse-of-the-day or daily inspiration features. Keyless Bible API.",
+  "descriptionBazaar": "A random Bible verse from a chosen public-domain translation (web, kjv). Returns book, chapter, verse and text. Keyless bible-api.com. For agents building verse-of-the-day or daily devotional features.",
+  "tags": [
+   "religion",
+   "christianity",
+   "bible",
+   "random"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://bible-api.com/data/{translation}/random",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "translation": {
+    "in": "path",
+    "required": false,
+    "type": "string",
+    "default": "web",
+    "description": "Translation id (e.g. web, kjv)",
+    "example": "web"
+   }
+  },
+  "sampleRequest": {
+   "translation": "web"
+  },
+  "sampleResponse": {
+   "translation": {
+    "identifier": "web",
+    "name": "World English Bible"
+   },
+   "random_verse": {
+    "book": "Matthew",
+    "chapter": 27,
+    "verse": 11,
+    "text": "Now Jesus stood before the governor..."
+   }
+  }
+ },
+ {
+  "slug": "suverse-cal-hijri-from-gregorian",
+  "category": "calendar",
+  "source": "aladhan",
+  "title": "Gregorian to Hijri Date Conversion",
+  "description": "Convert a Gregorian calendar date to the Islamic Hijri date, including weekday, month names (Arabic/English) and any associated Islamic holidays. Keyless Aladhan API.",
+  "descriptionBazaar": "Convert a Gregorian date to the Islamic Hijri calendar with day, month (Arabic+English), year and Islamic holidays. Keyless Aladhan. For agents handling Islamic dates and calendars.",
+  "tags": [
+   "calendar",
+   "islam",
+   "hijri",
+   "date-conversion"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.aladhan.com/v1/gToH/{date}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "date": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Gregorian date as DD-MM-YYYY",
+    "example": "20-06-2026"
+   }
+  },
+  "sampleRequest": {
+   "date": "20-06-2026"
+  },
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": {
+    "hijri": {
+     "date": "05-01-1448",
+     "day": "5",
+     "month": {
+      "number": 1,
+      "en": "Muharram"
+     },
+     "year": "1448"
+    },
+    "gregorian": {
+     "date": "20-06-2026",
+     "weekday": {
+      "en": "Saturday"
+     }
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-cal-gregorian-from-hijri",
+  "category": "calendar",
+  "source": "aladhan",
+  "title": "Hijri to Gregorian Date Conversion",
+  "description": "Convert an Islamic Hijri calendar date to the Gregorian date, including weekday and month names. Keyless Aladhan API.",
+  "descriptionBazaar": "Convert an Islamic Hijri date to the Gregorian calendar with day, month and weekday. Keyless Aladhan. For agents converting Islamic dates to civil dates.",
+  "tags": [
+   "calendar",
+   "islam",
+   "hijri",
+   "date-conversion"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.aladhan.com/v1/hToG/{date}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "date": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Hijri date as DD-MM-YYYY",
+    "example": "15-12-1447"
+   }
+  },
+  "sampleRequest": {
+   "date": "15-12-1447"
+  },
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": {
+    "hijri": {
+     "date": "15-12-1447",
+     "month": {
+      "number": 12,
+      "en": "Dhu al-Hijjah"
+     },
+     "year": "1447"
+    },
+    "gregorian": {
+     "date": "01-06-2026",
+     "weekday": {
+      "en": "Monday"
+     }
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-cal-prayer-month",
+  "category": "calendar",
+  "source": "aladhan",
+  "title": "Monthly Prayer Times Calendar",
+  "description": "Full month of daily Islamic prayer timings for a given year/month and latitude/longitude using a configurable calculation method. Keyless Aladhan API.",
+  "descriptionBazaar": "A full month of daily Islamic prayer times for given year/month and lat/lng with configurable method. Each day lists Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha plus Hijri date. Keyless Aladhan. For agents building monthly prayer calendars.",
+  "tags": [
+   "calendar",
+   "islam",
+   "prayer-times",
+   "monthly"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://api.aladhan.com/v1/calendar/{year}/{month}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "year": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Gregorian year",
+    "example": 2026
+   },
+   "month": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Gregorian month (1-12)",
+    "example": 6
+   },
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude in decimal degrees",
+    "example": 51.5
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude in decimal degrees",
+    "example": -0.12
+   },
+   "method": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "default": 2,
+    "description": "Prayer calculation method id",
+    "example": 2
+   }
+  },
+  "sampleRequest": {
+   "year": 2026,
+   "month": 6,
+   "latitude": 51.5,
+   "longitude": -0.12,
+   "method": 2
+  },
+  "sampleResponse": {
+   "code": 200,
+   "status": "OK",
+   "data": [
+    {
+     "timings": {
+      "Fajr": "02:54 (BST)",
+      "Dhuhr": "12:58 (BST)",
+      "Maghrib": "21:08 (BST)"
+     },
+     "date": {
+      "gregorian": {
+       "date": "01-06-2026"
+      }
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-cal-hebrew-date",
+  "category": "calendar",
+  "source": "hebcal",
+  "title": "Gregorian to Hebrew Date Conversion",
+  "description": "Convert a Gregorian calendar date to the Hebrew calendar date, including Hebrew year/month/day, Hebrew script and the week's Torah portion. Keyless Hebcal converter.",
+  "descriptionBazaar": "Convert a Gregorian date to the Hebrew calendar with Hebrew year, month, day, Hebrew script and the week's Torah portion (parashah). Keyless Hebcal. For agents handling Jewish dates.",
+  "tags": [
+   "calendar",
+   "judaism",
+   "hebrew",
+   "date-conversion"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://www.hebcal.com/converter",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "cfg": "json",
+    "g2h": "1"
+   }
+  },
+  "params": {
+   "gy": {
+    "in": "query",
+    "required": true,
+    "type": "integer",
+    "description": "Gregorian year",
+    "example": 2026
+   },
+   "gm": {
+    "in": "query",
+    "required": true,
+    "type": "integer",
+    "description": "Gregorian month (1-12)",
+    "example": 6
+   },
+   "gd": {
+    "in": "query",
+    "required": true,
+    "type": "integer",
+    "description": "Gregorian day of month",
+    "example": 20
+   }
+  },
+  "sampleRequest": {
+   "gy": 2026,
+   "gm": 6,
+   "gd": 20
+  },
+  "sampleResponse": {
+   "gy": 2026,
+   "gm": 6,
+   "gd": 20,
+   "hy": 5786,
+   "hm": "Tamuz",
+   "hd": 5,
+   "hebrew": "ה׳ בְּתַמּוּז תשפ״ו",
+   "events": [
+    "Parashat Korach"
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-people-in-space",
+  "category": "space",
+  "source": "opennotify",
+  "title": "People Currently In Space",
+  "description": "Real-time list of all people currently in space and the spacecraft they are aboard, with a total count. Powered by the keyless Open Notify API.",
+  "descriptionBazaar": "Live list of everyone currently in space and their craft, with total count. Keyless Open Notify API. For agents reporting current human spaceflight.",
+  "tags": [
+   "space",
+   "astronauts",
+   "iss",
+   "realtime"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "http://api.open-notify.org/astros.json",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "number": 9,
+   "people": [
+    {
+     "craft": "ISS",
+     "name": "Oleg Kononenko"
+    },
+    {
+     "craft": "ISS",
+     "name": "Tracy Caldwell Dyson"
+    }
+   ],
+   "message": "success"
+  }
+ },
+ {
+  "slug": "suverse-space-close-approaches",
+  "category": "space",
+  "source": "jpl-ssd",
+  "title": "Near-Earth Close Approaches",
+  "description": "Near-Earth object close approaches within a date and distance range, with object designation, close-approach date, nominal distance, relative velocity and magnitude. Powered by the keyless NASA/JPL SBDB Close Approach Data API.",
+  "descriptionBazaar": "Near-Earth asteroid close approaches by date and distance: designation, date, distance, velocity, magnitude. Keyless NASA/JPL CAD API. For planetary-defense agents.",
+  "tags": [
+   "space",
+   "asteroids",
+   "neo",
+   "close-approach"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://ssd-api.jpl.nasa.gov/cad.api",
+   "timeoutMs": 14000
+  },
+  "params": {
+   "date-min": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    "description": "Start date (YYYY-MM-DD)",
+    "example": "2026-01-01"
+   },
+   "date-max": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    "description": "End date (YYYY-MM-DD)",
+    "example": "2026-12-31"
+   },
+   "dist-max": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "default": "0.05",
+    "description": "Maximum approach distance in astronomical units",
+    "example": "0.05"
+   }
+  },
+  "sampleRequest": {
+   "date-min": "2026-01-01",
+   "date-max": "2026-12-31",
+   "dist-max": "0.05"
+  },
+  "sampleResponse": {
+   "count": 966,
+   "fields": [
+    "des",
+    "orbit_id",
+    "jd",
+    "cd",
+    "dist",
+    "dist_min",
+    "dist_max",
+    "v_rel",
+    "v_inf",
+    "t_sigma_f",
+    "h"
+   ],
+   "data": [
+    [
+     "2025 YL4",
+     "4",
+     "2461042.155847513",
+     "2026-Jan-01 15:44",
+     "0.00969853261315969",
+     "0.00966625989244537",
+     "0.00973080411966498",
+     "9.8181368067045",
+     "9.79011491512459",
+     "< 00:01",
+     "26.67"
+    ]
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-fireballs",
+  "category": "space",
+  "source": "jpl-ssd",
+  "title": "Atmospheric Fireball Events",
+  "description": "Recent atmospheric fireball (bolide) events detected by US government sensors, with date, total radiated energy, calculated impact energy, latitude, longitude, altitude and velocity. Powered by the keyless NASA/JPL Fireball Data API.",
+  "descriptionBazaar": "Recent atmospheric fireball events: date, radiated energy, impact energy, lat, lon, altitude, velocity. Keyless NASA/JPL Fireball API. For agents tracking bolides.",
+  "tags": [
+   "space",
+   "fireballs",
+   "bolides",
+   "meteors"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://ssd-api.jpl.nasa.gov/fireball.api",
+   "timeoutMs": 14000
+  },
+  "params": {
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "default": "20",
+    "description": "Maximum number of fireball records to return",
+    "example": "20"
+   }
+  },
+  "sampleRequest": {
+   "limit": "20"
+  },
+  "sampleResponse": {
+   "count": "3",
+   "fields": [
+    "date",
+    "energy",
+    "impact-e",
+    "lat",
+    "lat-dir",
+    "lon",
+    "lon-dir",
+    "alt",
+    "vel"
+   ],
+   "data": [
+    [
+     "2026-06-11 02:00:58",
+     "3.2",
+     "0.11",
+     "18.7",
+     "S",
+     "16.1",
+     "E",
+     "33.0",
+     null
+    ]
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-impact-risk",
+  "category": "space",
+  "source": "jpl-ssd",
+  "title": "Asteroid Impact Risk List",
+  "description": "Sentry impact-risk monitoring list of near-Earth asteroids with a non-zero probability of Earth impact, including designation, impact probability, Palermo scale value, diameter, magnitude and risk year range. Powered by the keyless NASA/JPL Sentry API.",
+  "descriptionBazaar": "Asteroid impact-risk list: designation, impact probability, Palermo scale, diameter, magnitude, risk years. Keyless NASA/JPL Sentry API. For planetary-defense agents.",
+  "tags": [
+   "space",
+   "asteroids",
+   "impact-risk",
+   "sentry"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://ssd-api.jpl.nasa.gov/sentry.api",
+   "timeoutMs": 14000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "count": "2156",
+   "data": [
+    {
+     "last_obs": "1979-12-15",
+     "h": "18.54",
+     "n_imp": 4,
+     "des": "1979 XB",
+     "range": "2056-2113",
+     "ps_cum": "-2.69",
+     "ip": "8.515158e-07",
+     "diameter": "0.66"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-accessible-asteroids",
+  "category": "space",
+  "source": "jpl-ssd",
+  "title": "Human-Accessible Asteroids (NHATS)",
+  "description": "Near-Earth objects identified as candidates for human spaceflight missions, with designation, orbit ID, magnitude, size, minimum delta-v and mission duration. Powered by the keyless NASA/JPL NHATS API.",
+  "descriptionBazaar": "Human-accessible near-Earth asteroids: designation, size, min delta-v, mission duration, observation windows. Keyless NASA/JPL NHATS API. For mission-planning agents.",
+  "tags": [
+   "space",
+   "asteroids",
+   "nhats",
+   "mission-planning"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://ssd-api.jpl.nasa.gov/nhats.api",
+   "timeoutMs": 14000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "data": [
+    {
+     "orbit_id": "21",
+     "fullname": "(2010 PS66)",
+     "max_size": "73",
+     "h": "25.1",
+     "min_dv": {
+      "dur": 450,
+      "dv": "10.270"
+     },
+     "min_dur": {
+      "dv": "11.891",
+      "dur": 210
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-neo-tracking",
+  "category": "space",
+  "source": "jpl-ssd",
+  "title": "Newly Discovered NEO Tracking (Scout)",
+  "description": "Scout near-real-time hazard assessment for recently discovered near-Earth object candidates not yet in the catalog, with provisional designation, sky position, magnitude, hazard scores and observation arc. Powered by the keyless NASA/JPL Scout API.",
+  "descriptionBazaar": "Newly found near-Earth object candidates with sky position, magnitude, NEO and hazard scores, observation arc. Keyless NASA/JPL Scout API. For sky-survey agents.",
+  "tags": [
+   "space",
+   "asteroids",
+   "neo",
+   "scout"
+  ],
+  "priceUsdcAtomic": 2000,
+  "upstream": {
+   "url": "https://ssd-api.jpl.nasa.gov/scout.api",
+   "timeoutMs": 14000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "signature": {
+    "source": "NASA/JPL Scout API",
+    "version": "1.3"
+   },
+   "count": "43",
+   "data": [
+    {
+     "objectName": "19E0001",
+     "ra": "16:46",
+     "dec": "+08",
+     "Vmag": "18.1",
+     "neoScore": 49,
+     "phaScore": 18,
+     "H": "15.3",
+     "arc": "0.25"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-moon-phases",
+  "category": "space",
+  "source": "usno",
+  "title": "Moon Phases by Date",
+  "description": "Upcoming primary Moon phases (New, First Quarter, Full, Last Quarter) starting from a given date, with the phase name and exact date and time. Powered by the keyless US Naval Observatory Astronomical Applications API.",
+  "descriptionBazaar": "Upcoming primary Moon phases from a date: New, First Quarter, Full, Last Quarter with exact date and time. Keyless US Naval Observatory API. For astronomy agents.",
+  "tags": [
+   "space",
+   "astronomy",
+   "moon",
+   "phases"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://aa.usno.navy.mil/api/moon/phases/date",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "date": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    "description": "Start date (YYYY-MM-DD)",
+    "example": "2026-06-20"
+   },
+   "nump": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "default": "4",
+    "description": "Number of upcoming phases to return",
+    "example": "4"
+   }
+  },
+  "sampleRequest": {
+   "date": "2026-06-20",
+   "nump": "4"
+  },
+  "sampleResponse": {
+   "apiversion": "4.0.1",
+   "numphases": 4,
+   "phasedata": [
+    {
+     "day": 21,
+     "month": 6,
+     "phase": "First Quarter",
+     "time": "21:55",
+     "year": 2026
+    },
+    {
+     "day": 29,
+     "month": 6,
+     "phase": "Full Moon",
+     "time": "23:56",
+     "year": 2026
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-seasons",
+  "category": "space",
+  "source": "usno",
+  "title": "Equinoxes Solstices and Apsides",
+  "description": "Astronomical seasons for a given year: equinoxes, solstices, plus Earth perihelion and aphelion, each with phenomenon name and exact date and time. Powered by the keyless US Naval Observatory Astronomical Applications API.",
+  "descriptionBazaar": "Equinoxes, solstices, perihelion and aphelion for a year with exact date and time. Keyless US Naval Observatory API. For agents computing astronomical seasons.",
+  "tags": [
+   "space",
+   "astronomy",
+   "seasons",
+   "equinox"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://aa.usno.navy.mil/api/seasons",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "year": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}$",
+    "description": "Four-digit year",
+    "example": "2026"
+   }
+  },
+  "sampleRequest": {
+   "year": "2026"
+  },
+  "sampleResponse": {
+   "apiversion": "4.0.1",
+   "data": [
+    {
+     "day": 3,
+     "month": 1,
+     "phenom": "Perihelion",
+     "time": "17:15",
+     "year": 2026
+    },
+    {
+     "day": 20,
+     "month": 3,
+     "phenom": "Equinox",
+     "time": "14:46",
+     "year": 2026
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-solar-eclipses",
+  "category": "space",
+  "source": "usno",
+  "title": "Solar Eclipses by Year",
+  "description": "Solar eclipses occurring in a given year, each with event description (type and date) and calendar date. Powered by the keyless US Naval Observatory Astronomical Applications API.",
+  "descriptionBazaar": "Solar eclipses in a given year with event type and date. Keyless US Naval Observatory API. For agents tracking eclipse calendars and observation planning.",
+  "tags": [
+   "space",
+   "astronomy",
+   "eclipses",
+   "solar"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://aa.usno.navy.mil/api/eclipses/solar/year",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "year": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}$",
+    "description": "Four-digit year",
+    "example": "2026"
+   }
+  },
+  "sampleRequest": {
+   "year": "2026"
+  },
+  "sampleResponse": {
+   "apiversion": "4.0.1",
+   "year": 2026,
+   "eclipses_in_year": [
+    {
+     "day": 17,
+     "event": "Annular Solar Eclipse of 17 February 2026",
+     "month": 2,
+     "year": 2026
+    },
+    {
+     "day": 12,
+     "event": "Total Solar Eclipse of 12 August 2026",
+     "month": 8,
+     "year": 2026
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-space-sun-moon-times",
+  "category": "space",
+  "source": "usno",
+  "title": "Sun and Moon Rise Set Times",
+  "description": "Sun and Moon rise, set, transit and twilight times for a given date and location, plus current Moon phase, illumination fraction and closest upcoming phase. Powered by the keyless US Naval Observatory Astronomical Applications API.",
+  "descriptionBazaar": "Sun and Moon rise, set, transit and twilight times for a date and location, plus Moon phase and illumination. Keyless US Naval Observatory API. For astronomy agents.",
+  "tags": [
+   "space",
+   "astronomy",
+   "sunrise",
+   "moon"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://aa.usno.navy.mil/api/rstt/oneday",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "date": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    "description": "Date (YYYY-MM-DD)",
+    "example": "2026-06-20"
+   },
+   "coords": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Latitude,longitude in decimal degrees",
+    "example": "38.9,-77.0"
+   }
+  },
+  "sampleRequest": {
+   "date": "2026-06-20",
+   "coords": "38.9,-77.0"
+  },
+  "sampleResponse": {
+   "apiversion": "4.0.1",
+   "properties": {
+    "data": {
+     "curphase": "Waxing Crescent",
+     "fracillum": "35%",
+     "moondata": [
+      {
+       "phen": "Rise",
+       "time": "15:57"
+      }
+     ],
+     "sundata": [
+      {
+       "phen": "Rise",
+       "time": "09:43"
+      },
+      {
+       "phen": "Set",
+       "time": "00:36"
+      }
+     ]
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-space-sidereal-time",
+  "category": "space",
+  "source": "usno",
+  "title": "Local and Greenwich Sidereal Time",
+  "description": "Apparent and mean sidereal time at Greenwich and at a given location for a specified date and universal time, including GAST, GMST, LAST, LMST and the equation of the equinoxes. Powered by the keyless US Naval Observatory Astronomical Applications API.",
+  "descriptionBazaar": "Greenwich and local apparent and mean sidereal time (GAST, GMST, LAST, LMST) for a date, time and location. Keyless US Naval Observatory API. For astronomy agents.",
+  "tags": [
+   "space",
+   "astronomy",
+   "sidereal-time",
+   "timekeeping"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://aa.usno.navy.mil/api/siderealtime",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "reps": "1",
+    "intv_mag": "1",
+    "intv_unit": "hours"
+   }
+  },
+  "params": {
+   "date": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    "description": "Date (YYYY-MM-DD)",
+    "example": "2026-06-20"
+   },
+   "coords": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Latitude,longitude in decimal degrees",
+    "example": "38.9,-77.0"
+   },
+   "time": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Universal time HH:MM:SS",
+    "example": "12:00:00"
+   }
+  },
+  "sampleRequest": {
+   "date": "2026-06-20",
+   "coords": "38.9,-77.0",
+   "time": "12:00:00"
+  },
+  "sampleResponse": {
+   "apiversion": "4.0.1",
+   "properties": {
+    "data": [
+     {
+      "day": 20,
+      "eqofeq": "0.4804",
+      "gast": "05:54:51.7730",
+      "gmst": "05:54:51.2926",
+      "last": "00:46:51.7730",
+      "lmst": "00:46:51.2926",
+      "month": 6,
+      "ut1time": "12:00:00.0",
+      "year": 2026
+     }
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-space-iss-orbit",
+  "category": "space",
+  "source": "wheretheiss",
+  "title": "ISS Orbital Telemetry",
+  "description": "Real-time orbital telemetry for the International Space Station including latitude, longitude, altitude, velocity, visibility, ground footprint and solar position. Powered by the keyless Where The ISS At API.",
+  "descriptionBazaar": "Live ISS orbital telemetry: lat, lon, altitude, velocity, visibility, footprint, solar position. Keyless Where The ISS At API. For agents tracking the station orbit.",
+  "tags": [
+   "space",
+   "iss",
+   "telemetry",
+   "realtime"
+  ],
+  "priceUsdcAtomic": 1000,
+  "upstream": {
+   "url": "https://api.wheretheiss.at/v1/satellites/25544",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "name": "iss",
+   "id": 25544,
+   "latitude": 41.473244248609,
+   "longitude": 24.575201750026,
+   "altitude": 425.17301117668,
+   "velocity": 27576.420509416,
+   "visibility": "daylight",
+   "footprint": 4533.6883385397,
+   "timestamp": 1781922446
+  }
+ }
+]
