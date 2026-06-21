@@ -1,0 +1,67 @@
+[
+  {
+    "slug": "swap-quote-jupiter",
+    "category": "dex-analytics",
+    "source": "Jupiter",
+    "title": "Jupiter Solana Swap Quote",
+    "description": "Best-route swap quote for any Solana token pair from Jupiter's aggregator (re-hosted on lite-api.jup.ag). Returns input/output amounts, the min-out threshold at the given slippage, price impact and the route hop count. Pass inputMint, outputMint and amount (in the input token's smallest unit); slippageBps is optional (default 50 = 0.5%).",
+    "descriptionBazaar": "Jupiter best-route Solana swap quote: in/out amounts, min-out at slippage, price impact, route hops. Pass inputMint, outputMint, amount (smallest unit), optional slippageBps. Sourced from Jupiter lite-api aggregator.",
+    "tags": ["dex", "swap", "quote", "solana", "jupiter", "aggregator", "x402"],
+    "priceUsdcAtomic": 50000,
+    "upstream": {
+      "url": "https://lite-api.jup.ag/swap/v1/quote",
+      "timeoutMs": 12000
+    },
+    "params": {
+      "inputMint": {
+        "in": "query",
+        "type": "string",
+        "required": true,
+        "upstreamName": "inputMint",
+        "description": "Mint address of the token being sold (Solana base58).",
+        "example": "So11111111111111111111111111111111111111112"
+      },
+      "outputMint": {
+        "in": "query",
+        "type": "string",
+        "required": true,
+        "upstreamName": "outputMint",
+        "description": "Mint address of the token being bought (Solana base58).",
+        "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      },
+      "amount": {
+        "in": "query",
+        "type": "string",
+        "required": true,
+        "upstreamName": "amount",
+        "description": "Amount of inputMint to swap, in the token's smallest unit (e.g. lamports for SOL).",
+        "example": "100000000"
+      },
+      "slippageBps": {
+        "in": "query",
+        "type": "string",
+        "required": false,
+        "upstreamName": "slippageBps",
+        "description": "Allowed slippage in basis points (50 = 0.5%). Default 50.",
+        "example": "50"
+      }
+    },
+    "sampleRequest": {
+      "inputMint": "So11111111111111111111111111111111111111112",
+      "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "amount": "100000000",
+      "slippageBps": "50"
+    },
+    "sampleResponse": {
+      "inputMint": "So11111111111111111111111111111111111111112",
+      "inAmount": "100000000",
+      "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "outAmount": "7273599",
+      "otherAmountThreshold": "7237232",
+      "swapMode": "ExactIn",
+      "slippageBps": 50,
+      "priceImpactPct": "0.0010515942605440",
+      "routePlan": []
+    }
+  }
+]

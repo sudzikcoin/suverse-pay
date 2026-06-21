@@ -144,8 +144,9 @@ import { SPECS_BATCH_004 } from "./declarative/specs.batch-004.js";
 import { SPECS_BATCH_005 } from "./declarative/specs.batch-005.js";
 import { SPECS_BATCH_006 } from "./declarative/specs.batch-006.js";
 import { SPECS_BATCH_007 } from "./declarative/specs.batch-007.js";
+import { SPECS_BATCH_009 } from "./declarative/specs.batch-009.js";
 
-const DECLARATIVE_SPECS = [...SPECS_BATCH_001, ...SPECS_BATCH_002, ...SPECS_BATCH_E2E, ...SPECS_BATCH_003, ...SPECS_BATCH_004, ...SPECS_BATCH_005, ...SPECS_BATCH_006, ...SPECS_BATCH_007];
+const DECLARATIVE_SPECS = [...SPECS_BATCH_001, ...SPECS_BATCH_002, ...SPECS_BATCH_E2E, ...SPECS_BATCH_003, ...SPECS_BATCH_004, ...SPECS_BATCH_005, ...SPECS_BATCH_006, ...SPECS_BATCH_007, ...SPECS_BATCH_009];
 
 export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   helius_tx_decoder: heliusTxDecoder,

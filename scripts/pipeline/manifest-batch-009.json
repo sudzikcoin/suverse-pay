@@ -1,0 +1,13 @@
+[
+  {
+    "slug": "swap-quote-jupiter",
+    "priceUsdc": "0.050000",
+    "category": "dex-analytics",
+    "sampleRequest": {
+      "inputMint": "So11111111111111111111111111111111111111112",
+      "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "amount": "100000000",
+      "slippageBps": "50"
+    }
+  }
+]
