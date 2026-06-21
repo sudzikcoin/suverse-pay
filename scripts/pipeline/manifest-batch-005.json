@@ -1,0 +1,855 @@
+[
+  {
+    "slug": "suverse-gov-fdic-institutions",
+    "priceUsdc": "0.060000",
+    "category": "government",
+    "sampleRequest": {
+      "filters": "STALP:CA",
+      "fields": "NAME,CITY,STALP,ASSET",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-regulatory-fedreg-doc",
+    "priceUsdc": "0.055000",
+    "category": "regulatory",
+    "sampleRequest": {
+      "document_number": "2026-12435"
+    }
+  },
+  {
+    "slug": "suverse-civic-fedreg-public-inspection-current",
+    "priceUsdc": "0.060000",
+    "category": "civic",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-legal-courtlistener-courts",
+    "priceUsdc": "0.060000",
+    "category": "legal",
+    "sampleRequest": {
+      "jurisdiction": "F"
+    }
+  },
+  {
+    "slug": "suverse-artic-artwork-detail",
+    "priceUsdc": "0.060000",
+    "category": "art",
+    "sampleRequest": {
+      "id": "27992"
+    }
+  },
+  {
+    "slug": "suverse-artic-exhibitions",
+    "priceUsdc": "0.060000",
+    "category": "museum",
+    "sampleRequest": {
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-gutenberg-search",
+    "priceUsdc": "0.055000",
+    "category": "books",
+    "sampleRequest": {
+      "search": "dickens"
+    }
+  },
+  {
+    "slug": "suverse-poetry-author-titles",
+    "priceUsdc": "0.055000",
+    "category": "literature",
+    "sampleRequest": {
+      "author": "Emily Dickinson"
+    }
+  },
+  {
+    "slug": "suverse-musicbrainz-artist-find",
+    "priceUsdc": "0.060000",
+    "category": "music",
+    "sampleRequest": {
+      "query": "radiohead",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-quotes-zen-random",
+    "priceUsdc": "0.050000",
+    "category": "quotes",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-earth-quake-feed",
+    "priceUsdc": "0.055000",
+    "category": "earth",
+    "sampleRequest": {
+      "starttime": "2026-06-15",
+      "endtime": "2026-06-19",
+      "minmagnitude": "5"
+    }
+  },
+  {
+    "slug": "suverse-climate-nasa-power-daily",
+    "priceUsdc": "0.085000",
+    "category": "climate",
+    "sampleRequest": {
+      "parameters": "T2M,PRECTOTCORR",
+      "community": "RE",
+      "latitude": "38.9072",
+      "longitude": "-77.0369",
+      "start": "20250101",
+      "end": "20250107"
+    }
+  },
+  {
+    "slug": "suverse-air-quality-current",
+    "priceUsdc": "0.055000",
+    "category": "air-quality",
+    "sampleRequest": {
+      "latitude": "52.52",
+      "longitude": "13.41"
+    }
+  },
+  {
+    "slug": "suverse-environment-flood-discharge",
+    "priceUsdc": "0.065000",
+    "category": "environment",
+    "sampleRequest": {
+      "latitude": "33.5",
+      "longitude": "-112.1"
+    }
+  },
+  {
+    "slug": "suverse-ocean-wave-conditions",
+    "priceUsdc": "0.065000",
+    "category": "ocean",
+    "sampleRequest": {
+      "latitude": "54.544",
+      "longitude": "10.227"
+    }
+  },
+  {
+    "slug": "suverse-astronomy-daylight-times",
+    "priceUsdc": "0.050000",
+    "category": "astronomy",
+    "sampleRequest": {
+      "latitude": "64.13",
+      "longitude": "-21.89"
+    }
+  },
+  {
+    "slug": "suverse-biodiversity-species-search",
+    "priceUsdc": "0.055000",
+    "category": "biodiversity",
+    "sampleRequest": {
+      "q": "Panthera leo",
+      "limit": "5"
+    }
+  },
+  {
+    "slug": "suverse-postal-us-zip",
+    "priceUsdc": "0.050000",
+    "category": "postal",
+    "sampleRequest": {
+      "zip": "90210"
+    }
+  },
+  {
+    "slug": "suverse-places-osm-search",
+    "priceUsdc": "0.060000",
+    "category": "places",
+    "sampleRequest": {
+      "q": "Eiffel Tower"
+    }
+  },
+  {
+    "slug": "suverse-demographics-census-tract",
+    "priceUsdc": "0.080000",
+    "category": "demographics",
+    "sampleRequest": {
+      "address": "1600 Pennsylvania Ave NW Washington DC"
+    }
+  },
+  {
+    "slug": "suverse-ip-geo-detail",
+    "priceUsdc": "0.055000",
+    "category": "ip-geo",
+    "sampleRequest": {
+      "ip": "8.8.8.8"
+    }
+  },
+  {
+    "slug": "suverse-aviation-aircraft-registry",
+    "priceUsdc": "0.065000",
+    "category": "aviation",
+    "sampleRequest": {
+      "hex": "4ca7b5"
+    }
+  },
+  {
+    "slug": "suverse-countries-cnow-capital",
+    "priceUsdc": "0.050000",
+    "category": "countries",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-pokemon-pokedex",
+    "priceUsdc": "0.050000",
+    "category": "pokemon",
+    "sampleRequest": {
+      "name": "charizard"
+    }
+  },
+  {
+    "slug": "suverse-tcg-pokemon-cards",
+    "priceUsdc": "0.070000",
+    "category": "tcg",
+    "sampleRequest": {
+      "q": "name:charizard"
+    }
+  },
+  {
+    "slug": "suverse-entertainment-rickmorty-character",
+    "priceUsdc": "0.050000",
+    "category": "entertainment",
+    "sampleRequest": {
+      "id": "1"
+    }
+  },
+  {
+    "slug": "suverse-anime-jikan-detail-mal",
+    "priceUsdc": "0.060000",
+    "category": "anime",
+    "sampleRequest": {
+      "id": "1"
+    }
+  },
+  {
+    "slug": "suverse-trivia-question-bank",
+    "priceUsdc": "0.055000",
+    "category": "trivia",
+    "sampleRequest": {
+      "category": "9"
+    }
+  },
+  {
+    "slug": "suverse-comics-xkcd-comic",
+    "priceUsdc": "0.050000",
+    "category": "comics",
+    "sampleRequest": {
+      "num": "614"
+    }
+  },
+  {
+    "slug": "suverse-fx-er-all-rates",
+    "priceUsdc": "0.055000",
+    "category": "fx",
+    "sampleRequest": {
+      "base": "USD"
+    }
+  },
+  {
+    "slug": "suverse-economy-gdp-deflator-inflation",
+    "priceUsdc": "0.060000",
+    "category": "economy",
+    "sampleRequest": {
+      "country": "US",
+      "date": "2018:2022",
+      "per_page": "10"
+    }
+  },
+  {
+    "slug": "suverse-fiscal-interest-expense",
+    "priceUsdc": "0.065000",
+    "category": "fiscal",
+    "sampleRequest": {
+      "page[size]": "5"
+    }
+  },
+  {
+    "slug": "suverse-beverage-breweries-by-state",
+    "priceUsdc": "0.055000",
+    "category": "beverage",
+    "sampleRequest": {
+      "by_state": "ohio",
+      "per_page": "3"
+    }
+  },
+  {
+    "slug": "suverse-gov-fdic-financials",
+    "priceUsdc": "0.070000",
+    "category": "government",
+    "sampleRequest": {
+      "filters": "STALP:NY",
+      "fields": "CERT,ASSET,DEP",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-regulatory-fedreg-term-search",
+    "priceUsdc": "0.060000",
+    "category": "regulatory",
+    "sampleRequest": {
+      "conditions[term]": "tariff",
+      "per_page": "5"
+    }
+  },
+  {
+    "slug": "suverse-legal-courtlistener-court-detail",
+    "priceUsdc": "0.055000",
+    "category": "legal",
+    "sampleRequest": {
+      "court_id": "scotus"
+    }
+  },
+  {
+    "slug": "suverse-artic-artwork-lookup",
+    "priceUsdc": "0.065000",
+    "category": "art",
+    "sampleRequest": {
+      "q": "monet",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-met-departments",
+    "priceUsdc": "0.050000",
+    "category": "museum",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-gutenberg-book-detail",
+    "priceUsdc": "0.055000",
+    "category": "books",
+    "sampleRequest": {
+      "id": "1342"
+    }
+  },
+  {
+    "slug": "suverse-poetry-by-title",
+    "priceUsdc": "0.055000",
+    "category": "literature",
+    "sampleRequest": {
+      "title": "Ozymandias"
+    }
+  },
+  {
+    "slug": "suverse-musicbrainz-releasegroup-find",
+    "priceUsdc": "0.060000",
+    "category": "music",
+    "sampleRequest": {
+      "query": "ok computer",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-quotes-zen-today",
+    "priceUsdc": "0.050000",
+    "category": "quotes",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-earth-quake-radius",
+    "priceUsdc": "0.060000",
+    "category": "earth",
+    "sampleRequest": {
+      "latitude": "35",
+      "longitude": "-120",
+      "maxradiuskm": "200",
+      "minmagnitude": "2",
+      "starttime": "2026-06-15"
+    }
+  },
+  {
+    "slug": "suverse-climate-nasa-power-monthly",
+    "priceUsdc": "0.080000",
+    "category": "climate",
+    "sampleRequest": {
+      "parameters": "T2M",
+      "community": "AG",
+      "latitude": "0",
+      "longitude": "35",
+      "start": "2023",
+      "end": "2023"
+    }
+  },
+  {
+    "slug": "suverse-air-quality-index",
+    "priceUsdc": "0.055000",
+    "category": "air-quality",
+    "sampleRequest": {
+      "latitude": "28.61",
+      "longitude": "77.20"
+    }
+  },
+  {
+    "slug": "suverse-environment-flood-peak",
+    "priceUsdc": "0.070000",
+    "category": "environment",
+    "sampleRequest": {
+      "latitude": "23.8",
+      "longitude": "90.4"
+    }
+  },
+  {
+    "slug": "suverse-ocean-sea-surface-temp",
+    "priceUsdc": "0.065000",
+    "category": "ocean",
+    "sampleRequest": {
+      "latitude": "21.3",
+      "longitude": "-157.8"
+    }
+  },
+  {
+    "slug": "suverse-astronomy-uv-index-daily",
+    "priceUsdc": "0.055000",
+    "category": "astronomy",
+    "sampleRequest": {
+      "latitude": "52.52",
+      "longitude": "13.41"
+    }
+  },
+  {
+    "slug": "suverse-biodiversity-name-match",
+    "priceUsdc": "0.055000",
+    "category": "biodiversity",
+    "sampleRequest": {
+      "name": "Felis catus"
+    }
+  },
+  {
+    "slug": "suverse-postal-intl-code",
+    "priceUsdc": "0.055000",
+    "category": "postal",
+    "sampleRequest": {
+      "country": "de",
+      "postcode": "01067"
+    }
+  },
+  {
+    "slug": "suverse-places-osm-reverse",
+    "priceUsdc": "0.060000",
+    "category": "places",
+    "sampleRequest": {
+      "lat": "48.8584",
+      "lon": "2.2945"
+    }
+  },
+  {
+    "slug": "suverse-demographics-census-coords",
+    "priceUsdc": "0.075000",
+    "category": "demographics",
+    "sampleRequest": {
+      "x": "-77.0365",
+      "y": "38.8977"
+    }
+  },
+  {
+    "slug": "suverse-aviation-airport-by-icao",
+    "priceUsdc": "0.055000",
+    "category": "aviation",
+    "sampleRequest": {
+      "icao": "EGLL"
+    }
+  },
+  {
+    "slug": "suverse-countries-cnow-states",
+    "priceUsdc": "0.055000",
+    "category": "countries",
+    "sampleRequest": {
+      "country": "Germany"
+    }
+  },
+  {
+    "slug": "suverse-pokemon-type-matchup",
+    "priceUsdc": "0.055000",
+    "category": "pokemon",
+    "sampleRequest": {
+      "name": "fire"
+    }
+  },
+  {
+    "slug": "suverse-tcg-mtg-cards",
+    "priceUsdc": "0.070000",
+    "category": "tcg",
+    "sampleRequest": {
+      "name": "Black Lotus"
+    }
+  },
+  {
+    "slug": "suverse-entertainment-rickmorty-location",
+    "priceUsdc": "0.050000",
+    "category": "entertainment",
+    "sampleRequest": {
+      "id": "1"
+    }
+  },
+  {
+    "slug": "suverse-anime-jikan-manga-detail",
+    "priceUsdc": "0.060000",
+    "category": "anime",
+    "sampleRequest": {
+      "id": "1"
+    }
+  },
+  {
+    "slug": "suverse-trivia-quiz-questions",
+    "priceUsdc": "0.050000",
+    "category": "trivia",
+    "sampleRequest": {
+      "amount": "2",
+      "type": "multiple"
+    }
+  },
+  {
+    "slug": "suverse-fx-frankfurter-pair",
+    "priceUsdc": "0.055000",
+    "category": "fx",
+    "sampleRequest": {
+      "base": "USD",
+      "symbols": "JPY,CHF,SEK"
+    }
+  },
+  {
+    "slug": "suverse-economy-lending-interest-rate",
+    "priceUsdc": "0.060000",
+    "category": "economy",
+    "sampleRequest": {
+      "country": "BR",
+      "date": "2018:2022"
+    }
+  },
+  {
+    "slug": "suverse-fiscal-treasury-rates-of-exchange",
+    "priceUsdc": "0.065000",
+    "category": "fiscal",
+    "sampleRequest": {
+      "page[size]": "5"
+    }
+  },
+  {
+    "slug": "suverse-beverage-brewery-search",
+    "priceUsdc": "0.055000",
+    "category": "beverage",
+    "sampleRequest": {
+      "query": "dog",
+      "per_page": "3"
+    }
+  },
+  {
+    "slug": "suverse-gov-fdic-locations",
+    "priceUsdc": "0.060000",
+    "category": "government",
+    "sampleRequest": {
+      "filters": "STALP:TX",
+      "fields": "NAME,CITY,ADDRESS",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-regulatory-fedreg-executive-orders",
+    "priceUsdc": "0.060000",
+    "category": "regulatory",
+    "sampleRequest": {
+      "per_page": "5"
+    }
+  },
+  {
+    "slug": "suverse-artic-artist-detail",
+    "priceUsdc": "0.060000",
+    "category": "art",
+    "sampleRequest": {
+      "id": "35809"
+    }
+  },
+  {
+    "slug": "suverse-met-object-search",
+    "priceUsdc": "0.060000",
+    "category": "museum",
+    "sampleRequest": {
+      "q": "sunflowers",
+      "hasImages": "true"
+    }
+  },
+  {
+    "slug": "suverse-gutenberg-by-language",
+    "priceUsdc": "0.055000",
+    "category": "books",
+    "sampleRequest": {
+      "languages": "fr",
+      "sort": "popular"
+    }
+  },
+  {
+    "slug": "suverse-poetry-authors-list",
+    "priceUsdc": "0.050000",
+    "category": "literature",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-musicbrainz-recording-find",
+    "priceUsdc": "0.060000",
+    "category": "music",
+    "sampleRequest": {
+      "query": "bohemian rhapsody",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-quotes-favqs-qotd",
+    "priceUsdc": "0.050000",
+    "category": "quotes",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-earth-streamgage-flow",
+    "priceUsdc": "0.060000",
+    "category": "earth",
+    "sampleRequest": {
+      "sites": "01646500",
+      "period": "P1D"
+    }
+  },
+  {
+    "slug": "suverse-climate-nasa-power-climatology",
+    "priceUsdc": "0.080000",
+    "category": "climate",
+    "sampleRequest": {
+      "parameters": "ALLSKY_SFC_SW_DWN",
+      "community": "RE",
+      "latitude": "39",
+      "longitude": "-77"
+    }
+  },
+  {
+    "slug": "suverse-biodiversity-occurrence-search",
+    "priceUsdc": "0.070000",
+    "category": "biodiversity",
+    "sampleRequest": {
+      "scientificName": "Puma concolor",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-postal-us-city-zips",
+    "priceUsdc": "0.060000",
+    "category": "postal",
+    "sampleRequest": {
+      "state": "ca",
+      "city": "los angeles"
+    }
+  },
+  {
+    "slug": "suverse-places-omgeo-search",
+    "priceUsdc": "0.055000",
+    "category": "places",
+    "sampleRequest": {
+      "name": "Berlin",
+      "count": "3"
+    }
+  },
+  {
+    "slug": "suverse-demographics-fcc-block",
+    "priceUsdc": "0.060000",
+    "category": "demographics",
+    "sampleRequest": {
+      "latitude": "38.8977",
+      "longitude": "-77.0365"
+    }
+  },
+  {
+    "slug": "suverse-aviation-flight-route",
+    "priceUsdc": "0.065000",
+    "category": "aviation",
+    "sampleRequest": {
+      "callsign": "BAW123"
+    }
+  },
+  {
+    "slug": "suverse-pokemon-ability",
+    "priceUsdc": "0.055000",
+    "category": "pokemon",
+    "sampleRequest": {
+      "name": "blaze"
+    }
+  },
+  {
+    "slug": "suverse-entertainment-rickmorty-episode",
+    "priceUsdc": "0.050000",
+    "category": "entertainment",
+    "sampleRequest": {
+      "id": "1"
+    }
+  },
+  {
+    "slug": "suverse-anime-jikan-character-detail",
+    "priceUsdc": "0.055000",
+    "category": "anime",
+    "sampleRequest": {
+      "id": "1"
+    }
+  },
+  {
+    "slug": "suverse-fx-frankfurter-timeseries",
+    "priceUsdc": "0.070000",
+    "category": "fx",
+    "sampleRequest": {
+      "range": "2020-01-01..2020-01-31",
+      "base": "USD",
+      "symbols": "EUR"
+    }
+  },
+  {
+    "slug": "suverse-economy-trade-pct-gdp",
+    "priceUsdc": "0.060000",
+    "category": "economy",
+    "sampleRequest": {
+      "country": "US",
+      "date": "2018:2022"
+    }
+  },
+  {
+    "slug": "suverse-fiscal-marketable-debt-outstanding",
+    "priceUsdc": "0.070000",
+    "category": "fiscal",
+    "sampleRequest": {
+      "page[size]": "5"
+    }
+  },
+  {
+    "slug": "suverse-gov-fdic-failures",
+    "priceUsdc": "0.070000",
+    "category": "government",
+    "sampleRequest": {
+      "filters": "FAILYR:2009",
+      "fields": "NAME,CITYST,FAILDATE",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-regulatory-epa-frs-facilities",
+    "priceUsdc": "0.060000",
+    "category": "regulatory",
+    "sampleRequest": {
+      "state_code": "CA"
+    }
+  },
+  {
+    "slug": "suverse-artic-artist-roster",
+    "priceUsdc": "0.055000",
+    "category": "art",
+    "sampleRequest": {
+      "limit": "3",
+      "page": "1"
+    }
+  },
+  {
+    "slug": "suverse-met-department-objects",
+    "priceUsdc": "0.055000",
+    "category": "museum",
+    "sampleRequest": {
+      "departmentIds": "11"
+    }
+  },
+  {
+    "slug": "suverse-musicbrainz-label-find",
+    "priceUsdc": "0.060000",
+    "category": "music",
+    "sampleRequest": {
+      "query": "motown",
+      "limit": "3"
+    }
+  },
+  {
+    "slug": "suverse-quotes-wikiquote-summary",
+    "priceUsdc": "0.055000",
+    "category": "quotes",
+    "sampleRequest": {
+      "title": "Albert_Einstein"
+    }
+  },
+  {
+    "slug": "suverse-earth-elevation-point",
+    "priceUsdc": "0.050000",
+    "category": "earth",
+    "sampleRequest": {
+      "latitude": "52.52",
+      "longitude": "13.41"
+    }
+  },
+  {
+    "slug": "suverse-biodiversity-country-counts",
+    "priceUsdc": "0.055000",
+    "category": "biodiversity",
+    "sampleRequest": {
+      "publishingCountry": "US"
+    }
+  },
+  {
+    "slug": "suverse-postal-uk-postcode-full",
+    "priceUsdc": "0.060000",
+    "category": "postal",
+    "sampleRequest": {
+      "postcode": "SW1A1AA"
+    }
+  },
+  {
+    "slug": "suverse-places-us-address-geocode",
+    "priceUsdc": "0.070000",
+    "category": "places",
+    "sampleRequest": {
+      "address": "1600 Pennsylvania Ave NW Washington DC"
+    }
+  },
+  {
+    "slug": "suverse-pokemon-move",
+    "priceUsdc": "0.055000",
+    "category": "pokemon",
+    "sampleRequest": {
+      "name": "flamethrower"
+    }
+  },
+  {
+    "slug": "suverse-biodiversity-inat-taxa",
+    "priceUsdc": "0.055000",
+    "category": "biodiversity",
+    "sampleRequest": {
+      "q": "monarch"
+    }
+  },
+  {
+    "slug": "suverse-cleveland-art-search",
+    "priceUsdc": "0.065000",
+    "category": "art",
+    "sampleRequest": {
+      "q": "monet",
+      "limit": "2"
+    }
+  },
+  {
+    "slug": "suverse-gov-fdic-state-summary",
+    "priceUsdc": "0.060000",
+    "category": "government",
+    "sampleRequest": {
+      "filters": "YEAR:2023",
+      "fields": "YEAR,STNAME,ASSET",
+      "limit": "5"
+    }
+  },
+  {
+    "slug": "suverse-regulatory-epa-tri-facilities",
+    "priceUsdc": "0.065000",
+    "category": "regulatory",
+    "sampleRequest": {
+      "state_abbr": "VA"
+    }
+  },
+  {
+    "slug": "suverse-cleveland-art-detail",
+    "priceUsdc": "0.060000",
+    "category": "art",
+    "sampleRequest": {
+      "id": "92937"
+    }
+  }
+]

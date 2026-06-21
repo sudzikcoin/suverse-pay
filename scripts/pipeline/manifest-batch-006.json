@@ -1,0 +1,262 @@
+[
+  {
+    "slug": "polymarket-markets",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "10",
+      "active": "true",
+      "closed": "false",
+      "order": "volume",
+      "ascending": "false"
+    }
+  },
+  {
+    "slug": "polymarket-market-detail",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "id": "2323347"
+    }
+  },
+  {
+    "slug": "polymarket-events",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "5",
+      "active": "true",
+      "closed": "false"
+    }
+  },
+  {
+    "slug": "polymarket-event-detail",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "id": "16183"
+    }
+  },
+  {
+    "slug": "polymarket-trending-markets",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "15"
+    }
+  },
+  {
+    "slug": "polymarket-new-markets",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "15"
+    }
+  },
+  {
+    "slug": "polymarket-markets-by-tag",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "tag_id": "100265",
+      "limit": "10",
+      "closed": "false"
+    }
+  },
+  {
+    "slug": "polymarket-tags",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "50"
+    }
+  },
+  {
+    "slug": "polymarket-resolved-markets",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "15"
+    }
+  },
+  {
+    "slug": "polymarket-market-by-slug",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "slug": "fifwc-ecu-ger-2026-06-25-exact-score-0-2"
+    }
+  },
+  {
+    "slug": "polymarket-orderbook",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "token_id": "66029546611959022847698362728102975113450293964760934634688265761392188847539"
+    }
+  },
+  {
+    "slug": "polymarket-midpoint-price",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "token_id": "66029546611959022847698362728102975113450293964760934634688265761392188847539"
+    }
+  },
+  {
+    "slug": "polymarket-token-price",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "token_id": "66029546611959022847698362728102975113450293964760934634688265761392188847539",
+      "side": "buy"
+    }
+  },
+  {
+    "slug": "polymarket-price-history",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "market": "66029546611959022847698362728102975113450293964760934634688265761392188847539",
+      "interval": "1d",
+      "fidelity": "60"
+    }
+  },
+  {
+    "slug": "polymarket-bid-ask-spread",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "token_id": "66029546611959022847698362728102975113450293964760934634688265761392188847539"
+    }
+  },
+  {
+    "slug": "polymarket-clob-markets",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "next_cursor": ""
+    }
+  },
+  {
+    "slug": "polymarket-recent-trades",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "20",
+      "takerOnly": "true"
+    }
+  },
+  {
+    "slug": "polymarket-market-holders",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "market": "0xf7294e62c740abc47fb752ada68db3c76afa6d05ac92fdc502f05c43ddc3cdb0",
+      "limit": "10"
+    }
+  },
+  {
+    "slug": "polymarket-wallet-positions",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "user": "0x8ac7a02ab2ca88ea27a1a237e34b1492a555f438",
+      "limit": "20"
+    }
+  },
+  {
+    "slug": "polymarket-wallet-value",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "user": "0x8ac7a02ab2ca88ea27a1a237e34b1492a555f438"
+    }
+  },
+  {
+    "slug": "polymarket-wallet-activity",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "user": "0x8ac7a02ab2ca88ea27a1a237e34b1492a555f438",
+      "limit": "20"
+    }
+  },
+  {
+    "slug": "polymarket-market-trades",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "market": "0xf7294e62c740abc47fb752ada68db3c76afa6d05ac92fdc502f05c43ddc3cdb0",
+      "limit": "20"
+    }
+  },
+  {
+    "slug": "kalshi-markets",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "20",
+      "status": "open"
+    }
+  },
+  {
+    "slug": "kalshi-events",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "20",
+      "status": "open"
+    }
+  },
+  {
+    "slug": "kalshi-market-detail",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "ticker": "KXMVECROSSCATEGORY-S202615DDB390A70-61F43B89CD9"
+    }
+  },
+  {
+    "slug": "kalshi-event-detail",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "event_ticker": "KXELONMARS-99"
+    }
+  },
+  {
+    "slug": "kalshi-open-markets",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": "25"
+    }
+  },
+  {
+    "slug": "kalshi-market-orderbook",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "ticker": "KXMVECROSSCATEGORY-S202615DDB390A70-61F43B89CD9",
+      "depth": "10"
+    }
+  },
+  {
+    "slug": "kalshi-series-detail",
+    "priceUsdc": "0.010000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "series_ticker": "KXMVECROSSCATEGORY"
+    }
+  },
+  {
+    "slug": "kalshi-market-trades",
+    "priceUsdc": "0.020000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "ticker": "KXMVECROSSCATEGORY-S202615DDB390A70-61F43B89CD9",
+      "limit": "20"
+    }
+  }
+]

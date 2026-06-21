@@ -1,0 +1,4799 @@
+[
+ {
+  "slug": "suverse-gov-fdic-institutions",
+  "category": "government",
+  "source": "FDIC BankFind",
+  "title": "FDIC Insured Bank Lookup",
+  "description": "Search FDIC-insured banking institutions by US state and return name, city, state and total assets. Data from the FDIC BankFind API.",
+  "descriptionBazaar": "Look up FDIC-insured banks by US state. Returns institution name, city, state and total assets (USD thousands) for each bank. Official FDIC BankFind data, refreshed daily. Useful for bank due-diligence, market mapping and financial research.",
+  "tags": [
+   "government",
+   "regulatory",
+   "banking",
+   "fdic"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.fdic.gov/banks/institutions",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "filters": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "FDIC filter expression, e.g. STALP:CA for California banks",
+    "example": "STALP:CA"
+   },
+   "fields": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Comma-separated fields to return",
+    "example": "NAME,CITY,STALP,ASSET"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max rows",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "filters": "STALP:CA",
+   "fields": "NAME,CITY,STALP,ASSET",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "meta": {
+    "total": 1287
+   },
+   "data": [
+    {
+     "data": {
+      "CITY": "Yreka",
+      "ASSET": 682579,
+      "STALP": "CA",
+      "NAME": "Scott Valley Bank",
+      "ID": "10781"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-regulatory-fedreg-doc",
+  "category": "regulatory",
+  "source": "Federal Register",
+  "title": "Federal Register Document Detail",
+  "description": "Full metadata for a single Federal Register document by its document number (title, agencies, action, dates). Data from the Federal Register API.",
+  "descriptionBazaar": "Fetch full metadata for one Federal Register document by document number: title, abstract, action, publishing agencies and effective dates. Official US Federal Register API. Useful for tracking specific rules, notices and presidential documents.",
+  "tags": [
+   "regulatory",
+   "government",
+   "legal",
+   "fedreg"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://www.federalregister.gov/api/v1/documents/{document_number}.json",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "suverse-pay/1.0 (contact: ops@suverse.io)"
+   }
+  },
+  "params": {
+   "document_number": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Federal Register document number",
+    "example": "2026-12435"
+   }
+  },
+  "sampleRequest": {
+   "document_number": "2026-12435"
+  },
+  "sampleResponse": {
+   "agencies": [
+    {
+     "name": "Executive Office of the President",
+     "id": 538
+    }
+   ],
+   "type": "Presidential Document"
+  }
+ },
+ {
+  "slug": "suverse-civic-fedreg-public-inspection-current",
+  "category": "civic",
+  "source": "Federal Register",
+  "title": "Federal Register Public Inspection (Today)",
+  "description": "Documents currently on public inspection at the Federal Register, before official publication. Data from the Federal Register API.",
+  "descriptionBazaar": "List documents currently on public inspection at the US Federal Register (filed but not yet officially published). Returns agencies, titles and document numbers. Official Federal Register API. Useful for early-warning regulatory and civic monitoring.",
+  "tags": [
+   "civic",
+   "regulatory",
+   "government",
+   "fedreg"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://www.federalregister.gov/api/v1/public-inspection-documents/current.json",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "suverse-pay/1.0 (contact: ops@suverse.io)"
+   }
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "count": 165,
+   "results": [
+    {
+     "agency_names": [
+      "Railroad Retirement Board"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-legal-courtlistener-courts",
+  "category": "legal",
+  "source": "CourtListener",
+  "title": "CourtListener Courts Directory",
+  "description": "Directory of US courts by jurisdiction (federal, state) with id, name and citation string. Data from the CourtListener REST API.",
+  "descriptionBazaar": "List US courts by jurisdiction (F=federal, S=state) from CourtListener. Returns court id, full name, short name, citation string and in-use status. Official CourtListener REST API, keyless read access. Useful for legal-data integrations and court reference lookups.",
+  "tags": [
+   "legal",
+   "government",
+   "courts",
+   "courtlistener"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://www.courtlistener.com/api/rest/v4/courts/",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "suverse-pay/1.0 (contact: ops@suverse.io)"
+   }
+  },
+  "params": {
+   "jurisdiction": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Jurisdiction filter, e.g. F (federal) or S (state)",
+    "example": "F"
+   }
+  },
+  "sampleRequest": {
+   "jurisdiction": "F"
+  },
+  "sampleResponse": {
+   "count": 127,
+   "results": [
+    {
+     "id": "scotus",
+     "in_use": true,
+     "has_opinion_scraper": true
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-artic-artwork-detail",
+  "category": "art",
+  "source": "Art Institute of Chicago",
+  "title": "Art Institute of Chicago Artwork Detail",
+  "description": "Returns full catalog detail for a single Art Institute of Chicago artwork by its numeric ID, including title, artist, date, and medium. Source: api.artic.edu.",
+  "descriptionBazaar": "Fetch one Art Institute of Chicago artwork by numeric ID. Returns title, artist_title, date_display, medium_display and more from the museum's open collection API. Keyless. Good for enriching art references or building gallery datasets.",
+  "tags": [
+   "art",
+   "museum",
+   "artwork",
+   "chicago"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.artic.edu/api/v1/artworks/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Art Institute of Chicago artwork numeric ID",
+    "example": "27992"
+   }
+  },
+  "sampleRequest": {
+   "id": "27992"
+  },
+  "sampleResponse": {
+   "data": {
+    "id": 27992,
+    "title": "A Sunday on La Grande Jatte - 1884",
+    "date_display": "1884-86, border added 1888-89",
+    "artist_title": "Georges Seurat",
+    "medium_display": "Oil on canvas"
+   }
+  }
+ },
+ {
+  "slug": "suverse-artic-exhibitions",
+  "category": "museum",
+  "source": "Art Institute of Chicago",
+  "title": "Art Institute of Chicago Exhibitions",
+  "description": "Returns a paginated list of past and present exhibitions at the Art Institute of Chicago. Source: api.artic.edu.",
+  "descriptionBazaar": "List exhibitions at the Art Institute of Chicago with pagination. Returns exhibition titles and IDs. Keyless open-access museum API. Useful for cultural calendars and museum-content datasets.",
+  "tags": [
+   "museum",
+   "art",
+   "exhibitions",
+   "chicago"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.artic.edu/api/v1/exhibitions",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results per page",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "pagination": {
+    "total": 6255
+   },
+   "data": [
+    {
+     "id": 10521,
+     "title": "Lee Miller: Fearless"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-gutenberg-search",
+  "category": "books",
+  "source": "Project Gutenberg (Gutendex)",
+  "title": "Project Gutenberg Book Search",
+  "description": "Searches the Project Gutenberg catalog by author or title text and returns matching public-domain books with authors and download counts. Source: gutendex.com.",
+  "descriptionBazaar": "Search the Project Gutenberg free ebook catalog by author or title via Gutendex. Returns matching books with title, authors, languages and download_count. Keyless. Useful for public-domain book discovery and reading-list datasets.",
+  "tags": [
+   "books",
+   "literature",
+   "gutenberg",
+   "search"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://gutendex.com/books/",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "search": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Author or title search text",
+    "example": "dickens"
+   }
+  },
+  "sampleRequest": {
+   "search": "dickens"
+  },
+  "sampleResponse": {
+   "count": 230,
+   "results": [
+    {
+     "id": 98,
+     "title": "A Tale of Two Cities",
+     "authors": [
+      {
+       "name": "Dickens, Charles",
+       "birth_year": 1812,
+       "death_year": 1870
+      }
+     ],
+     "download_count": 39386
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-poetry-author-titles",
+  "category": "literature",
+  "source": "PoetryDB",
+  "title": "PoetryDB Poems By Author",
+  "description": "Returns the list of poem titles by a given author in the PoetryDB classic-poetry database. Source: poetrydb.org.",
+  "descriptionBazaar": "List all poem titles by a poet (e.g. Emily Dickinson) from PoetryDB, a database of classic public-domain poetry. Returns an array of titles. Keyless. Useful for browsing a poet's catalog before fetching full text.",
+  "tags": [
+   "literature",
+   "poetry",
+   "author",
+   "books"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://poetrydb.org/author/{author}/title",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "author": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Poet name",
+    "example": "Emily Dickinson"
+   }
+  },
+  "sampleRequest": {
+   "author": "Emily Dickinson"
+  },
+  "sampleResponse": [
+   {
+    "title": "Not at Home to Callers"
+   },
+   {
+    "title": "Defrauded I a Butterfly --"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-musicbrainz-artist-find",
+  "category": "music",
+  "source": "MusicBrainz",
+  "title": "MusicBrainz Artist Search",
+  "description": "Searches the MusicBrainz open music database for artists by name and returns ranked matches with type, country, and MBID. Source: musicbrainz.org.",
+  "descriptionBazaar": "Search MusicBrainz for music artists by name. Returns ranked matches with name, type (Group/Person), country, score and MBID. Keyless (sends a User-Agent). Useful for resolving artist names to canonical MusicBrainz IDs.",
+  "tags": [
+   "music",
+   "artist",
+   "search",
+   "musicbrainz"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://musicbrainz.org/ws/2/artist",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay/1.0 (https://suverse.io; contact@suverse.io)"
+   },
+   "staticQuery": {
+    "fmt": "json"
+   }
+  },
+  "params": {
+   "query": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Artist name query",
+    "example": "radiohead"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "query": "radiohead",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "count": 29,
+   "artists": [
+    {
+     "name": "Radiohead",
+     "type": "Group",
+     "country": "GB",
+     "score": 100
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-quotes-zen-random",
+  "category": "quotes",
+  "source": "ZenQuotes",
+  "title": "ZenQuotes Random Inspirational Quote",
+  "description": "Returns a random inspirational quote with its author from the ZenQuotes service. Source: zenquotes.io.",
+  "descriptionBazaar": "Get a random inspirational quote with author attribution from ZenQuotes. Returns the quote text and author. Keyless, no parameters. Useful for daily-quote widgets, prompts, and motivational content.",
+  "tags": [
+   "quotes",
+   "inspiration",
+   "random",
+   "literature"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://zenquotes.io/api/random",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": [
+   {
+    "q": "Getting lost along your path is a part of finding the path you are meant to be on.",
+    "a": "Robin Sharma"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-earth-quake-feed",
+  "category": "earth",
+  "source": "USGS Earthquake (FDSN)",
+  "title": "USGS Earthquake Event Feed",
+  "description": "Returns recent earthquakes as GeoJSON from the USGS FDSN event service, filterable by time window and minimum magnitude.",
+  "descriptionBazaar": "Live earthquake feed from USGS (FDSN). Query by start/end date and minimum magnitude; returns GeoJSON features with magnitude, place, time and coordinates. Keyless, authoritative seismic data for monitoring, alerting and research.",
+  "tags": [
+   "earth",
+   "earthquake",
+   "seismic",
+   "usgs",
+   "geojson"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "geojson",
+    "orderby": "time"
+   }
+  },
+  "params": {
+   "starttime": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "ISO start date (YYYY-MM-DD)",
+    "example": "2026-06-15"
+   },
+   "endtime": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "ISO end date (YYYY-MM-DD)",
+    "example": "2026-06-19"
+   },
+   "minmagnitude": {
+    "in": "query",
+    "required": false,
+    "type": "number",
+    "description": "Minimum magnitude",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "starttime": "2026-06-15",
+   "endtime": "2026-06-19",
+   "minmagnitude": "5"
+  },
+  "sampleResponse": {
+   "type": "FeatureCollection",
+   "metadata": {
+    "title": "USGS Earthquakes",
+    "status": 200,
+    "api": "2.4.0"
+   },
+   "features": [
+    {
+     "type": "Feature",
+     "properties": {
+      "mag": 4.2,
+      "place": "63 km E of Khorugh, Tajikistan"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-climate-nasa-power-daily",
+  "category": "climate",
+  "source": "NASA POWER",
+  "title": "NASA POWER Daily Climate Point",
+  "description": "Returns daily climate parameters (e.g. 2m temperature, corrected precipitation) for a lat/lng point from the NASA POWER project, as JSON.",
+  "descriptionBazaar": "Daily climate data for any coordinate from NASA POWER. Specify parameters (temperature, precipitation), a community and a date range to get a per-day series. Keyless, satellite-derived. Great for agriculture, renewable energy and climate analytics.",
+  "tags": [
+   "climate",
+   "weather",
+   "nasa",
+   "temperature",
+   "precipitation"
+  ],
+  "priceUsdcAtomic": 85000,
+  "upstream": {
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "JSON"
+   }
+  },
+  "params": {
+   "parameters": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Comma-separated POWER parameters",
+    "example": "T2M,PRECTOTCORR"
+   },
+   "community": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "POWER community (RE, AG, SB)",
+    "example": "RE"
+   },
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "38.9072"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "-77.0369"
+   },
+   "start": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Start date YYYYMMDD",
+    "example": "20250101"
+   },
+   "end": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "End date YYYYMMDD",
+    "example": "20250107"
+   }
+  },
+  "sampleRequest": {
+   "parameters": "T2M,PRECTOTCORR",
+   "community": "RE",
+   "latitude": "38.9072",
+   "longitude": "-77.0369",
+   "start": "20250101",
+   "end": "20250107"
+  },
+  "sampleResponse": {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -77.037,
+     38.907,
+     70.81
+    ]
+   },
+   "properties": {
+    "parameter": {
+     "T2M": {
+      "20250101": 5.41
+     },
+     "PRECTOTCORR": {
+      "20250101": 0.47
+     }
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-air-quality-current",
+  "category": "air-quality",
+  "source": "Open-Meteo Air Quality",
+  "title": "Current Air Quality by Coordinate",
+  "description": "Returns current air quality at a lat/lng point from Open-Meteo, including PM10, PM2.5, carbon monoxide and ozone concentrations, as JSON.",
+  "descriptionBazaar": "Current air quality for any coordinate from Open-Meteo. Returns PM2.5, PM10, carbon monoxide and ozone with units. Keyless, global coverage. Useful for health, outdoor activity and environmental dashboards.",
+  "tags": [
+   "air-quality",
+   "environment",
+   "pm25",
+   "pollution",
+   "open-meteo"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://air-quality-api.open-meteo.com/v1/air-quality",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "current": "pm10,pm2_5,carbon_monoxide,ozone"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "52.52"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "13.41"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "52.52",
+   "longitude": "13.41"
+  },
+  "sampleResponse": {
+   "latitude": 52.5,
+   "longitude": 13.4,
+   "current_units": {
+    "pm10": "ug/m3",
+    "pm2_5": "ug/m3",
+    "ozone": "ug/m3"
+   },
+   "current": {
+    "time": "2026-06-20T14:00"
+   }
+  }
+ },
+ {
+  "slug": "suverse-environment-flood-discharge",
+  "category": "environment",
+  "source": "Open-Meteo Flood",
+  "title": "River Discharge Flood Forecast",
+  "description": "Returns daily river discharge forecast at a lat/lng point from the Open-Meteo Flood API (GloFAS), as JSON.",
+  "descriptionBazaar": "Daily river discharge forecast for any coordinate from Open-Meteo's GloFAS-based flood API. Returns a multi-day discharge series in m3/s. Keyless, global. Useful for flood risk monitoring and hydrology agents.",
+  "tags": [
+   "environment",
+   "flood",
+   "river",
+   "hydrology",
+   "open-meteo"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://flood-api.open-meteo.com/v1/flood",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "daily": "river_discharge"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "33.5"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "-112.1"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "33.5",
+   "longitude": "-112.1"
+  },
+  "sampleResponse": {
+   "latitude": 33.525,
+   "longitude": -112.125,
+   "daily_units": {
+    "river_discharge": "m3/s"
+   },
+   "daily": {
+    "time": [
+     "2026-06-20",
+     "2026-06-21"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-ocean-wave-conditions",
+  "category": "ocean",
+  "source": "Open-Meteo Marine",
+  "title": "Ocean Wave Conditions Forecast",
+  "description": "Returns hourly wave height, direction and period at a coastal lat/lng point from the Open-Meteo Marine API, as JSON.",
+  "descriptionBazaar": "Hourly ocean wave forecast for any coastal coordinate from Open-Meteo Marine. Returns wave height (m), direction and period. Keyless, global. Useful for marine ops, surf, shipping and coastal safety agents.",
+  "tags": [
+   "ocean",
+   "marine",
+   "waves",
+   "forecast",
+   "open-meteo"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://marine-api.open-meteo.com/v1/marine",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "hourly": "wave_height,wave_direction,wave_period"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "54.544"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "10.227"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "54.544",
+   "longitude": "10.227"
+  },
+  "sampleResponse": {
+   "latitude": 54.54,
+   "longitude": 10.21,
+   "hourly_units": {
+    "wave_height": "m",
+    "wave_direction": "deg",
+    "wave_period": "s"
+   },
+   "hourly": {
+    "time": [
+     "2026-06-20T00:00"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-astronomy-daylight-times",
+  "category": "astronomy",
+  "source": "Open-Meteo Forecast",
+  "title": "Sunrise, Sunset and Daylight Duration",
+  "description": "Returns daily sunrise, sunset and daylight duration for a lat/lng point from the Open-Meteo forecast API, as JSON.",
+  "descriptionBazaar": "Daily sunrise, sunset and daylight-duration series for any coordinate from Open-Meteo. Time-zone aware. Keyless, global. Useful for solar, scheduling, photography and astronomy agents.",
+  "tags": [
+   "astronomy",
+   "sun",
+   "daylight",
+   "sunrise",
+   "sunset"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://api.open-meteo.com/v1/forecast",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "daily": "sunrise,sunset,daylight_duration",
+    "timezone": "auto"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "64.13"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "-21.89"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "64.13",
+   "longitude": "-21.89"
+  },
+  "sampleResponse": {
+   "latitude": 64.13,
+   "longitude": -21.88,
+   "timezone": "Atlantic/Reykjavik",
+   "daily_units": {
+    "sunrise": "iso8601",
+    "sunset": "iso8601",
+    "daylight_duration": "s"
+   },
+   "daily": {
+    "time": [
+     "2026-06-20"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-biodiversity-species-search",
+  "category": "biodiversity",
+  "source": "GBIF",
+  "title": "GBIF Species Name Search",
+  "description": "Searches the GBIF taxonomic backbone for species matching a free-text query and returns matching taxa as JSON.",
+  "descriptionBazaar": "Search GBIF's global taxonomic backbone by free-text name to resolve species, get taxonomy and keys. Keyless. Foundation for biodiversity lookups, name resolution and occurrence joins.",
+  "tags": [
+   "biodiversity",
+   "species",
+   "taxonomy",
+   "gbif",
+   "search"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.gbif.org/v1/species/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Species or taxon query",
+    "example": "Panthera leo"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "q": "Panthera leo",
+   "limit": "5"
+  },
+  "sampleResponse": {
+   "offset": 0,
+   "limit": 5,
+   "results": [
+    {
+     "key": 5219404,
+     "scientificName": "Panthera leo (Linnaeus, 1758)",
+     "rank": "SPECIES",
+     "kingdom": "Animalia"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-postal-us-zip",
+  "category": "postal",
+  "source": "Zippopotam.us",
+  "title": "US ZIP Code Lookup",
+  "description": "Returns the city, state, and lat/long coordinates for a US ZIP code via the keyless Zippopotam.us postal API.",
+  "descriptionBazaar": "Resolve any US ZIP code to its place name, state, and geographic coordinates. Backed by the free Zippopotam.us postal database. Pass a 5-digit ZIP and get back city, state abbreviation, latitude, and longitude.",
+  "tags": [
+   "postal",
+   "places",
+   "us",
+   "geocoding"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://api.zippopotam.us/us/{zip}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "zip": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "5-digit US ZIP code",
+    "example": "90210"
+   }
+  },
+  "sampleRequest": {
+   "zip": "90210"
+  },
+  "sampleResponse": {
+   "country": "United States",
+   "post code": "90210",
+   "places": [
+    {
+     "place name": "Beverly Hills",
+     "state": "California",
+     "state abbreviation": "CA",
+     "longitude": "-118.4065",
+     "latitude": "34.0901"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-places-osm-search",
+  "category": "places",
+  "source": "Nominatim (OpenStreetMap)",
+  "title": "Place Name Geocoding",
+  "description": "Geocodes a free-text place or address query to coordinates and OSM metadata via the keyless Nominatim search API.",
+  "descriptionBazaar": "Geocode any free-text place name or address to latitude/longitude with OpenStreetMap detail (type, class, importance, display name). Pass a query string, get back candidate matches. Backed by Nominatim/OSM.",
+  "tags": [
+   "places",
+   "geocoding",
+   "osm"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://nominatim.openstreetmap.org/search",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "suverse-pay/1.0 (https://suverse.io; sudzikgroup@gmail.com)"
+   },
+   "staticQuery": {
+    "format": "json",
+    "limit": "3"
+   }
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text place or address query",
+    "example": "Eiffel Tower"
+   }
+  },
+  "sampleRequest": {
+   "q": "Eiffel Tower"
+  },
+  "sampleResponse": [
+   {
+    "osm_type": "way",
+    "osm_id": 5013364,
+    "lat": "48.8582599",
+    "lon": "2.2945006",
+    "class": "man_made",
+    "type": "tower",
+    "importance": 0.62
+   }
+  ]
+ },
+ {
+  "slug": "suverse-demographics-census-tract",
+  "category": "demographics",
+  "source": "US Census Geocoder",
+  "title": "US Address to Census Geographies",
+  "description": "Returns the Census tract, block, county, and state geographies for a US address via the keyless US Census Bureau geocoder.",
+  "descriptionBazaar": "Map a US street address to its official Census geographies: state, county, tract, and block FIPS codes plus names. Essential for demographic joins and redistricting. US Census Bureau geocoder, no key needed.",
+  "tags": [
+   "demographics",
+   "places",
+   "us",
+   "census"
+  ],
+  "priceUsdcAtomic": 80000,
+  "upstream": {
+   "url": "https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "benchmark": "Public_AR_Current",
+    "vintage": "Current_Current",
+    "format": "json"
+   }
+  },
+  "params": {
+   "address": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "One-line US street address",
+    "example": "1600 Pennsylvania Ave NW Washington DC"
+   }
+  },
+  "sampleRequest": {
+   "address": "1600 Pennsylvania Ave NW Washington DC"
+  },
+  "sampleResponse": {
+   "result": {
+    "input": {
+     "vintage": {
+      "vintageName": "Current_Current"
+     }
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-ip-geo-detail",
+  "category": "ip-geo",
+  "source": "ip-api.com",
+  "title": "IP Geolocation Detail",
+  "description": "Returns country, region, city, ISP, org, and coordinates for an IP address via the keyless ip-api.com service.",
+  "descriptionBazaar": "Geolocate any IPv4/IPv6 address to country, region, city, ZIP, timezone, ISP, organization, AS number, and coordinates. Pass an IP, get a full geo profile. Free ip-api.com, no key required.",
+  "tags": [
+   "ip-geo",
+   "places",
+   "network"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "http://ip-api.com/json/{ip}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "ip": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "IPv4 or IPv6 address",
+    "example": "8.8.8.8"
+   }
+  },
+  "sampleRequest": {
+   "ip": "8.8.8.8"
+  },
+  "sampleResponse": {
+   "status": "success",
+   "country": "United States",
+   "regionName": "Virginia",
+   "city": "Ashburn",
+   "lat": 39.03,
+   "lon": -77.5,
+   "isp": "Google LLC",
+   "as": "AS15169 Google LLC"
+  }
+ },
+ {
+  "slug": "suverse-aviation-aircraft-registry",
+  "category": "aviation",
+  "source": "hexdb.io",
+  "title": "Aircraft Registry Lookup",
+  "description": "Returns the registration, manufacturer, type, and owner for an aircraft by ICAO Mode-S hex via the keyless hexdb.io database.",
+  "descriptionBazaar": "Resolve an aircraft's 24-bit ICAO Mode-S hex to its registration, manufacturer, ICAO type code, full type name, and registered owner/operator. Free hexdb.io registry, no key. Pass a Mode-S hex like 4CA7B5.",
+  "tags": [
+   "aviation",
+   "transport",
+   "registry"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://hexdb.io/api/v1/aircraft/{hex}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "hex": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "24-bit ICAO Mode-S hex",
+    "example": "4ca7b5"
+   }
+  },
+  "sampleRequest": {
+   "hex": "4ca7b5"
+  },
+  "sampleResponse": {
+   "ModeS": "4CA7B5",
+   "Registration": "EI-EFZ",
+   "Manufacturer": "Boeing",
+   "ICAOTypeCode": "B738",
+   "Type": "737NG 8AS/W",
+   "RegisteredOwners": "Ryanair",
+   "OperatorFlagCode": "RYR"
+  }
+ },
+ {
+  "slug": "suverse-countries-cnow-capital",
+  "category": "countries",
+  "source": "countriesnow.space",
+  "title": "Country Capitals Directory",
+  "description": "Returns the capital city and ISO codes for every country via the keyless countriesnow.space API.",
+  "descriptionBazaar": "Get a complete directory of all countries with their capital cities and ISO2/ISO3 codes. Single call returns the full list. Free countriesnow.space data, no key required. Ideal for reference tables and enrichment.",
+  "tags": [
+   "countries",
+   "places",
+   "reference"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://countriesnow.space/api/v0.1/countries/capital",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "error": false,
+   "data": [
+    {
+     "name": "Albania",
+     "capital": "Tirana",
+     "iso2": "AL",
+     "iso3": "ALB"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-pokemon-pokedex",
+  "category": "pokemon",
+  "source": "PokeAPI",
+  "title": "Pokemon Pokedex Lookup",
+  "description": "Returns full Pokedex data for a Pokemon by name or id (types, height, weight, base stats, abilities) from PokeAPI.",
+  "descriptionBazaar": "Look up any Pokemon by name or id and get its Pokedex profile: national id, types, height, weight, base experience and abilities. Backed by PokeAPI, the canonical free Pokemon dataset. Pass a name like charizard or a numeric id.",
+  "tags": [
+   "pokemon",
+   "games",
+   "entertainment"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://pokeapi.co/api/v2/pokemon/{name}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "name": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Pokemon name (lowercase) or numeric id",
+    "example": "charizard"
+   }
+  },
+  "sampleRequest": {
+   "name": "charizard"
+  },
+  "sampleResponse": {
+   "id": 6,
+   "name": "charizard",
+   "height": 17,
+   "weight": 905,
+   "base_experience": 240,
+   "types": [
+    "fire",
+    "flying"
+   ]
+  }
+ },
+ {
+  "slug": "suverse-tcg-pokemon-cards",
+  "category": "tcg",
+  "source": "Pokemon TCG API",
+  "title": "Pokemon TCG Card Search",
+  "description": "Searches Pokemon Trading Card Game cards by name and returns matching card metadata (set, rarity, supertype) from the Pokemon TCG API.",
+  "descriptionBazaar": "Search the Pokemon Trading Card Game database by card name and get matching cards with set name, rarity and supertype. Backed by the keyless Pokemon TCG API. Pass a Lucene-style query like name:charizard.",
+  "tags": [
+   "tcg",
+   "pokemon",
+   "games"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://api.pokemontcg.io/v2/cards",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "pageSize": "5"
+   }
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Lucene query (e.g. name:charizard)",
+    "example": "name:charizard"
+   }
+  },
+  "sampleRequest": {
+   "q": "name:charizard"
+  },
+  "sampleResponse": {
+   "totalCount": 108,
+   "data": [
+    {
+     "id": "gym2-2",
+     "name": "Blaine's Charizard",
+     "supertype": "Pokemon",
+     "rarity": "Rare Holo",
+     "set": "Gym Challenge"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-entertainment-rickmorty-character",
+  "category": "entertainment",
+  "source": "Rick and Morty API",
+  "title": "Rick and Morty Character",
+  "description": "Returns a Rick and Morty character by id (name, status, species, gender, origin) from the Rick and Morty API.",
+  "descriptionBazaar": "Look up a Rick and Morty character by numeric id and get name, status, species, gender and origin planet. Backed by the keyless Rick and Morty API. Pass a character id like 1 for Rick Sanchez.",
+  "tags": [
+   "entertainment",
+   "games"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://rickandmortyapi.com/api/character/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Character id",
+    "example": "1"
+   }
+  },
+  "sampleRequest": {
+   "id": "1"
+  },
+  "sampleResponse": {
+   "id": 1,
+   "name": "Rick Sanchez",
+   "status": "Alive",
+   "species": "Human",
+   "gender": "Male",
+   "origin": "Earth (C-137)"
+  }
+ },
+ {
+  "slug": "suverse-anime-jikan-detail-mal",
+  "category": "anime",
+  "source": "Jikan v4 (MyAnimeList)",
+  "title": "Anime Detail by MAL ID",
+  "description": "Returns full anime details by MyAnimeList id (title, type, episodes, score, year) via the keyless Jikan v4 API.",
+  "descriptionBazaar": "Fetch full anime details by MyAnimeList id: title, type, episode count, community score and broadcast year. Backed by the keyless Jikan v4 API (MyAnimeList). Pass a MAL anime id like 1 for Cowboy Bebop.",
+  "tags": [
+   "anime",
+   "entertainment"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/anime/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "MyAnimeList anime id",
+    "example": "1"
+   }
+  },
+  "sampleRequest": {
+   "id": "1"
+  },
+  "sampleResponse": {
+   "data": {
+    "mal_id": 1,
+    "title": "Cowboy Bebop",
+    "type": "TV",
+    "episodes": 26,
+    "score": 8.75,
+    "year": 1998
+   }
+  }
+ },
+ {
+  "slug": "suverse-trivia-question-bank",
+  "category": "trivia",
+  "source": "Open Trivia DB",
+  "title": "Trivia Question Bank",
+  "description": "Returns a batch of multiple-choice trivia questions for a chosen category from the Open Trivia Database.",
+  "descriptionBazaar": "Pull a batch of trivia questions (with category, difficulty, type and the question text) from the Open Trivia Database. Keyless and high-volume. Pass a category id (e.g. 9 = General Knowledge); amount defaults to 5.",
+  "tags": [
+   "trivia",
+   "games",
+   "fun-data"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://opentdb.com/api.php",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "amount": "5"
+   }
+  },
+  "params": {
+   "category": {
+    "in": "query",
+    "required": true,
+    "type": "integer",
+    "description": "Open Trivia DB category id",
+    "example": "9"
+   }
+  },
+  "sampleRequest": {
+   "category": "9"
+  },
+  "sampleResponse": {
+   "response_code": 0,
+   "results": [
+    {
+     "category": "General Knowledge",
+     "type": "multiple",
+     "difficulty": "easy",
+     "question": "Which canal connects the Mediterranean Sea with the Red Sea?"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-comics-xkcd-comic",
+  "category": "comics",
+  "source": "xkcd",
+  "title": "xkcd Comic Metadata",
+  "description": "Returns metadata for an xkcd comic by number (title, date, alt text, image URL) from xkcd.com.",
+  "descriptionBazaar": "Fetch the metadata of any xkcd webcomic by its number: title, publication date, alt text and image URL. Backed by the keyless xkcd JSON API. Pass a comic number like 614.",
+  "tags": [
+   "comics",
+   "entertainment",
+   "fun-data"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://xkcd.com/{num}/info.0.json",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "num": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "xkcd comic number",
+    "example": "614"
+   }
+  },
+  "sampleRequest": {
+   "num": "614"
+  },
+  "sampleResponse": {
+   "num": 614,
+   "title": "Woodpecker",
+   "year": "2009",
+   "month": "7",
+   "day": "24"
+  }
+ },
+ {
+  "slug": "suverse-fx-er-all-rates",
+  "category": "fx",
+  "source": "open.er-api.com",
+  "title": "All FX Rates For A Base Currency",
+  "description": "Returns daily exchange rates from one base currency to ~160 world currencies. Source: open.er-api.com (ExchangeRate-API free, keyless).",
+  "descriptionBazaar": "Live conversion table from a base currency (e.g. USD) to ~160 fiat currencies in one call. Includes last-update timestamps. Source: open.er-api.com / ExchangeRate-API free tier. Pass any ISO 4217 base code as the path param.",
+  "tags": [
+   "fx",
+   "forex",
+   "currency",
+   "rates"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://open.er-api.com/v6/latest/{base}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "base": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "ISO 4217 base currency code",
+    "example": "USD"
+   }
+  },
+  "sampleRequest": {
+   "base": "USD"
+  },
+  "sampleResponse": {
+   "result": "success",
+   "base_code": "USD",
+   "time_last_update_utc": "Sat, 20 Jun 2026 00:02:31 +0000",
+   "rates": {
+    "USD": 1,
+    "EUR": 0.86,
+    "GBP": 0.74,
+    "JPY": 161.23,
+    "AUD": 1.4257
+   }
+  }
+ },
+ {
+  "slug": "suverse-economy-gdp-deflator-inflation",
+  "category": "economy",
+  "source": "World Bank",
+  "title": "GDP Deflator Inflation By Country",
+  "description": "Annual GDP-deflator inflation rate (%) for a country over a year range. Indicator NY.GDP.DEFL.KD.ZG. Source: World Bank Open Data, keyless.",
+  "descriptionBazaar": "Annual inflation measured by the GDP deflator (% per year) for any country/year range. World Bank indicator NY.GDP.DEFL.KD.ZG. Pass ISO country code (path) plus optional date range. A broad alternative to CPI inflation.",
+  "tags": [
+   "economy",
+   "inflation",
+   "worldbank",
+   "macro-data"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.worldbank.org/v2/country/{country}/indicator/NY.GDP.DEFL.KD.ZG",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "country": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "ISO 2 or 3 letter country code",
+    "example": "US"
+   },
+   "date": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Year range YYYY:YYYY",
+    "example": "2018:2022"
+   },
+   "per_page": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Rows per page",
+    "example": "10"
+   }
+  },
+  "sampleRequest": {
+   "country": "US",
+   "date": "2018:2022",
+   "per_page": "10"
+  },
+  "sampleResponse": {
+   "indicator": "GDP deflator inflation (annual %)",
+   "country": "United States",
+   "date": "2022",
+   "value": 7.12948085418195
+  }
+ },
+ {
+  "slug": "suverse-fiscal-interest-expense",
+  "category": "fiscal",
+  "source": "US Treasury FiscalData",
+  "title": "US Treasury Interest Expense On Debt",
+  "description": "Monthly interest expense on the US public debt by security type. Source: US Treasury FiscalData API, keyless.",
+  "descriptionBazaar": "Monthly and fiscal-year-to-date interest expense on US Treasury debt, broken out by security type (bills, notes, bonds, etc). Source: US Treasury FiscalData. Sorted newest first; trim page size as needed.",
+  "tags": [
+   "fiscal",
+   "treasury",
+   "debt",
+   "us-government"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/interest_expense",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuverseBot/1.0 (+https://suverse.io)"
+   },
+   "staticQuery": {
+    "sort": "-record_date"
+   }
+  },
+  "params": {
+   "page[size]": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Rows per page",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "page[size]": "5"
+  },
+  "sampleResponse": {
+   "record_date": "2026-05-31",
+   "expense_catg_desc": "INTEREST EXPENSE ON PUBLIC ISSUES",
+   "expense_type_desc": "Treasury Notes",
+   "month_expense_amt": "42938102497.28",
+   "fytd_expense_amt": "324683956226.14"
+  }
+ },
+ {
+  "slug": "suverse-beverage-breweries-by-state",
+  "category": "beverage",
+  "source": "Open Brewery DB",
+  "title": "Breweries By State",
+  "description": "List of breweries in a given US state with type, address, and geo coordinates. Source: Open Brewery DB, keyless.",
+  "descriptionBazaar": "Directory of breweries in a US state: name, brewery type (micro, brewpub, regional...), full address, phone, website, and lat/long. Source: Open Brewery DB. Pass by_state (use full state name, e.g. ohio) and optional per_page.",
+  "tags": [
+   "beverage",
+   "brewery",
+   "directory",
+   "places"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.openbrewerydb.org/v1/breweries",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "by_state": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "US state name (lowercase)",
+    "example": "ohio"
+   },
+   "per_page": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Rows per page (max 200)",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "by_state": "ohio",
+   "per_page": "3"
+  },
+  "sampleResponse": {
+   "id": "950180bd-29c9-46b3-ad0c-e6f09799ec7f",
+   "name": "13 Below Brewery",
+   "brewery_type": "micro",
+   "city": "Cincinnati",
+   "state": "Ohio",
+   "website_url": "http://www.13belowbrewery.com"
+  }
+ },
+ {
+  "slug": "suverse-gov-fdic-financials",
+  "category": "government",
+  "source": "FDIC BankFind",
+  "title": "FDIC Bank Financials",
+  "description": "Quarterly financial metrics (assets, deposits) for FDIC-insured banks filtered by state. Data from the FDIC BankFind financials API.",
+  "descriptionBazaar": "Retrieve quarterly bank financial metrics (total assets, deposits) for FDIC-insured institutions by state filter. Returns time-series rows keyed by cert and report date. Official FDIC data for financial analysis and bank monitoring.",
+  "tags": [
+   "government",
+   "regulatory",
+   "banking",
+   "fdic"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://api.fdic.gov/banks/financials",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "filters": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "FDIC filter expression, e.g. STALP:NY",
+    "example": "STALP:NY"
+   },
+   "fields": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Comma-separated fields",
+    "example": "CERT,ASSET,DEP"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max rows",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "filters": "STALP:NY",
+   "fields": "CERT,ASSET,DEP",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "meta": {
+    "total": 41661
+   },
+   "data": [
+    {
+     "data": {
+      "ASSET": 62523,
+      "CERT": 11051,
+      "DEP": 56599
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-regulatory-fedreg-term-search",
+  "category": "regulatory",
+  "source": "Federal Register",
+  "title": "Federal Register Term Search",
+  "description": "Search Federal Register documents by free-text term and return matching rules, notices and proposed rules. Data from the Federal Register API.",
+  "descriptionBazaar": "Full-text search of US Federal Register documents by term. Returns matching titles, document types, abstracts and document numbers with a total count. Official Federal Register API. Ideal for regulatory monitoring on any topic or keyword.",
+  "tags": [
+   "regulatory",
+   "government",
+   "legal",
+   "fedreg"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://www.federalregister.gov/api/v1/documents.json",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "suverse-pay/1.0 (contact: ops@suverse.io)"
+   }
+  },
+  "params": {
+   "conditions[term]": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text search term",
+    "example": "tariff"
+   },
+   "per_page": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Results per page",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "conditions[term]": "tariff",
+   "per_page": "5"
+  },
+  "sampleResponse": {
+   "description": "Documents matching 'tariff'",
+   "count": 10000,
+   "results": [
+    {
+     "title": "Tariff of Tolls",
+     "type": "Rule"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-legal-courtlistener-court-detail",
+  "category": "legal",
+  "source": "CourtListener",
+  "title": "CourtListener Court Detail",
+  "description": "Full detail for a single US court by its court id (name, citation string, dates, scrapers). Data from the CourtListener REST API.",
+  "descriptionBazaar": "Fetch full detail for one US court by court id (e.g. scotus) from CourtListener: full and short names, citation string, position, in-use status and scraper flags. Official CourtListener REST API, keyless read access. Useful for legal-data lookups.",
+  "tags": [
+   "legal",
+   "government",
+   "courts",
+   "courtlistener"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://www.courtlistener.com/api/rest/v4/courts/{court_id}/",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "suverse-pay/1.0 (contact: ops@suverse.io)"
+   }
+  },
+  "params": {
+   "court_id": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "CourtListener court id",
+    "example": "scotus"
+   }
+  },
+  "sampleRequest": {
+   "court_id": "scotus"
+  },
+  "sampleResponse": {
+   "id": "scotus",
+   "citation_string": "SCOTUS",
+   "in_use": true,
+   "has_opinion_scraper": true
+  }
+ },
+ {
+  "slug": "suverse-artic-artwork-lookup",
+  "category": "art",
+  "source": "Art Institute of Chicago",
+  "title": "Art Institute of Chicago Artwork Search",
+  "description": "Full-text search over the Art Institute of Chicago collection, returning matching artworks ranked by relevance. Source: api.artic.edu.",
+  "descriptionBazaar": "Search the Art Institute of Chicago collection by free-text query (artist, title, keyword). Returns ranked matches with artwork IDs and titles. Keyless museum open-access API. Useful for finding artworks before fetching full detail.",
+  "tags": [
+   "art",
+   "museum",
+   "search",
+   "chicago"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://api.artic.edu/api/v1/artworks/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text search query",
+    "example": "monet"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "q": "monet",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "pagination": {
+    "total": 132132
+   },
+   "data": [
+    {
+     "_score": 119.3,
+     "id": 16568,
+     "title": "Water Lilies"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-met-departments",
+  "category": "museum",
+  "source": "Metropolitan Museum of Art",
+  "title": "Met Museum Departments",
+  "description": "Returns the full list of curatorial departments at the Metropolitan Museum of Art with IDs and display names. Source: collectionapi.metmuseum.org.",
+  "descriptionBazaar": "List all curatorial departments at the Metropolitan Museum of Art with departmentId and displayName. Keyless open-access museum API. Useful as a lookup for filtering Met object searches by department.",
+  "tags": [
+   "museum",
+   "art",
+   "departments",
+   "met"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://collectionapi.metmuseum.org/public/collection/v1/departments",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "departments": [
+    {
+     "departmentId": 1,
+     "displayName": "American Decorative Arts"
+    },
+    {
+     "departmentId": 3,
+     "displayName": "Ancient West Asian Art"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-gutenberg-book-detail",
+  "category": "books",
+  "source": "Project Gutenberg (Gutendex)",
+  "title": "Project Gutenberg Book Detail",
+  "description": "Returns full metadata for one Project Gutenberg book by its numeric ID, including title, authors, subjects, and download links. Source: gutendex.com.",
+  "descriptionBazaar": "Fetch one Project Gutenberg book by its numeric ID via Gutendex. Returns title, authors, subjects, languages, formats and download_count. Keyless. Useful for resolving a Gutenberg ID to full book metadata and download URLs.",
+  "tags": [
+   "books",
+   "literature",
+   "gutenberg",
+   "metadata"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://gutendex.com/books/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Project Gutenberg book numeric ID",
+    "example": "1342"
+   }
+  },
+  "sampleRequest": {
+   "id": "1342"
+  },
+  "sampleResponse": {
+   "id": 1342,
+   "title": "Pride and Prejudice",
+   "authors": [
+    {
+     "name": "Austen, Jane",
+     "birth_year": 1775,
+     "death_year": 1817
+    }
+   ],
+   "download_count": 117126
+  }
+ },
+ {
+  "slug": "suverse-poetry-by-title",
+  "category": "literature",
+  "source": "PoetryDB",
+  "title": "PoetryDB Poem By Title",
+  "description": "Returns the full text and metadata of a poem matching the given title from the PoetryDB classic-poetry database. Source: poetrydb.org.",
+  "descriptionBazaar": "Fetch a classic public-domain poem by title from PoetryDB. Returns title, author, line count and full lines. Keyless. Useful for retrieving poetry text for analysis, display, or literary datasets.",
+  "tags": [
+   "literature",
+   "poetry",
+   "title",
+   "books"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://poetrydb.org/title/{title}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "title": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Poem title",
+    "example": "Ozymandias"
+   }
+  },
+  "sampleRequest": {
+   "title": "Ozymandias"
+  },
+  "sampleResponse": [
+   {
+    "title": "Ozymandias",
+    "author": "Percy Bysshe Shelley",
+    "linecount": "14",
+    "lines": [
+     "I met a traveller from an antique land",
+     "Who said: Two vast and trunkless legs of stone"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "suverse-musicbrainz-releasegroup-find",
+  "category": "music",
+  "source": "MusicBrainz",
+  "title": "MusicBrainz Release Group Search",
+  "description": "Searches the MusicBrainz open music database for release groups (albums/singles) by title and returns ranked matches. Source: musicbrainz.org.",
+  "descriptionBazaar": "Search MusicBrainz for release groups (albums, singles, EPs) by title. Returns matches with title, primary-type, artist credit and MBID. Keyless (sends a User-Agent). Useful for finding canonical album entries in the open music database.",
+  "tags": [
+   "music",
+   "album",
+   "search",
+   "musicbrainz"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://musicbrainz.org/ws/2/release-group",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay/1.0 (https://suverse.io; contact@suverse.io)"
+   },
+   "staticQuery": {
+    "fmt": "json"
+   }
+  },
+  "params": {
+   "query": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Album/release title query",
+    "example": "ok computer"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "query": "ok computer",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "count": 3484,
+   "release-groups": [
+    {
+     "title": "Ok Computer",
+     "primary-type": "Single",
+     "artist": "Lemaitre"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-quotes-zen-today",
+  "category": "quotes",
+  "source": "ZenQuotes",
+  "title": "ZenQuotes Quote Of The Day",
+  "description": "Returns the daily quote of the day with its author from the ZenQuotes service. Source: zenquotes.io.",
+  "descriptionBazaar": "Get the ZenQuotes quote of the day with author attribution. Returns the day's quote text, author and an image link. Keyless, no parameters. Useful for daily-content feeds and quote-of-the-day features.",
+  "tags": [
+   "quotes",
+   "inspiration",
+   "daily",
+   "literature"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://zenquotes.io/api/today",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": [
+   {
+    "q": "Let us rather run the risk of wearing out than rusting out.",
+    "a": "Theodore Roosevelt"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-earth-quake-radius",
+  "category": "earth",
+  "source": "USGS Earthquake (FDSN)",
+  "title": "USGS Earthquakes Near a Location",
+  "description": "Returns earthquakes within a radius of a lat/lng point from the USGS FDSN service as GeoJSON, filterable by minimum magnitude and start time.",
+  "descriptionBazaar": "Find earthquakes near any point. Pass latitude, longitude and a search radius (km) plus minimum magnitude and start date; returns GeoJSON quake features from USGS. Keyless. Ideal for location-aware seismic risk checks.",
+  "tags": [
+   "earth",
+   "earthquake",
+   "seismic",
+   "usgs",
+   "geospatial"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "geojson"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Center latitude",
+    "example": "35"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Center longitude",
+    "example": "-120"
+   },
+   "maxradiuskm": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Search radius in km",
+    "example": "200"
+   },
+   "minmagnitude": {
+    "in": "query",
+    "required": false,
+    "type": "number",
+    "description": "Minimum magnitude",
+    "example": "2"
+   },
+   "starttime": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "ISO start date",
+    "example": "2026-06-15"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "35",
+   "longitude": "-120",
+   "maxradiuskm": "200",
+   "minmagnitude": "2",
+   "starttime": "2026-06-15"
+  },
+  "sampleResponse": {
+   "type": "FeatureCollection",
+   "metadata": {
+    "title": "USGS Earthquakes",
+    "status": 200
+   },
+   "features": [
+    {
+     "type": "Feature",
+     "properties": {
+      "mag": 2.3,
+      "place": "California"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-climate-nasa-power-monthly",
+  "category": "climate",
+  "source": "NASA POWER",
+  "title": "NASA POWER Monthly Climate Point",
+  "description": "Returns monthly climate parameters for a lat/lng point across one or more years from NASA POWER, as JSON.",
+  "descriptionBazaar": "Monthly climate aggregates for any coordinate from NASA POWER. Specify parameters, community and a start/end year to get month-by-month values. Keyless, satellite-derived climate normals for planning and seasonal analysis.",
+  "tags": [
+   "climate",
+   "nasa",
+   "monthly",
+   "temperature",
+   "analytics"
+  ],
+  "priceUsdcAtomic": 80000,
+  "upstream": {
+   "url": "https://power.larc.nasa.gov/api/temporal/monthly/point",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "JSON"
+   }
+  },
+  "params": {
+   "parameters": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Comma-separated POWER parameters",
+    "example": "T2M"
+   },
+   "community": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "POWER community",
+    "example": "AG"
+   },
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "0"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "35"
+   },
+   "start": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Start year YYYY",
+    "example": "2023"
+   },
+   "end": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "End year YYYY",
+    "example": "2023"
+   }
+  },
+  "sampleRequest": {
+   "parameters": "T2M",
+   "community": "AG",
+   "latitude": "0",
+   "longitude": "35",
+   "start": "2023",
+   "end": "2023"
+  },
+  "sampleResponse": {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     35,
+     0,
+     1619.27
+    ]
+   },
+   "properties": {
+    "parameter": {
+     "T2M": {
+      "202301": 19.96,
+      "202302": 21.84
+     }
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-air-quality-index",
+  "category": "air-quality",
+  "source": "Open-Meteo Air Quality",
+  "title": "Air Quality Index (US and European)",
+  "description": "Returns the current US AQI and European AQI plus PM2.5 and PM10 at a lat/lng point from Open-Meteo, as JSON.",
+  "descriptionBazaar": "Current US and European AQI for any coordinate from Open-Meteo, alongside PM2.5 and PM10 concentrations. Keyless, global. Ideal for surfacing a single human-readable air quality score in apps and agents.",
+  "tags": [
+   "air-quality",
+   "aqi",
+   "environment",
+   "pollution",
+   "health"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://air-quality-api.open-meteo.com/v1/air-quality",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "current": "european_aqi,us_aqi,pm2_5,pm10"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "28.61"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "77.20"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "28.61",
+   "longitude": "77.20"
+  },
+  "sampleResponse": {
+   "latitude": 28.6,
+   "longitude": 77.2,
+   "current_units": {
+    "european_aqi": "EAQI",
+    "us_aqi": "USAQI",
+    "pm2_5": "ug/m3"
+   },
+   "current": {
+    "time": "2026-06-20T15:00"
+   }
+  }
+ },
+ {
+  "slug": "suverse-environment-flood-peak",
+  "category": "environment",
+  "source": "Open-Meteo Flood",
+  "title": "Peak River Discharge Outlook",
+  "description": "Returns daily maximum river discharge for an extended forecast horizon at a lat/lng point from Open-Meteo Flood (GloFAS), as JSON.",
+  "descriptionBazaar": "Extended peak river discharge outlook for any coordinate from Open-Meteo's flood API. Returns up to 30 days of daily maximum discharge (m3/s). Keyless, global. Built for early flood-risk and basin-stress signals.",
+  "tags": [
+   "environment",
+   "flood",
+   "river",
+   "forecast",
+   "risk"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://flood-api.open-meteo.com/v1/flood",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "daily": "river_discharge_max",
+    "forecast_days": "30"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "23.8"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "90.4"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "23.8",
+   "longitude": "90.4"
+  },
+  "sampleResponse": {
+   "latitude": 23.775,
+   "longitude": 90.375,
+   "daily_units": {
+    "river_discharge_max": "m3/s"
+   },
+   "daily": {
+    "time": [
+     "2026-06-20",
+     "2026-06-21"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-ocean-sea-surface-temp",
+  "category": "ocean",
+  "source": "Open-Meteo Marine",
+  "title": "Sea Surface Temperature and Current",
+  "description": "Returns current sea surface temperature and ocean current velocity at a lat/lng point from the Open-Meteo Marine API, as JSON.",
+  "descriptionBazaar": "Current sea surface temperature and ocean current velocity for any marine coordinate from Open-Meteo. Keyless, global. Useful for fisheries, climate, reef monitoring and maritime routing.",
+  "tags": [
+   "ocean",
+   "marine",
+   "sst",
+   "currents",
+   "temperature"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://marine-api.open-meteo.com/v1/marine",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "current": "sea_surface_temperature,ocean_current_velocity"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "21.3"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "-157.8"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "21.3",
+   "longitude": "-157.8"
+  },
+  "sampleResponse": {
+   "latitude": 21.29,
+   "longitude": -157.79,
+   "current_units": {
+    "sea_surface_temperature": "C",
+    "ocean_current_velocity": "km/h"
+   },
+   "current": {
+    "time": "2026-06-20T15:00"
+   }
+  }
+ },
+ {
+  "slug": "suverse-astronomy-uv-index-daily",
+  "category": "astronomy",
+  "source": "Open-Meteo Forecast",
+  "title": "Daily UV Index and Sunshine Forecast",
+  "description": "Returns daily maximum UV index and sunshine duration for a lat/lng point from the Open-Meteo forecast API, as JSON.",
+  "descriptionBazaar": "Daily max UV index and sunshine-duration forecast for any coordinate from Open-Meteo. Keyless, global, time-zone aware. Useful for sun-safety, solar yield and outdoor-planning agents.",
+  "tags": [
+   "astronomy",
+   "uv",
+   "sun",
+   "sunshine",
+   "forecast"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.open-meteo.com/v1/forecast",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "daily": "uv_index_max,sunshine_duration",
+    "timezone": "auto"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "52.52"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "13.41"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "52.52",
+   "longitude": "13.41"
+  },
+  "sampleResponse": {
+   "latitude": 52.52,
+   "longitude": 13.41,
+   "timezone": "Europe/Berlin",
+   "daily_units": {
+    "uv_index_max": "",
+    "sunshine_duration": "s"
+   },
+   "daily": {
+    "time": [
+     "2026-06-20"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-biodiversity-name-match",
+  "category": "biodiversity",
+  "source": "GBIF",
+  "title": "GBIF Species Name Match",
+  "description": "Matches a scientific name against the GBIF backbone and returns the accepted taxon with full classification, as JSON.",
+  "descriptionBazaar": "Resolve a scientific name to its accepted GBIF taxon with confidence, rank and full kingdom-to-genus classification. Keyless. Best for normalizing species names before analysis or display.",
+  "tags": [
+   "biodiversity",
+   "taxonomy",
+   "name-match",
+   "gbif",
+   "species"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.gbif.org/v1/species/match",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "verbose": "true"
+   }
+  },
+  "params": {
+   "name": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Scientific name to match",
+    "example": "Felis catus"
+   }
+  },
+  "sampleRequest": {
+   "name": "Felis catus"
+  },
+  "sampleResponse": {
+   "usageKey": 2435035,
+   "scientificName": "Felis catus Linnaeus, 1758",
+   "rank": "SPECIES",
+   "status": "ACCEPTED",
+   "confidence": 99,
+   "matchType": "EXACT",
+   "kingdom": "Animalia",
+   "family": "Felidae"
+  }
+ },
+ {
+  "slug": "suverse-postal-intl-code",
+  "category": "postal",
+  "source": "Zippopotam.us",
+  "title": "International Postal Code Lookup",
+  "description": "Returns place name, region, and coordinates for a postal code in a given country (DE, GB, CA, NL, ES, and more) via keyless Zippopotam.us.",
+  "descriptionBazaar": "Look up any postal code worldwide by 2-letter country code. Returns place name, state/region, latitude, and longitude. Covers Germany, UK, Canada, Netherlands, Spain and dozens more countries. Free Zippopotam.us data.",
+  "tags": [
+   "postal",
+   "places",
+   "international",
+   "geocoding"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.zippopotam.us/{country}/{postcode}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "country": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "2-letter ISO country code",
+    "example": "de"
+   },
+   "postcode": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Postal code in that country",
+    "example": "01067"
+   }
+  },
+  "sampleRequest": {
+   "country": "de",
+   "postcode": "01067"
+  },
+  "sampleResponse": {
+   "country": "Germany",
+   "post code": "01067",
+   "places": [
+    {
+     "place name": "Dresden",
+     "state": "Sachsen",
+     "state abbreviation": "SN",
+     "longitude": "51.05"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-places-osm-reverse",
+  "category": "places",
+  "source": "Nominatim (OpenStreetMap)",
+  "title": "Reverse Geocoding",
+  "description": "Reverse-geocodes a latitude/longitude to the nearest place or address via the keyless Nominatim reverse API.",
+  "descriptionBazaar": "Turn coordinates into an address. Pass lat and lon and get the nearest OpenStreetMap feature with display name, type, and address components. Backed by Nominatim/OSM, free and keyless.",
+  "tags": [
+   "places",
+   "geocoding",
+   "osm"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://nominatim.openstreetmap.org/reverse",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "suverse-pay/1.0 (https://suverse.io; sudzikgroup@gmail.com)"
+   },
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "lat": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "48.8584"
+   },
+   "lon": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "2.2945"
+   }
+  },
+  "sampleRequest": {
+   "lat": "48.8584",
+   "lon": "2.2945"
+  },
+  "sampleResponse": {
+   "osm_type": "way",
+   "osm_id": 308145252,
+   "lat": "48.8583982",
+   "lon": "2.2944933",
+   "class": "highway",
+   "type": "elevator"
+  }
+ },
+ {
+  "slug": "suverse-demographics-census-coords",
+  "category": "demographics",
+  "source": "US Census Geocoder",
+  "title": "US Coordinates to Census Geographies",
+  "description": "Returns the Census state, county, and tract geographies for a coordinate pair via the keyless US Census Bureau geocoder.",
+  "descriptionBazaar": "Reverse-map a US latitude/longitude to its official Census geographies (state, county, tract FIPS codes and names). Pass x (lon) and y (lat). Authoritative US Census Bureau geocoder, no key required.",
+  "tags": [
+   "demographics",
+   "places",
+   "us",
+   "census"
+  ],
+  "priceUsdcAtomic": 75000,
+  "upstream": {
+   "url": "https://geocoding.geo.census.gov/geocoder/geographies/coordinates",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "benchmark": "Public_AR_Current",
+    "vintage": "Current_Current",
+    "format": "json"
+   }
+  },
+  "params": {
+   "x": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "-77.0365"
+   },
+   "y": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "38.8977"
+   }
+  },
+  "sampleRequest": {
+   "x": "-77.0365",
+   "y": "38.8977"
+  },
+  "sampleResponse": {
+   "result": {
+    "geographies": {
+     "States": [
+      {
+       "BASENAME": "District of Columbia",
+       "STUSAB": "DC",
+       "GEOID": "11"
+      }
+     ]
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-aviation-airport-by-icao",
+  "category": "aviation",
+  "source": "hexdb.io",
+  "title": "Airport Lookup by ICAO",
+  "description": "Returns the airport name, IATA/ICAO codes, country, region, and coordinates for an ICAO airport code via the keyless hexdb.io database.",
+  "descriptionBazaar": "Look up an airport by its 4-letter ICAO code and get the airport name, IATA code, country, region, and latitude/longitude. Free hexdb.io airport database, no key. Pass an ICAO like EGLL.",
+  "tags": [
+   "aviation",
+   "transport",
+   "airports",
+   "places"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://hexdb.io/api/v1/airport/icao/{icao}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "icao": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "4-letter ICAO airport code",
+    "example": "EGLL"
+   }
+  },
+  "sampleRequest": {
+   "icao": "EGLL"
+  },
+  "sampleResponse": {
+   "country_code": "GB",
+   "region_name": "England",
+   "iata": "LHR",
+   "icao": "EGLL",
+   "airport": "Heathrow Airport",
+   "latitude": 51.4775,
+   "longitude": -0.461389
+  }
+ },
+ {
+  "slug": "suverse-countries-cnow-states",
+  "category": "countries",
+  "source": "countriesnow.space",
+  "title": "States and Provinces by Country",
+  "description": "Returns the list of states/provinces with codes for a given country via the keyless countriesnow.space API.",
+  "descriptionBazaar": "Given a country name, return its full list of states or provinces with their subdivision codes. Free countriesnow.space data, no key. Useful for address forms, dropdowns, and geographic enrichment.",
+  "tags": [
+   "countries",
+   "places",
+   "reference"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://countriesnow.space/api/v0.1/countries/states/q",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "country": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Country name",
+    "example": "Germany"
+   }
+  },
+  "sampleRequest": {
+   "country": "Germany"
+  },
+  "sampleResponse": {
+   "error": false,
+   "data": {
+    "name": "Germany",
+    "iso2": "DE",
+    "states": [
+     {
+      "name": "Bavaria",
+      "state_code": "BY"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-pokemon-type-matchup",
+  "category": "pokemon",
+  "source": "PokeAPI",
+  "title": "Pokemon Type Matchups",
+  "description": "Returns damage relations and member Pokemon for an elemental type from PokeAPI.",
+  "descriptionBazaar": "Get the battle matchup chart for any Pokemon elemental type: which types deal double, half, or no damage to it, plus the count of Pokemon that have the type. Useful for team-building and battle logic. Backed by PokeAPI.",
+  "tags": [
+   "pokemon",
+   "games"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://pokeapi.co/api/v2/type/{name}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "name": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Elemental type name",
+    "example": "fire"
+   }
+  },
+  "sampleRequest": {
+   "name": "fire"
+  },
+  "sampleResponse": {
+   "name": "fire",
+   "double_damage_from": [
+    "ground",
+    "rock",
+    "water"
+   ],
+   "pokemon_count": 109
+  }
+ },
+ {
+  "slug": "suverse-tcg-mtg-cards",
+  "category": "tcg",
+  "source": "Magic The Gathering API",
+  "title": "Magic The Gathering Card Search",
+  "description": "Searches Magic: The Gathering cards by name and returns matching card data (mana cost, type, rarity, set) from the magicthegathering.io API.",
+  "descriptionBazaar": "Search Magic: The Gathering cards by name and get mana cost, card type, rarity and set name for each match. Backed by the keyless magicthegathering.io API. Pass a card name like Black Lotus.",
+  "tags": [
+   "tcg",
+   "games"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://api.magicthegathering.io/v1/cards",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "name": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Card name to search",
+    "example": "Black Lotus"
+   }
+  },
+  "sampleRequest": {
+   "name": "Black Lotus"
+  },
+  "sampleResponse": {
+   "cards": [
+    {
+     "name": "Black Lotus",
+     "manaCost": "{0}",
+     "type": "Artifact",
+     "rarity": "Rare",
+     "setName": "Unlimited Edition"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-entertainment-rickmorty-location",
+  "category": "entertainment",
+  "source": "Rick and Morty API",
+  "title": "Rick and Morty Location",
+  "description": "Returns a Rick and Morty location by id (name, type, dimension, resident count) from the Rick and Morty API.",
+  "descriptionBazaar": "Look up a Rick and Morty location by numeric id and get its name, type, dimension and number of residents. Backed by the keyless Rick and Morty API. Pass a location id like 1.",
+  "tags": [
+   "entertainment",
+   "games"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://rickandmortyapi.com/api/location/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Location id",
+    "example": "1"
+   }
+  },
+  "sampleRequest": {
+   "id": "1"
+  },
+  "sampleResponse": {
+   "id": 1,
+   "name": "Earth (C-137)",
+   "type": "Planet",
+   "dimension": "Dimension C-137",
+   "residents_count": 27
+  }
+ },
+ {
+  "slug": "suverse-anime-jikan-manga-detail",
+  "category": "anime",
+  "source": "Jikan v4 (MyAnimeList)",
+  "title": "Manga Detail by MAL ID",
+  "description": "Returns manga details by MyAnimeList id (title, type, chapters, score) via the keyless Jikan v4 API.",
+  "descriptionBazaar": "Fetch manga details by MyAnimeList id: title, type, chapter count and community score. Backed by the keyless Jikan v4 API (MyAnimeList). Pass a MAL manga id like 1 for Monster.",
+  "tags": [
+   "anime",
+   "entertainment"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/manga/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "MyAnimeList manga id",
+    "example": "1"
+   }
+  },
+  "sampleRequest": {
+   "id": "1"
+  },
+  "sampleResponse": {
+   "data": {
+    "mal_id": 1,
+    "title": "Monster",
+    "type": "Manga",
+    "chapters": 162,
+    "score": 9.16
+   }
+  }
+ },
+ {
+  "slug": "suverse-trivia-quiz-questions",
+  "category": "trivia",
+  "source": "Open Trivia DB",
+  "title": "Trivia Quiz Questions",
+  "description": "Random multiple-choice trivia questions with answers, category, and difficulty. Source: Open Trivia Database (opentdb.com), keyless.",
+  "descriptionBazaar": "Fetch a batch of random trivia questions (multiple choice) with the correct answer, distractors, category, and difficulty. Source: Open Trivia Database. Pass amount and optional type/difficulty query params.",
+  "tags": [
+   "trivia",
+   "quiz",
+   "questions",
+   "misc-utility"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://opentdb.com/api.php",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "amount": {
+    "in": "query",
+    "required": true,
+    "type": "integer",
+    "description": "Number of questions (1-50)",
+    "example": "2"
+   },
+   "type": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Question type: multiple or boolean",
+    "example": "multiple"
+   }
+  },
+  "sampleRequest": {
+   "amount": "2",
+   "type": "multiple"
+  },
+  "sampleResponse": {
+   "response_code": 0,
+   "results": [
+    {
+     "type": "multiple",
+     "difficulty": "easy",
+     "category": "Geography",
+     "question": "Which small country is located between the borders of France and Spain?",
+     "correct_answer": "Andorra",
+     "incorrect_answers": [
+      "San Marino",
+      "Vatican City",
+      "Lichtenstein"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-fx-frankfurter-pair",
+  "category": "fx",
+  "source": "Frankfurter (ECB)",
+  "title": "Latest FX Rate For A Currency Pair",
+  "description": "Latest ECB reference exchange rate from a base currency to one or more target currencies. Source: Frankfurter (frankfurter.dev), ECB data, keyless.",
+  "descriptionBazaar": "Latest European Central Bank reference rates from a base currency to selected targets (comma-separated). Pass base and symbols as query params. Source: Frankfurter / ECB. Good for clean, citable, official daily FX.",
+  "tags": [
+   "fx",
+   "forex",
+   "ecb",
+   "currency"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.frankfurter.dev/v1/latest",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "base": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "ISO 4217 base currency code",
+    "example": "USD"
+   },
+   "symbols": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Comma-separated target ISO codes",
+    "example": "JPY,CHF,SEK"
+   }
+  },
+  "sampleRequest": {
+   "base": "USD",
+   "symbols": "JPY,CHF,SEK"
+  },
+  "sampleResponse": {
+   "amount": 1,
+   "base": "USD",
+   "date": "2026-06-19",
+   "rates": {
+    "CHF": 0.80649,
+    "JPY": 161.23,
+    "SEK": 9.5701
+   }
+  }
+ },
+ {
+  "slug": "suverse-economy-lending-interest-rate",
+  "category": "economy",
+  "source": "World Bank",
+  "title": "Lending Interest Rate By Country",
+  "description": "Annual bank lending interest rate (%) for a country over a year range. Indicator FR.INR.LEND. Source: World Bank Open Data, keyless.",
+  "descriptionBazaar": "Annual lending interest rate (% charged by banks to the private sector) for any country/year range. World Bank indicator FR.INR.LEND. Pass ISO country code (path) plus optional date range.",
+  "tags": [
+   "economy",
+   "interest-rate",
+   "worldbank",
+   "banking"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.worldbank.org/v2/country/{country}/indicator/FR.INR.LEND",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "country": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "ISO 2 or 3 letter country code",
+    "example": "BR"
+   },
+   "date": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Year range YYYY:YYYY",
+    "example": "2018:2022"
+   }
+  },
+  "sampleRequest": {
+   "country": "BR",
+   "date": "2018:2022"
+  },
+  "sampleResponse": {
+   "indicator": "Lending interest rate (%)",
+   "country": "Brazil",
+   "date": "2022",
+   "value": null
+  }
+ },
+ {
+  "slug": "suverse-fiscal-treasury-rates-of-exchange",
+  "category": "fiscal",
+  "source": "US Treasury FiscalData",
+  "title": "US Treasury Rates Of Exchange",
+  "description": "Official quarterly Treasury Reporting Rates of Exchange (foreign currency per USD) used by US agencies. Source: US Treasury FiscalData API, keyless.",
+  "descriptionBazaar": "The official US Treasury Reporting Rates of Exchange used by federal agencies to convert foreign currency balances to USD, by country and currency. Source: US Treasury FiscalData. Sorted newest first; trim page size as needed.",
+  "tags": [
+   "fiscal",
+   "treasury",
+   "fx",
+   "us-government"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/rates_of_exchange",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuverseBot/1.0 (+https://suverse.io)"
+   },
+   "staticQuery": {
+    "sort": "-record_date"
+   }
+  },
+  "params": {
+   "page[size]": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Rows per page",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "page[size]": "5"
+  },
+  "sampleResponse": {
+   "record_date": "2026-03-31",
+   "country_currency_desc": "Afghanistan-Afghani",
+   "exchange_rate": "64.77",
+   "effective_date": "2026-03-31"
+  }
+ },
+ {
+  "slug": "suverse-beverage-brewery-search",
+  "category": "beverage",
+  "source": "Open Brewery DB",
+  "title": "Brewery Name Search",
+  "description": "Free-text search for breweries by name, returning matches with type, address, and geo coordinates. Source: Open Brewery DB, keyless.",
+  "descriptionBazaar": "Search breweries by free-text query (matches name) and get back type, address, contact, and lat/long for each hit. Source: Open Brewery DB. Pass a query string in the q param.",
+  "tags": [
+   "beverage",
+   "brewery",
+   "search",
+   "places"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.openbrewerydb.org/v1/breweries/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "query": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Search text",
+    "example": "dog"
+   },
+   "per_page": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Rows per page (max 200)",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "query": "dog",
+   "per_page": "3"
+  },
+  "sampleResponse": {
+   "id": "78c50e54-34e3-415d-9574-ac0cc0505113",
+   "name": "Dog & Pony Alehouse and Grill",
+   "brewery_type": "closed",
+   "city": "Renton",
+   "state": "Washington"
+  }
+ },
+ {
+  "slug": "suverse-gov-fdic-locations",
+  "category": "government",
+  "source": "FDIC BankFind",
+  "title": "FDIC Bank Branch Locations",
+  "description": "Bank branch locations (name, city, street address) for FDIC-insured institutions filtered by state. Data from the FDIC BankFind locations API.",
+  "descriptionBazaar": "Find FDIC-insured bank branch locations by state. Returns branch name, city and street address. Official FDIC BankFind locations data, refreshed daily. Useful for branch mapping, market presence and geographic banking analysis.",
+  "tags": [
+   "government",
+   "banking",
+   "fdic",
+   "civic"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.fdic.gov/banks/locations",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "filters": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "FDIC filter expression, e.g. STALP:TX",
+    "example": "STALP:TX"
+   },
+   "fields": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Comma-separated fields",
+    "example": "NAME,CITY,ADDRESS"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max rows",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "filters": "STALP:TX",
+   "fields": "NAME,CITY,ADDRESS",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "meta": {
+    "total": 6406
+   },
+   "data": [
+    {
+     "data": {
+      "CITY": "Palacios",
+      "ADDRESS": "459 Main St",
+      "NAME": "First Financial Bank"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-regulatory-fedreg-executive-orders",
+  "category": "regulatory",
+  "source": "Federal Register",
+  "title": "Federal Register Executive Orders",
+  "description": "List recent US Executive Orders published in the Federal Register with titles and document numbers. Data from the Federal Register API.",
+  "descriptionBazaar": "Retrieve the latest US Executive Orders from the Federal Register, with title, document number, abstract and publication date. Official Federal Register API filtered to presidential document type executive_order. Useful for policy tracking and civic monitoring.",
+  "tags": [
+   "regulatory",
+   "government",
+   "civic",
+   "fedreg"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://www.federalregister.gov/api/v1/documents.json",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "suverse-pay/1.0 (contact: ops@suverse.io)"
+   },
+   "staticQuery": {
+    "conditions[presidential_document_type]": "executive_order"
+   }
+  },
+  "params": {
+   "per_page": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Results per page",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "per_page": "5"
+  },
+  "sampleResponse": {
+   "description": "Documents of presidential document type Executive Order",
+   "count": 1547,
+   "results": [
+    {
+     "title": "Strengthening..."
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-artic-artist-detail",
+  "category": "art",
+  "source": "Art Institute of Chicago",
+  "title": "Art Institute of Chicago Artist Detail",
+  "description": "Returns biographical detail for a single Art Institute of Chicago artist/agent by numeric ID, including name, birth and death dates. Source: api.artic.edu.",
+  "descriptionBazaar": "Fetch one artist record from the Art Institute of Chicago by numeric agent ID. Returns name, birth_date, death_date and alt titles. Keyless open-access API. Useful for enriching art and biography datasets.",
+  "tags": [
+   "art",
+   "museum",
+   "artist",
+   "biography"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.artic.edu/api/v1/artists/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Art Institute of Chicago artist/agent numeric ID",
+    "example": "35809"
+   }
+  },
+  "sampleRequest": {
+   "id": "35809"
+  },
+  "sampleResponse": {
+   "data": {
+    "id": 35809,
+    "title": "Claude Monet",
+    "birth_date": 1840,
+    "death_date": 1926
+   }
+  }
+ },
+ {
+  "slug": "suverse-met-object-search",
+  "category": "museum",
+  "source": "Metropolitan Museum of Art",
+  "title": "Met Museum Object Search",
+  "description": "Searches the Metropolitan Museum of Art collection by free-text query and returns matching object IDs. Source: collectionapi.metmuseum.org.",
+  "descriptionBazaar": "Search the Metropolitan Museum of Art collection by free-text query, optionally only objects with images. Returns total count and a list of matching objectIDs to resolve to full records. Keyless museum API.",
+  "tags": [
+   "museum",
+   "art",
+   "search",
+   "met"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://collectionapi.metmuseum.org/public/collection/v1/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text search query",
+    "example": "sunflowers"
+   },
+   "hasImages": {
+    "in": "query",
+    "required": false,
+    "type": "boolean",
+    "description": "Limit to objects with images",
+    "example": "true"
+   }
+  },
+  "sampleRequest": {
+   "q": "sunflowers",
+   "hasImages": "true"
+  },
+  "sampleResponse": {
+   "total": 134,
+   "objectIDs": [
+    437112,
+    551786,
+    729644,
+    472562,
+    329077
+   ]
+  }
+ },
+ {
+  "slug": "suverse-gutenberg-by-language",
+  "category": "books",
+  "source": "Project Gutenberg (Gutendex)",
+  "title": "Project Gutenberg Books By Language",
+  "description": "Returns popular Project Gutenberg public-domain books filtered by language code, sorted by popularity. Source: gutendex.com.",
+  "descriptionBazaar": "List Project Gutenberg books filtered by language (ISO code, e.g. fr, de, es) and sorted by popularity via Gutendex. Returns count and matching books. Keyless. Useful for building multilingual public-domain reading datasets.",
+  "tags": [
+   "books",
+   "literature",
+   "gutenberg",
+   "language"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://gutendex.com/books/",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "languages": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Comma-separated ISO 639-1 language codes",
+    "example": "fr"
+   },
+   "sort": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Sort order (popular, ascending, descending)",
+    "example": "popular"
+   }
+  },
+  "sampleRequest": {
+   "languages": "fr",
+   "sort": "popular"
+  },
+  "sampleResponse": {
+   "count": 4163,
+   "results": [
+    {
+     "title": "Les mille et une nuits, tome premier"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-poetry-authors-list",
+  "category": "literature",
+  "source": "PoetryDB",
+  "title": "PoetryDB Authors List",
+  "description": "Returns the full list of poets available in the PoetryDB classic-poetry database. Source: poetrydb.org.",
+  "descriptionBazaar": "List every poet available in PoetryDB, a database of classic public-domain poetry. Returns an array of author names. Keyless, no parameters. Useful as a directory before querying poems by a specific author.",
+  "tags": [
+   "literature",
+   "poetry",
+   "authors",
+   "directory"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://poetrydb.org/author",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "authors": [
+    "Adam Lindsay Gordon",
+    "Alan Seeger",
+    "Alexander Pope"
+   ]
+  }
+ },
+ {
+  "slug": "suverse-musicbrainz-recording-find",
+  "category": "music",
+  "source": "MusicBrainz",
+  "title": "MusicBrainz Recording Search",
+  "description": "Searches the MusicBrainz open music database for recordings (tracks) by title and returns ranked matches with length and artist. Source: musicbrainz.org.",
+  "descriptionBazaar": "Search MusicBrainz for recordings (tracks) by title. Returns matches with title, length (ms), artist credit and MBID. Keyless (sends a User-Agent). Useful for resolving song titles to canonical recordings.",
+  "tags": [
+   "music",
+   "track",
+   "search",
+   "musicbrainz"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://musicbrainz.org/ws/2/recording",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay/1.0 (https://suverse.io; contact@suverse.io)"
+   },
+   "staticQuery": {
+    "fmt": "json"
+   }
+  },
+  "params": {
+   "query": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Recording/track title query",
+    "example": "bohemian rhapsody"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "query": "bohemian rhapsody",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "count": 21237,
+   "recordings": [
+    {
+     "title": "Bohemian Rhapsody",
+     "length": 343000,
+     "artist": "Allegro Milano"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-quotes-favqs-qotd",
+  "category": "quotes",
+  "source": "FavQs",
+  "title": "FavQs Quote Of The Day",
+  "description": "Returns the FavQs quote of the day with author and topic tags. Source: favqs.com.",
+  "descriptionBazaar": "Get the FavQs quote of the day. Returns quote body, author, topic tags and a URL. Keyless, no parameters. Useful for daily-quote feeds with categorization tags.",
+  "tags": [
+   "quotes",
+   "daily",
+   "tags",
+   "literature"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://favqs.com/api/qotd",
+   "timeoutMs": 12000
+  },
+  "params": {},
+  "sampleRequest": {},
+  "sampleResponse": {
+   "qotd_date": "2026-06-21T00:00:00.000+00:00",
+   "quote": {
+    "body": "Keep your face to the sunshine and you cannot see the shadow.",
+    "author": "Helen Keller",
+    "tags": [
+     "attitude",
+     "american",
+     "deaf",
+     "blind"
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-earth-streamgage-flow",
+  "category": "earth",
+  "source": "USGS Water Services (NWIS)",
+  "title": "USGS Stream Gage Instantaneous Flow",
+  "description": "Returns instantaneous streamflow/discharge time series for a USGS NWIS monitoring site over a recent period, as JSON.",
+  "descriptionBazaar": "Real-time river discharge from a USGS stream gage. Pass an NWIS site number and a period (ISO 8601 duration) to get instantaneous flow (parameter 00060) values. Keyless USGS Water Services data for hydrology and flood monitoring.",
+  "tags": [
+   "earth",
+   "water",
+   "hydrology",
+   "streamflow",
+   "usgs"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://waterservices.usgs.gov/nwis/iv/",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json",
+    "parameterCd": "00060"
+   }
+  },
+  "params": {
+   "sites": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "USGS NWIS site number",
+    "example": "01646500"
+   },
+   "period": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "ISO 8601 period (e.g. P1D)",
+    "example": "P1D"
+   }
+  },
+  "sampleRequest": {
+   "sites": "01646500",
+   "period": "P1D"
+  },
+  "sampleResponse": {
+   "value": {
+    "queryInfo": {
+     "criteria": {
+      "parameter": [
+       "00060"
+      ]
+     }
+    },
+    "timeSeries": [
+     {
+      "variable": {
+       "variableName": "Streamflow, ft3/s"
+      }
+     }
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-climate-nasa-power-climatology",
+  "category": "climate",
+  "source": "NASA POWER",
+  "title": "NASA POWER Climatology Normals",
+  "description": "Returns long-term monthly and annual climatology normals for a point from NASA POWER, e.g. surface solar irradiance, as JSON.",
+  "descriptionBazaar": "Climatology normals for any coordinate from NASA POWER. Get long-term monthly and annual averages (e.g. all-sky solar irradiance) for a single lat/lng. Keyless. Ideal for solar siting, agriculture and baseline climate comparison.",
+  "tags": [
+   "climate",
+   "nasa",
+   "solar",
+   "normals",
+   "energy"
+  ],
+  "priceUsdcAtomic": 80000,
+  "upstream": {
+   "url": "https://power.larc.nasa.gov/api/temporal/climatology/point",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "JSON"
+   }
+  },
+  "params": {
+   "parameters": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Comma-separated POWER parameters",
+    "example": "ALLSKY_SFC_SW_DWN"
+   },
+   "community": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "POWER community",
+    "example": "RE"
+   },
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "39"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "-77"
+   }
+  },
+  "sampleRequest": {
+   "parameters": "ALLSKY_SFC_SW_DWN",
+   "community": "RE",
+   "latitude": "39",
+   "longitude": "-77"
+  },
+  "sampleResponse": {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -77,
+     39,
+     70.81
+    ]
+   },
+   "properties": {
+    "parameter": {
+     "ALLSKY_SFC_SW_DWN": {
+      "JAN": 2.0102,
+      "JUN": 6.2045,
+      "ANN": 4.0445
+     }
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-biodiversity-occurrence-search",
+  "category": "biodiversity",
+  "source": "GBIF",
+  "title": "GBIF Occurrence Records Search",
+  "description": "Searches GBIF occurrence records by scientific name and returns georeferenced observation/specimen records as JSON.",
+  "descriptionBazaar": "Search GBIF's billions of occurrence records by scientific name to get georeferenced sightings and specimens with dataset provenance. Keyless. Powers range maps, presence checks and biodiversity analytics.",
+  "tags": [
+   "biodiversity",
+   "occurrence",
+   "gbif",
+   "observations",
+   "geospatial"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://api.gbif.org/v1/occurrence/search",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "hasCoordinate": "true"
+   }
+  },
+  "params": {
+   "scientificName": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Scientific name",
+    "example": "Puma concolor"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max records",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "scientificName": "Puma concolor",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "offset": 0,
+   "limit": 3,
+   "count": 33933880,
+   "results": [
+    {
+     "key": 2973785847,
+     "publishingCountry": "BR"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-postal-us-city-zips",
+  "category": "postal",
+  "source": "Zippopotam.us",
+  "title": "US City to ZIP Codes",
+  "description": "Returns all ZIP codes and coordinates for a US city within a given state via the keyless Zippopotam.us API.",
+  "descriptionBazaar": "Given a US state code and a city name, return every ZIP code in that city with coordinates. Useful for territory mapping and address validation. Free Zippopotam.us postal data.",
+  "tags": [
+   "postal",
+   "places",
+   "us"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.zippopotam.us/us/{state}/{city}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "state": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "2-letter US state abbreviation",
+    "example": "ca"
+   },
+   "city": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "US city name (URL-encoded)",
+    "example": "los angeles"
+   }
+  },
+  "sampleRequest": {
+   "state": "ca",
+   "city": "los angeles"
+  },
+  "sampleResponse": {
+   "country": "United States",
+   "state": "California",
+   "place name": "Los Angeles",
+   "places": [
+    {
+     "place name": "Los Angeles",
+     "post code": "90001",
+     "longitude": "-118.2479",
+     "latitude": "33.9731"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-places-omgeo-search",
+  "category": "places",
+  "source": "Open-Meteo Geocoding",
+  "title": "City Search and Coordinates",
+  "description": "Searches cities by name and returns coordinates, country, timezone, elevation, and population via the keyless Open-Meteo geocoding API.",
+  "descriptionBazaar": "Search for a city or town by name and get back matching places with coordinates, country code, timezone, elevation, and population. Pass a name (and optional count), get structured results. Free Open-Meteo geocoding.",
+  "tags": [
+   "places",
+   "geocoding",
+   "demographics"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://geocoding-api.open-meteo.com/v1/search",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "name": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "City/town name to search",
+    "example": "Berlin"
+   },
+   "count": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "name": "Berlin",
+   "count": "3"
+  },
+  "sampleResponse": {
+   "results": [
+    {
+     "name": "Berlin",
+     "latitude": 52.52437,
+     "longitude": 13.41053,
+     "country_code": "DE",
+     "timezone": "Europe/Berlin",
+     "population": 3426354
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-demographics-fcc-block",
+  "category": "demographics",
+  "source": "FCC Census Block API",
+  "title": "FCC Census Block Lookup",
+  "description": "Returns the Census block, county, and state FIPS codes for a coordinate pair via the keyless FCC block-find API.",
+  "descriptionBazaar": "Resolve any US latitude/longitude to its 15-digit Census block FIPS, county, and state. Lightweight and fast, the FCC block API is the standard tool for assigning points to Census geographies. Keyless and free.",
+  "tags": [
+   "demographics",
+   "places",
+   "us",
+   "census"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://geo.fcc.gov/api/census/block/find",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "38.8977"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "-77.0365"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "38.8977",
+   "longitude": "-77.0365"
+  },
+  "sampleResponse": {
+   "Block": {
+    "FIPS": "110019800001034"
+   },
+   "County": {
+    "FIPS": "11001",
+    "name": "District of Columbia"
+   },
+   "State": {
+    "code": "DC"
+   },
+   "status": "OK"
+  }
+ },
+ {
+  "slug": "suverse-aviation-flight-route",
+  "category": "aviation",
+  "source": "hexdb.io",
+  "title": "Flight Route by Callsign",
+  "description": "Returns the origin-destination airport route for a flight callsign via the keyless hexdb.io route database.",
+  "descriptionBazaar": "Resolve a flight callsign to its scheduled origin-destination airport route (ICAO pair) with last-updated timestamp. Free hexdb.io route database, no key. Pass a callsign like BAW123 to get its route.",
+  "tags": [
+   "aviation",
+   "transport",
+   "flights",
+   "routes"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://hexdb.io/api/v1/route/icao/{callsign}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "callsign": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Flight callsign",
+    "example": "BAW123"
+   }
+  },
+  "sampleRequest": {
+   "callsign": "BAW123"
+  },
+  "sampleResponse": {
+   "flight": "BAW123",
+   "route": "EGLL-OTHH",
+   "updatetime": 1747593022
+  }
+ },
+ {
+  "slug": "suverse-pokemon-ability",
+  "category": "pokemon",
+  "source": "PokeAPI",
+  "title": "Pokemon Ability Lookup",
+  "description": "Returns details about a Pokemon ability including its effect from PokeAPI.",
+  "descriptionBazaar": "Look up a Pokemon ability by name and get its id, main-series flag and effect description. Backed by PokeAPI. Pass an ability slug like blaze or overgrow.",
+  "tags": [
+   "pokemon",
+   "games"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://pokeapi.co/api/v2/ability/{name}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "name": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Ability name slug",
+    "example": "blaze"
+   }
+  },
+  "sampleRequest": {
+   "name": "blaze"
+  },
+  "sampleResponse": {
+   "id": 66,
+   "name": "blaze",
+   "is_main_series": true
+  }
+ },
+ {
+  "slug": "suverse-entertainment-rickmorty-episode",
+  "category": "entertainment",
+  "source": "Rick and Morty API",
+  "title": "Rick and Morty Episode",
+  "description": "Returns a Rick and Morty episode by id (name, air date, episode code, character count) from the Rick and Morty API.",
+  "descriptionBazaar": "Look up a Rick and Morty episode by numeric id and get its title, air date, season/episode code and the count of featured characters. Backed by the keyless Rick and Morty API. Pass an episode id like 1.",
+  "tags": [
+   "entertainment",
+   "games"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://rickandmortyapi.com/api/episode/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Episode id",
+    "example": "1"
+   }
+  },
+  "sampleRequest": {
+   "id": "1"
+  },
+  "sampleResponse": {
+   "id": 1,
+   "name": "Pilot",
+   "air_date": "December 2, 2013",
+   "episode": "S01E01",
+   "characters_count": 19
+  }
+ },
+ {
+  "slug": "suverse-anime-jikan-character-detail",
+  "category": "anime",
+  "source": "Jikan v4 (MyAnimeList)",
+  "title": "Anime Character Detail by MAL ID",
+  "description": "Returns anime/manga character details by MyAnimeList id (name, favorites) via the keyless Jikan v4 API.",
+  "descriptionBazaar": "Fetch an anime or manga character profile by MyAnimeList id: canonical name and favorites count. Backed by the keyless Jikan v4 API (MyAnimeList). Pass a MAL character id like 1 for Spike Spiegel.",
+  "tags": [
+   "anime",
+   "entertainment"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.jikan.moe/v4/characters/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "MyAnimeList character id",
+    "example": "1"
+   }
+  },
+  "sampleRequest": {
+   "id": "1"
+  },
+  "sampleResponse": {
+   "data": {
+    "mal_id": 1,
+    "name": "Spike Spiegel",
+    "favorites": 49091
+   }
+  }
+ },
+ {
+  "slug": "suverse-fx-frankfurter-timeseries",
+  "category": "fx",
+  "source": "Frankfurter (ECB)",
+  "title": "FX Rate Time Series (Date Range)",
+  "description": "Daily ECB reference exchange rates for a base/target pair across a date range. Source: Frankfurter (frankfurter.dev), ECB data, keyless.",
+  "descriptionBazaar": "Historical daily FX time series between two currencies over a date range (path: YYYY-MM-DD..YYYY-MM-DD). Returns one rate per business day. Source: Frankfurter / ECB reference rates. Ideal for backtests and charts.",
+  "tags": [
+   "fx",
+   "forex",
+   "history",
+   "timeseries"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://api.frankfurter.dev/v1/{range}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "range": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Date range YYYY-MM-DD..YYYY-MM-DD",
+    "example": "2020-01-01..2020-01-31"
+   },
+   "base": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "ISO 4217 base code",
+    "example": "USD"
+   },
+   "symbols": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Comma-separated target ISO codes",
+    "example": "EUR"
+   }
+  },
+  "sampleRequest": {
+   "range": "2020-01-01..2020-01-31",
+   "base": "USD",
+   "symbols": "EUR"
+  },
+  "sampleResponse": {
+   "amount": 1,
+   "base": "USD",
+   "start_date": "2019-12-31",
+   "end_date": "2020-01-31",
+   "rates": {
+    "2020-01-02": {
+     "EUR": 0.89342
+    },
+    "2020-01-31": {
+     "EUR": 0.90212
+    }
+   }
+  }
+ },
+ {
+  "slug": "suverse-economy-trade-pct-gdp",
+  "category": "economy",
+  "source": "World Bank",
+  "title": "Trade As Percent Of GDP By Country",
+  "description": "Trade (exports plus imports) as a percentage of GDP for a country over a year range. Indicator NE.TRD.GNFS.ZS. Source: World Bank Open Data, keyless.",
+  "descriptionBazaar": "Trade openness: the sum of exports and imports of goods and services as a share of GDP (%) for any country/year range. World Bank indicator NE.TRD.GNFS.ZS. Pass ISO country code (path) plus optional date range.",
+  "tags": [
+   "economy",
+   "trade",
+   "worldbank",
+   "gdp"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.worldbank.org/v2/country/{country}/indicator/NE.TRD.GNFS.ZS",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "country": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "ISO 2 or 3 letter country code",
+    "example": "US"
+   },
+   "date": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Year range YYYY:YYYY",
+    "example": "2018:2022"
+   }
+  },
+  "sampleRequest": {
+   "country": "US",
+   "date": "2018:2022"
+  },
+  "sampleResponse": {
+   "indicator": "Trade (% of GDP)",
+   "country": "United States",
+   "date": "2022",
+   "value": 27.3139397355363
+  }
+ },
+ {
+  "slug": "suverse-fiscal-marketable-debt-outstanding",
+  "category": "fiscal",
+  "source": "US Treasury FiscalData",
+  "title": "US Marketable Debt Outstanding (MSPD)",
+  "description": "Monthly Statement of the Public Debt summary: marketable securities outstanding by class (bills, notes, bonds). Source: US Treasury FiscalData API, keyless.",
+  "descriptionBazaar": "Monthly Statement of the Public Debt (MSPD) summary table: amounts of marketable Treasury securities outstanding by class, split into debt held by the public vs intragovernmental holdings. Source: US Treasury FiscalData. Sorted newest first.",
+  "tags": [
+   "fiscal",
+   "treasury",
+   "debt",
+   "us-government"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/debt/mspd/mspd_table_1",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuverseBot/1.0 (+https://suverse.io)"
+   },
+   "staticQuery": {
+    "sort": "-record_date"
+   }
+  },
+  "params": {
+   "page[size]": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Rows per page",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "page[size]": "5"
+  },
+  "sampleResponse": {
+   "record_date": "2026-05-31",
+   "security_type_desc": "Marketable",
+   "security_class_desc": "Bills",
+   "debt_held_public_mil_amt": "6758273.6707",
+   "total_mil_amt": "6758778.5857"
+  }
+ },
+ {
+  "slug": "suverse-gov-fdic-failures",
+  "category": "government",
+  "source": "FDIC BankFind",
+  "title": "FDIC Bank Failures",
+  "description": "Historical bank failure records (name, city/state, failure date) filtered by failure year. Data from the FDIC BankFind failures API.",
+  "descriptionBazaar": "Query historical US bank failures by year. Returns failed institution name, city/state and failure date. Official FDIC BankFind failures dataset covering decades of bank closures. Useful for financial-risk research and crisis analysis.",
+  "tags": [
+   "government",
+   "regulatory",
+   "banking",
+   "fdic"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://api.fdic.gov/banks/failures",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "filters": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "FDIC filter expression, e.g. FAILYR:2009",
+    "example": "FAILYR:2009"
+   },
+   "fields": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Comma-separated fields",
+    "example": "NAME,CITYST,FAILDATE"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max rows",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "filters": "FAILYR:2009",
+   "fields": "NAME,CITYST,FAILDATE",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "meta": {
+    "total": 148
+   },
+   "data": [
+    {
+     "data": {
+      "FAILDATE": "1/16/2009",
+      "CITYST": "SAN FRANCISCO, CA",
+      "NAME": "BANK OF AMERICA CALIFORNIA N.A."
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-regulatory-epa-frs-facilities",
+  "category": "regulatory",
+  "source": "EPA Envirofacts",
+  "title": "EPA Facility Registry by State",
+  "description": "EPA-regulated facilities (address, city, state) from the Facility Registry Service filtered by US state code. Data from EPA Envirofacts.",
+  "descriptionBazaar": "Look up EPA-regulated facilities by US state from the Facility Registry Service (FRS). Returns location address, city and state for each facility. Official EPA Envirofacts data. Useful for environmental compliance mapping and site research.",
+  "tags": [
+   "regulatory",
+   "government",
+   "environment",
+   "epa"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://data.epa.gov/efservice/FRS_PROGRAM_FACILITY/STATE_CODE/{state_code}/ROWS/0:2/JSON",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "state_code": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Two-letter US state code",
+    "example": "CA"
+   }
+  },
+  "sampleRequest": {
+   "state_code": "CA"
+  },
+  "sampleResponse": [
+   {
+    "state_name": "CA",
+    "location_address": "1001 FLYNN RD",
+    "city_name": "CAMARILLO",
+    "country_name": "UNITED STATES"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-artic-artist-roster",
+  "category": "art",
+  "source": "Art Institute of Chicago",
+  "title": "Art Institute of Chicago Artist Roster",
+  "description": "Returns a paginated list of artists/agents in the Art Institute of Chicago collection. Source: api.artic.edu.",
+  "descriptionBazaar": "List artists/agents from the Art Institute of Chicago collection with pagination. Returns names and agent IDs you can then resolve to full detail. Keyless open-access museum API.",
+  "tags": [
+   "art",
+   "museum",
+   "artist",
+   "list"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.artic.edu/api/v1/artists",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results per page",
+    "example": "3"
+   },
+   "page": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Page number",
+    "example": "1"
+   }
+  },
+  "sampleRequest": {
+   "limit": "3",
+   "page": "1"
+  },
+  "sampleResponse": {
+   "pagination": {
+    "total": 14803
+   },
+   "data": [
+    {
+     "id": 120192,
+     "title": "Circle of Alessandro Magnasco"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-met-department-objects",
+  "category": "museum",
+  "source": "Metropolitan Museum of Art",
+  "title": "Met Museum Objects By Department",
+  "description": "Returns the list of object IDs in a given Metropolitan Museum of Art department. Source: collectionapi.metmuseum.org.",
+  "descriptionBazaar": "List all object IDs belonging to a Metropolitan Museum of Art department (by departmentIds). Returns total count and objectID array for paging through a department's holdings. Keyless museum open-access API.",
+  "tags": [
+   "museum",
+   "art",
+   "department",
+   "met"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://collectionapi.metmuseum.org/public/collection/v1/objects",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "departmentIds": {
+    "in": "query",
+    "required": true,
+    "type": "integer",
+    "description": "Met department ID",
+    "example": "11"
+   }
+  },
+  "sampleRequest": {
+   "departmentIds": "11"
+  },
+  "sampleResponse": {
+   "total": 2644,
+   "objectIDs": [
+    435917,
+    435918,
+    435919,
+    435920
+   ]
+  }
+ },
+ {
+  "slug": "suverse-musicbrainz-label-find",
+  "category": "music",
+  "source": "MusicBrainz",
+  "title": "MusicBrainz Label Search",
+  "description": "Searches the MusicBrainz open music database for record labels by name and returns matches with type and area. Source: musicbrainz.org.",
+  "descriptionBazaar": "Search MusicBrainz for record labels by name. Returns matches with label name, type, area and MBID. Keyless (sends a User-Agent). Useful for music-industry research and label-catalog datasets.",
+  "tags": [
+   "music",
+   "label",
+   "search",
+   "musicbrainz"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://musicbrainz.org/ws/2/label",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay/1.0 (https://suverse.io; contact@suverse.io)"
+   },
+   "staticQuery": {
+    "fmt": "json"
+   }
+  },
+  "params": {
+   "query": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Record label name query",
+    "example": "motown"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results",
+    "example": "3"
+   }
+  },
+  "sampleRequest": {
+   "query": "motown",
+   "limit": "3"
+  },
+  "sampleResponse": {
+   "count": 32,
+   "labels": [
+    {
+     "name": "Motown",
+     "type": "Original Production",
+     "area": "United States"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-quotes-wikiquote-summary",
+  "category": "quotes",
+  "source": "Wikiquote",
+  "title": "Wikiquote Page Summary",
+  "description": "Returns the REST summary (title, description, extract) for a Wikiquote page by title. Source: en.wikiquote.org.",
+  "descriptionBazaar": "Fetch the Wikiquote REST summary for a page (e.g. Albert_Einstein). Returns title, displaytitle and a plaintext extract describing the subject. Keyless (sends a User-Agent). Useful for quotation-source context and author lookups.",
+  "tags": [
+   "quotes",
+   "wikiquote",
+   "summary",
+   "literature"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://en.wikiquote.org/api/rest_v1/page/summary/{title}",
+   "timeoutMs": 12000,
+   "headers": {
+    "User-Agent": "SuVersePay/1.0 (https://suverse.io; contact@suverse.io)"
+   }
+  },
+  "params": {
+   "title": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Wikiquote page title (underscored)",
+    "example": "Albert_Einstein"
+   }
+  },
+  "sampleRequest": {
+   "title": "Albert_Einstein"
+  },
+  "sampleResponse": {
+   "type": "standard",
+   "title": "Albert Einstein",
+   "extract": "Albert Einstein was a Jewish German theoretical physicist, widely acknowledged to be one of the greatest physicists."
+  }
+ },
+ {
+  "slug": "suverse-earth-elevation-point",
+  "category": "earth",
+  "source": "Open-Meteo Elevation",
+  "title": "Terrain Elevation by Coordinate",
+  "description": "Returns the terrain elevation in meters for a lat/lng point from the Open-Meteo Elevation API (Copernicus DEM), as JSON.",
+  "descriptionBazaar": "Terrain elevation for any coordinate from Open-Meteo's Copernicus DEM based elevation API. Returns elevation in meters. Keyless, global, fast. Useful for mapping, hydrology, routing and geospatial enrichment.",
+  "tags": [
+   "earth",
+   "elevation",
+   "terrain",
+   "geospatial",
+   "dem"
+  ],
+  "priceUsdcAtomic": 50000,
+  "upstream": {
+   "url": "https://api.open-meteo.com/v1/elevation",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "latitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Latitude",
+    "example": "52.52"
+   },
+   "longitude": {
+    "in": "query",
+    "required": true,
+    "type": "number",
+    "description": "Longitude",
+    "example": "13.41"
+   }
+  },
+  "sampleRequest": {
+   "latitude": "52.52",
+   "longitude": "13.41"
+  },
+  "sampleResponse": {
+   "elevation": [
+    38
+   ]
+  }
+ },
+ {
+  "slug": "suverse-biodiversity-country-counts",
+  "category": "biodiversity",
+  "source": "GBIF",
+  "title": "GBIF Occurrence Counts by Country",
+  "description": "Returns GBIF occurrence record counts grouped by country for a given publishing country, as JSON.",
+  "descriptionBazaar": "Aggregate GBIF occurrence counts by country for a chosen publishing country. Keyless. Useful for biodiversity data-coverage analysis and comparing observation effort across nations.",
+  "tags": [
+   "biodiversity",
+   "gbif",
+   "statistics",
+   "country",
+   "counts"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.gbif.org/v1/occurrence/counts/countries",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "publishingCountry": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "ISO country code of publisher",
+    "example": "US"
+   }
+  },
+  "sampleRequest": {
+   "publishingCountry": "US"
+  },
+  "sampleResponse": {
+   "UNITED_STATES": 1280319987,
+   "RUSSIAN_FEDERATION": 9054195,
+   "CANADA": 8358630,
+   "MEXICO": 5937318
+  }
+ },
+ {
+  "slug": "suverse-postal-uk-postcode-full",
+  "category": "postal",
+  "source": "postcodes.io",
+  "title": "UK Postcode Details",
+  "description": "Returns full administrative and geographic detail for a UK postcode (region, district, ward, coordinates) via the keyless postcodes.io API.",
+  "descriptionBazaar": "Resolve a UK postcode to its full record: country, region, admin district, ward, parliamentary constituency, eastings/northings, and lat/long. Free postcodes.io data covering all of Great Britain.",
+  "tags": [
+   "postal",
+   "places",
+   "uk"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.postcodes.io/postcodes/{postcode}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "postcode": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "UK postcode (spaces optional)",
+    "example": "SW1A1AA"
+   }
+  },
+  "sampleRequest": {
+   "postcode": "SW1A1AA"
+  },
+  "sampleResponse": {
+   "status": 200,
+   "result": {
+    "postcode": "SW1A 1AA",
+    "country": "England",
+    "region": "London",
+    "longitude": -0.141563,
+    "latitude": 51.50101,
+    "admin_district": "Westminster"
+   }
+  }
+ },
+ {
+  "slug": "suverse-places-us-address-geocode",
+  "category": "places",
+  "source": "US Census Geocoder",
+  "title": "US Address Geocoder",
+  "description": "Geocodes a one-line US street address to coordinates and matched address via the keyless US Census Bureau geocoder.",
+  "descriptionBazaar": "Geocode a full US street address to latitude/longitude with the official matched address and TIGER line metadata. Authoritative US Census Bureau geocoder, no key required. Pass a one-line address string.",
+  "tags": [
+   "places",
+   "geocoding",
+   "us"
+  ],
+  "priceUsdcAtomic": 70000,
+  "upstream": {
+   "url": "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "benchmark": "Public_AR_Current",
+    "format": "json"
+   }
+  },
+  "params": {
+   "address": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "One-line US street address",
+    "example": "1600 Pennsylvania Ave NW Washington DC"
+   }
+  },
+  "sampleRequest": {
+   "address": "1600 Pennsylvania Ave NW Washington DC"
+  },
+  "sampleResponse": {
+   "result": {
+    "addressMatches": [
+     {
+      "tigerLine": {
+       "side": "L"
+      }
+     }
+    ]
+   }
+  }
+ },
+ {
+  "slug": "suverse-pokemon-move",
+  "category": "pokemon",
+  "source": "PokeAPI",
+  "title": "Pokemon Move Lookup",
+  "description": "Returns combat stats for a Pokemon move (power, pp, accuracy, type, damage class) from PokeAPI.",
+  "descriptionBazaar": "Get the battle stats of any Pokemon move: power, PP, accuracy, elemental type and damage class (physical/special/status). Backed by PokeAPI. Pass a move slug like flamethrower.",
+  "tags": [
+   "pokemon",
+   "games"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://pokeapi.co/api/v2/move/{name}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "name": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Move name slug",
+    "example": "flamethrower"
+   }
+  },
+  "sampleRequest": {
+   "name": "flamethrower"
+  },
+  "sampleResponse": {
+   "id": 53,
+   "name": "flamethrower",
+   "power": 90,
+   "pp": 15,
+   "accuracy": 100,
+   "type": "fire",
+   "damage_class": "special"
+  }
+ },
+ {
+  "slug": "suverse-biodiversity-inat-taxa",
+  "category": "biodiversity",
+  "source": "iNaturalist",
+  "title": "iNaturalist Taxa Search",
+  "description": "Searches iNaturalist taxa by free-text query and returns matching taxa with rank and identifiers, as JSON.",
+  "descriptionBazaar": "Search iNaturalist's taxonomy by free text to resolve common or scientific names to taxa with rank, ancestry and photos. Keyless. Great for naturalist apps and species autocomplete.",
+  "tags": [
+   "biodiversity",
+   "inaturalist",
+   "taxa",
+   "species",
+   "search"
+  ],
+  "priceUsdcAtomic": 55000,
+  "upstream": {
+   "url": "https://api.inaturalist.org/v1/taxa",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "rank": "species"
+   }
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Taxon query",
+    "example": "monarch"
+   }
+  },
+  "sampleRequest": {
+   "q": "monarch"
+  },
+  "sampleResponse": {
+   "total_results": 966,
+   "page": 1,
+   "results": [
+    {
+     "id": 48662,
+     "name": "Danaus plexippus",
+     "rank": "species"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-cleveland-art-search",
+  "category": "art",
+  "source": "Cleveland Museum of Art",
+  "title": "Cleveland Museum of Art Search",
+  "description": "Full-text search over the Cleveland Museum of Art open-access collection, returning matching artworks with creators and type. Source: openaccess-api.clevelandart.org.",
+  "descriptionBazaar": "Search the Cleveland Museum of Art open-access collection by free-text query. Returns artworks with title, creators, type and CC0 image rights. Keyless. Useful for art discovery and dataset building.",
+  "tags": [
+   "art",
+   "museum",
+   "search",
+   "cleveland"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://openaccess-api.clevelandart.org/api/artworks/",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "q": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "Free-text search query",
+    "example": "monet"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max results",
+    "example": "2"
+   }
+  },
+  "sampleRequest": {
+   "q": "monet",
+   "limit": "2"
+  },
+  "sampleResponse": {
+   "info": {
+    "total": 28
+   },
+   "data": [
+    {
+     "title": "The Red Kerchief",
+     "creators": [
+      "Claude Monet (French, 1840-1926)"
+     ],
+     "type": "Painting"
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-gov-fdic-state-summary",
+  "category": "government",
+  "source": "FDIC BankFind",
+  "title": "FDIC State Banking Summary",
+  "description": "Aggregate banking statistics (total assets by state) for a given year. Data from the FDIC BankFind summary API.",
+  "descriptionBazaar": "Retrieve aggregate state-level banking summaries for a given year. Returns total assets per state for FDIC-insured institutions. Official FDIC aggregate data, useful for macro banking comparisons and state economic research.",
+  "tags": [
+   "government",
+   "regulatory",
+   "banking",
+   "fdic"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://api.fdic.gov/banks/summary",
+   "timeoutMs": 12000,
+   "staticQuery": {
+    "format": "json"
+   }
+  },
+  "params": {
+   "filters": {
+    "in": "query",
+    "required": true,
+    "type": "string",
+    "description": "FDIC filter expression, e.g. YEAR:2023",
+    "example": "YEAR:2023"
+   },
+   "fields": {
+    "in": "query",
+    "required": false,
+    "type": "string",
+    "description": "Comma-separated fields",
+    "example": "YEAR,STNAME,ASSET"
+   },
+   "limit": {
+    "in": "query",
+    "required": false,
+    "type": "integer",
+    "description": "Max rows",
+    "example": "5"
+   }
+  },
+  "sampleRequest": {
+   "filters": "YEAR:2023",
+   "fields": "YEAR,STNAME,ASSET",
+   "limit": "5"
+  },
+  "sampleResponse": {
+   "meta": {
+    "total": 121
+   },
+   "data": [
+    {
+     "data": {
+      "YEAR": "2023",
+      "STNAME": "Alaska",
+      "ASSET": 9843007
+     }
+    }
+   ]
+  }
+ },
+ {
+  "slug": "suverse-regulatory-epa-tri-facilities",
+  "category": "regulatory",
+  "source": "EPA Envirofacts",
+  "title": "EPA Toxics Release Facilities by State",
+  "description": "Toxics Release Inventory (TRI) facilities (name, address, county) filtered by US state. Data from EPA Envirofacts.",
+  "descriptionBazaar": "Find EPA Toxics Release Inventory (TRI) facilities by US state. Returns facility id, name, street address, city, county and zip. Official EPA Envirofacts data. Useful for tracking industrial chemical-release sites and environmental risk research.",
+  "tags": [
+   "regulatory",
+   "government",
+   "environment",
+   "epa"
+  ],
+  "priceUsdcAtomic": 65000,
+  "upstream": {
+   "url": "https://data.epa.gov/efservice/tri_facility/state_abbr/{state_abbr}/rows/0:2/JSON",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "state_abbr": {
+    "in": "path",
+    "required": true,
+    "type": "string",
+    "description": "Two-letter US state code",
+    "example": "VA"
+   }
+  },
+  "sampleRequest": {
+   "state_abbr": "VA"
+  },
+  "sampleResponse": [
+   {
+    "tri_facility_id": "20109HNSNP7816B",
+    "facility_name": "HANSON PIPE & PRODUCTS INC MANASSAS PLANT",
+    "city_name": "MANASSAS",
+    "county_name": "PRINCE WILLIAM",
+    "state_abbr": "VA"
+   }
+  ]
+ },
+ {
+  "slug": "suverse-cleveland-art-detail",
+  "category": "art",
+  "source": "Cleveland Museum of Art",
+  "title": "Cleveland Museum of Art Artwork Detail",
+  "description": "Returns full catalog detail for one Cleveland Museum of Art artwork by numeric ID, including title, creation date, and type. Source: openaccess-api.clevelandart.org.",
+  "descriptionBazaar": "Fetch one Cleveland Museum of Art artwork by numeric ID. Returns title, creation_date, type, accession number and CC0 rights. Keyless open-access museum API. Useful for enriching art references.",
+  "tags": [
+   "art",
+   "museum",
+   "artwork",
+   "cleveland"
+  ],
+  "priceUsdcAtomic": 60000,
+  "upstream": {
+   "url": "https://openaccess-api.clevelandart.org/api/artworks/{id}",
+   "timeoutMs": 12000
+  },
+  "params": {
+   "id": {
+    "in": "path",
+    "required": true,
+    "type": "integer",
+    "description": "Cleveland Museum of Art artwork numeric ID",
+    "example": "92937"
+   }
+  },
+  "sampleRequest": {
+   "id": "92937"
+  },
+  "sampleResponse": {
+   "data": {
+    "id": 92937,
+    "title": "Stag at Sharkey's",
+    "creation_date": "1909",
+    "type": "Painting"
+   }
+  }
+ }
+]
