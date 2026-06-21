@@ -90,6 +90,33 @@ import {
   walletReputationPreflight,
   walletReputationValidator,
 } from "./wallet-reputation.js";
+import {
+  smartMoneyTokenRankings,
+  smartMoneyAccumulation,
+  smartMoneyDistribution,
+  smartMoneyTopWallets,
+  smartMoneyTokenRankingsPreflight,
+  smartMoneyAccumulationPreflight,
+  smartMoneyDistributionPreflight,
+  smartMoneyTopWalletsPreflight,
+  smartMoneyRankingValidator,
+  smartMoneyTokenRankingsInputSchema,
+  smartMoneyAccumulationInputSchema,
+  smartMoneyDistributionInputSchema,
+  smartMoneyTopWalletsInputSchema,
+} from "./smart-money-rankings.js";
+import {
+  walletLabel,
+  walletLabelInputSchema,
+  walletLabelPreflight,
+  walletLabelValidator,
+} from "./wallet-label.js";
+import {
+  walletPnl,
+  walletPnlInputSchema,
+  walletPnlPreflight,
+  walletPnlValidator,
+} from "./wallet-pnl.js";
 
 import type {
   InternalHandler,
@@ -116,8 +143,9 @@ import { SPECS_BATCH_003 } from "./declarative/specs.batch-003.js";
 import { SPECS_BATCH_004 } from "./declarative/specs.batch-004.js";
 import { SPECS_BATCH_005 } from "./declarative/specs.batch-005.js";
 import { SPECS_BATCH_006 } from "./declarative/specs.batch-006.js";
+import { SPECS_BATCH_007 } from "./declarative/specs.batch-007.js";
 
-const DECLARATIVE_SPECS = [...SPECS_BATCH_001, ...SPECS_BATCH_002, ...SPECS_BATCH_E2E, ...SPECS_BATCH_003, ...SPECS_BATCH_004, ...SPECS_BATCH_005, ...SPECS_BATCH_006];
+const DECLARATIVE_SPECS = [...SPECS_BATCH_001, ...SPECS_BATCH_002, ...SPECS_BATCH_E2E, ...SPECS_BATCH_003, ...SPECS_BATCH_004, ...SPECS_BATCH_005, ...SPECS_BATCH_006, ...SPECS_BATCH_007];
 
 export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   helius_tx_decoder: heliusTxDecoder,
@@ -153,6 +181,12 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   fear_greed_index: fearGreedIndex,
   crypto_market_pulse: cryptoMarketPulse,
   wallet_reputation: walletReputation,
+  smart_money_token_rankings: smartMoneyTokenRankings,
+  smart_money_accumulation: smartMoneyAccumulation,
+  smart_money_distribution: smartMoneyDistribution,
+  smart_money_top_wallets: smartMoneyTopWallets,
+  wallet_label_lookup: walletLabel,
+  wallet_pnl: walletPnl,
   token_check: tokenCheck,
   sec_filings: secFilings,
   stooq_precious_metals: stooqPreciousMetals,
@@ -202,6 +236,12 @@ export const INTERNAL_HANDLER_VALIDATORS: Record<string, InternalHandlerValidato
   helius_tx_decoder: heliusTxDecoderValidator,
   crypto_market_pulse: cryptoMarketPulseValidator,
   wallet_reputation: walletReputationValidator,
+  smart_money_token_rankings: smartMoneyRankingValidator,
+  smart_money_accumulation: smartMoneyRankingValidator,
+  smart_money_distribution: smartMoneyRankingValidator,
+  smart_money_top_wallets: smartMoneyRankingValidator,
+  wallet_label_lookup: walletLabelValidator,
+  wallet_pnl: walletPnlValidator,
   token_check: tokenCheckValidator,
 };
 
@@ -221,6 +261,12 @@ export function getInternalHandlerValidator(
 export const INTERNAL_HANDLER_PREFLIGHTS: Record<string, InternalHandlerPreflight> = {
   crypto_market_pulse: cryptoMarketPulsePreflight,
   wallet_reputation: walletReputationPreflight,
+  smart_money_token_rankings: smartMoneyTokenRankingsPreflight,
+  smart_money_accumulation: smartMoneyAccumulationPreflight,
+  smart_money_distribution: smartMoneyDistributionPreflight,
+  smart_money_top_wallets: smartMoneyTopWalletsPreflight,
+  wallet_label_lookup: walletLabelPreflight,
+  wallet_pnl: walletPnlPreflight,
   token_check: tokenCheckPreflight,
 };
 
@@ -242,6 +288,12 @@ export const INTERNAL_HANDLER_INPUT_SCHEMAS: Record<
   InternalHandlerInputSchema
 > = {
   wallet_reputation: walletReputationInputSchema,
+  smart_money_token_rankings: smartMoneyTokenRankingsInputSchema,
+  smart_money_accumulation: smartMoneyAccumulationInputSchema,
+  smart_money_distribution: smartMoneyDistributionInputSchema,
+  smart_money_top_wallets: smartMoneyTopWalletsInputSchema,
+  wallet_label_lookup: walletLabelInputSchema,
+  wallet_pnl: walletPnlInputSchema,
   token_check: tokenCheckInputSchema,
 };
 

@@ -476,7 +476,10 @@ interface StubOptions {
   rpcOverloaded?: boolean;
 }
 
-const FRESH_FEED = { last_elite_trade_at: new Date(NOW.getTime() - 3_600_000) };
+// Anchored to the real wall clock, NOT the fixed NOW constant: the handler
+// computes elite_feed_lag against Date.now(), so a NOW-relative fixture rots
+// into ">48h silent" once real time passes NOW+48h (time-bomb). Keep it fresh.
+const FRESH_FEED = { last_elite_trade_at: new Date(Date.now() - 3_600_000) };
 const EMPTY_CARD = {
   trade_legs: 0,
   distinct_elite_wallets: 0,
