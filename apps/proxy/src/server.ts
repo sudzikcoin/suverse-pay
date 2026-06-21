@@ -14,6 +14,7 @@ import {
   BrandingApplicator,
   loadBrandingConfig,
 } from "./middleware/response-branding.js";
+import { registerOpenApiRoute } from "./openapi.js";
 import { CatalogBazaarStore, ProxyConfigStore } from "./store.js";
 import type { ServiceAddresses } from "./upstream-x402.js";
 import {
@@ -178,6 +179,19 @@ export async function buildServer(
   });
 
   app.get("/health", async () => ({ status: "ok", service: "proxy" }));
+
+  // x402 discovery document. Required by x402scan and other agent-facing
+  // discovery surfaces before they will register/probe any endpoint on
+  // this origin. Built live from approved catalog_listings.
+  registerOpenApiRoute(app, {
+    pool: args.pool,
+    baseUrl:
+      args.swapPublicBaseUrl ??
+      process.env["PROXY_PUBLIC_BASE_URL"] ??
+      "https://proxy.suverse.io",
+    contactEmail:
+      process.env["PROXY_CONTACT_EMAIL"] ?? "sudzikgroup@gmail.com",
+  });
 
   // SuVerse Swap routes. Only registered when the operator wired a
   // liquidity wallet + Solana RPC; otherwise the routes 404 (same as
