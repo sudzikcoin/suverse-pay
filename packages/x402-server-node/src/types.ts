@@ -137,6 +137,31 @@ export interface MiddlewareOptions {
    * object.
    */
   readonly extensions?: Record<string, unknown>;
+  /**
+   * Bounded retry-with-backoff for TRANSIENT facilitator /verify and
+   * /settle failures. A single facilitator hiccup (5xx, unreachable,
+   * non-JSON gateway garbage, or a transient `invalid_request` /
+   * `facilitator_error` such as the Jun-2026 CDP settlement outage)
+   * would otherwise drop the buyer straight to a fresh 402 with no
+   * second attempt — turning an intermittent upstream blip into a
+   * total failure for scheduled pollers.
+   *
+   * Safety: every attempt reuses the SAME `Idempotency-Key`, so a
+   * settle that actually broadcast on-chain but whose response was
+   * lost is de-duplicated by the facilitator and never double-charges.
+   * A genuinely-invalid signature is a 200 `isValid:false` verdict
+   * (not an HTTP error) and is NOT retried.
+   *
+   * Defaults: `attempts: 3`, `baseDelayMs: 200` (exponential +
+   * full-jitter). Set `attempts: 1` to disable, or `baseDelayMs: 0`
+   * in tests to remove real sleeps.
+   */
+  readonly facilitatorRetry?: {
+    /** Total attempts including the first. Default 3. Min 1. */
+    readonly attempts?: number;
+    /** Base backoff in ms; exponential with full jitter. Default 200. */
+    readonly baseDelayMs?: number;
+  };
 }
 
 /**

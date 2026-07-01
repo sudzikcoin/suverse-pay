@@ -297,6 +297,48 @@ async function resolveRequirementExtra(
   return { ...facilitatorExtras, ...requirement.extra };
 }
 
+const DEFAULT_FACILITATOR_ATTEMPTS = 3;
+const DEFAULT_FACILITATOR_BASE_DELAY_MS = 200;
+
+/**
+ * Facilitator error codes worth a bounded retry. `callFacilitator`
+ * only throws on a transport failure, a non-JSON body, or a non-2xx
+ * facilitator HTTP status — it NEVER throws for an `isValid:false`
+ * verify verdict (that's a 200 handled by the caller). So every throw
+ * reaching the retry loop is an infra / envelope error, not a buyer
+ * signature rejection. In addition to all 5xx, we retry the exact
+ * codes CDP emitted during the Jun-2026 settlement outage
+ * (`invalid_request`, `facilitator_error`, `unexpected_settle_error`,
+ * plus the transport/parse codes `facilitator_unreachable` /
+ * `facilitator_bad_response`). A truly unknown deterministic 4xx code
+ * not in this set is surfaced immediately.
+ */
+const RETRYABLE_FACILITATOR_CODES = new Set<string>([
+  "facilitator_unreachable",
+  "facilitator_bad_response",
+  "facilitator_error",
+  "invalid_request",
+  "unexpected_settle_error",
+  "temporary_unavailable",
+  "timeout",
+  "rate_limited",
+]);
+
+function isTransientFacilitatorError(err: X402Error): boolean {
+  if (err.statusCode >= 500) return true;
+  return RETRYABLE_FACILITATOR_CODES.has(err.code);
+}
+
+const sleep = (ms: number): Promise<void> =>
+  ms <= 0 ? Promise.resolve() : new Promise((r) => setTimeout(r, ms));
+
+/** Exponential backoff with full jitter: rand(0, base * 2^(attempt-1)). */
+function backoffDelayMs(baseDelayMs: number, attempt: number): number {
+  if (baseDelayMs <= 0) return 0;
+  const ceiling = baseDelayMs * 2 ** (attempt - 1);
+  return Math.floor(Math.random() * ceiling);
+}
+
 /**
  * Calls the facilitator's verify or settle endpoint with the
  * standard x402 v2 envelope. Both endpoints take the same body
@@ -304,6 +346,13 @@ async function resolveRequirementExtra(
  *
  * Settle additionally requires the seller's resource API key on
  * the Authorization header — facilitators reject anonymous settles.
+ *
+ * Transient failures (5xx / unreachable / non-JSON / the CDP-outage
+ * 4xx class) are retried with jittered exponential backoff up to
+ * `opts.facilitatorRetry.attempts`. Every attempt reuses the same
+ * `Idempotency-Key`, so a settle whose broadcast succeeded but whose
+ * response was lost is de-duplicated by the facilitator — a retry can
+ * never double-charge the buyer.
  */
 async function callFacilitator(
   opts: MiddlewareOptions,
@@ -377,55 +426,102 @@ async function callFacilitator(
       ...(mergedExtra !== undefined ? { extra: mergedExtra } : {}),
     },
   });
-  let response: Response;
-  try {
-    response = await fetchImpl(url, {
-      method: "POST",
-      headers,
-      body,
-      // 30s — verify is sub-second, settle waits for a chain
-      // confirmation which on Base is ~2s + facilitator overhead.
-      signal: AbortSignal.timeout(30_000),
-    });
-  } catch (err) {
-    throw new X402Error(
-      "facilitator_unreachable",
-      502,
-      `facilitator ${endpoint} call failed: ${(err as Error).message}`,
-    );
+  const attemptOnce = async (): Promise<Record<string, unknown>> => {
+    let response: Response;
+    try {
+      response = await fetchImpl(url, {
+        method: "POST",
+        headers,
+        body,
+        // 30s — verify is sub-second, settle waits for a chain
+        // confirmation which on Base is ~2s + facilitator overhead.
+        signal: AbortSignal.timeout(30_000),
+      });
+    } catch (err) {
+      throw new X402Error(
+        "facilitator_unreachable",
+        502,
+        `facilitator ${endpoint} call failed: ${(err as Error).message}`,
+      );
+    }
+    let parsed: unknown;
+    try {
+      parsed = await response.json();
+    } catch (err) {
+      throw new X402Error(
+        "facilitator_bad_response",
+        502,
+        `facilitator ${endpoint} returned non-JSON: ${(err as Error).message}`,
+      );
+    }
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new X402Error(
+        "facilitator_bad_response",
+        502,
+        `facilitator ${endpoint} returned non-object body`,
+      );
+    }
+    const obj = parsed as Record<string, unknown>;
+    if (!response.ok) {
+      // Forward the facilitator's own error code+message so the
+      // client (or human reading logs) can act on it.
+      const code =
+        typeof obj["errorCode"] === "string"
+          ? (obj["errorCode"] as string)
+          : "facilitator_error";
+      const msg =
+        typeof obj["errorMessage"] === "string"
+          ? (obj["errorMessage"] as string)
+          : `facilitator ${endpoint} returned HTTP ${response.status}`;
+      throw new X402Error(code, response.status, msg);
+    }
+    return obj;
+  };
+
+  // Retry-with-backoff around TRANSIENT facilitator failures. The
+  // Idempotency-Key is fixed for this call, so a settle whose on-chain
+  // broadcast succeeded but whose response was lost is de-duplicated by
+  // the facilitator — a retry never double-charges. See MiddlewareOptions.
+  const maxAttempts = Math.max(
+    1,
+    opts.facilitatorRetry?.attempts ?? DEFAULT_FACILITATOR_ATTEMPTS,
+  );
+  const baseDelayMs =
+    opts.facilitatorRetry?.baseDelayMs ?? DEFAULT_FACILITATOR_BASE_DELAY_MS;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await attemptOnce();
+    } catch (err) {
+      lastErr = err;
+      const retryable =
+        err instanceof X402Error && isTransientFacilitatorError(err);
+      if (!retryable || attempt >= maxAttempts) {
+        if (retryable && opts.logger) {
+          opts.logger.error(
+            `x402: facilitator ${endpoint} exhausted ${maxAttempts} attempts ` +
+              `idem=${idempotencyKey} code=${(err as X402Error).code} ` +
+              `status=${(err as X402Error).statusCode}`,
+          );
+        }
+        throw err;
+      }
+      if (opts.logger) {
+        opts.logger.warn(
+          `x402: facilitator ${endpoint} transient failure ` +
+            `attempt=${attempt}/${maxAttempts} idem=${idempotencyKey} ` +
+            `code=${(err as X402Error).code} ` +
+            `status=${(err as X402Error).statusCode} — retrying`,
+        );
+      }
+      await sleep(backoffDelayMs(baseDelayMs, attempt));
+    }
   }
-  let parsed: unknown;
-  try {
-    parsed = await response.json();
-  } catch (err) {
-    throw new X402Error(
-      "facilitator_bad_response",
-      502,
-      `facilitator ${endpoint} returned non-JSON: ${(err as Error).message}`,
-    );
-  }
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new X402Error(
-      "facilitator_bad_response",
-      502,
-      `facilitator ${endpoint} returned non-object body`,
-    );
-  }
-  const obj = parsed as Record<string, unknown>;
-  if (!response.ok) {
-    // Forward the facilitator's own error code+message so the
-    // client (or human reading logs) can act on it.
-    const code =
-      typeof obj["errorCode"] === "string"
-        ? (obj["errorCode"] as string)
-        : "facilitator_error";
-    const msg =
-      typeof obj["errorMessage"] === "string"
-        ? (obj["errorMessage"] as string)
-        : `facilitator ${endpoint} returned HTTP ${response.status}`;
-    throw new X402Error(code, response.status, msg);
-  }
-  return obj;
+  // Unreachable: the loop either returns or throws. Satisfies the
+  // type checker that the function always produces a value.
+  throw lastErr instanceof Error
+    ? lastErr
+    : new X402Error("facilitator_error", 502, "facilitator call failed");
 }
 
 /**

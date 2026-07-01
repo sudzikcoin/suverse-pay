@@ -36,6 +36,9 @@ const BASE_OPTS: MiddlewareOptions = {
   // disable it so they don't trigger an HTTP probe of
   // facilitator.example.com.
   disableAutoDiscover: true,
+  // Exercise the retry loop but with zero real sleeps so the suite
+  // stays fast.
+  facilitatorRetry: { baseDelayMs: 0 },
 };
 
 // Helper: build a base64-encoded X-Payment header from a JS object.
@@ -651,5 +654,126 @@ describe("runProtocol", () => {
     expect(fetchImpl.mock.calls[0]![0]).toBe(
       "https://facilitator.example.com/facilitator/verify",
     );
+  });
+
+  // --- Facilitator retry-with-backoff (Jun-2026 CDP settle outage) ---
+
+  const PAID_HEADER = encodeHeader({
+    x402Version: 2,
+    scheme: "exact",
+    network: "eip155:8453",
+    payload: { sig: "deadbeef" },
+  });
+
+  it("retries a transient invalid_request on settle and then succeeds", async () => {
+    // The Jun-2026 CDP outage class: verify passed, then /settle
+    // returned a transient 4xx invalid_request. A single blip must not
+    // drop the buyer to a fresh 402 — retry and succeed.
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ isValid: true, payer: "0xabc" }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ errorCode: "invalid_request", errorMessage: "blip" }),
+          { status: 400 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ success: true, transaction: "0xtx", payer: "0xabc" }),
+          { status: 200 },
+        ),
+      );
+    const result = await runProtocol({
+      opts: { ...BASE_OPTS, fetchImpl },
+      resourceUrl: "https://api.example/paid",
+      paymentHeader: PAID_HEADER,
+      idempotencyKey: "idem-retry-ok",
+    });
+    expect(result.kind).toBe("accepted");
+    if (result.kind === "accepted") {
+      expect(result.receipt.txHash).toBe("0xtx");
+    }
+    // 1 verify + 2 settle attempts.
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not charge and rejects when settle invalid_request is terminal", async () => {
+    // A deterministic invalid_request that never clears must exhaust
+    // retries and reject — never returning `accepted` (which is what
+    // would charge the buyer downstream). The buyer pays nothing.
+    // A fresh Response per call — a Response body can only be read once,
+    // and each real fetch yields a new one.
+    const fetchImpl = vi.fn(async (url: string | URL) =>
+      String(url).endsWith("/facilitator/verify")
+        ? new Response(JSON.stringify({ isValid: true, payer: "0xabc" }), {
+            status: 200,
+          })
+        : new Response(
+            JSON.stringify({
+              errorCode: "invalid_request",
+              errorMessage: "nope",
+            }),
+            { status: 400 },
+          ),
+    );
+    const result = await runProtocol({
+      opts: { ...BASE_OPTS, fetchImpl },
+      resourceUrl: "https://api.example/paid",
+      paymentHeader: PAID_HEADER,
+      idempotencyKey: "idem-retry-terminal",
+    });
+    expect(result.kind).toBe("rejected");
+    if (result.kind === "rejected") {
+      expect(result.reason).toBe("invalid_request");
+      expect(result.status).toBe(402);
+    }
+    // 1 verify + 3 settle attempts (default max), then give up.
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it("reuses the same Idempotency-Key across settle retries (no double broadcast)", async () => {
+    // A settle whose broadcast may have landed but whose response was
+    // lost must be retried under the SAME Idempotency-Key so the
+    // facilitator de-duplicates it — never a second on-chain transfer.
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ isValid: true, payer: "0xabc" }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ errorMessage: "gateway down" }), {
+          status: 503,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ success: true, transaction: "0xtx" }),
+          { status: 200 },
+        ),
+      );
+    const result = await runProtocol({
+      opts: { ...BASE_OPTS, fetchImpl },
+      resourceUrl: "https://api.example/paid",
+      paymentHeader: PAID_HEADER,
+      idempotencyKey: "idem-stable-key",
+    });
+    expect(result.kind).toBe("accepted");
+    const settleKeys = fetchImpl.mock.calls
+      .filter(([url]) => String(url).endsWith("/facilitator/settle"))
+      .map(
+        ([, init]) =>
+          ((init as RequestInit).headers as Record<string, string>)[
+            "Idempotency-Key"
+          ],
+      );
+    expect(settleKeys).toHaveLength(2);
+    expect(new Set(settleKeys)).toEqual(new Set(["idem-stable-key"]));
   });
 });
