@@ -117,6 +117,36 @@ import {
   walletPnlPreflight,
   walletPnlValidator,
 } from "./wallet-pnl.js";
+import {
+  polymarketSmartSheet,
+  polymarketSmartSheetInputSchema,
+  polymarketSmartSheetPreflight,
+  polymarketSmartSheetValidator,
+} from "./polymarket-smart-sheet.js";
+import {
+  x402LivenessCheck,
+  x402LivenessCheckInputSchema,
+  x402LivenessCheckPreflight,
+  x402LivenessCheckValidator,
+} from "./x402-liveness-check.js";
+import {
+  baseTokenForensics,
+  baseTokenForensicsInputSchema,
+  baseTokenForensicsPreflight,
+  baseTokenForensicsValidator,
+} from "./base-token-forensics.js";
+import {
+  tokenEntryVerdict,
+  tokenEntryVerdictInputSchema,
+  tokenEntryVerdictPreflight,
+  tokenEntryVerdictValidator,
+} from "./token-entry-verdict.js";
+import {
+  marketRegimeVerdict,
+  marketRegimeVerdictInputSchema,
+  marketRegimeVerdictPreflight,
+  marketRegimeVerdictValidator,
+} from "./market-regime-verdict.js";
 
 import type {
   InternalHandler,
@@ -217,6 +247,13 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   // SuVerse Swap (discovery stubs — real flows at /v1/swap/<chain>/...).
   swap_solana_execute: swapSolanaExecute,
   swap_base_execute: swapBaseExecute,
+
+  // batch-010 verdict products (one call = one finished answer).
+  polymarket_smart_sheet: polymarketSmartSheet,
+  x402_liveness_check: x402LivenessCheck,
+  base_token_forensics: baseTokenForensics,
+  token_entry_verdict: tokenEntryVerdict,
+  market_regime_verdict: marketRegimeVerdict,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
@@ -244,6 +281,11 @@ export const INTERNAL_HANDLER_VALIDATORS: Record<string, InternalHandlerValidato
   wallet_label_lookup: walletLabelValidator,
   wallet_pnl: walletPnlValidator,
   token_check: tokenCheckValidator,
+  polymarket_smart_sheet: polymarketSmartSheetValidator,
+  x402_liveness_check: x402LivenessCheckValidator,
+  base_token_forensics: baseTokenForensicsValidator,
+  token_entry_verdict: tokenEntryVerdictValidator,
+  market_regime_verdict: marketRegimeVerdictValidator,
 };
 
 export function getInternalHandlerValidator(
@@ -269,6 +311,11 @@ export const INTERNAL_HANDLER_PREFLIGHTS: Record<string, InternalHandlerPrefligh
   wallet_label_lookup: walletLabelPreflight,
   wallet_pnl: walletPnlPreflight,
   token_check: tokenCheckPreflight,
+  polymarket_smart_sheet: polymarketSmartSheetPreflight,
+  x402_liveness_check: x402LivenessCheckPreflight,
+  base_token_forensics: baseTokenForensicsPreflight,
+  token_entry_verdict: tokenEntryVerdictPreflight,
+  market_regime_verdict: marketRegimeVerdictPreflight,
 };
 
 export function getInternalHandlerPreflight(
@@ -296,6 +343,11 @@ export const INTERNAL_HANDLER_INPUT_SCHEMAS: Record<
   wallet_label_lookup: walletLabelInputSchema,
   wallet_pnl: walletPnlInputSchema,
   token_check: tokenCheckInputSchema,
+  polymarket_smart_sheet: polymarketSmartSheetInputSchema,
+  x402_liveness_check: x402LivenessCheckInputSchema,
+  base_token_forensics: baseTokenForensicsInputSchema,
+  token_entry_verdict: tokenEntryVerdictInputSchema,
+  market_regime_verdict: marketRegimeVerdictInputSchema,
 };
 
 export function getInternalHandlerInputSchema(

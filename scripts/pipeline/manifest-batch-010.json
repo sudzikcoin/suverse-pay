@@ -1,0 +1,45 @@
+[
+  {
+    "slug": "polymarket-smart-sheet",
+    "priceUsdc": "0.750000",
+    "category": "prediction-markets",
+    "sampleRequest": {
+      "limit": 20,
+      "category": "all",
+      "time_window": "24h"
+    }
+  },
+  {
+    "slug": "x402-liveness-check",
+    "priceUsdc": "0.250000",
+    "category": "infrastructure",
+    "sampleRequest": {
+      "resource_url": "https://proxy.suverse.io/v1/data/crypto-market-pulse",
+      "method": "POST"
+    }
+  },
+  {
+    "slug": "base-token-forensics",
+    "priceUsdc": "0.350000",
+    "category": "crypto-security",
+    "sampleRequest": {
+      "contract_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    }
+  },
+  {
+    "slug": "token-entry-verdict",
+    "priceUsdc": "0.500000",
+    "category": "crypto-trading-signals",
+    "sampleRequest": {
+      "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"
+    }
+  },
+  {
+    "slug": "market-regime-verdict",
+    "priceUsdc": "0.500000",
+    "category": "market-intelligence",
+    "sampleRequest": {
+      "detail": "full"
+    }
+  }
+]
