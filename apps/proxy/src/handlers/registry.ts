@@ -148,6 +148,12 @@ import {
   marketRegimeVerdictValidator,
 } from "./market-regime-verdict.js";
 import {
+  reeferRateReport,
+  reeferRateReportInputSchema,
+  reeferRateReportPreflight,
+  reeferRateReportValidator,
+} from "./reefer-rate-report.js";
+import {
   roadConditions,
   roadConditionsInputSchema,
   roadConditionsPreflight,
@@ -277,6 +283,7 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   carrier_risk_verdict: carrierRiskVerdict,
   broker_authority_check: brokerAuthorityCheck,
   road_conditions: roadConditions,
+  reefer_rate_report: reeferRateReport,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
@@ -312,6 +319,7 @@ export const INTERNAL_HANDLER_VALIDATORS: Record<string, InternalHandlerValidato
   carrier_risk_verdict: carrierRiskVerdictValidator,
   broker_authority_check: brokerAuthorityCheckValidator,
   road_conditions: roadConditionsValidator,
+  reefer_rate_report: reeferRateReportValidator,
 };
 
 export function getInternalHandlerValidator(
@@ -345,6 +353,7 @@ export const INTERNAL_HANDLER_PREFLIGHTS: Record<string, InternalHandlerPrefligh
   carrier_risk_verdict: carrierRiskVerdictPreflight,
   broker_authority_check: brokerAuthorityCheckPreflight,
   road_conditions: roadConditionsPreflight,
+  reefer_rate_report: reeferRateReportPreflight,
 };
 
 export function getInternalHandlerPreflight(
@@ -380,6 +389,7 @@ export const INTERNAL_HANDLER_INPUT_SCHEMAS: Record<
   carrier_risk_verdict: carrierRiskVerdictInputSchema,
   broker_authority_check: brokerAuthorityCheckInputSchema,
   road_conditions: roadConditionsInputSchema,
+  reefer_rate_report: reeferRateReportInputSchema,
 };
 
 export function getInternalHandlerInputSchema(
