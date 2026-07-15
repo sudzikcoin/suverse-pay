@@ -148,6 +148,12 @@ import {
   marketRegimeVerdictValidator,
 } from "./market-regime-verdict.js";
 import {
+  brokerAuthorityCheck,
+  brokerAuthorityCheckInputSchema,
+  brokerAuthorityCheckPreflight,
+  brokerAuthorityCheckValidator,
+} from "./broker-authority-check.js";
+import {
   carrierRiskVerdict,
   carrierRiskVerdictInputSchema,
   carrierRiskVerdictPreflight,
@@ -263,6 +269,7 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
 
   // Freight verdict products (public FMCSA / NWS / WZDx / USDA data).
   carrier_risk_verdict: carrierRiskVerdict,
+  broker_authority_check: brokerAuthorityCheck,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
@@ -296,6 +303,7 @@ export const INTERNAL_HANDLER_VALIDATORS: Record<string, InternalHandlerValidato
   token_entry_verdict: tokenEntryVerdictValidator,
   market_regime_verdict: marketRegimeVerdictValidator,
   carrier_risk_verdict: carrierRiskVerdictValidator,
+  broker_authority_check: brokerAuthorityCheckValidator,
 };
 
 export function getInternalHandlerValidator(
@@ -327,6 +335,7 @@ export const INTERNAL_HANDLER_PREFLIGHTS: Record<string, InternalHandlerPrefligh
   token_entry_verdict: tokenEntryVerdictPreflight,
   market_regime_verdict: marketRegimeVerdictPreflight,
   carrier_risk_verdict: carrierRiskVerdictPreflight,
+  broker_authority_check: brokerAuthorityCheckPreflight,
 };
 
 export function getInternalHandlerPreflight(
@@ -360,6 +369,7 @@ export const INTERNAL_HANDLER_INPUT_SCHEMAS: Record<
   token_entry_verdict: tokenEntryVerdictInputSchema,
   market_regime_verdict: marketRegimeVerdictInputSchema,
   carrier_risk_verdict: carrierRiskVerdictInputSchema,
+  broker_authority_check: brokerAuthorityCheckInputSchema,
 };
 
 export function getInternalHandlerInputSchema(
