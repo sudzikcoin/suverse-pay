@@ -1,16 +1,16 @@
 {
   "state": "NJ",
   "state_name": "New Jersey",
-  "source_url": "https://www.state.nj.us/mvc/business/permits.htm",
-  "source_title": "New Jersey DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://nj.gotpermits.com/njpass/Content/state/NJ/PublicMaterials/Final%20CVG%202024-01-05.pdf",
+  "source_title": "NJDOT Commercial Vehicle Size and Weight Guidebook (January 2024) + Fee Schedule; N.J.A.C. 13:18, N.J.S.A. 39:3-84",
   "portal_url": "https://www.njoversizepermits.com/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2024-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "New Jersey is strict and low-clearance: escorts trigger at lower widths and State Police escorts are common for large loads; confirm the exact escort/police matrix and fees with NJDOT/NJMVC."
+    "New Jersey publishes NO superload / structural-review threshold — 'Superload' is the name of NJDOT's online permitting system, not a dimensional class; superload_thresholds are null by design (confirmed absent from the January 2024 Commercial Vehicle Size & Weight Guidebook). Loads that would need structural/bridge review are flagged for manual verification with NJDOT.",
+    "NJ uses PRIVATE escorts only with no police/State Police escort category, and publishes no height-escort trigger — the escort matrix is width and length only (a height over 14' triggers utility/DOT notification, not an escort)."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,47 +19,21 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "New Jersey's January 2024 Commercial Vehicle Size & Weight Guidebook publishes no superload or structural-review threshold; 'Superload' is only the name of NJDOT's online permitting system and contact inbox. All thresholds null by design (handler flags for manual verification). Related caps that do exist: heavy-duty tow combinations 150,000 lbs GCW (N.J.S.A. 39:3-84(c)); axle groups governed by the Federal Bridge Formula; no overweight permit valid where any wheel exceeds 800 lbs per inch of tire width."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 10.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "NJ planning default: escort at over-10' width on many routes \u2014 confirm exact trigger"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": true,
-        "note": "NJ planning default: multiple escorts / possible State Police for extreme width \u2014 confirm"
-      }
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 1, "police": false, "note": "over 14' up to 16' wide: 1 escort — rear on 4+ lane highways, front on under-4-lane (NJ CVG Jan 2024 §5.5 Table 6; private escorts only)" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 3, "police": false, "note": "over 16' wide: front + rear escort, plus a 3rd escort (adjacent-lane on 3+ lane highways, else rear); private escorts only — NJ has no police-escort category" }
     ],
-    "height": [
-      {
-        "over_ft": 13.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "NJ planning default: height pole when over ~13'6\" \u2014 confirm"
-      }
-    ],
+    "height": [],
     "length": [
-      {
-        "over_ft": 85.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "NJ planning default rear escort \u2014 confirm"
-      }
+      { "over_ft": 100.0, "up_to_ft": 120.0, "escorts": 1, "police": false, "note": "over 100' up to 120': 1 escort — rear on 4+ lane, front on under-4-lane (CVG Table 6)" },
+      { "over_ft": 120.0, "up_to_ft": null, "escorts": 3, "police": false, "note": "over 120': front + rear escort plus a 3rd escort" }
     ],
     "weight": []
   },
@@ -68,21 +42,25 @@
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Single-trip (valid 5 days): oversize $10 base + $1 per foot (or fraction) over 14' width + $1 per foot over 63' load-length (70' overall for house-related); overweight $10 base + $5 per ton (2,000 lbs, or fraction) over 80,000 lbs gross AND over legal axle limits (22,400 single / 34,000 tandem, 5% axle leeway); combined OS+OW $20 base. All plus a $12 transaction fee + 5% service charge (NJ CVG Jan 2024 / Fee Schedule). Minimum realistic oversize single-trip is about $23 ($10 base + $12 + 5%).",
+      "validity_days": 5,
+      "note": "Emergency permits $0; government-owned vehicles pay only $12 + 5%. Overweight priced on both axle-excess and gross-excess per ton."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "No general annual OS/OW permit. Code 23 Overweight/Over-dimensional Route Permit (30-day) $0 base + applicable OS/OW fees + $12 + 5% (requires $209.50 annual MVC trailer registration); Annual Ocean-Borne Container Permit $117.60 (max 90,000 lbs); Over-dimensional Trailer lifetime permit $12.60 (invalid if over 10' wide or 70' overall)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Oversize: daylight only (sunrise to sunset) where the clear passing space is under 10'; prohibited when visibility is under 500 ft or conditions are hazardous; permit void if the vehicle cannot maintain 40 mph (NJ CVG §5.3).",
+    "Overweight loads at legal dimensions may move 24 hours/day, 7 days/week.",
+    "Prohibited holidays: New Year's Day; Memorial Day + preceding Friday; Independence Day; Labor Day + preceding Friday; Thanksgiving + preceding Wednesday; Christmas Day. Holiday on Sunday also bans Monday; on Saturday also bans the preceding Friday.",
+    "Height over 14': permittee must notify all utilities, NJDOT and county/municipal traffic engineering before the move (N.J.S.A. 39:4-28) — permit void if not done (this is a notification duty, not an escort/pole-car rule)."
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 102\" (8'6\") on National Network/access routes (96\" other routes), height 13'6\", gross 80,000 lbs; semitrailer 53' on National Network/access routes (48' other). Single axle 22,400 lbs, tandem 34,000 lbs; multi-axle groups per Federal Bridge Formula.",
+    "NJ OS/OW permits issued by NJDOT on behalf of NJ MVC under N.J.A.C. 13:18; dimensional/weight limits per N.J.S.A. 39:3-84. All values from the official January 2024 CVG + Fee Schedule (nj.gotpermits.com) fetched 2026-07-16. Escorts are private-only; no superload class or police-escort trigger is published (see verify_reasons). State-level rules only."
   ]
 }

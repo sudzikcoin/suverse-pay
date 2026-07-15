@@ -1,15 +1,17 @@
 {
   "state": "OH",
   "state_name": "Ohio",
-  "source_url": "https://www.transportation.ohio.gov/working/permits/oversize-overweight/oversize-overweight",
-  "source_title": "Ohio DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://ohts.dot.state.oh.us/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
+  "source_url": "https://dam.assets.ohio.gov/image/upload/transportation.ohio.gov/permits/special-hauling/os-1a.pdf",
+  "source_title": "ODOT Special Hauling Permits — OS-1A Limitations/Provisions (Rev 01/18) + OS-8 Legal Dimension & Weight Limits (Rev 01/19); fees per OAC 5501:2-1-10 (ORC 5577.04/.05)",
+  "portal_url": "https://haulingpermits.transportation.ohio.gov/",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2019-01-01",
   "verification": "knowledge_based",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "Legal limits and the full escort/pilot matrix are sourced from official ODOT documents fetched this run (OS-1A Rev 01/18 and OS-8 Rev 01/19), which reproduce ORC 5577.04/.05.",
+    "Single-trip and annual fees are from secondary compliance summaries of OAC 5501:2-1-10 — the official ODOT fee-rule PDF (registerofohio) and the ODOT permit-fee pages refused the connection (ECONNREFUSED/404) this run; confirm current dollar amounts via the Ohio Hauling Permit System before dispatch.",
+    "Superload gross-weight trigger (~120,000 lbs) and structural-review tier (>250,000 lbs → ODOT Office of Structural Engineering) are secondary; the 14'/14'6\" dimensional superload breaks are corroborated by the official ODOT fee and escort tiers."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -18,47 +20,23 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
+    "width_ft": 14.0,
+    "height_ft": 14.5,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 120000,
+    "note": "Over 14' wide or 14'6\" high (official ODOT fee/escort tier breaks), or ~120,000 lbs gross (secondary — official op-guide page unreachable) triggers special/superload review by the ODOT Special Hauling Permit Section. Loads up to 250,000 lbs analyzed in-house; over 250,000 lbs forwarded to the ODOT Office of Structural Engineering. No fixed published length superload trigger (null)."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 13.0, "up_to_ft": 14.5, "escorts": 1, "police": false, "note": "1 escort over 13' wide — lead on 2-lane, becomes rear escort on multilane highways (ODOT OS-1A)" },
+      { "over_ft": 14.5, "up_to_ft": null, "escorts": 2, "police": false, "note": "1 lead + 1 rear escort over 14'6\" wide (OS-1A)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": 14.83, "escorts": 1, "police": false, "pole_car": true, "note": "1 lead escort equipped with a height-sensing device over 14'6\" high (OS-1A)" },
+      { "over_ft": 14.83, "up_to_ft": null, "escorts": 2, "police": false, "pole_car": true, "note": "1 lead + 1 rear escort over 14'10\" high; move must be coordinated with overhead sign/signal/utility owners (OS-1A)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 90.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "1 rear escort over 90' overall length (OS-1A)" }
     ],
     "weight": []
   },
@@ -67,21 +45,26 @@
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_formula": "Single-trip fees per OAC 5501:2-1-10 (official rule PDF unreachable this run; figures from secondary compliance summaries): oversize up to 14' wide / 14'6\" high approx $55 (return trip ~$35), over that approx $125; overweight up to 120,000 lbs approx $125, over 120,000 lbs base + ~$0.04/ton/mile on the excess. Basic processing ~$10-$20. Confirm current amounts via the Ohio Hauling Permit System.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Overweight is axle-based: single 20,000 / tandem 34,000 lbs, groups by Federal Bridge Formula; a >2,000 lb overage on a granted axle/group does not void the permit (OS-1A). Fee amounts are secondary/uncodified here."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/blanket permits available (secondary: oversize ~$960/yr, overweight ~$1,960/yr per OAC 5501:2-1-10); confirm via portal."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Over-dimensional loads: daylight-only movement, one-half hour before sunrise to one-half hour after sunset (OS-1A). Non-oversize overweight loads have no day/hour restriction if they do not obstruct traffic flow.",
+    "Loads over 12' wide: metro rush-hour ban 6:30-9:00 a.m. and 4:30-6:00 p.m. Mon-Fri in 22 named urban counties (incl. Franklin, Cuyahoga, Hamilton, Montgomery, Summit, Lucas, Stark, Mahoning, Lorain, Butler, Warren, Clermont).",
+    "Loads over 12' wide: weekend movement bans (Fri/Sat/Sun afternoon into next sunrise), April 1-Nov 30 (OS-1A).",
+    "Holiday bans (New Year's, Memorial Day, Independence Day, Labor Day, Thanksgiving, Christmas): from noon the day preceding until one-half hour before sunrise the day after.",
+    "Mobile/manufactured structures prohibited when wind exceeds 25 mph on roadway or 15 mph on bridges."
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\" (confirmed, NOT 14'), gross 80,000 lbs; tractor-semitrailer 53'. Axle limits: single 20,000 / tandem 34,000 lbs, groups per Federal Bridge Formula W = 500[(LN/(N-1)) + 12N + 36] (ORC 5577.04).",
+    "Escort matrix and legal limits sourced from official ODOT OS-1A/OS-8 fetched 2026-07-16. Fees and superload gross trigger are secondary (official ODOT fee/op-guide pages refused the connection this run). State-level rules only — county/city permits and bridge-specific engineering are out of scope."
   ]
 }

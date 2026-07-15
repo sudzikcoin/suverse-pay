@@ -1,16 +1,14 @@
 {
   "state": "NC",
   "state_name": "North Carolina",
-  "source_url": "https://www.ncdot.gov/business/trucking/Pages/oversize-overweight-permits.aspx",
-  "source_title": "North Carolina DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://connect.ncdot.gov/business/trucking/OversizeOverweight%20Permit%20Documents/Oversize%20Overweight%20Permit%20Handbook.pdf",
+  "source_title": "NCDOT Oversize/Overweight Permit Handbook + Superload Permits Pub SL-6 (Rev 10/18)",
   "portal_url": "https://connect.ncdot.gov/business/trucking/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
-  ],
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2018-10-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
@@ -18,70 +16,55 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": 15.0,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 132000,
+    "note": "Superload when any of: gross over 132,000 lbs, width over 15', or axle/axle-group weights exceeding permit policy (e.g. steer axle over 20,000 lbs). Requires Form PF-20 with axle schematics submitted at least 10 working days ahead for internal + bridge-engineering review (bridge studies expire after 90 days). Height is not a superload trigger — a front pole car is required over 14'5\" instead; length is not a superload trigger (null)."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 escort over 12' up to 14' wide — front on two-lane/two-way, rear on multilane (NCDOT Handbook, Pub E-9)" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "over 14' to 16' wide: front + rear escort on two-lane; 1 escort on multilane" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 3, "police": true, "note": "over 16' wide: 3 escorts total, one of which must be NC State Highway Patrol (SL-6)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.42, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "front pole-car escort with height-pole indicator over 14'5\" high; overheight applications over 14' reviewed by Central Permit Office" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110.0, "up_to_ft": 150.0, "escorts": 1, "police": false, "note": "1 rear escort over 110' overall length; also rear escort for rear overhang of 15' or more" },
+      { "over_ft": 150.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "front + rear escort at 150' or greater overall length" }
     ],
-    "weight": []
+    "weight": [
+      { "over_ft": 149999, "up_to_ft": null, "escorts": 1, "police": false, "note": "front escort required over 149,999 lbs gross (NCDOT Handbook); over_ft value is a POUNDS threshold" }
+    ]
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 12,
+      "fee_usd_max": 48,
+      "fee_formula": "Single-trip state fee $12 per over-legal dimension (width/height/length/weight), $12-$48 total; valid 10 calendar days, one trip. Superload adds a $100 non-refundable application fee (waived if width under 17') + $12 per over-legal dimension + $3.00 per 1,000 lbs over 132,000 lbs gross.",
+      "validity_days": 10,
+      "note": "Permit weight is axle-based: steer 20,000 / single 25,000 / tandem 50,000 / tridem 60,000 / 4+ grouping 68,000 lbs plus bridge-structure allowance; over 132,000 lbs gross is superload."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 100,
+      "fee_usd_max": 200,
+      "note": "Annual permit $100 per vehicle (non-divisible general commodities); $200 per vehicle for mobile homes. House-mover license $100/yr. Annual overweight requires 51-ft min wheelbase, up to 90,000 lbs, not on posted roads/bridges."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "General/self-propelled: Monday-Saturday sunrise to sunset; no Sunday travel unless stated on the permit. Continuous 24/7 travel allowed only if gross is 112,000 lbs or under AND no overdimension of width/length/height.",
+    "Loads over 12' wide: metro rush-hour ban within a 10-mile radius of Charlotte, Raleigh, Durham and Chapel Hill during 7-9 a.m. and 4-6 p.m.",
+    "16-ft mobile homes: Monday-Saturday 9:00 a.m.-2:30 p.m. only.",
+    "Holiday travel bans (loads over 112,000 lbs and/or over-dimension): from noon the weekday before to noon the weekday after New Year's, Memorial Day, Independence Day, Labor Day, Thanksgiving, Christmas.",
+    "Superloads: sunrise to sunset only, Monday-Sunday; continuous 24/7 travel never authorized for a superload.",
+    "No movement when visibility under 500 ft or in snow/ice; mobile/modular units over 10' wide prohibited when wind gusts exceed 25 mph."
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\", tractor + 53' semitrailer unrestricted on NC primary routes. NC governs gross by axle/Federal Bridge Formula (G.S. 20-118) rather than a flat legal gross; single axle 20,000 / tandem 38,000 lbs — the 80,000 lbs legal gross recorded here is the federal interstate maximum used for permit triggering.",
+    "All values sourced from official NCDOT Handbook + SL-6 (Rev 10/18) fetched 2026-07-16 (public .aspx landing page 404'd; connect.ncdot.gov PDFs are authoritative). State-level rules only."
   ]
 }

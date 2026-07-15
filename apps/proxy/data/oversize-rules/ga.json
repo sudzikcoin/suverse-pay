@@ -1,16 +1,14 @@
 {
   "state": "GA",
   "state_name": "Georgia",
-  "source_url": "https://dps.georgia.gov/oversizeoverweight-permits",
-  "source_title": "Georgia DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://gaoversize.com/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
-  ],
+  "source_url": "https://rules.sos.ga.gov/gac/672-2",
+  "source_title": "GA DPS/GDOT Rule Chapter 672-2 — Permits for Vehicles or Loads of Excess Weight or Dimension + O.C.G.A. §32-6-28 (fees), §32-6-24 (length)",
+  "portal_url": "https://gamccd.net/OSPermit/PermitTypes.aspx",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2024-01-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
@@ -19,69 +17,50 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
+    "height_ft": 16.0,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 150000,
+    "note": "Superload (Rule 672-2-.01(k)) = non-divisible load exceeding 16' width or 16' height, OR gross 150,001-180,000 lbs (axle-spacing data required over 150,000 lbs). Superload Plus (672-2-.01(l)) = over 180,000 lbs, requiring full axle weights/spacings for bridge/structural analysis; Mega Load = 300,000 lbs+ (engineering review, 30+ business days). Length is not a superload trigger (null) — over 125' overall only requires front + rear escorts."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "over 12' up to 16' wide: front + rear escort on two-lane; rear escort only on 4-lane/limited-access (GA Rule 672-2-.06(3)(c))" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 16' wide: escorts determined case-by-case; police escort with blue lights (Georgia State Patrol) may be required" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.49, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "height 15'6\" or greater: front escort with height sensor/pole (unless NJUNS overhead-clearance approval obtained)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 75.0, "up_to_ft": 100.0, "escorts": 1, "police": false, "note": "75'-100' overall: rear escort or rear amber light (672-2-.06)" },
+      { "over_ft": 100.0, "up_to_ft": 125.0, "escorts": 1, "police": false, "note": "100'-125' overall: rear vehicle escort required" },
+      { "over_ft": 125.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "over 125' overall: front and rear vehicle escorts" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_usd_min": 30,
+      "fee_usd_max": 30,
+      "fee_formula": "Single-trip (standard) $30 flat, covers up to 16' W/H and 150,000 lbs (O.C.G.A. §32-6-28). Superload single-trip $125; Superload Plus and Mega Load $500. All fees are flat statutory amounts — Georgia has NO per-mile charge and NO overweight fee formula; overweight is priced by flat permit tier.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Overweight evaluated per-application via bridge formula; axle weights/spacings required over 150,000 lbs, full axle data for bridge analysis over 180,000 lbs. No official flat routine per-axle table is published in Rule 672-2."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 100,
+      "fee_usd_max": 500,
+      "note": "Multi-trip $100; annual (standard) $150; Annual Plus / NHS $500; six-month tobacco/unginned-cotton $25; annual commercial-wrecker emergency-tow $500 (O.C.G.A. §32-6-28)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Standard travel window: 30 minutes after sunrise to 30 minutes before sunset (Eastern).",
+    "Continuous (24/7) movement allowed for loads 125,000 lbs or under at legal dimensions, except during fog, snow/ice, or Department-posted holidays.",
+    "Loads over 12' wide: no travel when visibility under 600 ft or winds over 25 mph.",
+    "Atlanta I-285 metro area: no travel 7-9 a.m. or 3-6 p.m. weekdays (pickup/delivery exception)."
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\", gross 80,000 lbs; semitrailer 53' (28' per trailer in twin combo), non-Interstate/non-NHS overall combo 100'.",
+    "GA OS/OW permits issued by GA DPS Motor Carrier Compliance Division. Fees and superload thresholds cross-confirmed by two official sources (O.C.G.A. §32-6-28 statute + DPS/MCCD portal); escort matrix, superload definitions and movement rules from official Rule 672-2 text, all fetched 2026-07-16. Exact rule amendment date not returned by the fetched extract (rules_as_of is a conservative estimate). State-level rules only."
   ]
 }

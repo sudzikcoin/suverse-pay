@@ -1,17 +1,14 @@
 {
   "state": "NY",
   "state_name": "New York",
-  "source_url": "https://www.dot.ny.gov/divisions/operating/oom/transportation-systems/permits",
-  "source_title": "New York DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.dot.ny.gov/nypermits/repository/nycrr154-1.pdf",
+  "source_title": "NYSDOT 17 NYCRR Part 154 (Special Hauling Permits) + VTL §385 (legal limits) + NYSDOT Superloads page",
   "portal_url": "https://nypermits.dot.ny.gov/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "New York often triggers escorts at lower widths and has stricter divisible-load rules; NYC-area movement is regulated separately (out of scope, state-level only). Confirm the exact escort matrix and fees with NYSDOT."
-  ],
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "1996-01-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
@@ -20,69 +17,50 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
+    "height_ft": 16.0,
+    "length_ft": 160.0,
     "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "note": "Superload (NYSDOT superloads page) = exceeds 16' width, is 16' high or greater, exceeds 160' length, or is 200,000 lbs gross or greater (or a combination). Requires intensive review, additional documentation, and a bond submitted to the Department. Contact Permits@dot.ny.gov."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 13.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 13.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "over 12' wide: 1 certified escort — precedes on 2-lane (other than 4-lane/divided), follows on 4-lane/divided (17 NYCRR §154-1.8(b))" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "mobile/modular units over 14' to 16' wide: 2 certified escorts (front + rear); 2 on all two-lane highways; police escorts may be substituted if more than 2 are required (§154-1.11(b))" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 16' wide = superload; escorts/police set case-by-case with a bond (NYSDOT superloads page)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 13.99, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "14' high or over: certified escort; every front escort carries a height-measuring device when escorting an overheight load (§154-1.12)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 80.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "over 80' on other than 4-lane/divided highways: preceded by a certified escort; over 65' requires front and rear warning signs (§154-1.8(c))" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 40,
+      "fee_usd_max": 60,
+      "fee_formula": "Trip permit (single or round trip) $40 at a Main Office / $60 at a Region Office, valid up to 5 permissible hauling days, one movement; amendment $10; plus $4 per trip if using the Departmental blanket insurance policy instead of a certificate on file (17 NYCRR §154-1.20). New York uses FLAT fees — there is NO per-mile or per-ton overweight charge.",
+      "validity_days": 5,
+      "note": "Divisible-load overweight caps are axle-group based per permit category (§154-2.4); nondivisible steering axle capped at 22,400 lbs. Special/sealed-container and radius permits carry their own fees."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 360,
+      "fee_usd_max": 1000,
+      "note": "Divisible-load overweight annual permits $360-$1,000/yr by category (F1-F6, §154-2.11); agricultural 4-month fees roughly half. Nondivisible blanket/radius permits $60/mo (up to $360-$750/yr); Special Vehicle Combination annual $500; sealed shipping container annual $750."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daylight only: movement not authorized from one-half hour after sunset to one-half hour before sunrise, unless the permit face states otherwise (17 NYCRR §154-1.2(a)).",
+    "No Saturday, Sunday or holiday moves (New Year's, Memorial Day, Independence Day, Labor Day, Thanksgiving, Christmas) and none from 12:00 noon the working day preceding those holidays.",
+    "Saturday-until-noon exception: loads within 12' wide and 85' long that maintain traffic-flow speed may move until 12:00 noon Saturday (unless a holiday).",
+    "Overweight-only moves that are not overdimensional, within 125% of legal weight and able to maintain traffic-flow speed are not time/day restricted.",
+    "No travel when visibility under 1,000 ft or the road is hazardous from rain/snow/ice/fog/flood/wind. NOTE: NYC has separate permit authority over the state-highway system within the five boroughs (out of scope here); downstate divisible permits are not valid on state highways within NYC (§154-2.20, §154-2.2(k))."
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal height 13'6\"; width baseline is 96\" (8'0\") under VTL §385(1) with 102\" (8'6\") allowed on qualifying/access highways (8.5 recorded here); semitrailer 48' base, up to 53' on designated access highways (53 recorded here); overall combination 65'; gross capped at 80,000 lbs via Federal Bridge Formula (VTL §385(10)).",
+    "Escort matrix, single-trip and annual fees from official 17 NYCRR Part 154 subparts (regulation vintage 1994-1996); superload definition from the current live NYSDOT superloads page; legal limits from VTL §385 — all fetched 2026-07-16. The NY State Certified Escort Manual is incorporated by reference and not posted online. State-level rules only (NYC metro out of scope)."
   ]
 }

@@ -1,16 +1,16 @@
 {
   "state": "PA",
   "state_name": "Pennsylvania",
-  "source_url": "https://www.penndot.pa.gov/Doing-Business/Permits/Pages/default.aspx",
-  "source_title": "Pennsylvania DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.pacodeandbulletin.gov/secure/pacode/data/067/chapter179/067_0179.pdf",
+  "source_title": "67 Pa. Code Ch. 179 (Oversize and Overweight Loads and Vehicles) + PennDOT Publication 31 (Special Hauling Permit Manual, 6-08); fees 75 Pa.C.S. §1942/§1943",
   "portal_url": "https://www.palmportal.pa.gov/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2011-09-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Pennsylvania superload cutoffs (~>16' or >201,000 lbs) require bridge/route analysis (APRAS); confirm exact thresholds, fees and escort matrix with PennDOT."
+    "Single-trip base fees ($35 for 14' wide or under, $71 for over 14' wide; 75 Pa.C.S. §1942) were read from a statute mirror via web search — the primary PA legislature and Justia pages refused direct fetch this run; confirm against the live statute or PALMPORTAL quote.",
+    "Overweight per-ton-mile charge conflicts between sources: the 2024 statute snippet states $0.04/ton-mile while the 2008 Pub 31 manual states $0.03/ton-mile — the statute is treated as controlling but confirm the current rate."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -20,69 +20,50 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": 16.0,
+    "height_ft": null,
     "length_ft": 160.0,
     "gross_weight_lbs": 201000,
-    "note": "Pennsylvania superload thresholds are commonly cited around >16' wide, >16' high, >160' long, or >201,000 lbs and require special routing/bridge analysis via PennDOT. Confirm exact cutoffs and the automated-permit-routing (APRAS) route in the portal."
+    "note": "Super load (67 Pa. Code §179.1) = gross exceeding 201,000 lbs, OR total length exceeding 160', OR total width exceeding 16' (any one). There is NO height threshold in the superload definition (null). Super loads require a preliminary application to the Central Permit Office processed through APRAS (bridge/route analysis) and a uniformed police escort; they cannot be applied for through a permit service. Preliminary super-load application fee $50 + $10 per county in the route (§179.9)."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 13.0, "up_to_ft": 16.0, "escorts": 1, "police": false, "note": "over 13' wide: 1 pilot car — follows on multilane/divided highways, precedes on 2-lane (when a police escort is present the pilot follows) (67 Pa. Code §179.10(13))" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 1, "police": true, "note": "buildings over 16' wide and all super loads require a uniformed State Police or local police escort (§179.10(12))" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "over 14'6\" high: pilot car precedes 1,000-3,000 ft with a height-sensing pole on all highways (§179.10(13))" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 90.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "over 90' total length, or rear overhang over 15', requires a following pilot car on all highways (§179.10(13))" }
     ],
-    "weight": []
+    "weight": [
+      { "over_ft": 201000, "up_to_ft": null, "escorts": 1, "police": true, "note": "over 201,000 lbs = super load: police escort + APRAS bridge/route analysis (§179.1, §179.10(12)); over_ft value is a POUNDS threshold" }
+    ]
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_usd_min": 35,
+      "fee_usd_max": 71,
+      "fee_formula": "Single-trip oversize $35 (14' wide or under) or $71 (over 14' wide) per 75 Pa.C.S. §1942; fees are cumulative (oversize + overweight both apply). Overweight adds a per-ton-mile charge on gross weight over legal — 2024 statute states $0.04/ton-mile (2008 Pub 31 manual states $0.03/ton-mile). Super load (over 201,000 lbs) adds a $50 preliminary application fee + $10 per routed county (§179.9). Wired/telecom permit +$1.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Overweight axle-based: combination axles capped at 27,000 lbs each (Table 8-2), special mobile equipment single axle up to 50,000 lbs by permit; wheel weight cap 800 lbs per nominal inch of tire width (§179.8)."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 200,
+      "fee_usd_max": 800,
+      "note": "Annual/blanket fees vary by load type (approx $200-$800/yr; e.g. truck-tractor tiers) per 75 Pa.C.S. §1943 and Pub 31 Ch. 8. Annual special-mobile-equipment with overweight axles $300 (§179.9). Seasonal implement-of-husbandry permit $25."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "No movement sunset to sunrise, Saturday after 12 noon, all day Sunday, and on six holidays plus the day preceding each (New Year's, Memorial Day, Independence Day, Labor Day, Thanksgiving, Christmas) (67 Pa. Code §179.10(6)-(7)).",
+    "Urbanized areas (7 days/wk except holidays): movement permitted only 3:00-7:30 a.m., 9 a.m.-4 p.m., and 7 p.m.-sunset. Allegheny County tunnels (Fort Pitt, Squirrel Hill, Liberty) only 9 a.m.-4 p.m.",
+    "Night moves 3 a.m.-sunrise in urbanized areas require all-side lighting (visible 1,000 ft) plus a pilot car.",
+    "No travel in inclement weather (visibility under 1,000 ft, snow/ice, or high winds)."
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\", gross 80,000 lbs; single trailer 53' (motor vehicle 40'). Governing manual: PennDOT Publication 31 'Special Hauling Permit Manual' (6-08), incorporating Ch. 179 text current to the Sept. 2011 amendment (41 Pa.B. 4772).",
+    "Escort matrix, superload definition and legal limits sourced from official 67 Pa. Code Ch. 179 + Pub 31 fetched 2026-07-16; single-trip fee dollar amounts from 75 Pa.C.S. §1942 via statute mirror (primary sites 403-blocked — see verify_reasons). State-level rules only."
   ]
 }

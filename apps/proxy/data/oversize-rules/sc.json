@@ -1,16 +1,14 @@
 {
   "state": "SC",
   "state_name": "South Carolina",
-  "source_url": "https://www.scdps.gov/scstp/oversize-overweight-permits",
-  "source_title": "South Carolina DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://osow.scdps.gov/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
-  ],
+  "source_url": "https://www.scdot.org/content/dam/scdot-legacy/business/pdf/osow/OSOW_Guidelinesfor_movement.pdf",
+  "source_title": "SCDOT Guidelines for Movement Over South Carolina Highways of OSOW Vehicles and Loads (Rev 8/2021) + SC Code Title 56 Ch. 5",
+  "portal_url": "https://www.scdot.org/business/permits-osow.html",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2021-08-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
@@ -18,70 +16,52 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 130000,
+    "note": "SC defines superload by weight: any non-divisible load exceeding 130,000 lbs and/or any single axle exceeding 20,000 lbs triggers additional routing analysis (3-5 business days). Over 180,000 lbs requires a Certificate of Insurance; over 300,000 lbs requires manufacturer weight/dimension docs and may require independent licensed-engineer structural analysis; over 500,000 lbs adds a mega-load impact fee. Route-specific multi-trip permits cap at 130,000 lbs / 15' height. No fixed dimensional superload class (width/height/length null); overwidth is handled by the escort matrix."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 front escort over 12' up to 14' wide on two-lane only; rear escort at Dept discretion (SCDOT OSOW Guidelines Rev 8/2021 Sec. J)" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "1 front + 1 rear escort over 14' up to 16' wide, all roadways; use 4-lane where possible" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 4, "police": true, "note": "over 16' wide: 1 front + 1 rear civilian escort AND 1 front + 1 rear police escort, all roadways (waivable by Permit Director)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.99, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "height 16' or greater: 1 front escort with height-measuring pole the entire move + Dept-approved route survey required before issuance" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 125.0, "up_to_ft": 150.0, "escorts": 1, "police": false, "note": "1 rear civilian escort overall length 125'-150', all roadways" },
+      { "over_ft": 150.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "1 front + 1 rear civilian escort over 150' overall length; rear overhang over 15' also requires a rear escort + 18\" red flag" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 30,
+      "fee_usd_max": 30,
+      "fee_formula": "Single-trip permit $30 flat (valid 7 days, one trip). Excess-width surcharge: over 16' +$35, over 18' +$40, over 20' +$45, over 22' +$50. Superload adds a $100 non-refundable application fee + engineering analysis ($100 over 130k / $200 over 200k / $350 over 300k lbs) + $3.00 per 1,000 lbs over 130,000 lbs; over 500,000 lbs adds $0.05 per 1,000 lbs per mile mega-load fee.",
+      "validity_days": 7,
+      "note": "Fee schedule last revised July 1, 2012 (per SCDOT permits page). Max permittable axle groups: single 20,000 / tandem 40,000 / tridem-or-quad 60,000 lbs; any single axle over 20,000 lbs routes to superload."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 100,
+      "fee_usd_max": 100,
+      "note": "Multiple-trip / annual permit $100 (valid 1 year). House-moving license $100/yr; annual permit transfer $10. Commodity permits: sheet tobacco $15, cotton modular $50, culvert pipe $15."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Loads 12' wide or under: sunrise-sunset, Mon-Sun. Over 12' to 15' wide: sunrise-sunset Mon-Sun except near large urban areas (no travel 7-9 a.m. daily, 3-6 p.m. school days, 4:30-6 p.m. non-school days).",
+    "Over 15' wide (and mobile homes over 14' box to 16'): only 9 a.m.-3 p.m. school days, 9 a.m.-4 p.m. other days; frame buildings only 9 a.m.-3 p.m. Mon-Fri.",
+    "Holiday no-travel: New Year's Day, Memorial Day, Fourth of July, Labor Day, Thanksgiving, Christmas (Director may extend noon-before to noon-after).",
+    "Summer coastal ban: no Sat/Sun travel east of I-95 from Memorial Day to Labor Day (Myrtle Beach corridor routes).",
+    "No movement when visibility under 500 ft, high winds, or ice/snow/sleet. Continuous travel available on request for loads 130,000 lbs or under at otherwise-legal dimensions."
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\" (14' only for auto/saddle-mount transporters with routing permit), gross 80,000 lbs interstate (statutory 5-axle base 73,280 lbs non-interstate; SC applies a 10% enforcement tolerance, SC Code §56-5-4160). Semitrailer 53' (kingpin-to-rear-axle 41'), no overall combination length limit.",
+    "SC OS/OW permits issued by SCDOT; enforcement by SC DPS State Transport Police. All values sourced from official SCDOT movement guidelines (Rev 8/2021) + SC Code Title 56 Ch. 5 fetched 2026-07-16. A separate SCDOT 'Size and Weight Guidelines (updated 3.2026)' companion doc was referenced but not retrievable; movement guidelines Rev 8/2021 remain authoritative for escort/fee/superload. State-level rules only."
   ]
 }

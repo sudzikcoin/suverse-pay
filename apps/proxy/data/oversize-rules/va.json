@@ -1,16 +1,14 @@
 {
   "state": "VA",
   "state_name": "Virginia",
-  "source_url": "https://www.vdot.virginia.gov/business/hauling-permits/",
-  "source_title": "Virginia DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://hauling.vdot.virginia.gov/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
-  ],
+  "source_url": "https://www.dmv.virginia.gov/sites/default/files/forms/dmv109.pdf",
+  "source_title": "Virginia DMV — Size, Weight and Equipment Requirements (Form DMV109) + 24VAC20-82 (Overweight/Overdimension Permits)",
+  "portal_url": "https://www.dmv.virginia.gov/businesses/hauling",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2023-07-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
@@ -18,70 +16,53 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "width_ft": 18.0,
+    "height_ft": 16.0,
+    "length_ft": 200.0,
+    "gross_weight_lbs": 250000,
+    "note": "Superload = movement exceeding any of 18' wide, 16' high, 200' long, or 250,000 lbs (24VAC20-82-60). Requires a detailed travel plan and VDOT structural-engineering analysis; submit at least 10 working days before movement. Cost of the engineering analysis may be added to the permit fee."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 2, "police": false, "note": "2 escorts (1 front, 1 rear) over 12' up to 14' wide (VA DMV Escort Guidelines table, DMV109)" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 3, "police": false, "note": "3 escorts (2 front, 1 rear) over 14' up to 16' wide" },
+      { "over_ft": 16.0, "up_to_ft": 18.0, "escorts": 4, "police": false, "note": "4 escorts (2 front, 2 rear) over 16' up to 18' wide" },
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 4, "police": true, "note": "over 18' wide escorted case-by-case; law-enforcement escort may be required (24VAC20-82)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.42, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "1 front escort with height pole over 14'5\" high, all routes" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 90.0, "up_to_ft": 150.0, "escorts": 1, "police": false, "note": "1 rear escort over 90' up to 150' long" },
+      { "over_ft": 150.0, "up_to_ft": 200.0, "escorts": 2, "police": false, "note": "2 escorts (1 front, 1 rear) over 150' up to 200' long" },
+      { "over_ft": 200.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 200' long escorted case-by-case; law-enforcement escort may be required" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_usd_min": 20,
+      "fee_usd_max": 20,
+      "fee_formula": "Single-trip permit $20 flat; add $0.30 per mile if overweight or if the configuration cannot be licensed in Virginia (mobile/manufactured homes pay a flat $1.00 in lieu of the per-mile fee). Superload single-trip $30 + $0.30/mile if overweight. Overweight cost = $20 (or $30 superload) + $0.30 x miles traveled (24VAC20-82-50/-60).",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Fee amounts from the official DMV109 fee tables. Statutory framework in Va. Code Title 46.2 Ch. 10 Art. 18; §46.2-1139 sets a $10 multi-trip transfer fee, not the single-trip dollar amount."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 100,
+      "fee_usd_max": 250,
+      "note": "Blanket/annual: $100 for 1 year, $200 for 2 years; if overweight add $40/yr mileage fee + $360/yr damage fee. Superload multi-trip $220 for 3 months. 5% Overload annual permit $250 (raises gross to 84,000 lbs non-interstate, §46.2-1128)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Normal travel sunrise to sunset (24VAC20-82); actual movement window is printed on each permit.",
+    "No travel within the corporate limits of cities/towns during 7:00-9:00 a.m. and 4:00-6:00 p.m. (rush-hour curfew).",
+    "Between sunset and sunrise, flagged loads must display a red light visible 500 ft (DMV109)."
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\", gross 80,000 lbs; semitrailer 53' on designated system (48' otherwise). Axle limits: single 20,000 / tandem 34,000 lbs, 650 lbs per inch of tire width; gross by axle-spacing bridge table (Va. Code §46.2-1126).",
+    "In Virginia hauling permits are administered by DMV (not VDOT); VDOT performs superload structural analysis. Escort drivers must be certified (Escort Vehicle Driver's Manual HP405). All values sourced from official DMV109 / 24VAC20-82 / Va. Code fetched 2026-07-16. State-level rules only.",
+    "Overweight penalties graduated per-pound (§46.2-1134) plus civil/processing fees; doubled 25-50% over legal, tripled >50%."
   ]
 }
