@@ -1,15 +1,16 @@
 {
   "state": "OK",
   "state_name": "Oklahoma",
-  "source_url": "https://oklahoma.gov/odot/programs-and-projects/permits.html",
-  "source_title": "Oklahoma DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://oklahoma.gov/odot/about-us/laws-and-rules/size-and-weight-permits.html",
+  "source_title": "ODOT Size & Weight Permits — OAC 730:50-5 (Size and Weight Permit Load), eff. 2023-09-11",
   "portal_url": "https://ok.oversize.io/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2023-09-11",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "Oklahoma defines a superload by weight only — any overweight load exceeding the OL-1 reference-truck loading (OAC 730:50-5-4), triggering a bridge structural analysis — with no published width/height/length superload number, so those thresholds are null and the handler flags very large dimensions for manual review.",
+    "No dimensional or weight threshold in the ODOT rules automatically triggers a police/OHP escort; police escort is discretionary/route-specific, so it is not encoded."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -18,70 +19,51 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "Oklahoma defines a superload as any overweight permit load exceeding the Standard Drawing OL-1 reference trucks (OAC 730:50-5-4(l)), requiring a detailed bridge structural analysis of every bridge on the route — there is no fixed width/height/length/gross superload number. Dual-lane superload review caps width at 16' on the Interstate and 20' on state highways with per-axle limits of 20,000 lbs. Permit trigger: over 80,000 lbs on the Interstate, over 90,000 lbs on other state highways."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 front escort on two-lane/super-two, 1 rear escort on multilane (OAC 730:50-5-18(b))" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "2 escorts (front+rear) on two-lane/super-two; rear escort on multilane" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "2 escorts (front+rear) on all roads and highways over 16' wide" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.75, "up_to_ft": null, "escorts": 2, "police": false, "pole_car": true, "note": "2 escorts (front+rear) plus a non-conductive height/measuring pole at or over 15'9\"; permittee must contact all utilities and railroads on route (OAC 730:50-5-16/730:50-5-18)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 80.0, "up_to_ft": 100.0, "escorts": 1, "police": false, "note": "1 front escort over 80' overall on two-lane/super-two highways" },
+      { "over_ft": 100.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "2 escorts (front+rear) over 100' overall on two-lane/super-two highways" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_usd_min": 40,
+      "fee_usd_max": 80,
+      "fee_formula": "Oversize only = $40. Overweight only = $40 + $10 per each 1,000 lbs over the legal limit. Oversize + overweight combined = $80 + $10 per each 1,000 lbs over the legal limit. Multi-trip = $40/month (max $480 for 12 months). Special movement of newly-manufactured items over 16' to 23' wide = $500. Credit-card convenience fee 4%.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Single-trip/monthly permit; overweight surcharge is per-1,000-lb over legal (OAC 730:50-5 fee schedule)."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 20,
+      "fee_usd_max": 4000,
+      "note": "Annual Envelope permit $4,000 (12'W / 14'H / 110'L); Electric Utility Vehicle $4,000; Special Overload (5% weight variance) $350; Special Combination (triples) $240; Longer Combination (doubles 80k-90k lbs) $20; Round Bale Hay / Tree-Length Logs annual $25."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daylight movement only — 30 minutes before sunrise to 30 minutes after sunset, 7 days a week (ODOT Size & Weight rules)",
+    "Metro rush-hour ban on the Interstate System only: no oversize movement in Oklahoma, Tulsa and Cleveland counties 7:00-9:00 AM and 3:30-6:30 PM Mon-Fri (OAC 730:50-5-1(1)); the 2-mile I-35 segment in Cleveland County between Exits 106 and 108 is exempt; ban does not apply to special/longer-combination or overweight-only loads",
+    "No movement in snow, ice, fog, high wind or other unsafe weather (OAC 730:50-5-1(4))",
+    "Houses/buildings may not be moved on Saturday or Sunday (OAC 730:50-5-21)"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\" (thirteen and one-half feet), semitrailer 53' (permits available 53'-59'6\"), gross 80,000 lbs on the Interstate / 90,000 lbs on other state highways (OAC 730:50-5-4/-13/-14).",
+    "Escort matrix, superload definition, fees and legal limits confirmed from the official OAC 730:50-5 rule PDF and ODOT fee schedule (oklahoma.gov). Rule text effective 2023-09-11."
   ]
 }

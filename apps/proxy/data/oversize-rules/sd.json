@@ -1,15 +1,17 @@
 {
   "state": "SD",
   "state_name": "South Dakota",
-  "source_url": "https://dps.sd.gov/licensing/oversize-overweight-permits",
-  "source_title": "South Dakota DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://sdtruckinfo.sd.gov/rules-regulations/motor-carrier-handbook/chapter-6/permits/",
+  "source_title": "SD Motor Carrier Handbook Ch. 5-6 (Size Regs & Permits); SDCL 32-22",
   "portal_url": "https://apps.sd.gov/hm10oversize/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2024-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "South Dakota publishes no formal 'superload' class; the manual-review triggers encoded here (gross over 200,000 lbs, height over 16', overweight combined with width over 12') are from third-party cross-references and were not found verbatim on the official handbook pages — confirm with SDHP/SDDOT.",
+    "No height/pole-car or police-escort dimensional trigger was found on the official handbook; those escort fields are omitted pending confirmation.",
+    "Legal gross of 80,000 lbs is the standard federal ceiling but was not read from South Dakota's exact official weight page (the official length 'Table 7' is image-based and unreadable, and the SD Legislature/Justia statute pages were 403-blocked)."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -18,70 +20,46 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
+    "width_ft": null,
+    "height_ft": 16.0,
     "length_ft": null,
     "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "note": "South Dakota does not use the term 'superload'. Loads enter SDDOT + Highway Patrol manual review at gross over 200,000 lbs, height over 16', or overweight combined with width over 12' (third-party cross-reference; not confirmed verbatim on the official handbook). Where a value is null the handler flags very large dimensions for manual verification."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "1 escort over 16' wide on the Interstate, or over 20' wide on the State Highway System (SD Motor Carrier Handbook Ch. 6); front on undivided highways, rear on divided; additional escorts if the load extends over 2' into an adjacent lane" }
     ],
-    "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
-    ],
+    "height": [],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 130.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "UNOFFICIAL cross-ref: ~1 escort over 130' long; not found verbatim in the official handbook (official length table is image-based)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 25,
       "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_formula": "Single-trip OS/OW permit = $25 per permit. Overweight adds $0.02 per ton-mile for the excess weight over legal. Emergency single-trip $25.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Single-trip permits also sold in books of ten; LCV permits $100 per book of ten."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 60,
+      "fee_usd_max": 100,
+      "note": "Annual/extended-period permit $60 (most categories, including over-80,000-lb Interstate); Longer Combination Vehicle $100 per book of ten (SD Motor Carrier Handbook Ch. 6)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Interstate: night movement prohibited if an escort is required, or the load is over 10' wide, over 14'6\" high, or a single unit over 45' long (SD Motor Carrier Handbook Ch. 6)",
+    "Non-Interstate highways: no night movement of oversize loads except specified emergency/defense scenarios; overweight-only vehicles may move at night if no escort is required",
+    "Daylight window (1/2 hour before sunrise to 1/2 hour after sunset, including weekends) per third-party cross-reference"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\" (102\"), height 14'0\" (exceptions: baled hay 15', some farm/fire equipment on non-Interstate), semitrailer 53' in a truck-tractor+semitrailer combination (SDCL 32-22-8.1), gross 80,000 lbs.",
+    "Width/height legal limits, fees and movement rules confirmed from the official SD Motor Carrier Handbook (sdtruckinfo.sd.gov); superload triggers, length/height/police escort thresholds remain cross-referenced pending official confirmation.",
+    "SDHP Permit Center (605) 224-7364; permits via sdtruckinfo.sd.gov / SDAPS."
   ]
 }

@@ -1,16 +1,16 @@
 {
   "state": "NE",
   "state_name": "Nebraska",
-  "source_url": "https://dot.nebraska.gov/business-center/permits/",
-  "source_title": "Nebraska DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://dot.nebraska.gov/media/td5ns30l/408-nac-3-04-30-2023.pdf",
+  "source_title": "Title 408 NAC Chapter 3 — NDOT Oversize/Overweight Permit Regulations (rev. 2023-04-30)",
   "portal_url": "https://nebraska.oversize.io/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2023-04-30",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Nebraska allows a higher legal height (14'6\") and was confirmed via search during research; verify escort matrix and current fees with NDOT."
+    "The official NDOT documents were read via a server-side fetch proxy of the official dot.nebraska.gov URLs (the state host refused direct connections this run); content is verbatim from Title 408 NAC Ch. 3 and the NDOT Chapter 3 manual, but was not fetched from the NDOT host directly.",
+    "Standalone semitrailer length is not stated as a discrete number in the official NDOT docs (they codify 40' single / 65' combination); the 53' national-network default is used for the length field."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -20,69 +20,50 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "height_ft": 15.917,
+    "length_ft": 150.0,
+    "gross_weight_lbs": 160000,
+    "note": "Superload (Title 408 NAC Ch. 3, 001.29) = over 16' wide, over 15'11\" high, over 150' long, and/or over 160,000 lbs gross. Superload single-trip permits are reviewed by the Lincoln Permit Office (up to 5 working days), with possible Bridge Division / District Engineer review. Height over 16' also requires a route survey."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 16.0, "escorts": 1, "police": false, "note": "1 escort over 12' to 16' wide (Title 408 NAC Ch. 3, 003.19); front on 2-lane/undivided, rear (<=300 ft) on divided" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "2 escorts (front+rear) over 16' wide (003.19C)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "pole (height) car required over 14'6\" high (003.21A); over 16' also requires a route survey" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 125.0, "up_to_ft": 150.0, "escorts": 1, "police": false, "note": "1 escort over 125' to 150' long (003.19B2)" },
+      { "over_ft": 150.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "2 escorts over 150' long (003.19C)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_usd_min": 15,
+      "fee_usd_max": 25,
+      "fee_formula": "Single-trip: overdimensional-only $15; overweight-only $20; both oversize and overweight $25 (Title 408 NAC Ch. 3, 009.04).",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Flat single-trip fees by permit type; no per-mile component."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 25,
+      "fee_usd_max": 100,
+      "note": "Continuous/annual permit $25 per quarter (or part), capped at $100 for a one-year period (Title 408 NAC Ch. 3, 009.05)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Overdimensional loads move only 30 minutes before sunrise to 30 minutes after sunset (Title 408 NAC Ch. 3, 003.14)",
+    "Overweight-only permits may move 24 hours a day, 7 days a week (003.15)",
+    "Peak-hour curfew in the Lincoln and Omaha areas: no overdimensional movement 7:00-9:00 AM and 4:00-6:00 PM on weekdays (003.13)",
+    "No overdimensional movement on holidays unless specifically authorized; no movement in poor visibility, precipitation or slippery conditions"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 14'6\" (confirmed — higher than the common 13'6\"/14'0\"), single-vehicle length 40', combination 65', gross 80,000 lbs (axle/bridge-formula governed, Neb. Rev. Stat. 60-6,294).",
+    "Where the NDOT Chapter 3 manual and Title 408 NAC Ch. 3 differ (e.g. escort length bands), the binding Admin Code (NAC) numbers are used here.",
+    "Escort, superload, fee and legal limits confirmed from the official Title 408 NAC Ch. 3 and NDOT Chapter 3 permit manual."
   ]
 }

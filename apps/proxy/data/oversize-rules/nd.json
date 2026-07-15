@@ -1,15 +1,15 @@
 {
   "state": "ND",
   "state_name": "North Dakota",
-  "source_url": "https://www.dot.nd.gov/business/oversize-overweight-permits",
-  "source_title": "North Dakota DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.statepatrol.nd.gov/oversizeoverweight-permit",
+  "source_title": "NDHP Policy Ref 9-6 (11-2024) — Permits for Oversize/Overweight Vehicles; NDCC Ch. 39-12",
   "portal_url": "https://permits.dot.nd.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2024-11-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "North Dakota's official policy defines 'superload' only qualitatively ('excessive in size and weight') with no single numeric threshold; the 200,000 lbs value encoded is the Heavy Load Permit Policy breakpoint (crossing permits required), not a stated superload number, so width/height/length superload thresholds are left null for honest manual-review flagging."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -18,70 +18,51 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
     "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "note": "NDHP defines 'superload' qualitatively (excessive size/weight), not by a fixed number. Overweight escalation tiers (NDHP Policy 9-6): over 150,000 lbs = reduced axle limits; over 175,000 lbs = load must be broken down unless engineer-approved; over 200,000 lbs = Heavy Load Permit Policy with crossing permits (encoded here as the superload gross trigger); over 250,000 lbs = track-width load diagram required."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": 16.0, "escorts": 1, "police": false, "note": "over 14'6\" wide may use a rotating/flashing amber light on the load vehicle (visible 500 ft front+rear) in lieu of a pilot car on 2-lane; no pilot required if <=16' on a 4-lane divided (NDHP Policy 9-6 A.4)" },
+      { "over_ft": 16.0, "up_to_ft": 18.0, "escorts": 2, "police": false, "note": "over 16' wide: 1 front + 1 rear pilot on 2-lane; 1 rear pilot only on 4-lane divided" },
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 18' wide: NDHP (Highway Patrol) escort may be required by the regional commander in addition to private pilots" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "escort required over 18' high; no dedicated height/pole car mandated, but written utility authority for overhead wires and DOT bridge-clearance routing are required (NDHP Policy 9-6 A.6.b)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 120.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "pilot required over 120' overall length (NDHP Policy 9-6 A.4)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 20,
+      "fee_usd_max": 70,
+      "fee_formula": "Single-trip base = $20 per trip. Overweight single-trip adds a gross-weight surcharge: 150,001-160,000 lbs $30; 160,001-170,000 $40; 170,001-180,000 $50; 180,001-190,000 $60; 190,001+ $70 (NDHP Policy 9-6 B.5). A $10 service/routing fee applies per single trip; NDHP trooper escort is $50/hour + $0.50/mile per trooper; overweight on non-interstate state highways adds ton-mile fees (Heavy Load / Load Restriction policies).",
+      "validity_days": 5,
+      "note": "Single-trip permit valid for one one-way movement within a 5-day period; e-permit surcharge up to $15."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 20,
+      "fee_usd_max": 100,
+      "note": "Annual overwidth permit (loads up to 14'6\" wide) $100; annual overwidth for a noncommercial fish-house trailer $20; bridge-length permit $30/trip or $50/month (NDHP Policy 9-6 B.5; NDCC 39-12-02)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Night travel (1/2 hour after sunset to 1/2 hour before sunrise) prohibited unless the load is at/under 12' wide AND 120' long, or superintendent-approved; night-authorized moves need clearance and amber warning lights visible 500 ft (NDHP Policy 9-6 A.2)",
+    "Loads over 16' wide: no travel Saturday after 12 noon, all day Sunday, and on holidays (New Year's, Memorial, Independence, Labor, Thanksgiving, Christmas), invalid from noon the day before through sunrise the day after",
+    "No movement when weather is inclement, highways are slippery, or visibility is 1/2 mile or less; minimum 1,000 ft between vehicles in a convoy of 2+",
+    "Overweight permits not valid on bituminous pavement when air temperature is 90F or above, and are not issued during spring road (load) restrictions"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 14'0\" (confirmed, NOT 14'6\"), single vehicle 50', two-unit combination 75', semitrailer 53' (NDCC 39-12-04), gross 80,000 lbs (NDCC 39-12-09).",
+    "In North Dakota OS/OW permits are issued by the ND Highway Patrol (NDHP) Motor Carrier Division, not NDDOT; NDDOT engineers perform bridge/route analysis. NDHP Permit office 701-328-2621.",
+    "Escort matrix, overweight/superload tiers, fees and legal limits confirmed from NDHP Policy Ref 9-6 (11-2024) and NDCC Ch. 39-12."
   ]
 }

@@ -2,87 +2,64 @@
   "state": "TX",
   "state_name": "Texas",
   "source_url": "https://www.txdmv.gov/motor-carriers/oversize-overweight-permits",
-  "source_title": "Texas DOT \u2014 Oversize/Overweight Permits",
+  "source_title": "TxDMV Motor Carrier Division — Oversize/Overweight Permits (43 TAC Chapter 219)",
   "portal_url": "https://www.txpros.txdmv.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Texas uses TxPROS with weight-based fee tables and a superheavy tier (>254,300 lbs); confirm fee, escort and route/bridge review in TxPROS."
-  ],
+  "rules_as_of": "2025-05-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 14.0,
-    "length_semitrailer_ft": 53,
+    "length_semitrailer_ft": 59,
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": 16.0,
-    "length_ft": 110.0,
-    "gross_weight_lbs": 200000,
-    "note": "Texas 'superheavy/superload' handled via TxPROS with route/bridge analysis; loads over 200,000 lbs (and very large dimensions) require engineering review. Over 254,300 lbs gross triggers the superheavy process. Confirm exact tier in TxPROS."
+    "width_ft": 20.0,
+    "height_ft": 18.92,
+    "length_ft": 125.0,
+    "gross_weight_lbs": 254300,
+    "note": "Standard single-trip permits cover up to 254,300 lbs gross. Superheavy = over 254,300 lbs, OR 200,001-254,300 lbs with under 95 ft of axle spacing, OR any single axle/axle-group over max permit weight; requires TxDOT Bridge Division route + bridge/pavement analysis (apply 3-4 weeks ahead). Dimensional loads over 20' wide, 18'11\" high, or 125' long require route-inspection certification on file before issuance."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 1, "police": false, "note": "1 escort over 14' up to 16' wide — front on 2-lane, rear on multilane (43 TAC 219.11)" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "1 front + 1 rear escort over 16' wide, all roads" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 17.0, "up_to_ft": 18.0, "escorts": 1, "police": false, "pole_car": true, "note": "1 front escort with height pole over 17' high" },
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 2, "police": false, "pole_car": true, "note": "2 escorts over 18' high; front escort must carry a height pole" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110.0, "up_to_ft": 125.0, "escorts": 1, "police": false, "note": "1 escort over 110' up to 125' long — front on 2-lane, rear on multilane" },
+      { "over_ft": 125.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "1 front + 1 rear escort over 125' long, all roads" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": "Texas single-trip and overweight fees are set by TxDMV schedules (base permit + weight tables + possible county/highway-maintenance fees); quote through TxPROS.",
+      "fee_usd_min": 60,
+      "fee_usd_max": 470,
+      "fee_formula": "Single-trip base permit = $60 (flat). Loads over 80,000 lbs add a highway-maintenance fee by gross-weight bracket: 80,001-120,000 lbs +$150 (total $210); 120,001-160,000 +$225 ($285); 160,001-200,000 +$300 ($360); 200,001+ +$375 ($435). Loads over 200,000 lbs add a $35 vehicle-supervision fee. Superheavy adds a $500 outside-engineer report review (or $100 if no bridges crossed). Texas.gov surcharge: $0.25 + 2.25% per transaction.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Overweight is axle-configuration driven — permit weight is set by axle count/spacing, not gross alone (e.g. permit single axle 25,000 lbs, five-axle group 81,400 lbs); exceeding per-axle/group maxima pushes a load to superheavy/structural review."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 270,
+      "fee_usd_max": 4000,
+      "note": "Annual Company/Vehicle-Specific Envelope $4,000/yr (up to 12'W, 14'H, 110'L, 120,000 lbs). Annual Over-Axle/Over-Gross-Weight Tolerance permit = $90 base + $5 admin + county-tier fee ($270 for 1-5 counties up to $1,095 for 101-254 counties); tolerances axle +10%, gross +5%."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daytime movement only, except overweight-only loads, or loads at/under 10' wide and 100' long moving on the Interstate (43 TAC 219.11)",
+    "Holiday movement limited to loads at/under 14' wide, 16' high and 110' long (unless a route/traffic-study exception applies)",
+    "Operators must observe TxDMV-published county and district (metro rush-hour) curfew restrictions issued as 'Permit Restrictions by County & District'"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 14'0\", gross 80,000 lbs; Texas allows a 59' semitrailer in a two-vehicle combination. Axle limits: single 20,000 / tandem 34,000 / triple 42,000 / quad 50,000 lbs.",
+    "Fees, escort matrix, superheavy thresholds and legal limits confirmed from official TxDMV.gov permit pages and 43 TAC 219.11 (Texas Administrative Code). Governing handbook: TxDMV Motor Carrier Handbook, May 2025."
   ]
 }

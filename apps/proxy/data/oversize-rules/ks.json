@@ -1,88 +1,69 @@
 {
   "state": "KS",
   "state_name": "Kansas",
-  "source_url": "https://www.ksdot.gov/burtransplan/perm/perm.asp",
-  "source_title": "Kansas DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://kstruckingpermits.ks.gov/",
+  "source_url": "https://ksrevisor.gov/statutes/chapters/ch08/008_019_0011.html",
+  "source_title": "K.S.A. 8-1911 (OS/OW permit fees) + KDOT OS/OW program (legislative testimony 2025-03-05)",
+  "portal_url": "https://k-trips.ksdot.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
+  "rules_as_of": "2025-03-05",
   "verification": "knowledge_based",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Kansas legal limits and permit process confirmed via search during research; escort thresholds and fees still need point verification with KDOT."
+    "The escort/pilot-car dimension matrix (width, height-pole and length triggers) is from unofficial cross-references; KDOT's OS/OW permit manual and the K-TRIPS portal (k-trips.ksdot.gov) were 403-blocked and kstruckingpermits.ks.gov did not resolve this run, so the exact height and length escort thresholds could not be confirmed against the state manual.",
+    "Movement/curfew hours (daylight window, Kansas Turnpike restriction) are from unofficial cross-references, not the KDOT manual.",
+    "Non-Interstate legal gross of 85,500 lbs is a cross-reference; KDOT testimony rounds it to 'more than 85,000 lbs'."
   ],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 14.0,
-    "length_semitrailer_ft": 53,
+    "length_semitrailer_ft": 59.5,
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "width_ft": 16.5,
+    "height_ft": 18.0,
+    "length_ft": 126.0,
+    "gross_weight_lbs": 150000,
+    "note": "KDOT tiers (2025 legislative testimony): standard single-trip envelope up to 120,000 lbs / 16'6\" wide / 126' long / 15' high. 'Large Structure' ($200 permit) = over 16'6\" wide OR over 18' high (up to 150,000 lbs). 'Superload' ($200 permit) = exceeding the large-structure maxes — over 16'6\" wide, over 126' long, over 18' high, and/or over 150,000 lbs — or any axle-group concentration over the weight table."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 14.0, "up_to_ft": 16.5, "escorts": 1, "police": false, "note": "UNOFFICIAL cross-ref (KDOT manual 403-blocked): ~1 escort over 14' wide on highways under 4 lanes; front+rear may be required on 2-lane; confirm with KDOT" },
+      { "over_ft": 16.5, "up_to_ft": null, "escorts": 2, "police": false, "note": "UNOFFICIAL cross-ref: 2 escorts (front+rear) for large-structure/superload widths; confirm with KDOT" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "UNOFFICIAL cross-ref: non-conductive height pole carried over 16'; a dedicated high-pole escort near ~17'; official number not confirmed" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 90.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "UNOFFICIAL cross-ref: ~1 rear escort over 90' (some sources cite 125'+); confirm with KDOT" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 40,
+      "fee_usd_max": 200,
+      "fee_formula": "Single-trip OS/OW permit = $40. Large-Structure permit (over 16'6\" wide or over 18' high) = $200. Superload permit = $200. No per-mile or third-structure fee in statute (K.S.A. 8-1911(f), effective 2020-01-01).",
+      "validity_days": 7,
+      "note": "Fees confirmed from K.S.A. 8-1911(f); single-trip validity (~7 days) is a cross-reference."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 200,
+      "fee_usd_max": 200,
+      "note": "Annual OS/OW permit $200 flat (K.S.A. 8-1911(f)); hay-bale 5-year permit $25."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Oversize (excess width/length) loads: daylight movement only — 1/2 hour before sunrise to 1/2 hour after sunset, 7 days a week (unofficial cross-reference)",
+    "Overweight-only loads may move 24 hours a day (unofficial cross-reference)",
+    "Kansas Turnpike: loads over 14' wide prohibited Monday-Thursday 8:30 AM-4:30 PM (unofficial cross-reference)",
+    "No movement on roads with ice, snow-pack or drifting snow (unofficial cross-reference)"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\" (102\"), height 14'0\", trailer 59'6\", gross 80,000 lbs on the Interstate / ~85,500 lbs on other state highways (K.S.A. 8-1904; KDOT testimony 2025-03-05).",
+    "Fees, superload/large-structure tiers and legal limits confirmed from official sources (K.S.A. 8-1911 and KDOT legislative testimony); the escort dimension matrix and curfews remain cross-referenced pending the KDOT OS/OW manual. Escort operators must register with KDOT (free, annual) and hold a certification from an accepted state.",
+    "Kansas permits are purchased through K-TRIPS (k-trips.ksdot.gov); KDOT permit office (785) 368-6501."
   ]
 }

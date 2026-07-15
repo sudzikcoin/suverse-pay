@@ -1,16 +1,17 @@
 {
   "state": "NM",
   "state_name": "New Mexico",
-  "source_url": "https://www.nm-mvd.info/oversizeoverweight-permits.aspx",
-  "source_title": "New Mexico DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://mvd.newmexico.gov/",
+  "source_url": "https://www.srca.nm.gov/parts/title18/18.019.0008.html",
+  "source_title": "NMAC 18.19.8 — Movement of Oversize/Overweight Vehicles; NMSA 1978 Sec. 66-7-413 (fees)",
+  "portal_url": "https://www.dot.nm.gov/business-support/permits/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "New Mexico overweight pricing includes a weight-distance component; confirm fee and escort matrix with NM MVD."
+    "Overweight single-trip fee is a weight-distance formula read from NMSA 1978 Sec. 66-7-413 statute text via a non-official mirror (state Justia/Ports-of-Entry portal 403-blocked this run); confirm the exact current per-increment rate through the NM MVD permit portal.",
+    "New Mexico's NMAC defines no fixed dimensional 'superload' category; only a weight trigger (bridge review at/above 200,000 lbs, engineering analysis above 170,000 lbs) is codified, so width/height/length superload thresholds are null and the handler flags very large dimensions for manual review.",
+    "Standalone semitrailer length is not published as a discrete number (NMAC governs by 65' overall combination); the 53' national-network default is used for the length field."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +20,50 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
     "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "note": "NMAC has no fixed dimensional superload class. Gross weight at/above 200,000 lbs is routed to the NMDOT Bridge Section for structural review; engineering analysis is required above 170,000 lbs (NMAC 18.19.8.40). Extreme dimensions (e.g. width 20'+) are handled case-by-case, not by a published dimensional threshold."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 14.0, "up_to_ft": 20.0, "escorts": 1, "police": false, "note": "escort required at/over 14' wide; single escort travels front on two-lane, rear on multilane (NMAC 18.19.8.81/.92.G)" },
+      { "over_ft": 20.0, "up_to_ft": null, "escorts": 1, "police": true, "note": "state police escort may be required over 20' wide (NMAC 18.19.8.84)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "escort or a height-clearance/pole person may be required over 16' high (NMAC 18.19.8.83)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110.08, "up_to_ft": 120.08, "escorts": 1, "police": false, "note": "1 escort for overall length 110'1\" to 120'1\" (NMAC 18.19.8.82.B)" },
+      { "over_ft": 120.08, "up_to_ft": null, "escorts": 2, "police": false, "note": "2 escorts for overall length over 120'1\"" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 25,
       "fee_usd_max": null,
-      "fee_formula": "New Mexico assesses oversize plus a weight-distance element for overweight; use the NM MVD permit portal for the quote.",
+      "fee_formula": "Oversize single trip = $25. Overweight single trip = $25 + ($0.025 x each 2,000-lb increment (or major fraction) of gross weight over 86,400 lbs x number of miles traveled) per NMSA 1978 Sec. 66-7-413. Example: 100,400 lbs over 50 mi = $25 + (0.025 x 7 x 50) = $33.75.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Weight-distance overweight fee; specialized-haul multiple-trip permit is $400 for 4 contiguous counties + 3 interstates, plus $100 per additional county."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 250,
+      "fee_usd_max": 400,
+      "note": "Annual OS/OW permit $250 (up to one year, NMSA 66-7-413); specialized-haul multiple-trip permit $400+ (NMAC 18.19.8.55.B)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daylight movement only — no movement from 30 minutes after sunset to 30 minutes before sunrise (NMAC 18.19.8.24)",
+    "No movement on state-designated holidays or in inclement weather (NMAC 18.19.8.24)",
+    "Metro weekday rush-hour bans: Santa Fe, Las Cruces, Los Lunas, Espanola no movement 7:00-9:00 AM and 4:00-6:00 PM; Albuquerque and Rio Rancho no movement 7:00-9:00 AM and 4:00-7:00 PM (NMAC 18.19.8.26)",
+    "Continuous 24-hour movement allowed only for loads at or under 10' wide, 14'6\" high, 120' long and 140,000 lbs (NMAC 18.19.8.25); still no holiday or inclement-weather travel"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\" on designated highways, height 14'0\", gross 80,000 lbs (up to 86,000 lbs with certain axle configurations per NMSA 66-7-409); single-vehicle length 40', combination 65' (NMAC 18.19.8.37).",
+    "Escort matrix, curfews and legal limits confirmed from the official NMAC (srca.nm.gov); overweight fee formula and annual fee confirmed from NMSA 66-7-413 statute text."
   ]
 }

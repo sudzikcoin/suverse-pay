@@ -2,14 +2,15 @@
   "state": "AZ",
   "state_name": "Arizona",
   "source_url": "https://azdot.gov/motor-vehicles/commercial-vehicle-services/oversize-and-overweight-permits",
-  "source_title": "Arizona DOT \u2014 Oversize/Overweight Permits",
+  "source_title": "Arizona A.A.C. Title 17, Chapter 6 — Oversize and Overweight Special Permits (ADOT)",
   "portal_url": "https://apps.azdot.gov/permits/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2022-07-08",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "Escort matrix, superload/Class-C envelope and movement curfews were read from the verbatim A.A.C. Title 17 Ch. 6 rule text; ADOT's own server (azdot.gov PDFs, apps.azsos.gov Title 17) returned HTTP 403 this run, so text was confirmed from a faithful reproduction of the same administrative code.",
+    "Fee figures (OS $15 / OW $75 single-trip, Class C review/engineering add-ons) were read from the 2013 A.A.C. supplement text; ADOT promulgated an 'Envelope and Special Permit' amendment effective 2022-07-08 that could not be retrieved — confirm current fee amounts with ADOT before dispatch."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,69 +20,47 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "height_ft": 16.0,
+    "length_ft": 120.0,
+    "gross_weight_lbs": 250000,
+    "note": "Arizona's standard non-reducible (Class A) permit envelope tops out at 14' wide, 16' high, 120' overall length and 250,000 lbs (A.A.C. R17-6-201); loads exceeding these fall to Class C special handling. Engineering/structural (bridge) review is mandatory over 250,000 lbs or over axle-group/bridge weight limits (R17-6-104). Night/continuous-travel envelope caps at 16' wide, 16' high, 120' long, 250,000 lbs."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 11.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 rear escort over 11' wide (A.A.C. R17-6-405(D)/R17-6-409(D))" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "front and rear escort over 14' up to 16' wide" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "Class C special handling over 16' wide; escorts and any DPS traffic control set case-by-case (R17-6-306/108)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "front escort with height pole over 15' high; utility notification required over 16' (R17-6-308)" }
     ],
-    "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
-    ],
+    "length": [],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 15,
+      "fee_usd_max": 75,
+      "fee_formula": "Oversize (over-dimension, weight <= 80,000 lbs) single trip = $15; overweight (> legal, < 250,000 lbs) single trip = $75 (A.A.C. R17-6-201). Class C (superload) adds a review/analysis fee of $15 (<=18' H/W) or $25 (>18'), plus engineering analysis at $75 per 50-mile increment (non-ADOT engineer) or $125 per 50-mile increment (ADOT engineer) per R17-6-204. Fees are from the 2013 A.A.C. text and may have been revised by the 2022 amendment.",
+      "validity_days": 4,
+      "note": "Single-trip permits valid 96 hours; 30-day and annual class permits also available."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 45,
+      "fee_usd_max": 1500,
+      "note": "Class-specific annual permits: Class B non-reducible $360/yr; Class D self-propelled crane/drill $600/yr; envelope annual oversize-only $750, oversize+overweight $1,500; overwidth watercraft $45/yr (A.A.C. R17-6-201 through -210)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daylight movement only — no earlier than 1/2 hour before sunrise and no later than 1/2 hour after sunset unless the Department authorizes alternate hours (R17-6-401); stay in the rightmost lane on multilane highways except to pass",
+    "Metro curfew (loads over 10' wide) 7:00-9:00 AM and 4:00-6:00 PM Mon-Fri on listed Phoenix (I-10, I-17, SR 51/143, US 60, loops SR 101/202), Tucson (I-10, I-19, SR 77/86) and Yuma (US 95, I-8) routes; over 12' wide no transport on Phoenix loops during curfew (R17-6-404)",
+    "No transport on New Year's Day, Memorial Day, Independence Day, Labor Day, Thanksgiving or Christmas for loads over 10' wide / 14'6\" high / 120' overall (R17-6-406)",
+    "No transport when visibility is under 500 ft (dust, snow, fog, heavy rain), when traction is reduced, or when high winds destabilize the load (R17-6-403)"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 14'0\", gross 80,000 lbs (5+ axles) per A.R.S. 28-1093/1094/1100. Semitrailer 57'6\" on Interstate / 53' on other highways; 53' used here as the conservative field.",
+    "Front or rear load projection exceeding 20' triggers a front/rear escort respectively (R17-6-307); 'OVERSIZE LOAD' sign required at width 9' or more (R17-6-303)."
   ]
 }
