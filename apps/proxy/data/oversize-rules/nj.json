@@ -1,0 +1,88 @@
+{
+  "state": "NJ",
+  "state_name": "New Jersey",
+  "source_url": "https://www.state.nj.us/mvc/business/permits.htm",
+  "source_title": "New Jersey DOT \u2014 Oversize/Overweight Permits",
+  "portal_url": "https://www.njoversizepermits.com/",
+  "retrieved_at": "2026-07-15",
+  "rules_as_of": "2025-06-01",
+  "verification": "knowledge_based",
+  "data_quality": "verify_with_state",
+  "verify_reasons": [
+    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
+    "New Jersey is strict and low-clearance: escorts trigger at lower widths and State Police escorts are common for large loads; confirm the exact escort/police matrix and fees with NJDOT/NJMVC."
+  ],
+  "legal_limits": {
+    "width_ft": 8.5,
+    "height_ft": 13.5,
+    "length_semitrailer_ft": 53,
+    "gross_weight_lbs": 80000
+  },
+  "superload_thresholds": {
+    "width_ft": 16.0,
+    "height_ft": null,
+    "length_ft": null,
+    "gross_weight_lbs": 200000,
+    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+  },
+  "escort_rules": {
+    "width": [
+      {
+        "over_ft": 10.0,
+        "up_to_ft": 12.0,
+        "escorts": 1,
+        "police": false,
+        "note": "NJ planning default: escort at over-10' width on many routes \u2014 confirm exact trigger"
+      },
+      {
+        "over_ft": 12.0,
+        "up_to_ft": null,
+        "escorts": 2,
+        "police": true,
+        "note": "NJ planning default: multiple escorts / possible State Police for extreme width \u2014 confirm"
+      }
+    ],
+    "height": [
+      {
+        "over_ft": 13.5,
+        "up_to_ft": null,
+        "escorts": 1,
+        "police": false,
+        "pole_car": true,
+        "note": "NJ planning default: height pole when over ~13'6\" \u2014 confirm"
+      }
+    ],
+    "length": [
+      {
+        "over_ft": 85.0,
+        "up_to_ft": null,
+        "escorts": 1,
+        "police": false,
+        "note": "NJ planning default rear escort \u2014 confirm"
+      }
+    ],
+    "weight": []
+  },
+  "permit_types": {
+    "single_trip": {
+      "available": true,
+      "fee_usd_min": null,
+      "fee_usd_max": null,
+      "fee_formula": null,
+      "validity_days": null,
+      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+    },
+    "annual": {
+      "available": true,
+      "fee_usd_min": null,
+      "fee_usd_max": null,
+      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+    }
+  },
+  "movement_restrictions": [
+    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+  ],
+  "notes": [
+    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+  ]
+}

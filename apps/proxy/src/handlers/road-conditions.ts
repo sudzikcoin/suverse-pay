@@ -302,13 +302,13 @@ async function fetchJson(
   }
 }
 
-interface ResolvedPlace extends LatLon {
+export interface ResolvedPlace extends LatLon {
   input: string;
   resolved: string | null;
 }
 
 /** "lat,lon" passes through; anything else geocodes via Nominatim (30d cache). */
-async function resolvePlace(
+export async function resolvePlace(
   db: DbQuerier,
   fetchImpl: typeof fetch,
   input: string,
@@ -407,7 +407,7 @@ async function alertsAtPoint(
   return parseAlerts(lookup.value);
 }
 
-async function stateAtPoint(
+export async function stateAtPoint(
   db: DbQuerier,
   fetchImpl: typeof fetch,
   p: LatLon,

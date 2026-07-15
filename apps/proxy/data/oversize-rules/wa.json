@@ -1,0 +1,65 @@
+{
+  "state": "WA",
+  "state_name": "Washington",
+  "source_url": "https://wsdot.wa.gov/travel/commercial-vehicles/commercial-vehicle-permits",
+  "source_title": "WSDOT Commercial Vehicle Permits",
+  "portal_url": "https://wsdot.wa.gov/travel/commercial-vehicles/commercial-vehicle-permits/permit-types-fees",
+  "retrieved_at": "2026-07-15",
+  "rules_as_of": "2026-07-15",
+  "verification": "live_checked",
+  "data_quality": "verify_with_state",
+  "verify_reasons": [
+    "Escort/pilot-car counts vary by highway type (two-lane vs multilane) per WAC 468-38-100; matrix below is simplified — confirm exact configuration per route",
+    "Overweight single-trip fee is a mileage/weight schedule (RCW 46.44.0941), not a flat fee; only the $14 minimum is codified here"
+  ],
+  "legal_limits": {
+    "width_ft": 8.5,
+    "height_ft": 14.0,
+    "length_semitrailer_ft": 53,
+    "gross_weight_lbs": 80000
+  },
+  "superload_thresholds": {
+    "width_ft": 16.0,
+    "height_ft": 16.0,
+    "length_ft": 125,
+    "gross_weight_lbs": 200000,
+    "note": "WSDOT superload = non-divisible load exceeding 16' wide, 16' high, 125' load length, or 200,000 lbs. Over 200,000 lbs: apply at least 30 days ahead; over 16' wide/high: written application at least 7 calendar days ahead."
+  },
+  "escort_rules": {
+    "width": [
+      { "over_ft": 11.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "front pilot on two-lane undivided; rear pilot on multilane — see WAC 468-38-100" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "front and rear on two-lane; configuration varies on multilane" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "superload territory — escorts set case-by-case by WSDOT" }
+    ],
+    "height": [
+      { "over_ft": 14.5, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "front pilot with height pole" }
+    ],
+    "length": [
+      { "over_ft": 125, "up_to_ft": null, "escorts": 1, "police": false, "note": "rear pilot; rear overhang exceeding 1/3 of overall length also triggers a rear pilot" }
+    ],
+    "weight": []
+  },
+  "permit_types": {
+    "single_trip": {
+      "available": true,
+      "fee_usd_min": 10,
+      "fee_usd_max": null,
+      "fee_formula": "Oversize-only (dimensional) single trip = $10 flat. Overweight = $14 minimum, scaled by excess weight and miles per RCW 46.44.0941 schedule (use WSDOT overweight fee calculator).",
+      "validity_days": 3,
+      "note": "Non-divisible loads only; most routine permits self-issuable online"
+    },
+    "annual": {
+      "available": true,
+      "fee_usd_min": 100,
+      "fee_usd_max": 360,
+      "note": "Annual permits are category-specific (e.g. single/double trailer divisible $100/yr, manufactured housing $360/yr); 30-day permits $10-$90 by type. No general-purpose annual OSOW permit."
+    }
+  },
+  "movement_restrictions": [
+    "Movement limited to one-half hour before sunrise to one-half hour after sunset (Saturdays and Sundays included)",
+    "Loads not exceeding 12' wide, 14'6\" high, and 105' long (including legal overhang) may move at night with proper lighting, Monday-Friday"
+  ],
+  "notes": [
+    "Superloads over 16' wide or 16' high require written application 7+ days ahead; over 200,000 lbs require 30 days"
+  ]
+}

@@ -154,6 +154,12 @@ import {
   reeferRateReportValidator,
 } from "./reefer-rate-report.js";
 import {
+  oversizeRequirementsCheck,
+  oversizeInputSchema,
+  oversizePreflight,
+  oversizeValidator,
+} from "./oversize-requirements-check.js";
+import {
   roadConditions,
   roadConditionsInputSchema,
   roadConditionsPreflight,
@@ -284,6 +290,7 @@ export const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   broker_authority_check: brokerAuthorityCheck,
   road_conditions: roadConditions,
   reefer_rate_report: reeferRateReport,
+  oversize_requirements_check: oversizeRequirementsCheck,
 };
 
 export function getInternalHandler(name: string): InternalHandler | undefined {
@@ -320,6 +327,7 @@ export const INTERNAL_HANDLER_VALIDATORS: Record<string, InternalHandlerValidato
   broker_authority_check: brokerAuthorityCheckValidator,
   road_conditions: roadConditionsValidator,
   reefer_rate_report: reeferRateReportValidator,
+  oversize_requirements_check: oversizeValidator,
 };
 
 export function getInternalHandlerValidator(
@@ -354,6 +362,7 @@ export const INTERNAL_HANDLER_PREFLIGHTS: Record<string, InternalHandlerPrefligh
   broker_authority_check: brokerAuthorityCheckPreflight,
   road_conditions: roadConditionsPreflight,
   reefer_rate_report: reeferRateReportPreflight,
+  oversize_requirements_check: oversizePreflight,
 };
 
 export function getInternalHandlerPreflight(
@@ -390,6 +399,7 @@ export const INTERNAL_HANDLER_INPUT_SCHEMAS: Record<
   broker_authority_check: brokerAuthorityCheckInputSchema,
   road_conditions: roadConditionsInputSchema,
   reefer_rate_report: reeferRateReportInputSchema,
+  oversize_requirements_check: oversizeInputSchema,
 };
 
 export function getInternalHandlerInputSchema(

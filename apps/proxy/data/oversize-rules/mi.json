@@ -1,0 +1,88 @@
+{
+  "state": "MI",
+  "state_name": "Michigan",
+  "source_url": "https://www.michigan.gov/mdot/travel/mobility/for-motor-carriers/permits",
+  "source_title": "Michigan DOT \u2014 Oversize/Overweight Permits",
+  "portal_url": "https://mdotjboss.state.mi.us/TAP/",
+  "retrieved_at": "2026-07-15",
+  "rules_as_of": "2025-06-01",
+  "verification": "knowledge_based",
+  "data_quality": "verify_with_state",
+  "verify_reasons": [
+    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
+    "Michigan uses an unusual axle-based weight law (legal gross far above 80,000 lbs on enough axles without an OW permit) \u2014 the gross-weight verdict here is conservative and MUST be checked against Michigan's axle-load tables; confirm escort/fee matrix with MDOT."
+  ],
+  "legal_limits": {
+    "width_ft": 8.5,
+    "height_ft": 13.5,
+    "length_semitrailer_ft": 53,
+    "gross_weight_lbs": 80000
+  },
+  "superload_thresholds": {
+    "width_ft": 16.0,
+    "height_ft": null,
+    "length_ft": null,
+    "gross_weight_lbs": null,
+    "note": "Michigan's axle-spacing weight law permits very high legal gross on sufficient axles (e.g. 11-axle configurations well above 80,000 lbs) WITHOUT an overweight permit \u2014 so gross-weight alone is a poor superload proxy here. Superload/heavy analysis is axle-based; verify with MDOT."
+  },
+  "escort_rules": {
+    "width": [
+      {
+        "over_ft": 12.0,
+        "up_to_ft": 14.0,
+        "escorts": 1,
+        "police": false,
+        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
+      },
+      {
+        "over_ft": 14.0,
+        "up_to_ft": null,
+        "escorts": 2,
+        "police": false,
+        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
+      }
+    ],
+    "height": [
+      {
+        "over_ft": 14.5,
+        "up_to_ft": null,
+        "escorts": 1,
+        "police": false,
+        "pole_car": true,
+        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
+      }
+    ],
+    "length": [
+      {
+        "over_ft": 100.0,
+        "up_to_ft": null,
+        "escorts": 1,
+        "police": false,
+        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
+      }
+    ],
+    "weight": []
+  },
+  "permit_types": {
+    "single_trip": {
+      "available": true,
+      "fee_usd_min": null,
+      "fee_usd_max": null,
+      "fee_formula": null,
+      "validity_days": null,
+      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+    },
+    "annual": {
+      "available": true,
+      "fee_usd_min": null,
+      "fee_usd_max": null,
+      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+    }
+  },
+  "movement_restrictions": [
+    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+  ],
+  "notes": [
+    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+  ]
+}
