@@ -175,6 +175,59 @@ async function cachedLookup<T>(
   }
 }
 
+/**
+ * Generic small-object HTTP cache over freight_http_cache — used by the
+ * road-conditions / reefer-rate handlers for geocodes, NWS lookups,
+ * WZDx registry + feeds and USDA reports. Same fresh / live / stale-if-
+ * error ladder as cachedLookup, but keyed by arbitrary cache_key and
+ * with per-call TTLs.
+ */
+export async function httpCachedLookup<T>(
+  db: DbQuerier,
+  cacheKey: string,
+  freshMs: number,
+  staleMaxMs: number,
+  live: () => Promise<T>,
+): Promise<CachedLookup<T>> {
+  const cached = await db
+    .query(`SELECT payload, fetched_at FROM freight_http_cache WHERE cache_key = $1`, [
+      cacheKey,
+    ])
+    .then((r) => (r.rows.length > 0 ? (r.rows[0] as unknown as CacheRow) : null))
+    .catch(() => null);
+  const age =
+    cached === null ? Infinity : Date.now() - new Date(cached.fetched_at).getTime();
+  if (cached !== null && age < freshMs) {
+    return {
+      value: cached.payload as T,
+      source: "cache",
+      fetchedAt: new Date(cached.fetched_at),
+    };
+  }
+  try {
+    const value = await live();
+    await db
+      .query(
+        `INSERT INTO freight_http_cache (cache_key, payload, fetched_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (cache_key) DO UPDATE
+           SET payload = EXCLUDED.payload, fetched_at = EXCLUDED.fetched_at`,
+        [cacheKey, JSON.stringify(value)],
+      )
+      .catch(() => {});
+    return { value, source: "live", fetchedAt: new Date() };
+  } catch (err) {
+    if (cached !== null && age < staleMaxMs) {
+      return {
+        value: cached.payload as T,
+        source: "stale_cache",
+        fetchedAt: new Date(cached.fetched_at),
+      };
+    }
+    throw err;
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // Census (identity + MCS-150 fraud-signal fields)
 // ─────────────────────────────────────────────────────────────────────
