@@ -1,87 +1,70 @@
 {
   "state": "MO",
   "state_name": "Missouri",
-  "source_url": "https://www.modot.org/oversizeoverweight-permits",
-  "source_title": "Missouri DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.modot.org/OSOW",
+  "source_title": "MoDOT Oversize/Overweight Permits (codified rule 7 CSR 10-25.020)",
   "portal_url": "https://mcs.modot.mo.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
-  ],
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
-    "height_ft": 14.0,
+    "height_ft": 13.5,
     "length_semitrailer_ft": 53,
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "height_ft": 16.0,
+    "length_ft": 150.0,
+    "gross_weight_lbs": 160000,
+    "note": "Missouri 'super heavy/large' handling is triggered when a non-divisible load exceeds any of: 16' wide, 16' high, 150' overall length, or 160,000 lbs gross (7 CSR 10-25.020). Oversize loads over 16' wide/high or 150' long also pay a $250 movement-feasibility (route/structural) fee; loads over 350,000 lbs on 2-lane require front+rear civilian escort."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.5, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 escort 12'6\"-14' wide: rear on divided/multilane undivided, front on 2-lane (7 CSR 10-25.020)" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "14'-16' wide: 1 front + 1 rear on 2-lane and multilane undivided; 1 rear only on divided highways" },
+      { "over_ft": 16.0, "up_to_ft": 18.0, "escorts": 2, "police": false, "note": "over 16' wide: front + rear civilian escorts on divided/multilane; MSHP police escort required if over 16' on any 2-lane highway" },
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "MSHP police escort required over 18' wide on divided/multilane undivided (over 16' on 2-lane)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.5, "up_to_ft": 17.0, "escorts": 1, "police": false, "pole_car": true, "note": "height-detection (pole) vehicle must precede loads over 15'6\" high; satisfies front-escort requirement" },
+      { "over_ft": 17.0, "up_to_ft": null, "escorts": 1, "police": true, "pole_car": true, "note": "MSHP police escort plus height-pole vehicle when over 17' high" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110.0, "up_to_ft": 125.0, "escorts": 1, "police": false, "note": "rear escort when vehicle+load over 110' on all highways except divided" },
+      { "over_ft": 125.0, "up_to_ft": 150.0, "escorts": 1, "police": false, "note": "rear escort when over 125' combination on divided highways" },
+      { "over_ft": 150.0, "up_to_ft": null, "escorts": 1, "police": true, "note": "MSHP police escort over 150' overall length" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 15,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Single-trip base = $15. Oversize over 16' wide/high or 150' long adds a $250 movement-feasibility (route/structural) fee. Overweight = $15 + $20 per each 10,000 lbs (or fraction) over legal gross weight, up to the routine 160,000 lb cap (7 CSR 10-25.020).",
+      "validity_days": 7,
+      "note": "One load; moves must be completed within 7 moving days."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 128,
+      "fee_usd_max": 624,
+      "note": "Annual/blanket: single-commodity oversize $128; multiple-commodity oversize $400; milk hauler $500; emergency overweight round-trip $624 — all prorated quarterly."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daylight movement only: one-half hour before sunrise to one-half hour after sunset",
+    "Metro rush-hour ban Mon-Fri (e.g. St. Louis 6:30-9:00 a.m. and 3:30-6:30 p.m.; Kansas City analogous)",
+    "Holiday movement prohibited from noon on the last business day preceding the holiday",
+    "Nighttime overwidth movement allowed only up to 12'6\" wide"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Base legal height is 13'6\" on general highways; 14'0\" is allowed on the interstate/designated and primary systems and within 10 air-miles thereof. Legal width 8'6\", gross 80,000 lbs (bridge postings override lower).",
+    "Escort matrix, superload thresholds, fees, validity and curfews sourced from codified Missouri rule 7 CSR 10-25.020. Per-axle limits (single 20,000 / tandem 34,000 lbs, RSMo 304.180) not re-confirmed from a fetched MoDOT page this run.",
+    "State-level rules only — county/city permits, bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }

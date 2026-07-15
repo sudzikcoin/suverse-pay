@@ -2,14 +2,15 @@
   "state": "MN",
   "state_name": "Minnesota",
   "source_url": "https://www.dot.state.mn.us/cvo/oversize/index.html",
-  "source_title": "Minnesota DOT \u2014 Oversize/Overweight Permits",
+  "source_title": "MnDOT Oversize/Overweight Permits (Minn. Stat. 169.80-.87; MN Trucking Regs Section 05, 2022)",
   "portal_url": "https://www.dot.state.mn.us/cvo/oversize/index.html",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2022-01-17",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "MnDOT publishes no height-based escort or height-pole threshold on its escort requirements page; the height escort array is empty by design. The only overheight structural trigger is a mandatory physical route survey when over 16' high or over 20' wide.",
+    "Semitrailer legal length (53') is cross-referenced from Minn. Stat. 169.81, not restated on the MnDOT permit pages; MnDOT publishes overall-combination limits (75') instead."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,69 +20,50 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "height_ft": 16.0,
+    "length_ft": 150.0,
+    "gross_weight_lbs": 250000,
+    "note": "MnDOT Superload Corridor network is defined for vehicles up to 16'0\" tall x 16'0\" wide x 150'0\" long x 250,000 lbs (Superload Corridors map, updated Dec 2021); loads above these are superload class. Separately, a mandatory physical route survey is required when over 16'0\" high or over 20'0\" wide (MN Trucking Regs Section 05)."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 15.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "trigger width = 15'0\" at bottom OR 16'0\" at top: 2 escorts (front+rear) on undivided 2-lane; 1 rear escort on multilane divided (escorts.html, Minn. Stat. 169.812). Load extending left of centerline also requires a certified peace officer plus front & rear escorts." }
     ],
-    "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
-    ],
+    "height": [],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110.0, "up_to_ft": 150.0, "escorts": 2, "police": false, "note": ">=110' overall: 1 rear escort on multilane divided; 2 escorts (front+rear) on undivided 2-lane" },
+      { "over_ft": 150.0, "up_to_ft": null, "escorts": 2, "police": false, "note": ">=150' overall: front + rear escorts on divided highways" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 15,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Oversize single-trip = $15.00 flat. Oversize/overweight single-trip = $15.00 + a per-mile damage-assessment fee summed across axle groups (rate looked up by each axle-group weight and axle spacing; e.g. 2-axle <=8' spacing $0.00-$0.30/mile). Single-trip overweight is NOT issued above 72,000 lbs per axle group.",
+      "validity_days": 7,
+      "note": "Job/multi-trip oversize = $36 valid 60 days; OS/OW job = $36 + damage-assessment fee x number of moves."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 60,
+      "fee_usd_max": 900,
+      "note": "Annual overweight by GVW bracket: $200 (<=90,000 lbs) up to $900 (145,001-155,000 lbs). Annual oversize: forest products $300, tow truck $300, livestock $200, commercial boat/double-deck bus $120, baled farm $60; seasonal (harvest/snowplow/winter) $60."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "No statewide daylight-only rule — travel is not restricted unless noted on the permit",
+    "Holidays: no travel from 2:00 p.m. the day before to 2:00 a.m. the day after when over 12'6\" wide or over 110' long",
+    "Summer weekends (Memorial Day-Labor Day): no travel Fri & Sun 4:00-8:00 p.m. when over 12'6\" wide or over 110' long",
+    "Rush hour (Twin Cities and Duluth metro): no travel weekdays 6:00-8:30 a.m. and 3:30-6:00 p.m. when over 14'6\" wide or over 110' long",
+    "Night-travel required (Twin Cities 7-county metro): travel only 12:00 a.m.-5:00 a.m. Mon-Fri when over 16'0\" wide",
+    "No movement when visibility is under 500 ft or the vehicle cannot hold its lane"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\" (VERIFIED, not 14'0\"), gross 80,000 lbs; overall-combination limit 75' (45' single vehicle, 48' mobile crane).",
+    "Overweight is axle-group based: the damage-assessment fee is the sum of per-mile rates looked up by each axle-group's weight and spacing, times miles. Single-trip OW not issued above 72,000 lbs per axle group; annual OW priced by GVW bracket.",
+    "Escort matrix (escorts.html), superload corridor definition (superloadcorridors.pdf, Dec 2021), and fees (permit-types.html + damage-assessment-fees.html) sourced from official MnDOT pages; MnDOT's 'Guide to transporting superloads' edocs host was unreachable this run.",
+    "State-level rules only — county/city permits, bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }

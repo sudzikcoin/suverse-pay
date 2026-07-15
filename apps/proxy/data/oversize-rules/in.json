@@ -1,16 +1,14 @@
 {
   "state": "IN",
   "state_name": "Indiana",
-  "source_url": "https://www.in.gov/dor/motor-carrier-services/oversizeoverweight-permitting/",
-  "source_title": "Indiana DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.in.gov/dor/motor-carrier-services/oversizeoverweight-osw/",
+  "source_title": "Indiana DOR Motor Carrier Services — Oversize/Overweight (OSOW); Form M-204 General Provisions; ISP Superload Escorts",
   "portal_url": "https://motorcarrier.dor.in.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
-  ],
+  "rules_as_of": "2022-04-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
@@ -18,70 +16,56 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "width_ft": 17.0,
+    "height_ft": 15.0,
+    "length_ft": 110.0,
+    "gross_weight_lbs": 108000,
+    "note": "Indiana superload (ISP 'Superload Escorts') = any vehicle+load over 17' wide, 15' high, 110' long, or 108,000 lbs; Indiana State Police escort obtained via CVED (812-533-1100), arranged within 72 hrs. A $10 executive fee applies over 120,000 lbs. Loads over 16' wide, over 15' high, or over 200,000 lbs are restricted to Mon-Fri 8:30 a.m.-3:30 p.m."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.33, "up_to_ft": 14.33, "escorts": 1, "police": false, "note": "over 12'4\": 1 escort — front on undivided highways, rear on divided highways (Form M-204)" },
+      { "over_ft": 14.33, "up_to_ft": 17.0, "escorts": 2, "police": false, "note": "14'4\"-17' wide: 1 rear escort on dual-lane divided highway; 2 escorts (front + rear) on all other roads" },
+      { "over_ft": 17.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 17' wide is superload — Indiana State Police escort arranged via CVED" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": 15.0, "escorts": 1, "police": false, "pole_car": true, "note": "over 14'6\": escort with height stick traveling in front (Form M-204)" },
+      { "over_ft": 15.0, "up_to_ft": null, "escorts": 1, "police": true, "pole_car": true, "note": "over 15' high is superload — ISP escort via CVED plus height pole" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110.0, "up_to_ft": null, "escorts": 1, "police": true, "note": "over 110' is superload — 1 escort (front on undivided, rear on divided) plus ISP escort arranged via CVED" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 20,
+      "fee_usd_max": 40,
+      "fee_formula": "Oversize single-trip: $20 (<=95' L, <=13'6\" H, <=12'4\" W); $30 (96'-110' L, 12'5\"-16' W or 13'7\"-15' H); $40 (16' W / 15' H / 80,000 lbs). Overweight single-trip = $20 base + per-mile by gross weight: $0.35/mi <=108,000 lbs; $0.60/mi 108,001-150,000; $1.00/mi >150,000. Oversize+overweight = greater of the two calculated fees. +$10 executive fee over 120,000 lbs. (Indiana DOR OSOW Vehicle Permit Fees.)",
+      "validity_days": 5,
+      "note": "Divisible-load single-trip (7 days) = $20 + $0.25/ESAL-mile. Overweight commodity permits allow up to 120,000 lbs (bulk milk up to 154,000 lbs)."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 100,
+      "fee_usd_max": 800,
+      "note": "Oversize 90-day $100; oversize annual $405; ocean sealed container annual $800; special weight registration $25; various mobile-home rig permits $10-$2,000."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "<=110' L, <=10' W, <=13'6\" H, <200,000 lbs: continuous travel 7 days/week",
+    ">110' L, 10'-14'4\" W, <=15' H: 7 days/week, one-half hour before sunrise to one-half hour after sunset",
+    "14'4\"-16' W: Mon-Fri, sunrise-sunset window only",
+    ">16' W, or >15' H, or >200,000 lbs: Mon-Fri 8:30 a.m.-3:30 p.m. only",
+    "No holiday travel (New Year's, Memorial, Independence, Labor, Thanksgiving, Christmas) from noon the last weekday before; overweight-commodity and bulk-milk permits exempt",
+    "No operation when visibility <500 ft or wind >25 mph",
+    "Speed max 55 mph when over 85' long, over 10'6\" wide, or above legal height",
+    "Not valid on I-65/I-70 inside I-465, closed/posted roads, or county roads/city streets"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\", 40' single vehicle / 53' loaded semi, gross 80,000 lbs subject to Federal Bridge axle weights.",
+    "Escort matrix (Form M-204), superload thresholds (ISP), and fees (DOR OSOW fee schedule) all sourced from official Indiana documents. M-204 has an internal inconsistency (escort trigger stated as 14'6\" height but width band written 14'4\"-17') — reported per the fee/manual values.",
+    "State-level rules only — county/city permits, bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }

@@ -1,16 +1,17 @@
 {
   "state": "IL",
   "state_name": "Illinois",
-  "source_url": "https://idot.illinois.gov/transportation-system/transportation-management/permits/oversize-overweight-permits.html",
-  "source_title": "Illinois DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://ipass.illinois.gov/",
+  "source_url": "https://idot.illinois.gov/doing-business/permits/oversize-and-overweight-permits.html",
+  "source_title": "IDOT Oversize and Overweight Permits — Policy Manual (92 Ill. Adm. Code 554) + Fee Tables 1 & 2",
+  "portal_url": "https://webapps1.dot.illinois.gov/ITAP/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-01-17",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Illinois single-trip fees scale by dimension/weight bracket; confirm the fee bracket and escort matrix with IDOT."
+    "Illinois publishes no bright-line dimensional superload definition; width/height/length are null (superload is operational — bridge/pavement structural analysis under 554.1420/554.1640, or auto-superload when axle spacing fails 554.1415). Practical-maximum gross of 120,000 lbs (6+ axle) is encoded as the weight trigger.",
+    "Overweight-on-axle-only fees (Table 3) are served by IDOT as a scanned image and were not machine-readable — use the ITAP fee estimator for exact overweight-on-axle cost.",
+    "Escort counts escalate on dimension COMBINATIONS (554.1235: two civilian escorts when any pair of width>14'6\"/height>14'6\"/length>110' is exceeded); the per-dimension matrix here encodes single-dimension triggers and notes the combinations."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +20,57 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 120000,
+    "note": "Illinois has no defined 'superload' bright-line. Practical maximum gross weight is 120,000 lbs (6+ axle); loads above this, or towed loads failing the axle-spacing rule (554.1415: steer-to-tandem >=8'1\", first trailer axle >=18'6\", spacing sum >=43'6\"), are processed as superloads requiring bridge/pavement structural analysis ($40/hr + computer cost, 554.1420/554.1640). Dimensions over 15' high, 145' long, or 14'6\" wide also push a move into structural review beyond the Table 2 fee ceiling."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": 16.0, "escorts": 1, "police": false, "note": "1 civilian escort over 14'6\" wide; 2 escorts if width AND (height>14'6\" or length>110') also exceeded (554.1235)" },
+      { "over_ft": 16.0, "up_to_ft": 18.0, "escorts": 3, "police": false, "note": "3 civilian escorts over 16' wide" },
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 3, "police": true, "note": "Illinois State Police escort over 18' wide ($80/vehicle/ISP district + hourly, 554.1645)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": 18.0, "escorts": 1, "police": false, "pole_car": true, "note": "1 civilian escort over 14'6\" high; lead escort carries a height pole (554.1240(l))" },
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 3, "police": true, "pole_car": true, "note": "3 civilian escorts + Illinois State Police over 18' high" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110.0, "up_to_ft": 145.0, "escorts": 1, "police": false, "note": "1 civilian escort over 110' long" },
+      { "over_ft": 145.0, "up_to_ft": 200.0, "escorts": 3, "police": false, "note": "3 civilian escorts over 145' long" },
+      { "over_ft": 200.0, "up_to_ft": null, "escorts": 3, "police": true, "note": "Illinois State Police escort over 200' long" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 12,
+      "fee_usd_max": 125,
+      "fee_formula": "Over-dimension single-trip (Table 1, by size category x distance): cat a (<=10'W/14'6\"H/70'L) $12-$21; cat b (<=12'W/85'L) $15-$30; cat c (<=14'W/15'H/100'L) $25-$40; cat d (<=18'W/16'H/120'L) $30-$60; cat e (>18'W or >16'H or >120'L) $50-$125. Overweight single-trip (Table 2, by axle/gross category x distance in 45-mi bands): e.g. 6+ axle <=88,000 lbs $10-$35; 6+ axle <=120,000 lbs $30-$280; width 12'7\"-14'6\" adds +$15; any dimension beyond 15'H/145'L/14'6\"W adds the applicable Table 1 fee. Overweight-on-axle-only uses Table 3 (IDOT scanned image — not captured; quote via ITAP estimator).",
+      "validity_days": 5,
+      "note": "5 working days single-trip (round-trip 10 working days). $5 per revision/extension; superload-weight and LCO supplements +$50 non-refundable."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 100,
+      "fee_usd_max": 1000,
+      "note": "No general annual single-trip permit (annual permit only for movement to train-derailment sites, 625 ILCS 5/15-308.1). Repetitive moves use LCO (Limited Continuous Operation) 3-month/12-month permits: e.g. legal-wt oversize <=10'W $100/3mo-$400/12mo; <=12'W $150/$600; oversize truss <=14'W $250/$1,000; overweight-oversize (practical max) <=12'W $250/3mo-$1,000/12mo."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Overweight within legal dimensions: 24/7. OS/OW <=12'W, <=13'6\"H, <=200'L: 24/7 (with one additional civilian escort during darkness)",
+    "<=14'6\" wide and <=15' high: one-half hour before sunrise to one-half hour after sunset, 7 days",
+    "<=16' wide and <=17' high: sunrise-sunset Mon-Fri plus Saturday until noon; EXCEPT Chicago metro counties (Cook, DuPage, Lake, Kane, Madison, McHenry, Monroe, St. Clair, Will) limited to 9:00 a.m.-3:00 p.m. Mon-Fri only",
+    "Over 16' wide, over 17' high, or over 200' long: 9:00 a.m.-3:00 p.m. Mon-Fri, no weekends",
+    "Holiday ban from noon the day before to one-half hour before sunrise the day after (New Year's, Memorial, Independence, Labor, Thanksgiving, Christmas)",
+    "Cook County expressways: loads over practical-max weight, over 12' wide or over 13'6\" high prohibited (listed I-55/I-57/I-290/I-294/I-94/I-80 exceptions); Chicago Central Business District requires a separate City permit",
+    "No movement on snow/ice or impaired visibility; house trailers over 12' wide banned when wind gusts exceed 25 mph"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\", semitrailer 53' (Class I/II), gross 80,000 lbs (single axle 20,000 / tandem 34,000, federal bridge formula).",
+    "Escort matrix (554.1235) and fee Tables 1 & 2 sourced from official IDOT documents. Note: the correct permit portal is ITAP (Illinois Transportation Automated Permits), not the iPASS tollway site.",
+    "State-level rules only — county/city permits (Cook County, City of Chicago), bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }

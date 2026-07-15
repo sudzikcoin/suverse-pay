@@ -1,15 +1,17 @@
 {
   "state": "TN",
   "state_name": "Tennessee",
-  "source_url": "https://www.tn.gov/tdot/oversize-overweight-permits.html",
-  "source_title": "Tennessee DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://tnoversize.com/",
+  "source_url": "https://www.tn.gov/tdot/traffic-operations-division/oversize---overweight-permits.html",
+  "source_title": "TDOT Oversize/Overweight Permits (Rules 1680-07-01, rev. May 2018; Tenn. Code 55-7-205)",
+  "portal_url": "https://tntrips.tdot.tn.gov/TNEnterprise",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
+  "rules_as_of": "2018-05-15",
   "verification": "knowledge_based",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "Live sourcing partially blocked: tn.gov TDOT pages and the TDOT FAQ PDF returned HTTP 403 / connection-reset, but the codified rule 1680-07-01 (May 2018) was read via the Cornell LII mirror — superload thresholds and the single-trip/overweight fee are rule-sourced from it. The escort-width/length matrix is cross-referenced (only the roof-truss and discretionary law-enforcement escort provisions are quoted directly in the rule); confirm exact escort configuration with the TDOT OS/OW permit office.",
+    "Single-trip permit validity period and the per-axle weight table were not confirmed from an official source; validity_days left null.",
+    "Semitrailer legal length (53') is the national default; Tennessee statutory length is cited via cross-reference."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,69 +21,54 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
+    "height_ft": 15.5,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 165000,
+    "note": "Tennessee superload = width over 16', height over 15'6\", or gross over 165,000 lbs (length alone is NOT a superload trigger). Overweight superloads pay a bridge-evaluation fee: $100 (165,001-250,000 lbs), $300 (250,001-500,000 lbs), actual cost over 500,000 lbs. THP escort required over 18' wide (Interstate/federal-aid) or over 18' high (any highway)."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.58, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "12'7\"-14': 1 rear escort on Interstate/4-lane, 1 front on 2-lane (on 2-lane, loads over 10' wide need 1 escort unless pavement exceeds 24' excluding shoulders)" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "14'-16' wide: front + rear escorts on all roads; over 14' wide adds a $10 permit surcharge" },
+      { "over_ft": 16.0, "up_to_ft": 18.0, "escorts": 2, "police": false, "note": "over 16' wide is superload — front + rear civilian escorts, THP coordination" },
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "THP police escort required 18'+ wide on Interstate/federal-aid highway (min 2 officers, 4 hr min, $65/hr + $0.13/mile)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.0, "up_to_ft": 18.0, "escorts": 1, "police": false, "pole_car": true, "note": "over 15' high (where approved): 1 front escort with height pole" },
+      { "over_ft": 18.0, "up_to_ft": null, "escorts": 1, "police": true, "pole_car": true, "note": "THP police escort required 18'+ high on any highway" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 85.0, "up_to_ft": 120.0, "escorts": 1, "police": false, "note": "85'-120': 1 rear escort (75'-85' requires amber light on rear only, no escort)" },
+      { "over_ft": 120.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "over 120': front + rear escorts" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 20,
       "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_formula": "Single-trip oversize permit from $20 base (width tiers approx $20/$30 with a per-foot add over width). Over 14' wide adds +$10. Overweight = $20 + $0.06 per ton-mile over legal weight (rule 1680-07-01). Superloads also pay a bridge-evaluation fee: $100 (165,001-250,000 lbs), $300 (250,001-500,000 lbs), actual cost over 500,000 lbs. THP escort (superload) minimum 2 officers x 4 hrs at $65/hr + $0.13/mile.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Fee starts at $20; overweight adds bridge-evaluation fees by weight bracket. Permit validity days not confirmed from an official TDOT source this run."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 40,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/blanket permits from $40 by commodity/type."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daylight movement only: 30 minutes before sunrise to 30 minutes after sunset",
+    "Monday through Saturday; no Sunday travel for oversize loads",
+    "Rush-hour curfew (85'+ length or over 12'6\" width): 7:00-9:00 a.m. and 4:00-6:00 p.m. weekdays",
+    "No travel on major holidays (New Year's, Good Friday, Memorial Day, July 4, Labor Day, Thanksgiving, Christmas)",
+    "Loads over 10' wide and/or 75' long require 'Oversize Load' signs at front and rear"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\", gross 80,000 lbs (single axle 20,000 / tandem 34,000, Federal Bridge Formula on tridem/quad). A mobile home up to 14' wide needs no more than one following escort (and no lead) on the Interstate/4+-lane system.",
+    "tn.gov TDOT pages were 403-blocked this run; superload thresholds and fees were read from rule 1680-07-01 via the Cornell LII mirror, and the escort-width/length matrix cross-referenced from Tenn. Code 55-7-205 and published TDOT permit summaries. Note: the old tnoversize.com portal is DNS-dead — the current portal is TNTRIPS (tntrips.tdot.tn.gov).",
+    "State-level rules only — county/city permits, bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }

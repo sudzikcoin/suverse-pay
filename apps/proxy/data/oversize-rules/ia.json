@@ -1,15 +1,16 @@
 {
   "state": "IA",
   "state_name": "Iowa",
-  "source_url": "https://iowadot.gov/mvd/motor-carrier-services/oversizeoverweight",
-  "source_title": "Iowa DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.legis.iowa.gov/docs/iac/chapter/761.511.pdf",
+  "source_title": "Iowa Admin. Code 761 Ch. 511 — Special Permits for Excess Size and Weight; Iowa Code 321E.14 (fees)",
   "portal_url": "https://itd.iowadot.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-09-24",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "Iowa publishes no fixed numeric width/height/length superload threshold in 761 Ch. 511; the only official structural-review trigger is combined gross > 100,000 lbs on a single-trip permit (discretionary undue-damage review) — dimensional superload fields are null by design.",
+    "General single-semitrailer length limit is set by Iowa Code 321.457 and is not numerically restated in Ch. 511 (53' used as the cross-referenced value); a 2025 single-trip overweight ton fee (HF 979) may apply and was not visible in the 321E.14 text read — confirm current single-trip overweight cost with Iowa DOT."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -18,70 +19,53 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 100000,
+    "note": "Iowa 761 Ch. 511 publishes no fixed dimensional superload numbers — single-trip width/height/length are limited to the physical clearances of the roadway (761-511.13(1)); loads over 16' high must contact utility owners. The only numeric engineering gate: a single-trip permit for combined gross over 100,000 lbs is issued only if the issuing authority determines it will not cause undue damage to the road (761-511.17(4)b)."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.5, "escorts": 1, "police": false, "note": "4-lane: rear escort (amber strobe on power unit + rear may substitute); 2-lane: front escort (761-511.20(2))" },
+      { "over_ft": 14.5, "up_to_ft": 16.5, "escorts": 1, "police": false, "note": "4-lane: rear escort; 2-lane: front escort (mandatory)" },
+      { "over_ft": 16.5, "up_to_ft": 18.0, "escorts": 1, "police": false, "note": "4-lane: rear escort (mandatory); 2-lane: front escort (mandatory)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": 20.0, "escorts": 1, "police": false, "pole_car": true, "note": "front escort with a height pole; escort must measure all vertical clearances (761-511.20(1)j)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 120.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "rear escort over 120' overall (both 4-lane and 2-lane); 85'-120' requires flags + amber lights only" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 35,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Single-trip permit = $35 (Iowa Code 321E.14(1)e). Add-ons: single-trip registration fee $4 per ton over 40 tons (761-511.5(5)); buildings 5 cents/ton per mile over registered weight; duplicate permit $2. Escort service fee up to $250/day per escort (321E.14(3)). A 2025 single-trip overweight ton fee (HF 979) may also apply — confirm with Iowa DOT.",
+      "validity_days": 5,
+      "note": "Special/emergency oversize permit for divisible loads = $35. Multitrip permits valid <=60 days."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 50,
+      "fee_usd_max": 500,
+      "note": "Annual $50; annual all-systems oversize $160; annual all-systems overweight $500; multitrip $400; special alt-energy multitrip $600; raw forest products annual $175; fluid milk annual $400."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daylight movement only: one-half hour before sunrise to one-half hour after sunset (761-511.3(3))",
+    "Move only when roads are clear of ice/snow and visibility is at least one-quarter mile (761-511.3(2))",
+    "Continuous (including night) travel allowed only if width <=12', height <=14'6\", length <=100', legal axle weights, roadway >=22'/lanes >=11', with red rear lamps and amber front-corner lamps (761-511.3(5))",
+    "No movement on Memorial Day, Independence Day, or Labor Day, none after 12 noon the day before, and none during those holiday weekends (761-511.3(4))",
+    "Compacted-rubbish vehicles exempt — allowed day/night, 7 days including holidays"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\", gross 80,000 lbs. Ch. 511 states a 75' overall-combination statutory limit; the general single-semitrailer length is set by Iowa Code 321.457 (53' cross-referenced).",
+    "Axle limits (761-511.17): single 20,000 lbs; permitted tandem up to 46,000 lbs (max 24,000/axle, >=4 tires each); tridem/quad higher with tire spec; annual OS/OW and raw-forest max 156,000 lbs total; single-trip over 100,000 lbs gross is discretionary.",
+    "Escort matrix (761-511.20(2)) and fees (Iowa Code 321E.14) sourced verbatim from Iowa Administrative Code / Iowa Code; iowadot.gov brochure pages were 403-blocked so the DOT's own codified rules were used instead. No numeric police-escort threshold — an on-duty peace officer is contacted as needed for traffic control.",
+    "State-level rules only — county/city permits, bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }

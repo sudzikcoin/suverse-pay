@@ -1,16 +1,17 @@
 {
   "state": "KY",
   "state_name": "Kentucky",
-  "source_url": "https://transportation.ky.gov/motor-carriers/pages/oversize-overweight.aspx",
-  "source_title": "Kentucky DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://driveky.com/",
+  "source_url": "https://drive.ky.gov/Motor-Carriers/Overweight-Over-Dimensional/Pages/OWOD-Escort-Requirements.aspx",
+  "source_title": "KYTC DRIVE — Overweight/Over-Dimensional Permits (601 KAR 1:018)",
+  "portal_url": "https://drive.ky.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2024-07-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Kentucky overweight pricing includes weight-distance elements; confirm fee and escort matrix with KYTC."
+    "Escort counts vary by highway type (two-lane vs multi-lane divided); the matrix encodes the stricter of the two configurations — confirm exact escort setup per route with KYTC.",
+    "Kentucky publishes no numeric superload/gross-weight threshold; gross is null (case-by-case bridge analysis, $500 fee when required). The commonly cited 200,000 lb figure is third-party, not in KYTC/601 KAR rules.",
+    "Single-trip fee $120 per current 601 KAR 1:018 (post-2024 SB 107) conflicts with a stale $60 on the DRIVE FAQ — confirm at issuance. Extended-Weight Coal Haul decal fees and axle schedule (KRS 177.9771) are portal-gated and not captured here."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +20,57 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
+    "width_ft": null,
+    "height_ft": 15.5,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "Kentucky publishes no numeric superload/gross-weight threshold. A $500 superload bridge-analysis fee applies when required (601 KAR 1:018 sec.3(10)); loads over 15'6\" high require a proposed-route survey (Form TC 95-625, sec.6(4)). Annual permits are capped at 16' width. The frequently cited 200,000 lb superload figure is third-party and not in KYTC rules."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 2, "police": false, "note": "2-lane: 1 front + 1 rear escort; multi-lane divided: 1 rear escort only (DRIVE Escort Requirements)" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "multi-lane and 2-lane: 1 front + 1 rear escort" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 4, "police": false, "note": "over 16' wide: 2 front + 2 rear escorts on all highway types" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.92, "up_to_ft": 15.5, "escorts": 1, "police": false, "pole_car": true, "note": "over 14'11\": 1 front escort with height pole" },
+      { "over_ft": 15.5, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "over 15'6\": mandatory proposed-route survey (Form TC 95-625) plus front height-pole escort" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 75.0, "up_to_ft": 85.0, "escorts": 1, "police": false, "note": "2-lane: 1 front escort (multi-lane divided: no length escort until 110')" },
+      { "over_ft": 85.0, "up_to_ft": 110.0, "escorts": 2, "police": false, "note": "2-lane: 1 front + 1 rear escort" },
+      { "over_ft": 110.0, "up_to_ft": 120.0, "escorts": 2, "police": false, "note": "multi-lane: 1 rear escort; 2-lane: 1 front + 1 rear escort" },
+      { "over_ft": 120.0, "up_to_ft": null, "escorts": 3, "police": false, "note": "over 120': 1 front + 2 rear escorts on all highway types" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": "Kentucky includes a weight-distance (KYU) element and an overweight/coal fee schedule; quote through the KY permit portal.",
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 120,
+      "fee_usd_max": 200,
+      "fee_formula": "Single-trip OS/OW permit = $120 (601 KAR 1:018 sec.3(1), current post-2024 SB 107; the $60 on the DRIVE FAQ is the stale statutory base). Metal-commodities single-trip = $200. Superload bridge analysis +$500 when required. Kentucky does not use a per-mile overweight permit formula. Separate KYU weight-distance tax ($0.0285/mile, vehicles >=60,000 lbs combined weight, filed quarterly) is not part of the permit fee.",
+      "validity_days": 10,
+      "note": "Single-trip = 1 move, valid 10 days. A financial-institution (card/EFT) surcharge applies on top."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 300,
+      "fee_usd_max": 1500,
+      "note": "Annual (601 KAR 1:018 sec.3): non-divisible <14' $750; 14'-16' $1,500; metal $1,250; non-div steel statewide $1,000; feed $300; manufactured home $1,500; riverport $500. Annual permits capped at 16' width."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "General OS/OW travel allowed 24/7 unless the permit specifies otherwise",
+    "Mobile/manufactured homes: daylight only, Mon-Sat; no Sunday travel",
+    "Rush-hour ban (all permit loads) weekdays 7-9 a.m. and 4-6 p.m. in Boone, Campbell, Fayette, Jefferson, and Kenton counties",
+    "Loads over 12' wide may not move during an NWS wind advisory or adverse weather/road conditions",
+    "No statewide holiday travel restriction"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 13'6\" (car haulers 14'), gross 80,000 lbs; single semitrailer 53' on Interstates/designated hwys, 65' combination on state-maintained non-Interstate hwys.",
+    "Permit axle limits: steering 20,000; tandem dual 48,000; tridem 60,000; permit combo max 5-axle 96,000 / 6-axle 120,000 / 7-axle 160,000 lbs; minimum declared GVW for any OW permit = 80,000 lbs.",
+    "Escort matrix (DRIVE Escort Requirements) and single-trip fee (601 KAR 1:018) sourced from official KYTC/legislature pages. Extended-Weight Coal Haul decals governed by KRS 177.9771 (portal-gated, schedule not captured).",
+    "State-level rules only — county/city permits, bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }
