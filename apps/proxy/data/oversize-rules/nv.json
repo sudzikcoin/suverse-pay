@@ -1,15 +1,17 @@
 {
   "state": "NV",
   "state_name": "Nevada",
-  "source_url": "https://www.dot.nv.gov/mobility/trucking-permits",
-  "source_title": "Nevada DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://nevadadmvpermits.com/",
+  "source_url": "https://www.dot.nv.gov/doing-business/commercial-vehicles/commercial-vehicle-permits/general-permit-information",
+  "source_title": "NDOT Over-Dimensional Vehicle (ODV) Permit Information",
+  "portal_url": "https://odvp.dot.nv.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
+  "rules_as_of": "2025-01-01",
   "verification": "knowledge_based",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "Official NDOT ODV permit page returned HTTP 403 to automated fetch this run; escort matrix, superload handling and validity were reconstructed from NDOT's published ODV summary and cross-referenced industry regulation guides, not read from the DOT manual directly — confirm with NDOT (800-552-2127).",
+    "Escort thresholds below are the Interstate/4-lane values; 2-lane thresholds are lower (pilot over 12') — confirm per route.",
+    "Overweight/superload fee is not codified as a flat number; NDOT bills additional coordination/engineering costs to the permittee case-by-case."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -18,70 +20,48 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
+    "width_ft": 17.0,
+    "height_ft": 16.0,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "Nevada issues super-load permits case-by-case. Routine self-issuable ODV limits are about 17' wide and 16' high; loads beyond routine limits (including extraordinary weight/length) get individual NDOT route and structural review. No fixed superload gross number published."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 1, "police": false, "note": "1 pilot over 14' wide on Interstate/4-lane (over 12' on 2-lane)" },
+      { "over_ft": 16.0, "up_to_ft": 17.0, "escorts": 2, "police": false, "note": "2 pilots over 16' wide" },
+      { "over_ft": 17.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 17' wide: 2 pilots and Nevada Highway Patrol may be required" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.5, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "high-pole escort over 15'6\"" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110, "up_to_ft": null, "escorts": 1, "police": false, "note": "1 pilot over 110' overall; rear overhang over 25' also requires a pilot" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 25,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "5-day single-trip Over-Dimensional Vehicle (ODV) permit = $25. Overweight and superload moves may add engineering/coordination costs billed to the permittee; obtain the quote through NDOT's ODV permitting system.",
+      "validity_days": 5,
+      "note": "Single-trip ODV permit valid 5 days; annual multi-trip ODV permit $60."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 60,
+      "fee_usd_max": 60,
+      "note": "Annual multi-trip ODV permit $60 for qualifying repetitive moves."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Movement limited to one-half hour before sunrise to one-half hour after sunset for oversize loads",
+    "Metropolitan-area weekday commute-hour and holiday restrictions may apply per permit"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 14'0\", GVW 80,000 lbs; routine ODV permits reach ~101,000 lbs on 7 axles.",
+    "State-level rules only; live sourcing of the official NDOT page was attempted and 403-blocked this run — values cross-referenced and marked for state confirmation."
   ]
 }

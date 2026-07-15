@@ -1,87 +1,67 @@
 {
   "state": "WY",
   "state_name": "Wyoming",
-  "source_url": "https://www.dot.state.wy.us/home/trucking_commercial_vehicles/oversize-overweight-permits.html",
-  "source_title": "Wyoming DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://www.dot.state.wy.us/home/trucking_commercial_vehicles.html",
+  "source_url": "https://www.dot.state.wy.us/home/trucking_commercial_vehicles/commercial_permits.html",
+  "source_title": "WYDOT / Wyoming Highway Patrol Commercial Permits (W.S. 31-18-804)",
+  "portal_url": "https://wydotpermits.wyo.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "Fees confirmed from Wyoming Statute 31-18-804 (oversize $25 + $0.03/foot-mile over 15' wide/15' high/75' long; overweight minimum $40 + per-ton-mile over 80,000 lbs); the exact per-ton-mile rate table is administered by WYDOT — confirm the quote in wydotpermits.wyo.gov.",
+    "Escort thresholds differ by road type (Interstate/divided: 1 escort over 14' wide, over 15' formalized; two-lane primary/secondary: 2 escorts over 13'11\" or whenever the load crosses centerline; Interstate length escorts at WHP discretion) — confirm per route.",
+    "Superloads over 80 tons (160,000 lbs) require a paid WYDOT structural review before permit issuance."
   ],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 14.0,
-    "length_semitrailer_ft": 53,
+    "length_semitrailer_ft": 60,
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "width_ft": 18.0,
+    "height_ft": 17.0,
+    "length_ft": 110,
+    "gross_weight_lbs": 160000,
+    "note": "Beyond routine permit limits (18' wide, 17' high, 110' long); loads over 80 tons (160,000 lbs) GVW require WYDOT state-level structural review, routed and paid before any permit is issued (W.S. 31-18-804)."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 13.917, "up_to_ft": 15.0, "escorts": 1, "police": false, "note": "Interstate/divided: 1 escort over 14' wide. Two-lane primary/secondary: 2 escorts over 13'11\" or whenever the load extends left of centerline (route-dependent)" },
+      { "over_ft": 15.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "over 15' wide: escorts on Interstate/divided; two-lane requires 2 escorts" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 17.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "1 front escort with height-measuring device over 17' high; escorts below 17' at issuing-authority discretion" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 109, "up_to_ft": null, "escorts": 2, "police": false, "note": "two-lane primary/secondary: escorts over 109-110' overall; Interstate length escorts at WHP discretion" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 25,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Oversize single-trip permit = $25, plus $0.03 per foot (or fraction) over 15' wide / 15' high / 75' long, for each mile traveled (W.S. 31-18-804). Overweight single-trip minimum $40 plus a per-ton-mile charge on weight over 80,000 lbs GVW. Superloads over 80 tons require paid structural review first.",
+      "validity_days": 1,
+      "note": "Single-trip/oversize permits usually valid one day or one trip; call the Port/Scale at least 1 hour before arrival for clearance."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/90-day permits available for qualifying moves; fees vary — quote via wydotpermits.wyo.gov."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Movement may be restricted during adverse weather (high wind, ice, snow, low visibility) per permit",
+    "Holiday and metropolitan curfews may apply per permit and route type"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal length is 60' for a single vehicle/semitrailer-and-load including overhang; width 8'6\", height 14'0\", GVW 80,000 lbs (higher by axle group).",
+    "Overweight fee is per-ton-mile on weight over 80,000 lbs, so a gross-weight-only verdict is indicative — confirm the WYDOT quote.",
+    "State-level rules only; county/city permits and bridge-specific engineering out of scope."
   ]
 }

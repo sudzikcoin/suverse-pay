@@ -1,16 +1,17 @@
 {
   "state": "MT",
   "state_name": "Montana",
-  "source_url": "https://www.mdt.mt.gov/business/permitting.aspx",
-  "source_title": "Montana DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://mca.legmt.gov/bills/mca/title_0610/chapter_0100/part_0010/section_0240/0610-0100-0010-0240.html",
+  "source_title": "Montana MCA 61-10-124 Special Permits & Fees; MDT Motor Carrier Services Permitting FAQ",
   "portal_url": "https://mdtapps.mt.gov/oversize",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Montana uses a per-mile overweight fee schedule and specific pilot rules; confirm current fee and escort thresholds with MDT."
+    "Single-trip fees confirmed from MCA 61-10-124 (statute fetched this run); the overweight per-mile schedule is set by MCA 61-10-124/-201 and rounds weight in 5,000-lb and distance in 25-mile increments — only the $10 oversize base and $10/up-to-100-mile overweight floor are codified here.",
+    "Escort thresholds are MDT's published width/height/length values (2-lane vs Interstate differ); the escort table itself is in MDT permit attachments — confirm per-route configuration with MDT Motor Carrier Services.",
+    "Montana publishes no single fixed dimensional superload threshold; extreme loads are handled by MDT engineering/structural review case-by-case (superload dims left null)."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +20,48 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "Montana has no single fixed dimensional 'superload' label. Loads beyond routine permit limits (extreme width/height/length or weight requiring bridge analysis) require advance coordination with MDT's Engineering and Permitting offices and approved routing. The handler flags very large loads for manual review rather than auto-clearing."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.5, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "non-Interstate 2-lane: 1 front escort over 12'6\" (Interstate: 1 escort over 16'6\")" },
+      { "over_ft": 14.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "non-Interstate 2-lane: 2 escorts over 14' wide" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 17.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "1 escort with height pole over 17' high" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 110, "up_to_ft": 120, "escorts": 1, "police": false, "note": "non-Interstate: 1 rear escort over 110' overall" },
+      { "over_ft": 120, "up_to_ft": null, "escorts": 1, "police": false, "note": "Interstate: 1 escort over 120' overall" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 10,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Oversize single-trip permit = $10 per trip (MCA 61-10-124). Overweight single-trip is a weight/distance schedule (MCA 61-10-124/-201): $10 for distances up to 100 miles for over-gross-within-axle-limits loads, scaling by weight (rounded up to 5,000-lb increments) and distance (rounded up to 25-mile increments). Truck-trailer-trailer / platoon = $20/trip.",
+      "validity_days": 5,
+      "note": "Trip permits generally valid 3-5 days (temporary trip authority 72 hours for some categories)."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 75,
+      "fee_usd_max": 200,
+      "note": "Term/annual oversize permit $75; non-divisible loads up to 120' annual $125; truck-trailer-trailer / platoon term $200 (MCA 61-10-124)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Oversize moves generally daylight-only (about 1/2 hour before sunrise to 1/2 hour after sunset)",
+    "Holiday and adverse-weather (fog/ice/snow/high-wind) restrictions apply per permit conditions"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Overweight fee is weight-and-distance based (axle-group dependent), so a gross-weight-only verdict is indicative — confirm the MDT quote.",
+    "State-level rules only; county/city permits and bridge-specific engineering out of scope."
   ]
 }

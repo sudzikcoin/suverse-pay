@@ -1,16 +1,17 @@
 {
   "state": "OR",
   "state_name": "Oregon",
-  "source_url": "https://www.oregon.gov/odot/mct/pages/overdimension.aspx",
-  "source_title": "Oregon DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://www.oregontrucking.com/",
+  "source_url": "https://www.oregon.gov/odot/mct/pages/over-dimension-operations-oregon.aspx",
+  "source_title": "ODOT CCD Over-Dimension Operations in Oregon (OAR 734-075; Permit Attachment 75-A)",
+  "portal_url": "https://www.oregontruckingonline.com/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Oregon uses ODOT Over-Dimension variances with a schedule-based fee via Trucking Online; verify escort (flag/pilot) thresholds and route review."
+    "Pilot-vehicle counts are set per-route on Permit Attachment 75-A (OAR 734-075-0035); the width/height/length thresholds below are ODOT's published 2-lane defaults — confirm the exact per-route configuration through Oregon Trucking Online before dispatch.",
+    "Overweight cost is Oregon's weight-mile tax plus a Road Use Assessment Fee (RUAF) for loads over 98,000 lbs; only the $8 flat over-dimension permit fee is codified here, the RUAF is a mileage/weight schedule quoted by ODOT.",
+    "Superload has no single fixed gross-weight threshold published; extraordinary weight is handled via RUAF and route/bridge review (gross_weight_lbs left null)."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -20,69 +21,49 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "height_ft": 17.0,
+    "length_ft": 150,
+    "gross_weight_lbs": null,
+    "note": "ODOT superload = over 16' wide (14' wide on 2-lane highways), over 17' high, or 150' long; such moves require extended route evaluation (days to weeks). Extraordinary weight is priced via the Road Use Assessment Fee and bridge review rather than a fixed superload gross number."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 pilot over 12' wide (front on 2-lane, rear on divided highway)" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "2 pilots over 14' wide" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "over 16' wide: additional escorts as required on the permit; route review" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "over-height pole car in front over 14'6\"; may be waived with a signed ODOT liability declaration on file (OAR 734-075-0035)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 105, "up_to_ft": 120, "escorts": 1, "police": false, "note": "1 pilot over 105' overall length" },
+      { "over_ft": 120, "up_to_ft": 140, "escorts": 2, "police": false, "note": "2 pilots over 120'" },
+      { "over_ft": 140, "up_to_ft": null, "escorts": 2, "police": false, "note": "over 140': escorts as specified on the permit" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 8,
       "fee_usd_max": null,
-      "fee_formula": "Oregon single-trip variance fee is set by a dimensional/weight schedule (ODOT Over-Dimension); use the ODOT Trucking Online permit system for the quote.",
+      "fee_formula": "Over-dimension (oversize) single-trip permit = $8 flat. Overweight is Oregon's weight-mile tax; non-divisible loads over 98,000 lbs GVW pay a Road Use Assessment Fee (RUAF) computed from ODOT's over-98,000 lb mileage/weight tables. Quote via Oregon Trucking Online.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Single-trip over-dimension permit; overweight fee is schedule-based, not flat. Validity is set per permit."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/blanket over-dimension permits available for qualifying repetitive divisible/non-divisible moves; fees vary by class — quote via Oregon Trucking Online."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Oversize moves are generally daylight-only (about 1/2 hour before sunrise to 1/2 hour after sunset); loads at or under continuous-travel dimensions may move at night with proper lighting per permit conditions",
+    "Loads at superload width/height/length may face weekend, holiday and metropolitan rush-hour curfews specified on the permit"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Oregon is a weight-mile-tax state: overweight charges are distance-and-weight based (RUAF over 98,000 lbs), so a gross-weight-only verdict must be treated as indicative — confirm the RUAF quote.",
+    "State-level rules only; county/city permits, bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }

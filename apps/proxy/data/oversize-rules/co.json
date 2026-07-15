@@ -1,16 +1,17 @@
 {
   "state": "CO",
   "state_name": "Colorado",
-  "source_url": "https://www.codot.gov/business/permits/oversizeoverweight",
-  "source_title": "Colorado DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://www.codot.gov/business/permits/oversizeoverweight",
+  "source_url": "https://www.law.cornell.edu/regulations/colorado/title-2/agency-601/division-4/chapter-3",
+  "source_title": "CDOT Transport Permits — 2 CCR 601-4 Ch. 3 (fees per C.R.S. 42-4-510(11)); freight.colorado.gov / COOPR",
+  "portal_url": "https://coopr.codot.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Colorado's legal height limit (14'6\") is higher than most states and was flagged during research \u2014 verify against CDOT before relying on the LEGAL height classification; confirm escort/fee matrix with CDOT."
+    "2 CCR 601-4 Ch. 3 fetched this run confirms permit classes and 14'6\" height for quad/two-three-axle permits, but sets fees by reference to C.R.S. 42-4-510(11) rather than in-text; the $15 single-trip base + $5.00/axle overweight figures are from CDOT's published summaries — confirm current amounts via COOPR.",
+    "Escort thresholds differ by road type (Interstate rear escort/flashing amber over 13'; two-lane 2 escorts over 15') and are published on CDOT's Pilot Escort & Oversize Restriction Map — confirm per route.",
+    "Super Loads (Chapter 6 Special) over 17' wide or 200,000 lbs take 6-10 business days for approval."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +20,49 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": 17.0,
     "height_ft": null,
     "length_ft": null,
     "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "note": "Loads over 17' wide or over 200,000 lbs GVW are Super Loads (Chapter 6 Special), requiring 6-10 business days for approval. Annual-permit maximums (e.g. 16' high) are the ceiling above which a Chapter 6 Special is required. Legal height is 14'6\" on designated highways (13' non-designated)."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 13.0, "up_to_ft": 15.0, "escorts": 1, "police": false, "note": "Interstate: 1 rear escort or 1 rear-mounted flashing amber light over 13' wide. Two-lane: 1 escort over 13'" },
+      { "over_ft": 15.0, "up_to_ft": null, "escorts": 2, "police": false, "note": "two-lane: 2 escorts (or 1 front escort + rear flashing amber) over 15' wide" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "1 escort with high pole over 16' high (legal height is 14'6\" on designated highways)" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 85, "up_to_ft": 110, "escorts": 1, "police": false, "note": "1 escort over 85' on some two- and four-lane segments" },
+      { "over_ft": 110, "up_to_ft": null, "escorts": 1, "police": false, "note": "1 escort over 110' (two-lane) or 115' (four or more lanes)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 15,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Single-trip permit $15 base; if overweight add $5.00 per axle (e.g. 6-axle over 80,000 lbs = $45). Oversize-only single trip is the $15 base. Super Loads (Chapter 6 Special) quoted separately. Fees set by C.R.S. 42-4-510(11).",
+      "validity_days": 5,
+      "note": "Single-trip permit valid 5 days; obtained through COOPR online."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual permits available up to Annual-permit dimensional maximums (e.g. 16' high); fees per 2 CCR 601-4 / C.R.S. 42-4-510(11)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Loads over 12' but not over 14' wide require an escort for night running",
+    "Metropolitan commute-hour, holiday and adverse-weather restrictions may apply per permit and route"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal height 14'6\" designated highways / 13' non-designated; width 8'6\"; GVW 80,000 lbs Interstate / 85,000 lbs other roads.",
+    "Overweight fee is per-axle, so a gross-weight-only verdict is indicative — confirm axle count via COOPR.",
+    "State-level rules only; local permits and bridge-specific engineering out of scope."
   ]
 }

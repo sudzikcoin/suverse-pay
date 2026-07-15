@@ -1,16 +1,18 @@
 {
   "state": "CA",
   "state_name": "California",
-  "source_url": "https://dot.ca.gov/programs/traffic-operations/transportation-permits",
-  "source_title": "California DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://www.dot.ca.gov/programs/traffic-operations/transportation-permits",
+  "source_url": "https://dot.ca.gov/programs/traffic-operations/transportation-permits/single-trip",
+  "source_title": "Caltrans Transportation Permits — Single Trip Permit (STARS2)",
+  "portal_url": "https://calroute.dot.ca.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Caltrans pilot-car requirements depend on width, route type and lane geometry; single-trip permit fee is a fixed statutory amount plus possible route-review \u2014 confirm current fee and pilot matrix with Caltrans."
+    "Pilot-car counts depend on route color (green/blue/brown vs yellow) and lane geometry; the width matrix below is Caltrans' published simplification — confirm per-route pilot/CHP configuration in STARS2.",
+    "California height escort is route-clearance based (loaded height must clear the lowest structure on the permitted route by 3\"), not a fixed statewide pole-car threshold, so no height escort row is codified.",
+    "Length escort is not a fixed statewide number (135' is the single-trip max length); confirm any rear-pilot requirement per route.",
+    "Overweight is governed by Caltrans axle-weight ('purple') charts, so a gross-weight-only verdict is indicative — confirm axle configuration."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +21,45 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "width_ft": 15.0,
+    "height_ft": 17.0,
+    "length_ft": 135,
+    "gross_weight_lbs": 150000,
+    "note": "Caltrans super load = over 15' wide, 17' high, or 135' long. Loads over 150,000 lbs trigger a $66 base fee plus $50/hour engineering/structural review. Width max without CHP escort is 14' generally, 15' on green/blue/brown routes, 16' on yellow routes."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 15.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 15.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.917, "escorts": 1, "police": false, "note": "1 pilot over 12' wide (front on 2-lane, rear on multilane); a 2nd pilot may be required over 13' on some 2-lane routes" },
+      { "over_ft": 14.917, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "2 pilots over 14'11\" on Interstate/4-lane (over 15' on 2-lane also triggers CHP)" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 16' wide (over 15' on 2-lane): 2 pilots plus CHP escort(s) — up to 3 CHP on constrained routes" }
     ],
-    "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
-    ],
-    "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
-    ],
+    "height": [],
+    "length": [],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 16,
+      "fee_usd_max": 16,
+      "fee_formula": "Flat $16 per single-trip permit (STARS2), one origin to one destination, one direction. Super loads over 150,000 lbs add a $66 base fee plus $50/hour for engineering/structural review.",
+      "validity_days": 7,
+      "note": "Single-trip permit valid 7 consecutive days, may be issued up to 3 days in advance; non-reducible loads only."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 90,
+      "fee_usd_max": 90,
+      "note": "Annual/repetitive permits $90; category-specific annual permits also available."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Wide/long loads restricted from designated metropolitan routes during weekday commute hours; travel windows are set per permit and route",
+    "Loaded height must clear the lowest structure on the permitted route by at least 3 inches"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", legal height 14'0\", max GVW 80,000 lbs; single-trip max width 14' general / 16' on yellow routes, max length 135'.",
+    "Overweight limits follow Caltrans axle-weight ('purple') charts; a gross-weight-only screen is indicative — confirm axle spacing/weights.",
+    "State-level rules only; local and toll-crossing permits out of scope."
   ]
 }

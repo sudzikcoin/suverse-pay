@@ -2,15 +2,16 @@
   "state": "ID",
   "state_name": "Idaho",
   "source_url": "https://itd.idaho.gov/port/",
-  "source_title": "Idaho DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://itd.idaho.gov/port/",
+  "source_title": "Idaho Transportation Department — Ports of Entry / Special Permits (IDAPA 39.03.10; Idaho Code 49-1004)",
+  "portal_url": "https://permits4idaho.com/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
+  "rules_as_of": "2025-01-01",
   "verification": "knowledge_based",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Idaho permits some higher GVW under reducible/non-reducible rules and uses an overweight fee schedule; confirm weight-mile/overweight fee and escort matrix with ITD."
+    "Official ITD/Port permit pages and the oversize aggregator returned HTTP 403 to automated fetch this run; escort matrix, superload limits and fee schedule were reconstructed from ITD's published summaries and industry regulation guides, not read from the ITD manual directly — confirm with ITD Special Permits (208-334-8420).",
+    "Escort thresholds below are 2-lane values (route colors Red/Black/White vary); confirm per-route configuration.",
+    "Overweight is a weight-distance road-use fee (approx $0.04/mile just over legal up to ~$1.02/mile at high weight; ~$0.05/ton-mile over 80,000 lbs); only the ~$33 administrative base is codified — confirm the current schedule."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -20,69 +21,45 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "height_ft": 15.5,
+    "length_ft": 110,
+    "gross_weight_lbs": 129000,
+    "note": "Beyond ITD's routine online-permit limits (about 16' wide, 15'6\" high, 110' long) or over 129,000 lbs GVW, a superload permit is required with route analysis, engineering review and local coordination."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 pilot over 12' wide on 2-lane" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "2 pilots over 14' wide" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 3, "police": false, "note": "may require up to 3 escorts over 16' wide" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "1 height-pole escort over 16' high on both 2-lane and Interstate routes" }
     ],
-    "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
-    ],
+    "length": [],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 33,
       "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_formula": "Administrative base fee about $33 per single-trip permit. Overweight adds a weight-distance road-use fee (roughly $0.04/mile just over legal, rising by weight tier to about $1.02/mile at high weight; approx $0.05/ton-mile over 80,000 lbs). Quote via permits4idaho / ITD Special Permits.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Oversize single-trip base is the administrative fee; overweight is schedule-based, not flat."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 128,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual non-reducible OSOW permit $128 for 12 months plus quarterly mileage reports."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Oversize moves generally daylight-only (about 1/2 hour before sunrise to 1/2 hour after sunset); night travel per permit for within-limit loads",
+    "Metropolitan and holiday curfews may apply per permit and route color"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Idaho prices overweight by weight-and-distance (road-use fee), so a gross-weight-only verdict is indicative — confirm the ITD quote.",
+    "State-level rules only; live sourcing of the official ITD page was attempted and 403-blocked this run — values cross-referenced and marked for state confirmation."
   ]
 }

@@ -1,15 +1,17 @@
 {
   "state": "UT",
   "state_name": "Utah",
-  "source_url": "https://www.udot.utah.gov/connect/business/motor-carriers/oversize-overweight-permits/",
-  "source_title": "Utah DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://www.udot.utah.gov/connect/business/motor-carriers/oversize-overweight-permits/",
+  "source_url": "https://connect.udot.utah.gov/business/motor-carriers/size-weight-permitting/oversize-overweight-provisions/oversize-non-divisible-load-provisions/",
+  "source_title": "UDOT Oversize Non-Divisible Load Provisions (Rule R909-2 Size & Weight)",
+  "portal_url": "https://www.udot.utah.gov/connect/business/motor-carriers/size-weight-permitting/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "UDOT provisions page and fee-schedule page fetched this run, but the single-trip/overweight fee amounts are published as images on the fee-schedule page; the $30 oversize / $60 oversize+overweight single-trip figures are from UDOT's published summaries — confirm current amounts with UDOT Motor Carrier (801-965-4892).",
+    "Escort thresholds differ between Interstate/freeway and other highways; the matrix below merges them (conservative), noting Interstate may require fewer — confirm per route.",
+    "Overweight over 125,000 lbs GVW is priced by UDOT's weight/distance fee table (rounded up to next increment), not a flat number."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -18,70 +20,54 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
+    "width_ft": 17.0,
+    "height_ft": 17.5,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 300000,
+    "note": "Loads over 17' wide, 17'6\" high, or 300,000 lbs are processed Monday-Friday 8am-5pm MST only and may take up to 14 days for Regional clearance. Routine permit gross reaches ~148,500 lbs on 7 axles; loads over 19' high may require a route survey."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "other highways: 1 escort over 12' wide (Interstate: no escort until 14')" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "other highways: 2 escorts over 14'; Interstate: 1 escort over 14', 2 over 16'" },
+      { "over_ft": 16.0, "up_to_ft": 17.0, "escorts": 3, "police": false, "note": "other highways: up to 3 escorts over 16'; Interstate: 2 escorts over 16'" },
+      { "over_ft": 17.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 17' wide (secondary) or 20' (all highways): 2 escorts plus certified police/Highway Patrol escort" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": 17.5, "escorts": 2, "police": false, "note": "2 escorts over 16' high" },
+      { "over_ft": 17.5, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 17'6\" high: 2 escorts plus Highway Patrol and utility notification" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 105, "up_to_ft": 120, "escorts": 1, "police": false, "note": "other highways: 1 escort over 105' (Interstate: over 120')" },
+      { "over_ft": 120, "up_to_ft": 175, "escorts": 2, "police": false, "note": "2 escorts over 120' on other highways" },
+      { "over_ft": 175, "up_to_ft": 200, "escorts": 2, "police": true, "note": "over 175' long: minimum 2 police escorts" },
+      { "over_ft": 200, "up_to_ft": null, "escorts": 3, "police": true, "note": "over 200' long: minimum 3 police escorts" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 30,
+      "fee_usd_max": 60,
+      "fee_formula": "Single-trip oversize permit $30 (96-hour validity); single-trip oversize+overweight $60. Overweight over 125,000 lbs GVW priced by UDOT's weight/distance fee table (weights/miles rounded to next increment). A UDOT-provided escort is $40 or the full cost of a UDOT employee and vehicle, whichever is greater.",
+      "validity_days": 4,
+      "note": "Single-trip permit valid 96 hours; also issued semi-annual/annual."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Semi-annual and annual permits available for qualifying non-divisible/divisible moves; fees per UDOT schedule."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Superloads (over 17' wide, 17'6\" high, or 300,000 lbs) processed Mon-Fri 8am-5pm MST only, up to 14 days for Regional clearance",
+    "Metropolitan commute-hour and holiday restrictions may apply per permit and route"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal width 8'6\", height 14'0\", GVW 80,000 lbs; superload processing requires advance Regional clearance.",
+    "Overweight over 125,000 lbs is weight/distance-priced (axle-dependent), so a gross-weight-only verdict is indicative — confirm the UDOT quote.",
+    "State-level rules only; local permits and bridge-specific engineering out of scope."
   ]
 }
