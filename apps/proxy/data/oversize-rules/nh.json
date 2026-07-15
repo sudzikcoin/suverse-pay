@@ -1,17 +1,14 @@
 {
   "state": "NH",
   "state_name": "New Hampshire",
-  "source_url": "https://www.dot.nh.gov/doing-business-dot/oversize-overweight-permits",
-  "source_title": "New Hampshire DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://www.nhoversize.com/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Northeast state: low clearances and escorts often trigger at lower widths (~12') \u2014 the escort default here is conservative; confirm the exact matrix, fees and any police-escort trigger with the state."
-  ],
+  "source_url": "https://www.dot.nh.gov/services/permits",
+  "source_title": "NHDOT OS/OW Permits — N.H. Code Admin. Rules Tra 304 (escorts: Tra 304.17)",
+  "portal_url": "https://www.nhdotpermits.org/",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
@@ -20,69 +17,49 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "height_ft": 16.0,
+    "length_ft": 110.0,
+    "gross_weight_lbs": 160000,
+    "note": "NH superload = over 16' wide, over 16' high, over 110' long, or over 160,000 lbs gross. Routine (non-superload) permit envelope: 16' wide, 16' high, 110' long; single axle 25,000 / tandem 50,000 / tridem 70,000 / quad 85,000 lbs. Loads over 110' long and/or over 13'6\" high require a route survey."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 non-police escort for width 12'0\" to under 14'0\" (Tra 304.17)" },
+      { "over_ft": 14.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "width over 14'0\": 2 state police escorts required (Tra 304.17)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "1 non-police escort for height over 14'0\"; route survey required over 13'6\" (Tra 304.17)" }
     ],
     "length": [
-      {
-        "over_ft": 90.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 90.0, "up_to_ft": 100.0, "escorts": 1, "police": false, "note": "1 non-police escort at 90'0\" or greater overall length (Tra 304.17)" },
+      { "over_ft": 100.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "length 100'0\" or more: 1 state police escort in addition to the non-police escort (Tra 304.17)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 60,
+      "fee_usd_max": 115,
+      "fee_formula": "Single-trip OS/OW permit = $115 statewide, or $60 within a 100-mile radius if the vehicle is based and registered in NH. Superload/route-survey moves may incur additional review fees.",
+      "validity_days": 5,
+      "note": "Single-trip permit valid 5 travel days. Also 2nd non-police escort required when a rear overhang of 15'+ combines with width 12'+; a 3rd state police escort applies where a highway closure is required (Tra 304.17)."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 115,
+      "fee_usd_max": 115,
+      "note": "Annual statewide permit $115 for vehicles within 75' length, 10'6\" width, 13'6\" height and NH legal registered GVW."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Movement restricted to daylight hours, one-half hour before sunrise to one-half hour after sunset",
+    "Monday through Friday only; no weekend or holiday travel for over-dimensional loads",
+    "Permits void during slippery pavement / inclement weather (fog, haze, heavy rain, freezing rain, snow)",
+    "Escort drivers must maintain visual and two-way radio contact with the permitted vehicle at all times"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal limits: width 8'6\", height 13'6\", gross 80,000 lbs; 53' semitrailer on the National Network.",
+    "Escort matrix read from N.H. Code Admin. Rules Tra 304.17 (Escort Vehicles); superload envelope and permit fees from NHDOT OS/OW permit rules (nhdotpermits.org)."
   ]
 }

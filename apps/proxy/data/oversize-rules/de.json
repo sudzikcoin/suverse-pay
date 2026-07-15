@@ -1,16 +1,15 @@
 {
   "state": "DE",
   "state_name": "Delaware",
-  "source_url": "https://deldot.gov/Business/oversize/index.shtml",
-  "source_title": "Delaware DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://deldot.gov/Business/oversize/index.shtml",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "source_url": "https://deldot.gov/osow/application/faq",
+  "source_title": "DelDOT Oversize/Overweight Permit System — FAQ (2 Del. Admin. Code 2405)",
+  "portal_url": "https://deldot.gov/osow/application/login",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Northeast state: low clearances and escorts often trigger at lower widths (~12') \u2014 the escort default here is conservative; confirm the exact matrix, fees and any police-escort trigger with the state."
+    "Superload definition, permit fees ($30 min / $60 superload / $10 per 8,000 lbs overweight), validity, signal-review and bridge-review rules read from the official DelDOT OSOW FAQ. The escort matrix (width over 13'/14'/15', height 15'/17'6\", length 90'/100'-120'/120'+ with DSP) is cross-referenced from published summaries of the DelDOT Policy & Procedures Manual (2 Del. Admin. Code 2405) — confirm exact configuration with the DelDOT Hauling Permit Office (302-326-4589 / 302-739-4366)."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +18,52 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "width_ft": 15.0,
+    "height_ft": 15.0,
+    "length_ft": 120.0,
+    "gross_weight_lbs": 120000,
+    "note": "DelDOT superload = 15' wide, 15' high, 120' long, or over 120,000 lbs gross. Superload permit minimum $60; subject to DelDOT Bridge Management review (automatic when any individual axle weight exceeds 28,000 lbs); review may take up to 14 days. Loads 15'+ high are routed to the DelDOT Signal Supervisor."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 13.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "over 13' wide: 1 rear escort on multi-lane highways / 1 front escort on two-lane highways" },
+      { "over_ft": 14.0, "up_to_ft": 15.0, "escorts": 2, "police": false, "note": "over 14' wide: 1 front + 1 rear escort" },
+      { "over_ft": 15.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "at/over 15' wide (superload): 1 front + 1 rear + Delaware State Police (DSP)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.0, "up_to_ft": 17.5, "escorts": 2, "police": false, "note": "at 15' high (superload): 1 front + 1 rear escort; over 15' routed to DelDOT Signal Supervisor" },
+      { "over_ft": 17.5, "up_to_ft": null, "escorts": 2, "police": true, "note": "at 17'6\" high: 1 front + 1 rear + Delaware State Police (DSP)" }
     ],
     "length": [
-      {
-        "over_ft": 90.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 90.0, "up_to_ft": 100.0, "escorts": 1, "police": false, "note": "over 90' long: 1 rear escort" },
+      { "over_ft": 100.0, "up_to_ft": 120.0, "escorts": 2, "police": false, "note": "100'-120' long: 1 front + 1 rear escort" },
+      { "over_ft": 120.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 120' long: 1 front + 1 rear + Delaware State Police (DSP)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 30,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Single-trip permit minimum = $30.00 ($60.00 for a superload). Overweight fee = $10.00 for every 8,000 lbs (or portion thereof) of weight over the vehicle's legal weight limit (DelDOT / 2 Del. Admin. Code 2405).",
+      "validity_days": 5,
+      "note": "Permit valid 5 days. Escort vehicles must carry roof-mounted amber warning lights."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/blanket hauling permits available for qualifying repetitive moves; fee via DelDOT OSOW system."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Permitted loads authorized to move sunrise to sunset, Monday through Sunday",
+    "Loads 15' or greater in height routed to the DelDOT Signal Supervisor for review/approval",
+    "Superloads and sub-superload heavy moves subject to DelDOT Bridge Management axle-weight analysis (automatic over 28,000 lbs per axle)"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal limits: width 8'6\", height 13'6\", gross 80,000 lbs; 53' semitrailer on the National Network. Permit thresholds per Chapter 45, Title 21, Delaware Code.",
+    "Superload/fee/validity from the official DelDOT OSOW FAQ; escort matrix from published summaries of the DelDOT Policy & Procedures Manual (2 Del. Admin. Code 2405)."
   ]
 }

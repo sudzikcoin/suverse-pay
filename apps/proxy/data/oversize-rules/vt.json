@@ -1,16 +1,18 @@
 {
   "state": "VT",
   "state_name": "Vermont",
-  "source_url": "https://vtrans.vermont.gov/highway/permitting",
-  "source_title": "Vermont DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://dmv.vermont.gov/CVO/permits/rules",
+  "source_title": "Vermont DMV — Rules Governing Overweight & Overdimension Vehicle Permits (CVO-110)",
   "portal_url": "https://vtransoversize.vermont.gov/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2025-01-01",
   "verification": "knowledge_based",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Northeast state: low clearances and escorts often trigger at lower widths (~12') \u2014 the escort default here is conservative; confirm the exact matrix, fees and any police-escort trigger with the state."
+    "Live sourcing attempted + blocked: the official Vermont DMV CVO-110 rules PDF and the dmv.vermont.gov/CVO/permits/rules page both returned HTTP 403 to automated fetch this run. Escort thresholds (escort at width over 12', length over 80', overhang 15'+, height over 13'6\" restricted) and the $48 single-trip starting fee are cross-referenced from third-party summaries of CVO-110 — confirm with VT DMV CVO (802-828-2064) before dispatch.",
+    "Vermont sets no fixed statutory/administrative dimension or weight that automatically requires a Vermont State Police escort; VSP escort is imposed at the Commissioner of Motor Vehicles' discretion — police triggers left false with note.",
+    "Vermont publishes no fixed numeric superload threshold; loads over ~150,000 lbs gross undergo engineering review (per secondary summaries) — superload_thresholds left null (handler raises a verify flag, does not auto-assert superload).",
+    "Single-trip permit validity (days) and the overweight fee schedule above the $48 base are unconfirmed — quote through VT DMV."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +21,47 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "Vermont publishes no fixed superload dimension/weight threshold. Loads over roughly 150,000 lbs gross undergo engineering review (per secondary summaries of CVO-110); any escort/VSP requirement is set at the Commissioner's discretion. Null values flag the load for manual superload verification rather than clearing it."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "1 escort at width 12'0\" or greater (CVO-110); Commissioner may require additional escorts / VSP at discretion" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 13.5, "up_to_ft": null, "escorts": 1, "police": false, "note": "height over 13'6\" is restricted / route-reviewed; escort per Commissioner (CVO-110)" }
     ],
     "length": [
-      {
-        "over_ft": 90.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 80.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "1 escort at overall length over 80', or with rear overhang of 15' or greater (CVO-110)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 48,
       "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_formula": "Single-trip oversize permit starts at $48; overweight fees scale with gross weight — exact overweight schedule not confirmed from official CVO-110 this run (quote through VT DMV CVO).",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Escort must be at least a compact car; escorts maintain two-way radio contact and display 'OVERSIZE LOAD' signage."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/blanket overdimension permits available for qualifying repetitive moves; fee via VT DMV CVO."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Travel one-half hour before sunrise to one-half hour after sunset, 7 days a week",
+    "Weekend travel prohibited for loads exceeding 100' long, 10'6\" wide, or 108,000 lbs gross",
+    "Escort vehicles must maintain two-way radio contact with the permitted vehicle at all times and carry a 360-degree amber warning light"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal limits: width 8'6\", height 13'6\", gross 80,000 lbs; 53' semitrailer on the National Network.",
+    "Governing rule: Vermont DMV CVO-110 'Rules and Instructions Governing Overweight and Overdimension Vehicle Permits' — official page/PDF 403-blocked this run; values cross-referenced from third-party CVO-110 summaries."
   ]
 }

@@ -1,16 +1,15 @@
 {
   "state": "MA",
   "state_name": "Massachusetts",
-  "source_url": "https://www.mass.gov/how-to/apply-for-an-oversizeoverweight-vehicle-permit",
-  "source_title": "Massachusetts DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.law.cornell.edu/regulations/massachusetts/700-CMR-7-07",
+  "source_title": "Massachusetts 700 CMR 7.07 — Special Limitations and Issuance of Special Permits (MassDOT Highway Division)",
   "portal_url": "https://massdotpermits.com/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Northeast state: low clearances and escorts often trigger at lower widths (~12') \u2014 the escort default here is conservative; confirm the exact matrix, fees and any police-escort trigger with the state."
+    "Width/length escort matrix, State Police triggers (over 16' wide or over 135' long = 2 MSP vehicles), superload (>130,000 lbs) and the permit fee table are read from 700 CMR 7.07. The height-escort thresholds (high-pole + route survey over ~13'8\"/13'6\"; 2 civilian + State Police over 14'11\") are cross-referenced from published MassDOT permit summaries rather than the CMR text — confirm the exact tall-load escort/route-survey configuration with the MassDOT Permit Office."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -21,68 +20,51 @@
   "superload_thresholds": {
     "width_ft": 16.0,
     "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "length_ft": 135.0,
+    "gross_weight_lbs": 130000,
+    "note": "Loads over 130,000 lbs gross require an engineering survey and are issued as a superload single-trip ($300, 700 CMR 7.07 Table 5). Loads wider than 16' or longer than 135' must be escorted by two Massachusetts State Police vehicles. Height superload threshold not fixed numerically in the CMR — tall loads route-surveyed case-by-case."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 13.5, "escorts": 1, "police": false, "note": "following pilot car for width over 12' up to 13'6\" (700 CMR 7.07)" },
+      { "over_ft": 13.5, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "preceding + following pilot cars for width over 13'6\" up to 16' (700 CMR 7.07)" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "two Massachusetts State Police vehicles required over 16' wide (700 CMR 7.07)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 13.5, "up_to_ft": 14.92, "escorts": 1, "police": false, "pole_car": true, "note": "high-pole escort + route survey for tall loads (per MassDOT permit summaries — confirm exact threshold)" },
+      { "over_ft": 14.92, "up_to_ft": null, "escorts": 2, "police": true, "pole_car": true, "note": "two civilian escorts + Massachusetts State Police over 14'11\" high (per MassDOT permit summaries — confirm)" }
     ],
     "length": [
-      {
-        "over_ft": 90.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 90.0, "up_to_ft": 100.0, "escorts": 1, "police": false, "note": "following pilot car, ~90'-100' overall length (700 CMR 7.07)" },
+      { "over_ft": 100.0, "up_to_ft": 135.0, "escorts": 2, "police": false, "note": "preceding + following pilot cars, over 100' up to 135' (700 CMR 7.07)" },
+      { "over_ft": 135.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "two Massachusetts State Police vehicles required over 135' long (700 CMR 7.07)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 40,
+      "fee_usd_max": 400,
+      "fee_formula": "Irreducible-load single trip = $40 (or $400/year annual). Reducible-load overweight permit = $50 per 1,000 lbs exceeding the Federal Bridge Formula. Superload (>130,000 lbs) single trip = $300 (700 CMR 7.07 Table 5).",
+      "validity_days": 5,
+      "note": "Overweight above legal is Federal-Bridge-Formula driven; reducible-load fee scales per 1,000 lbs over the formula limit."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 400,
+      "fee_usd_max": 400,
+      "note": "Annual irreducible-load permit $400/yr (700 CMR 7.07 Table 5)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "On the Massachusetts Turnpike, loads over 12' wide, over 100' long, or over 130,000 lbs gross require a State Police escort",
+    "On Cape Cod, loads over 12' wide require 1 pilot car plus a State Police escort",
+    "Tunnel movements (irreducible-load permits) restricted to one direction and subject to peak-hour tunnel restrictions",
+    "Daytime movement typical for over-dimensional loads; escorts maintain two-way radio contact"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal limits: width 8'6\", height 13'6\", gross 80,000 lbs; 53' semitrailer on the National Network.",
+    "Escort width/length matrix, State Police triggers, superload and fees read from 700 CMR 7.07; height-escort thresholds cross-referenced from published MassDOT summaries."
   ]
 }

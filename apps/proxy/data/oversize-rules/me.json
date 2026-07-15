@@ -1,16 +1,16 @@
 {
   "state": "ME",
   "state_name": "Maine",
-  "source_url": "https://www.maine.gov/mdot/csd/permits/",
-  "source_title": "Maine DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.maine.gov/sos/bmv/vehicles/commercial-vehicles-motor-carrier-services/overlimit-permits",
+  "source_title": "Maine BMV Motor Carrier Services — Overlimit Permits (29-A M.R.S. §2382; Motor Carrier Rules Ch. 156/157/164)",
   "portal_url": "https://www1.maine.gov/online/mdot/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Northeast state: low clearances and escorts often trigger at lower widths (~12') \u2014 the escort default here is conservative; confirm the exact matrix, fees and any police-escort trigger with the state."
+    "Official Maine BMV overlimit-permit page confirms pilot-vehicle triggers at width over 12', length over 80', and 15'+ rear overhang, plus the single-trip fee range and travel windows; the higher width police-escort thresholds (over 16' = 1 pilot + 1 police, over 20' = 2 police) and the height-over-16' pole-car rule are cross-referenced from published permit summaries of Maine Motor Carrier Rules Ch. 156/157/164, not read verbatim from the official page — confirm exact configuration with Maine MCS (207-624-9000 x52134).",
+    "Maine publishes no fixed numeric 'superload' dimension/weight threshold; very heavy loads are individually reviewed (bridge analysis) — superload_thresholds left null (handler raises a verify flag, does not auto-assert superload)."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +19,52 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "Maine does not publish a fixed superload dimension/weight threshold. Loads at/over 16' wide require police escort and extreme loads are individually route-/bridge-reviewed by Maine MCS. Null values flag the load for manual superload verification rather than clearing it."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 16.0, "escorts": 1, "police": false, "note": "1 pilot vehicle over 12' wide — front on 2-lane, rear on divided highway" },
+      { "over_ft": 16.0, "up_to_ft": 20.0, "escorts": 2, "police": true, "note": "over 16' wide: 1 pilot car + 1 police escort (per published Maine permit summaries — confirm with MCS)" },
+      { "over_ft": 20.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 20' wide: 2 police escorts (per published Maine permit summaries — confirm with MCS)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "over 16' high: pilot car with height pole (per published Maine permit summaries — confirm with MCS)" }
     ],
     "length": [
-      {
-        "over_ft": 90.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 80.0, "up_to_ft": null, "escorts": 1, "police": false, "note": "1 pilot vehicle over 80' overall length; also 1 pilot when rear overhang is 15' or more" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 6,
+      "fee_usd_max": 30,
+      "fee_formula": "Secretary of State sets the single-trip overlimit fee at not less than $6 and not more than $30 based on weight, height, length and width (29-A M.R.S. §2382). Maine Turnpike oversize/overlength permit = $10 at any toll plaza (plus toll).",
+      "validity_days": 7,
+      "note": "Single-trip overlimit permit valid 7 days. 'Oversize Load' signs + 18\" flags required on overwidth/overlength loads."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/blanket overlimit permits available for qualifying repetitive/divisible moves; fee set by SOS schedule — quote through Maine MCS."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Travel permitted one-half hour before sunrise to one-half hour after sunset, 7 days a week",
+    "No travel on weekends during July and August",
+    "No travel on major holidays / some holiday weekends",
+    "Two-way communication required between the overlimit vehicle(s) and pilot/police escort(s) at all times",
+    "Non-reducible loads may exceed 13'6\" height up to 14'0\" off the Maine Turnpike; Turnpike oversize/overlength permits obtained at toll plazas"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal limits: width 8'6\", loaded height 13'6\" (up to 14'0\" for non-reducible loads off the Turnpike), gross 80,000 lbs; 53' semitrailer on the National Network.",
+    "Escort width/length triggers and travel windows confirmed from the official Maine BMV overlimit-permit page; fee range from 29-A M.R.S. §2382. Higher width/height escort thresholds cross-referenced from published Maine permit summaries.",
+    "State-level rules only — municipal permits, bridge-specific engineering and low-clearance routing are out of scope."
   ]
 }

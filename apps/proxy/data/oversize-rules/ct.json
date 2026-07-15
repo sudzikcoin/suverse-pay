@@ -1,16 +1,15 @@
 {
   "state": "CT",
   "state_name": "Connecticut",
-  "source_url": "https://portal.ct.gov/dot/permits/oversizeoverweight-permits",
-  "source_title": "Connecticut DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://portal.ct.gov/dot/permits/oversize-overweight-permits/faq",
+  "source_title": "CTDOT Oversize/Overweight Permits — FAQ, Escort & Superload Matrix",
   "portal_url": "https://ctoversize.com/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2025-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Northeast state: low clearances and escorts often trigger at lower widths (~12') \u2014 the escort default here is conservative; confirm the exact matrix, fees and any police-escort trigger with the state."
+    "Legal limits, routine permit envelope, escort/State-Police matrix, superload definition and permit validity read from the official CTDOT OS/OW FAQ. The single-trip fee ($30, +$12 electronic) and annual formula ($9.00 per 1,000 lbs, +$5 electronic) are the long-standing CTDOT statutory fees but were not restated on the FAQ page fetched this run — confirm current fee schedule with the CTDOT OS/OW Permit Office (dot.osowpermits@ct.gov)."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -20,69 +19,51 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
+    "height_ft": 16.0,
+    "length_ft": 150.0,
     "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "note": "CTDOT superload = over 16' wide, over 16' high, over 150' long, or over 200,000 lbs gross. Superload moves are limited to nighttime only and typically require Connecticut State Police escorts; a certified Connecticut route survey (by a CT-based surveyor) within one week prior to the move date is required."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 13.5, "escorts": 1, "police": false, "note": "1 escort over 12' wide — rear on divided highways, front on undivided (2 escorts on undivided)" },
+      { "over_ft": 13.5, "up_to_ft": 15.0, "escorts": 2, "police": true, "note": "front + rear civilian escorts plus State Police at/over 13'6\" wide (CTDOT FAQ)" },
+      { "over_ft": 15.0, "up_to_ft": null, "escorts": 3, "police": true, "note": "additional civilian escorts + State Police over ~15' (14'11\") wide" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.0, "up_to_ft": 15.08, "escorts": 1, "police": false, "pole_car": true, "note": "1 escort with height pole over 14' high; route survey required over 14'" },
+      { "over_ft": 15.08, "up_to_ft": null, "escorts": 2, "police": true, "note": "State Police escort(s) over 15'1\" high (CTDOT FAQ)" }
     ],
     "length": [
-      {
-        "over_ft": 90.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 80.0, "up_to_ft": 120.0, "escorts": 1, "police": false, "note": "1 escort over 80' overall length" },
+      { "over_ft": 120.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "over 119'11\": multiple escorts + State Police (CTDOT FAQ)" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 30,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Single-trip OS/OW permit = $30 (+$12 for electronic transmittal). Annual Indivisible-Load permit = $9.00 per 1,000 lbs (or fraction) of gross weight, +$5.00 for permits issued electronically (CTDOT fee schedule).",
+      "validity_days": 3,
+      "note": "Single-trip permit authorizes daylight movement over a 3-day period. Pilot cars must be at least 60\" wide and no more than 1.5 ton capacity."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual Indivisible-Load permit runs May 1–April 30; fee = $9.00 per 1,000 lbs gross (+$5 electronic). Radioactive-pharmaceutical permits run 6 months."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "No moves during peak hours 6:30-9:00 a.m. or 4:00-6:00 p.m.",
+    "Loads 13'6\" wide or over 14' high may travel only Tuesday through Thursday, 9:00 a.m. to 4:00 p.m.",
+    "Superload moves limited to nighttime only, with Connecticut State Police escort and a certified CT route survey within one week of the move",
+    "Daylight movement otherwise for over-dimensional loads"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal limits: width 8'6\", height 13'6\", length 45' single unit (48' trailer w/ 43' kingpin, up to 53'), gross 80,000 lbs (36,000 2-axle single unit / 53,800 3-axle single unit).",
+    "Routine permit envelope: width 16', height 14' (route survey over 14'), length 130'. Escort/superload matrix from CTDOT OS/OW FAQ; fees from the CTDOT permit fee schedule."
   ]
 }

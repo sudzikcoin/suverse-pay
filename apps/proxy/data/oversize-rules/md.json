@@ -1,16 +1,16 @@
 {
   "state": "MD",
   "state_name": "Maryland",
-  "source_url": "https://www.roads.maryland.gov/mdotsha/pages/index.aspx?pageid=125",
-  "source_title": "Maryland DOT \u2014 Oversize/Overweight Permits",
+  "source_url": "https://www.roads.maryland.gov/oots/md_hauling_permit_manual.pdf",
+  "source_title": "MDOT SHA Oversize/Overweight Hauling Permit Manual (fees: COMAR 11.04.01.08)",
   "portal_url": "https://mdhaulingpermits.mdot.maryland.gov/",
-  "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
+  "retrieved_at": "2026-07-16",
+  "rules_as_of": "2025-01-01",
   "verification": "knowledge_based",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Northeast state: low clearances and escorts often trigger at lower widths (~12') \u2014 the escort default here is conservative; confirm the exact matrix, fees and any police-escort trigger with the state."
+    "Live sourcing attempted + blocked: the official MDOT SHA Hauling Permit Manual PDF returned HTTP 522 and the SHA overdimensional-limitations page returned HTTP 403 to automated fetch this run. The escort matrix (over 13' = 1, 14'+ = 2, pole car over 14'6\", police at 16' wide or 75 tons) and the superload (>120,000 lbs gross on non-Interstate) are cross-referenced from published summaries of that manual — confirm with MDOT SHA Hauling Permits (1-800-543-4564).",
+    "Single-trip fee formula ($30 first 40 tons + $5/ton over 40 tons) is from COMAR 11.04.01.08 (official Maryland regulation); verify current schedule."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +19,49 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 120000,
+    "note": "MDOT SHA superload = over 120,000 lbs gross on non-Interstate routes (permit weights run up to 150,000 lbs on Interstate); superload applications require engineering/bridge review. Permit axle maxima: single 27,000 / tandem 52,000 / tridem 63,000 lbs. Dimensional superload thresholds not published as fixed numbers — null flags for manual verification."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 13.0, "up_to_ft": 14.0, "escorts": 1, "police": false, "note": "1 escort over 13' wide on any highway (except manufactured-housing units)" },
+      { "over_ft": 14.0, "up_to_ft": 16.0, "escorts": 2, "police": false, "note": "2 escorts at 14' wide or more, including manufactured-housing units" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "police escort required at 16' wide or more" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 14.5, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "pole (height) escort vehicle required over 14'6\" high" }
     ],
-    "length": [
-      {
-        "over_ft": 90.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
-    ],
-    "weight": []
+    "length": [],
+    "weight": [
+      { "over_ft": 150000, "up_to_ft": null, "escorts": 0, "police": true, "note": "police escort required at 75 tons (150,000 lbs) gross or more" }
+    ]
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 30,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "Single-trip OS/OW permit = $30 for the first 40 tons (80,000 lbs) or less of gross weight, plus $5 for each additional ton (or part of a ton) over 40 tons (COMAR 11.04.01.08).",
+      "validity_days": 5,
+      "note": "Permit valid 5 travel days. 'Wide Load'/'Oversize Load' signs required over 9' wide, front and rear."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/blanket hauling permits available for qualifying repetitive moves; fee per COMAR schedule — quote through MDOT SHA."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Daylight movement typical for over-dimensional loads; escorts maintain two-way radio contact and constant communication",
+    "Private escort must carry at least one 3\" oscillating/rotating yellow roof light visible front and rear, with headlights on during the move",
+    "Police escort required for moves 16' wide or more, 75 tons gross or more, or where road/weather conditions or travel against traffic warrant"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal limits: width 8'6\" (102\"), height 13'6\", gross 80,000 lbs; 53' semitrailer on the National Network.",
+    "Escort matrix and superload from published MDOT SHA Hauling Permit Manual summaries (official PDF 522 / SHA page 403 this run); single-trip fee formula from COMAR 11.04.01.08."
   ]
 }
