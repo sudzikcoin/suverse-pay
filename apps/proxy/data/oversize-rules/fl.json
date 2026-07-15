@@ -2,15 +2,16 @@
   "state": "FL",
   "state_name": "Florida",
   "source_url": "https://www.fdot.gov/maintenance/permits.shtm",
-  "source_title": "Florida DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://permits.fdot.gov/",
+  "source_title": "FDOT Rule 14-26.008 F.A.C. — Schedule of Fees for Overweight/Overdimensional Permits",
+  "portal_url": "https://www.fdot.gov/maintenance/permits.shtm",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2018-04-24",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Florida issues blanket and single-trip permits with specific fee schedules and route restrictions; confirm fee and escort matrix with FDOT."
+    "The sourced FDOT text is the Rule 14-26.008 fee schedule only; it does not publish the escort/pilot-car matrix (width/height/length thresholds for pilots or police). Confirm escort requirements with the FDOT permit office / Rule 14-26.",
+    "Superload thresholds below are approximated from the fee table's top brackets (over 14' wide / over 18' high / over 120' long overdimension; over 199,000 lbs overweight); FDOT's formal superload/blanket-review definition is not in this fee excerpt.",
+    "Legal dimension limits (8'6\" wide, 13'6\" high, 53' semitrailer, 80,000 lbs) are statutory defaults not stated in the fee schedule; movement/curfew rules are not in this excerpt."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +20,36 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "width_ft": 14.0,
+    "height_ft": 18.0,
+    "length_ft": 120,
+    "gross_weight_lbs": 199000,
+    "note": "Approximated from FDOT fee Table 1A/1B: overdimension over 14' wide OR over 18' high OR over 120' long is not issued as an annual multi-trip permit (route-specific only, $125); overweight over 199,000 lbs is route-specific ($0.003 per 1,000 lbs per mile). Treat as manual-review triggers pending the formal FDOT superload definition."
   },
   "escort_rules": {
-    "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
-    ],
-    "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
-    ],
-    "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
-    ],
+    "width": [],
+    "height": [],
+    "length": [],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 5,
+      "fee_usd_max": 25,
+      "fee_formula": "Overdimension 10-day trip permit: $5 (up to 12' wide / 13'6\" high / 85' long), $15 (up to 14' wide / 14'6\" high / 95' long), $25 (up to 14' wide / 18' high / 120' long, or over). Overweight 10-day trip: $0.27/mile up to 95,000 lbs, $0.32/mile up to 112,000, scaling to $0.47/mile up to 162,000, and $0.003 per 1,000 lbs per mile above 199,000 lbs. Add $3.33 admin over 80,000 lbs and $5 transmission fee; fees computed in 25-mile increments.",
+      "validity_days": 10,
+      "note": "Trip permits valid 10 days. Overweight dimension combos over 12' wide / 13'6\" high / 85' long add a dimension fee, combined not to exceed $500. Governmental entities, special taxing districts, and certain agricultural/emergency moves are fee-exempt."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 17,
+      "fee_usd_max": 500,
+      "note": "12-month multi-trip permits: overdimension $20-$500 by class; overweight $240-$500 by weight bracket; route-specific 3-month multi-trip $5-$250. Implements of husbandry/farm/forestry $17/yr."
     }
   },
-  "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
-  ],
+  "movement_restrictions": [],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Only FDOT's Rule 14-26.008 fee schedule was available as source text; escort tiers, superload definition, legal limits, and curfew rules are flagged for verification."
   ]
 }

@@ -2,15 +2,15 @@
   "state": "MI",
   "state_name": "Michigan",
   "source_url": "https://www.michigan.gov/mdot/travel/mobility/for-motor-carriers/permits",
-  "source_title": "Michigan DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://mdotjboss.state.mi.us/TAP/",
+  "source_title": "MDOT T-2 — Information on the Movement of Oversize or Overweight Vehicles and Loads (10/2023)",
+  "portal_url": "https://www.michigan.gov/mdot/travel/mobility/for-motor-carriers/permits",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2023-10-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Michigan uses an unusual axle-based weight law (legal gross far above 80,000 lbs on enough axles without an OW permit) \u2014 the gross-weight verdict here is conservative and MUST be checked against Michigan's axle-load tables; confirm escort/fee matrix with MDOT."
+    "The MDOT T-2 sheet describes escort-vehicle equipment but does not publish the escort/pilot-car threshold matrix (which widths/heights/lengths require 1 vs 2 pilots or police). Confirm escort tiers with the MDOT Transport Permits Unit.",
+    "Legal gross weight is shown as the 80,000 lbs federal Interstate limit, but Michigan's axle-spacing weight law lets legal gross far exceed 80,000 lbs on designated non-Interstate state trunklines with enough properly spaced axles WITHOUT an overweight permit — confirm the exact legal gross for the actual axle configuration and route."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -20,69 +20,42 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
+    "height_ft": 15.0,
+    "length_ft": 150,
     "gross_weight_lbs": null,
-    "note": "Michigan's axle-spacing weight law permits very high legal gross on sufficient axles (e.g. 11-axle configurations well above 80,000 lbs) WITHOUT an overweight permit \u2014 so gross-weight alone is a poor superload proxy here. Superload/heavy analysis is axle-based; verify with MDOT."
+    "note": "MDOT single-trip permits are not issued above 16' wide, 15' high, or 150' overall combination length; loads exceeding these are treated as superloads requiring a written explanation, MiTRIP application, and Route Survey Certification (Form 2465) to the Lansing Transport Permit Office at least 10 working days ahead. No fixed gross-weight superload number is published in T-2 (weight is governed by the axle-spacing law and route/bridge analysis)."
   },
   "escort_rules": {
-    "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
-    ],
-    "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
-    ],
-    "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
-    ],
+    "width": [],
+    "height": [],
+    "length": [],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_usd_min": 15,
+      "fee_usd_max": 50,
+      "fee_formula": "$15.00 for a load that is over-dimension only and legal in weight; $50.00 for a load that is over-dimension and/or over legal axle weight.",
+      "validity_days": 5,
+      "note": "Single trip permit valid for a 5-day period, one trip; a return move (same config or empty trailer, reversed route) may be requested within the same 5 days. Paid via the MDOT Permit Gateway (MPG) shopping cart."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 30,
+      "fee_usd_max": 264,
+      "note": "Extended (annual) renewal: $30 per unit over-dimension and legal in weight; $100 per unit overweight and/or over-dimension; Construction Equipment $264 per power unit. New extended applications are prorated. Not available to for-hire carriers."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Permits are issued for daylight hours only, Monday through Friday (½ hour before sunrise to ½ hour after sunset); other time limits may apply",
+    "No movement from 12:00 noon the day before, through daylight the first day after, New Year's, Memorial Day, Independence Day, Labor Day, Thanksgiving, and Christmas; three-day-weekend holidays extend the ban from noon before to daylight after",
+    "No overweight permits during the spring weight restriction period (except public emergency); no more than 11 axles during spring thaw",
+    "No permits for widths over 14' during the spring weight restriction period (except public emergency)",
+    "Routes over 13'6\" high must be pre-verified by the applicant for vertical clearance"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Michigan's axle-spacing 'train' weight law allows legal gross well above 80,000 lbs on adequately spaced axle groups on designated state trunklines without an overweight permit; the 80,000 lbs legal_limits value reflects only the federal Interstate cap and is intentionally conservative.",
+    "Permits are not issued for doubles combinations. Wheel load cap 700 lbs/inch of tire tread (850 for empty self-propelled earth-movers). Single-trip caps by load type: Construction Equipment/Miscellaneous 16'w/15'h/150'L; International Sealed Container 8'6\"w/13'6\"h/60'L at 95,000 lbs (24,000 lbs single axle)."
   ]
 }

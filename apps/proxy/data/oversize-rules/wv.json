@@ -2,15 +2,13 @@
   "state": "WV",
   "state_name": "West Virginia",
   "source_url": "https://transportation.wv.gov/dmv/dmvformsearch/Pages/Oversize-Overweight-Permits.aspx",
-  "source_title": "West Virginia DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://www.wvoversize.com/",
+  "source_title": "WVDOT/DMV Hauling Permit Regulations (Revised 3-17-2023)",
+  "portal_url": "https://wv.gotpermits.com",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
-  "data_quality": "verify_with_state",
-  "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
-  ],
+  "rules_as_of": "2023-03-17",
+  "verification": "live_checked",
+  "data_quality": "ok",
+  "verify_reasons": [],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
@@ -21,67 +19,53 @@
     "width_ft": 16.0,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": 120000,
+    "note": "WV superload = weights or dimensions exceeding single-trip permit caps (over 16' wide or over 120,000 lbs gross; single-trip axle caps 28k single / 45k tandem / 50k tri). All superloads must pass a bridge analysis; no fixed height/length cap — permitted if the route can accommodate."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 10.5, "up_to_ft": 12.0, "escorts": 1, "police": false, "note": "front escort on 2-lane; none on 4-lane (7 days)" },
+      { "over_ft": 12.0, "up_to_ft": 14.0, "escorts": 2, "police": false, "note": "front+rear on 2-lane; rear on 4-lane (7 days)" },
+      { "over_ft": 14.0, "up_to_ft": 15.0, "escorts": 2, "police": false, "note": "front+rear; Mon-Fri travel only" },
+      { "over_ft": 15.0, "up_to_ft": 16.0, "escorts": 3, "police": false, "note": "two front + one rear on 2-lane; two rear + one front on 4-lane non-interstate; two rear on interstate; Mon-Fri" },
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 4, "police": false, "note": "escorts as required by permit; loads over 16' wide may move only Sunday until noon" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 15.0, "up_to_ft": null, "escorts": 1, "police": false, "pole_car": true, "note": "front pole car required over 15' high (2-lane); in addition to any other escort on 4-lane" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 75, "up_to_ft": 95, "escorts": 1, "police": false, "note": "rear escort on 2-lane (Mon-Fri); none on 4-lane" },
+      { "over_ft": 95, "up_to_ft": 100, "escorts": 2, "police": false, "note": "front+rear on 2-lane; rear on 4-lane" },
+      { "over_ft": 100, "up_to_ft": null, "escorts": 2, "police": false, "note": "front+rear escorts" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 20,
       "fee_usd_max": null,
-      "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "fee_formula": "$20.00 for overweight or overdimensional, plus $0.04 per ton-mile for the overweight portion. Superload permits carry the same fee. Low-impact bridge monitors add $150 first / $100 second / $50 each additional (max $750).",
+      "validity_days": 5,
+      "note": "Single trip and superload permits valid 5 days; single trip mobile home 10 days. No travel on holidays; divisible-load permits not available."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 150,
+      "fee_usd_max": 500,
+      "note": "Blanket Regular $200 (oversize) or $500 (oversize+overweight); Seagoing $150 (1-15 permits); Mobile Home Blanket $200; Manufactured Commodity $500. Blanket Regular caps: 14'6\" high / 14' wide / 95' long / 110,000 lbs on Interstate & divided routes."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "No travel on holidays; single trip/superload permits valid 5 days",
+    "Loads 14' wide or less (any length/height/weight, except low-impact) may travel sunrise-sunset 7 days/week on all routes except the WV Turnpike",
+    "Loads exceeding those dimensions travel sunrise-sunset Monday-Friday on all routes (excluding the WV Turnpike)",
+    "Mobile homes up to 14' wide: sunrise-sunset Mon-Fri plus Saturday to noon; over 14' to 16' wide: sunrise-sunset Mon-Thu plus Friday to 3:00 PM; over 16' wide not allowed",
+    "Non-oversize overweight loads up to 110,000 lbs (WV Turnpike) / 135,000 lbs (other state routes) may travel 24/7 on request",
+    "WV Turnpike width bands: 14'1\"-18' wide Mon-Thu sunrise-sunset; 18'1\"-24'6\" wide Sundays before noon only"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Legal gross 80,000 lbs on Interstate (Federal Bridge Formula); US/WV routes allow 60,000-73,000 single-unit by axle count; local service routes 65,000. Single-trip permit weight caps: 28k single / 45k tandem / 50k tri / 55k quad / 120,000 gross.",
+    "Overhang (all permits): 15' front, 30' rear. Pole/extendable trailer may carry 80' load without permit if not overweight."
   ]
 }

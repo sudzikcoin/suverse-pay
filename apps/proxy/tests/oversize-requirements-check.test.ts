@@ -306,14 +306,28 @@ describe("shipped oversize-rules dataset", () => {
     }
   });
 
-  it("a 16 ft / 200k lbs load is superload or explicitly uncertain everywhere", () => {
+  it("a 16 ft / 200k lbs load always requires a permit — never silently legal — in every state", () => {
+    // Grossly over legal (16' vs 8.5', 200k vs 80k) must ALWAYS trip a permit.
+    // With real per-state data, whether it is specifically a *superload* varies
+    // (e.g. LA's superload is weight >254k, so a 200k/16' load is permit+escort
+    // there, not a superload) — that is correct, so we assert the invariant that
+    // actually holds everywhere rather than the old placeholder assumption.
     for (const [, r] of rules) {
       const a = assessState(r, SUPERLOAD);
-      expect(
-        a.superload_threshold_hit || a.superload_uncertain,
-        `${r.state} silently passes a 200k lbs superload`,
-      ).toBe(true);
+      expect(a.permit_required, `${r.state} silently passes a 16'/200k load as legal`).toBe(true);
+      expect(a.triggered_by).toContain("width");
     }
+  });
+
+  it("the superload path fires for the states whose real thresholds a 16'/200k load hits", () => {
+    // Sanity that SUPERLOAD_REVIEW is reachable from real data, not dead code:
+    // at least a meaningful share of states classify a 16'-wide / 200k-lb load
+    // as superload or flag it uncertain (null-threshold states).
+    const flagged = [...rules.values()].filter((r) => {
+      const a = assessState(r, SUPERLOAD);
+      return a.superload_threshold_hit || a.superload_uncertain;
+    });
+    expect(flagged.length).toBeGreaterThan(rules.size / 2);
   });
 });
 

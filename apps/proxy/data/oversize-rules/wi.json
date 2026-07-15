@@ -2,15 +2,16 @@
   "state": "WI",
   "state_name": "Wisconsin",
   "source_url": "https://wisconsindot.gov/Pages/dmv/com-drv-vehs/mtr-car-trkr/osow-permits.aspx",
-  "source_title": "Wisconsin DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://trust.dot.wi.gov/",
+  "source_title": "WisDOT MV2600 — Oversize/Overweight Single Trip Permit Information (6/2021)",
+  "portal_url": "https://wi.gotpermits.com/wiconnect",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2021-06-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Wisconsin permit forms were retrieved during research; legal limits reliable, but confirm the exact escort/pilot matrix and current fees with WisDOT."
+    "The MV2600 single-trip information sheet does not publish the escort/pilot-car matrix (width/height/length thresholds for pilots or police). Confirm escort requirements with the WisDOT OS/OW Permit Unit (608-266-7320) / Trans 250.",
+    "No superload class or numeric superload threshold is published in this sheet; single-trip axle/length caps are given but not a superload definition.",
+    "Legal dimension limits (8'6\" wide, 13'6\" high, 53' semitrailer, 80,000 lbs) are statutory defaults not restated in this sheet; single-trip validity days and movement/curfew rules are not stated here."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,70 +20,37 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "MV2600 publishes no superload threshold. Single-trip permit maximums: steering axle 20,000 lbs, any other axle 35,000 lbs, single vehicle 50', mobile crane 60'; mobile home/modular combination 110' overall (80' home only), width by route. Route/structure review is triggered by size or gross weight."
   },
   "escort_rules": {
-    "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
-    ],
-    "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
-    ],
-    "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
-    ],
+    "width": [],
+    "height": [],
+    "length": [],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_usd_min": 15,
+      "fee_usd_max": 25,
+      "fee_formula": "Oversize: overlength only $15; overwidth OR overheight (may include overlength) $20; overwidth AND overheight $25. Overweight (includes any oversize): $20 (0-90,000 lbs), $35 (90,001-100,000), $45 (100,001-110,000), $55 (110,001-120,000), $65 (120,001-130,000), $75 (130,001-140,000), $85 (140,001-150,000), and $85 + $10 per 10,000 lbs over 150,000. Add $10 per district for regional route review and $10 per structure review.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Single trip permit types: SS, Sealed Load (CS), Radiological (HRCQ), Building from Foundation (SB), Factory Built Home (SM). No charge to government/military. Validity days not stated on this sheet."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/consecutive-month permits exist (per s.348.25 Wis. Stats. / Trans. 250) but are not detailed on the MV2600 single-trip sheet; apply/self-issue at the WisDOT online portal."
     }
   },
-  "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
-  ],
+  "movement_restrictions": [],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Only the WisDOT MV2600 single-trip permit information sheet was available as source text; escort tiers, superload definition, curfews, and annual fees are flagged for verification.",
+    "If spacing between adjacent axles is less than 42 inches, the axle can carry no more than a single axle. Insurance Group A (to 12' wide / 13.5' high / 100' long / <=25% over legal gross); Group B for anything larger."
   ]
 }

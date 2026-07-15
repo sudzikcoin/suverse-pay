@@ -2,14 +2,16 @@
   "state": "AL",
   "state_name": "Alabama",
   "source_url": "https://www.dot.state.al.us/permits/",
-  "source_title": "Alabama DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://alpass.dot.state.al.us/",
+  "source_title": "ALDOT Superload Requirements",
+  "portal_url": "https://www.dot.state.al.us/permits/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2020-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "The sourced ALDOT document covers only Superload requirements; it does not publish the sub-superload escort matrix (e.g. 1-pilot vs 2-pilot width thresholds below 16'). Confirm ordinary oversize escort thresholds with the ALDOT permit office.",
+    "Single-trip permit fee is not in the Superload document; confirm the fee schedule with ALDOT.",
+    "Legal dimension limits (8'6\" wide, 13'6\" high, 53' semitrailer, 80,000 lbs) are statutory defaults not stated in the Superload document."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -19,46 +21,20 @@
   },
   "superload_thresholds": {
     "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "height_ft": 16.0,
+    "length_ft": 150,
+    "gross_weight_lbs": 300000,
+    "note": "ALDOT superload = any load exceeding 16' wide, 16' high, 150' long, or 300,000 lbs gross. Requires justification letter, load/axle drawings, Special Work Authorization for bridge analysis (weight), and a route survey. Utility notification/bucket truck required over 16'5\"-16'6\" high."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": true, "note": "superload: minimum of two State Trooper/Police escorts; additional troopers may be required (ALEA schedules after permit pre-approval)" }
     ],
     "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
+      { "over_ft": 16.0, "up_to_ft": null, "escorts": 2, "police": true, "pole_car": true, "note": "superload height; bucket truck required over 16'5\", utility notification over 16'6\"; 2 police escorts" }
     ],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 150, "up_to_ft": null, "escorts": 2, "police": true, "note": "superload length; minimum 2 State Trooper/Police escorts" }
     ],
     "weight": []
   },
@@ -69,19 +45,21 @@
       "fee_usd_max": null,
       "fee_formula": null,
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Fee not stated in the sourced ALDOT Superload document — confirm single-trip permit fee with the ALDOT permit office. Superload weight moves require a Special Work Authorization (SWA) and bridge analysis."
     },
     "annual": {
       "available": true,
       "fee_usd_min": null,
       "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "note": "Annual/blanket options not covered by the sourced Superload document; confirm with ALDOT."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "Most superloads must travel between 9:00 PM and 6:00 AM Sunday through Thursday, unless approved otherwise by the permit office",
+    "Superloads require a lighting plan with flashing amber/strobe lights on all extremities",
+    "City or County Engineer approval required for superloads on city streets or county roads"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Only ALDOT's Superload requirements sheet was available as source text; ordinary (sub-superload) oversize/overweight limits, escort tiers, and fees are not captured here and are flagged for verification."
   ]
 }

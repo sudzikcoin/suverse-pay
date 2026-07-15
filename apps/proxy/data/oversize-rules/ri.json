@@ -2,87 +2,67 @@
   "state": "RI",
   "state_name": "Rhode Island",
   "source_url": "https://www.dot.ri.gov/business/permits.php",
-  "source_title": "Rhode Island DOT \u2014 Oversize/Overweight Permits",
+  "source_title": "RIDOT Rules & Regulations for Overweight/Oversize Vehicles",
   "portal_url": "https://www.dot.ri.gov/business/permits.php",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2015-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "Northeast state: low clearances and escorts often trigger at lower widths (~12') \u2014 the escort default here is conservative; confirm the exact matrix, fees and any police-escort trigger with the state."
+    "RIDOT publishes no formal superload class or numeric superload threshold; heavy/large loads are reviewed case-by-case by the Chief Engineer, so superload dimensions are left null.",
+    "The regulation gives width, length, and overhang escort thresholds but no numeric overheight escort trigger — height escorts are applied at RIDOT discretion.",
+    "Legal gross weight (80,000 lbs) is the statutory/federal default; RI statute codifies axle load 22,400 lbs (31-25-13) but not restated as a single gross number in the permit text."
   ],
   "legal_limits": {
     "width_ft": 8.5,
     "height_ft": 13.5,
-    "length_semitrailer_ft": 53,
+    "length_semitrailer_ft": 48.5,
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
+    "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "gross_weight_lbs": null,
+    "note": "RIDOT publishes no fixed superload threshold. Moves in excess of maximum weight/dimensions are reviewed by RIDOT engineers (Office of the Chief Engineer) for routes, overhead clearances, and bridge integrity; annual crane blanket caps are 12' wide / 13'6\" high / 95' long / 130,000 lbs."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 12.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 12.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 12.0, "up_to_ft": 14.5, "escorts": 1, "police": false, "note": "one escort for overall width 12'0\"-14'6\"; escort precedes on undivided highways, follows on divided" },
+      { "over_ft": 14.5, "up_to_ft": null, "escorts": 2, "police": false, "note": "two escort vehicles required for width over 14'6\"" }
     ],
-    "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
-    ],
+    "height": [],
     "length": [
-      {
-        "over_ft": 90.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 80, "up_to_ft": 90, "escorts": 1, "police": false, "note": "one escort for overlength 80'0\"-90'0\"" },
+      { "over_ft": 90, "up_to_ft": null, "escorts": 2, "police": false, "note": "two escort vehicles required for overlength over 90'0\"" }
     ],
     "weight": []
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
+      "fee_usd_min": 20,
       "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_formula": "Non-divisible trip fee $20.00. Out-of-state registered vehicles: trailers $30 flat; 2-4 axle trucks $10 per 1,000 lbs over legal (max $300 for 76,650 lbs); tractors $10 per 1,000 lbs over legal (max $200 for 99,000 lbs, $250 for 99,000-104,800 lbs); transfer fee $10. RI-registered vehicle fees are reflected in the registration fee.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Single trip permits are issued for one specific move. Fees are not prorated; all permits expire March 31."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 100,
+      "fee_usd_max": 100,
+      "note": "Blanket permit $100 for intrastate moves (3- or 6-month), up to 75' long and 11'11\" wide; all larger moves require an individual special permit."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "No moves authorized from sunset Friday to sunrise Monday, or on listed state holidays; if a holiday falls midweek, travel allowed up to 12:00 noon the day before",
+    "Daylight travel only: 30 minutes before sunrise to 30 minutes after sunset; no night travel except envelope/permitted exceptions (cranes may travel sunrise-7:00 AM windows)",
+    "Minimum 1,000 ft spacing between oversize permitted vehicles traveling the same direction",
+    "Buildings may be moved Tuesday-Thursday only and require two escorts plus police escort from each city/town on the route",
+    "Jamestown Bridge (22' curb-to-curb): loads over 9' wide require police to halt traffic on one end before crossing"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "RI statutory limits: width 102\" (8'6\"), height 162\" (13'6\"), single vehicle length 40', semi-trailer 48'6\", trailer/semi in a 3-unit combo 28'6\" each, axle load 22,400 lbs.",
+    "Overhang: no escort under 15' with proper flags; one escort at 15'+ overhang (a second may be required on a 2-lane undivided road when overhang is 15'+ rear and width is 12'+). Cranes on own power over 12' wide need two escorts intrastate."
   ]
 }

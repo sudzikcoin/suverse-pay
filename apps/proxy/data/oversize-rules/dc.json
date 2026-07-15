@@ -2,15 +2,16 @@
   "state": "DC",
   "state_name": "District of Columbia",
   "source_url": "https://ddot.dc.gov/service/oversizeoverweight-vehicle-permits",
-  "source_title": "District of Columbia DOT \u2014 Oversize/Overweight Permits",
-  "portal_url": "https://ddot.dc.gov/service/oversizeoverweight-vehicle-permits",
+  "source_title": "DDOT Oversize and Overweight Vehicles — Frequently Asked Questions",
+  "portal_url": "https://tops.ddot.dc.gov",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2019-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch.",
-    "The District of Columbia is highly restrictive: DDOT reviews oversize moves case-by-case, police (MPD) escorts are common, and there is no simple published dimensional table. Treat everything here as verify_with_state and coordinate directly with DDOT."
+    "DDOT publishes no formal superload class; the 120,000 lbs / dimensional thresholds below are the police-escort triggers, used here as the review flag.",
+    "The DDOT FAQ specifies police-escort thresholds but no private pilot-car counts and no published night/weekend curfew — routes and times are set per-permit by DDOT.",
+    "Legal gross weight limit (80,000 lbs) is a statutory default; the FAQ codifies only single-axle 21,000 and tandem 34,000 (Ch. 25, Title 18 DCMR)."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -22,52 +23,42 @@
     "width_ft": null,
     "height_ft": null,
     "length_ft": null,
-    "gross_weight_lbs": null,
-    "note": "DC does not publish a simple dimensional superload table; large loads require case-by-case DDOT review (and often MPD escort). Handler will flag for verification rather than clear."
+    "gross_weight_lbs": 120000,
+    "note": "DC has no formal superload category. Police escort + route confirmation are required at/over 12' wide, 13'6\" high, 75' total length, or 120,000 lbs gross (or any Class 1 Division 1.1/1.2/1.3 explosives). The 120,000 lbs gross trigger is used here as the heavy-load review flag."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 8.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": true,
-        "note": "DC planning default: DDOT/MPD escorts are commonly required for oversize movement in the District \u2014 confirm exact requirement with DDOT"
-      }
+      { "over_ft": 12.0, "up_to_ft": null, "escorts": 0, "police": true, "note": "police escort required for any vehicle/load 12' wide or wider (private pilot count not published)" }
     ],
     "height": [
-      {
-        "over_ft": 13.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": true,
-        "pole_car": true,
-        "note": "confirm with DDOT"
-      }
+      { "over_ft": 13.5, "up_to_ft": null, "escorts": 0, "police": true, "note": "police escort required for loads exceeding 13'6\" high" }
     ],
-    "length": [],
-    "weight": []
+    "length": [
+      { "over_ft": 75, "up_to_ft": null, "escorts": 0, "police": true, "note": "police escort required for any vehicle/load 75' or longer in total length" }
+    ],
+    "weight": [
+      { "over_ft": 120000, "up_to_ft": null, "escorts": 0, "police": true, "note": "police escort required for total gross weight of 120,000 lbs or more (over_ft here denotes pounds)" }
+    ]
   },
   "permit_types": {
     "single_trip": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "fee_formula": null,
+      "fee_usd_min": 30,
+      "fee_usd_max": 50,
+      "fee_formula": "$30.00 one-way or $50.00 roundtrip.",
       "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "note": "Single haul permit; allow ~1 week for route confirmation by size/weight. A single trip permit is required instead of an annual tag when length over 70', height over 13'6\", or width over 8'6\"."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 85,
+      "fee_usd_max": 1193,
+      "note": "Tractor Trailer tag $85/yr; Truck Crane or Concrete Pump Truck $85/yr; Dump Truck/Cement Mixer/Trash Truck up to 65,000 lbs $1,193/yr. Allow ~2 weeks for an annual permit."
     }
   },
-  "movement_restrictions": [
-    "DC restricts oversize movement to specific off-peak windows and requires DDOT coordination (and often MPD police escort). Confirm the current window and escort requirement with DDOT before any move."
-  ],
+  "movement_restrictions": [],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Permit required for: any vehicle over the DC axle/gross limits (21,000 single / 34,000 tandem), wider than 8'6\", over 40' long (non-bus), combined length over 55', height over 13'6\", or a bus over 60' long / 8'6\" wide.",
+    "No fixed night/weekend curfew is published in the DDOT FAQ; DDOT confirms a route based on size and weight and may impose per-permit conditions."
   ]
 }

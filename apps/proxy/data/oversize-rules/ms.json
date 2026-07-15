@@ -2,14 +2,16 @@
   "state": "MS",
   "state_name": "Mississippi",
   "source_url": "https://mdot.ms.gov/portal/oversize_overweight_permits",
-  "source_title": "Mississippi DOT \u2014 Oversize/Overweight Permits",
+  "source_title": "MDOT Office of Enforcement — Over-Dimensional Vehicle Permits (Sub-Part 6601, Ch. 03001)",
   "portal_url": "https://mdotoversize.ms.gov/",
   "retrieved_at": "2026-07-15",
-  "rules_as_of": "2025-06-01",
-  "verification": "knowledge_based",
+  "rules_as_of": "2022-01-01",
+  "verification": "live_checked",
   "data_quality": "verify_with_state",
   "verify_reasons": [
-    "Legal dimension limits are statutory and high-confidence; the escort matrix here is a regional planning default (NOT read from this state's manual) and fees are not codified \u2014 confirm the exact escort thresholds, superload definition, current fee schedule and movement curfews with the state permit office before dispatch."
+    "Single-trip permit fee is not stated in the MDOT over-dimensional rule (only blanket permit fees appear, e.g. $100/yr blankets, $4,500 Special Heavy Equipment); confirm the single-trip fee with the MDOT Permit Division (601-359-1717).",
+    "The rule publishes no numeric overheight escort/pole-car trigger — height-pole escorts are applied at MDOT discretion (§400); superload height is 15'7\". Confirm overheight escort requirements with the permit office.",
+    "Legal dimension limits (8'6\" wide, 13'6\" high, 53' semitrailer, 80,000 lbs) are statutory defaults not restated in this over-dimensional rule."
   ],
   "legal_limits": {
     "width_ft": 8.5,
@@ -18,47 +20,20 @@
     "gross_weight_lbs": 80000
   },
   "superload_thresholds": {
-    "width_ft": 16.0,
-    "height_ft": null,
-    "length_ft": null,
-    "gross_weight_lbs": 200000,
-    "note": "Common review triggers (width ~16', ~200,000 lbs). Where a value is null the handler flags the load for manual superload verification rather than clearing it. Confirm exact superload definition with the state permit office."
+    "width_ft": 17.0,
+    "height_ft": 15.583,
+    "length_ft": 121,
+    "gross_weight_lbs": 189999,
+    "note": "MDOT §800: a Super Load exceeds any of: 17' wide, 121' long, 15'7\" high, or 189,999 lbs gross. Requires application detail, axle diagrams, route survey, and traffic control plan. Utility/railroad written permission required over 16' high; railroad permission required over 120' length."
   },
   "escort_rules": {
     "width": [
-      {
-        "over_ft": 12.0,
-        "up_to_ft": 14.0,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: 1 pilot for over-12' width (front on 2-lane, rear on divided) \u2014 confirm exact trigger with the state"
-      },
-      {
-        "over_ft": 14.0,
-        "up_to_ft": null,
-        "escorts": 2,
-        "police": false,
-        "note": "regional planning default: 2 pilots for extreme width \u2014 confirm with the state"
-      }
+      { "over_ft": 13.0, "up_to_ft": 20.0, "escorts": 1, "police": false, "note": "daylight: front escort on 2-lane, rear escort on divided, for loads 13' wide or greater (§318); night: 10' wide or greater needs a front escort on 2-lane / rear on divided (§313)" },
+      { "over_ft": 20.0, "up_to_ft": null, "escorts": 1, "police": true, "note": "police escort may be required for loads 20' wide and over, depending on route/load conditions (§318.3)" }
     ],
-    "height": [
-      {
-        "over_ft": 14.5,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "pole_car": true,
-        "note": "regional planning default: height pole / pilot when over ~14'6\" \u2014 confirm with the state"
-      }
-    ],
+    "height": [],
     "length": [
-      {
-        "over_ft": 100.0,
-        "up_to_ft": null,
-        "escorts": 1,
-        "police": false,
-        "note": "regional planning default: rear escort for long overall length \u2014 confirm with the state"
-      }
+      { "over_ft": 99, "up_to_ft": null, "escorts": 1, "police": false, "note": "total length over 99' requires a permit and a front and/or rear escort (§311)" }
     ],
     "weight": []
   },
@@ -68,20 +43,25 @@
       "fee_usd_min": null,
       "fee_usd_max": null,
       "fee_formula": null,
-      "validity_days": null,
-      "note": "Single-trip OS/OW permit available; fee not codified here \u2014 quote through the state permit portal."
+      "validity_days": 3,
+      "note": "Single trip permit authorizes a specific vehicle/load for up to 3 consecutive days (§213). Fee not codified in this rule — obtain from MDOT Permit Division / MDOT Oversize portal."
     },
     "annual": {
       "available": true,
-      "fee_usd_min": null,
-      "fee_usd_max": null,
-      "note": "Annual/blanket permits available for qualifying divisible or repetitive moves; fees vary \u2014 see portal."
+      "fee_usd_min": 100,
+      "fee_usd_max": 4500,
+      "note": "Blanket permits: Oversize Blanket / Over-Length Truck-Trailer / 57' Box Van / Timber 12' Overhang = $100/yr; Special Heavy Equipment Blanket = $4,500/yr (loads to 150,000 lbs, 12' wide, 13'6\" high, 99' long)."
     }
   },
   "movement_restrictions": [
-    "Typical daylight-only movement (about 1/2 hour before sunrise to 1/2 hour after sunset) for oversize loads \u2014 confirm exact hours and any weekend/holiday curfews with the state."
+    "No movement after 12:00 noon on the day preceding, or on, New Year's Day, Memorial Day, Fourth of July, Labor Day, Thanksgiving, and Christmas, unless permitted (§403)",
+    "Over-width loads (over 12') shall not move during inclement weather (§316)",
+    "Night movement allowed only for loads not over 12' wide, 150,000 lbs, 99' long, or 13'6\" high (max 4' rear overhang); at night, loads 10' wide or greater need a front escort on 2-lane / rear on divided (§313)",
+    "Daylight hours for loads over 12' wide = 30 min after sunrise to 30 min before sunset (§200)",
+    "Movement prohibited on all posted bridges (§302); rear overhang 15'+ requires a permit and front/rear escort (§309)"
   ],
   "notes": [
-    "State-level rules only \u2014 county/city permits, bridge-specific engineering and low-clearance routing are out of scope. Knowledge-based entry pending point verification against the state manual."
+    "Sealed containerized cargo units: 95,000 lbs gross max, 44,000 lbs tandem, 24/7 movement (§500).",
+    "Special Heavy Haul axle/spacing table allows 80,000-150,000 lbs on 5-7+ axles with 12'/28' spacing (blanket permit)."
   ]
 }
