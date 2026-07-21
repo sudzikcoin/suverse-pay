@@ -16,6 +16,8 @@
  * request handlers (the cache absorbs the second+ call per process).
  */
 
+import { heliusConfigured, heliusFetch } from "./helius-client.js";
+
 export interface TokenMetadata {
   mint: string;
   symbol: string;
@@ -115,10 +117,9 @@ async function ensureCache(
 
 async function tryHelius(
   mint: string,
-  apiKey: string,
   fetchImpl: typeof fetch = fetch,
+  explicitKey?: string,
 ): Promise<TokenMetadata | null> {
-  const url = `https://mainnet.helius-rpc.com/?api-key=${apiKey}`;
   const body = JSON.stringify({
     jsonrpc: "2.0",
     id: "token-metadata",
@@ -126,11 +127,21 @@ async function tryHelius(
     params: { id: mint },
   });
   try {
-    const res = await fetchImpl(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body,
-    });
+    // Prefer env dual-key failover; fall back to the caller-supplied
+    // key only when no env keys are configured (keeps the unit tests
+    // that pass a bare key working). Switching stays in heliusFetch.
+    const res = await heliusFetch(
+      (apiKey) => `https://mainnet.helius-rpc.com/?api-key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body,
+      },
+      {
+        fetchImpl,
+        ...(heliusConfigured() || !explicitKey ? {} : { keys: [explicitKey] }),
+      },
+    );
     if (!res.ok) return null;
     const json = (await res.json()) as unknown;
     if (typeof json !== "object" || json === null) return null;
@@ -197,8 +208,8 @@ export async function getTokenMetadata(
     const hit = entry.byMint.get(mint);
     if (hit) return hit;
   }
-  if (opts?.heliusApiKey) {
-    const helius = await tryHelius(mint, opts.heliusApiKey, fetchImpl);
+  if (opts?.heliusApiKey || heliusConfigured()) {
+    const helius = await tryHelius(mint, fetchImpl, opts?.heliusApiKey);
     if (helius) {
       // Memoize into the same cache so repeat lookups in this process
       // don't keep hitting Helius. Falls out when cache TTL rolls.

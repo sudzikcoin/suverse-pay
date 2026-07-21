@@ -15,6 +15,11 @@
  * sign before simulating means they can't even ask the question
  * without locking in a fee.
  */
+import {
+  heliusConfigured,
+  heliusErrorToResult,
+  heliusFetch,
+} from "../lib/helius-client.js";
 import type {
   InternalHandler,
   InternalHandlerInput,
@@ -91,8 +96,7 @@ interface RpcResponse {
 export const heliusTxSimulator: InternalHandler = async (
   input: InternalHandlerInput,
 ): Promise<InternalHandlerResult> => {
-  const apiKey = process.env["HELIUS_API_KEY"];
-  if (!apiKey) {
+  if (!heliusConfigured()) {
     return { status: 503, body: { error: "helius_not_configured" } };
   }
 
@@ -115,29 +119,33 @@ export const heliusTxSimulator: InternalHandler = async (
     return { status: 400, body: { error: "transaction_required" } };
   }
 
-  const url = `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`;
   let response: Response;
   try {
-    response = await (input.fetchImpl ?? fetch)(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "simulateTransaction",
-        params: [
-          tx,
-          {
-            encoding: "base64",
-            sigVerify: false,
-            replaceRecentBlockhash: true,
-            commitment: "processed",
-          },
-        ],
-      }),
-    });
-  } catch {
-    return { status: 502, body: { error: "helius_unreachable" } };
+    response = await heliusFetch(
+      (apiKey) =>
+        `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "simulateTransaction",
+          params: [
+            tx,
+            {
+              encoding: "base64",
+              sigVerify: false,
+              replaceRecentBlockhash: true,
+              commitment: "processed",
+            },
+          ],
+        }),
+      },
+      { fetchImpl: input.fetchImpl },
+    );
+  } catch (err) {
+    return heliusErrorToResult(err);
   }
 
   if (!response.ok) {

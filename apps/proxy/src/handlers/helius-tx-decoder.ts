@@ -16,6 +16,11 @@
  * translates Helius's raw response shape into the gateway-native
  * contract. No routing, no fee math, no policy.
  */
+import {
+  heliusConfigured,
+  heliusErrorToResult,
+  heliusFetch,
+} from "../lib/helius-client.js";
 import type {
   InternalHandler,
   InternalHandlerInput,
@@ -110,8 +115,7 @@ interface HeliusTx {
 export const heliusTxDecoder: InternalHandler = async (
   input: InternalHandlerInput,
 ): Promise<InternalHandlerResult> => {
-  const apiKey = process.env["HELIUS_API_KEY"];
-  if (!apiKey) {
+  if (!heliusConfigured()) {
     return {
       status: 503,
       body: { error: "helius_not_configured" },
@@ -152,19 +156,20 @@ export const heliusTxDecoder: InternalHandler = async (
     };
   }
 
-  const url = `https://api.helius.xyz/v0/transactions/?api-key=${encodeURIComponent(apiKey)}`;
   let response: Response;
   try {
-    response = await (input.fetchImpl ?? fetch)(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ transactions: [signature] }),
-    });
-  } catch {
-    return {
-      status: 502,
-      body: { error: "helius_unreachable" },
-    };
+    response = await heliusFetch(
+      (apiKey) =>
+        `https://api.helius.xyz/v0/transactions/?api-key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ transactions: [signature] }),
+      },
+      { fetchImpl: input.fetchImpl },
+    );
+  } catch (err) {
+    return heliusErrorToResult(err);
   }
 
   if (!response.ok) {

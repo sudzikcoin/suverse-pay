@@ -47,6 +47,7 @@ import {
   classifyRequiredBase58Field,
   type InternalHandlerInputSchema,
 } from "./discovery.js";
+import { heliusConfigured, heliusFetch } from "../lib/helius-client.js";
 
 // ─────────────────────────────────────────────────────────────────────
 // Tunables — empirically derived in the token-check research report.
@@ -731,17 +732,20 @@ async function fetchHolderConcentration(
   mint: string,
   fetchImpl: typeof fetch,
 ): Promise<HoldersResult> {
-  const apiKey = process.env["HELIUS_API_KEY"];
-  if (!apiKey) {
+  if (!heliusConfigured()) {
     return { ok: false, degraded: true, error: "helius_not_configured" };
   }
-  const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`;
   const rpc = async (method: string, params: unknown[]): Promise<RpcEnvelope> => {
-    const res = await fetchWithTimeout(fetchImpl, rpcUrl, HOLDERS_TIMEOUT_MS, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    });
+    const res = await heliusFetch(
+      (apiKey) =>
+        `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+      },
+      { fetchImpl, timeoutMs: HOLDERS_TIMEOUT_MS },
+    );
     if (res.status === 429) return { error: { code: 429, message: "rate_limited" } };
     return (await res.json()) as RpcEnvelope;
   };
@@ -850,13 +854,11 @@ async function fetchAssetMetadata(
   mint: string,
   fetchImpl: typeof fetch,
 ): Promise<SourceResult<AssetMetadata>> {
-  const apiKey = process.env["HELIUS_API_KEY"];
-  if (!apiKey) return { ok: false, error: "helius_not_configured" };
+  if (!heliusConfigured()) return { ok: false, error: "helius_not_configured" };
   try {
-    const res = await fetchWithTimeout(
-      fetchImpl,
-      `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`,
-      OPTIONAL_TIMEOUT_MS,
+    const res = await heliusFetch(
+      (apiKey) =>
+        `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -867,6 +869,7 @@ async function fetchAssetMetadata(
           params: { id: mint },
         }),
       },
+      { fetchImpl, timeoutMs: OPTIONAL_TIMEOUT_MS },
     );
     if (!res.ok) return { ok: false, error: `get_asset_status_${res.status}` };
     const raw = (await res.json()) as RpcEnvelope;

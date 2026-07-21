@@ -40,6 +40,7 @@ import {
   classifyRequiredBase58Field,
   type InternalHandlerInputSchema,
 } from "./discovery.js";
+import { heliusConfigured, heliusFetch } from "../lib/helius-client.js";
 
 // ─────────────────────────────────────────────────────────────────────
 // Tunables
@@ -476,26 +477,23 @@ async function fetchHeliusActivity(
   wallet: string,
   fetchImpl: typeof fetch,
 ): Promise<HeliusResult> {
-  const apiKey = process.env["HELIUS_API_KEY"];
-  if (!apiKey) return { ok: false, error: "helius_not_configured" };
-  const url =
-    `https://api.helius.xyz/v0/addresses/${encodeURIComponent(wallet)}` +
-    `/transactions?api-key=${encodeURIComponent(apiKey)}&limit=${HELIUS_TX_LIMIT}`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), HELIUS_TIMEOUT_MS);
+  if (!heliusConfigured()) return { ok: false, error: "helius_not_configured" };
   try {
-    const res = await fetchImpl(url, {
-      method: "GET",
-      signal: controller.signal,
-    });
+    const res = await heliusFetch(
+      (apiKey) =>
+        `https://api.helius.xyz/v0/addresses/${encodeURIComponent(wallet)}` +
+        `/transactions?api-key=${encodeURIComponent(apiKey)}&limit=${HELIUS_TX_LIMIT}`,
+      { method: "GET" },
+      { fetchImpl, timeoutMs: HELIUS_TIMEOUT_MS },
+    );
     if (!res.ok) return { ok: false, error: `helius_status_${res.status}` };
     const data: unknown = await res.json();
     if (!Array.isArray(data)) return { ok: false, error: "helius_bad_shape" };
     return { ok: true, transactions: data };
   } catch {
+    // Includes HeliusAllKeysCoolingError — the reputation handler
+    // treats any Helius failure as a degraded (non-fatal) source.
     return { ok: false, error: "helius_unreachable" };
-  } finally {
-    clearTimeout(timer);
   }
 }
 

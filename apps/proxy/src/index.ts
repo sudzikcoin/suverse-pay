@@ -46,6 +46,7 @@ import {
 } from "./swap-base.js";
 import { loadMppRail } from "./mpp.js";
 import { startRefundWorker } from "./refund-worker.js";
+import { loadHeliusKeys } from "./lib/helius-client.js";
 
 async function main(): Promise<void> {
   const databaseUrl = required("DATABASE_URL");
@@ -242,9 +243,14 @@ function loadServiceWallets(): {
 function resolveSolanaRpcUrl(): string | undefined {
   const explicit = process.env["SOLANA_RPC_URL"];
   if (explicit && explicit.trim() !== "") return explicit;
-  const heliusKey = process.env["HELIUS_API_KEY"];
-  if (heliusKey && heliusKey.trim() !== "") {
-    return `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`;
+  // The swap path uses a long-lived @solana/web3.js Connection built
+  // once at boot, so — unlike the per-request Helius fetch handlers —
+  // it can't be live-failed-over between keys. It pins key_1 (the
+  // preferred key, legacy HELIUS_API_KEY as fallback). Dual-key
+  // failover covers the pay-per-call x402 Helius endpoints only.
+  const [key1] = loadHeliusKeys();
+  if (key1) {
+    return `https://mainnet.helius-rpc.com/?api-key=${key1}`;
   }
   return undefined;
 }

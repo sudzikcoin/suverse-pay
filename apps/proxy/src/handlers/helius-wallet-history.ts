@@ -12,6 +12,11 @@
  * Pagination is via Helius's `before` cursor (last signature in the
  * previous page). Cap `limit` at 100, the upstream's documented max.
  */
+import {
+  heliusConfigured,
+  heliusErrorToResult,
+  heliusFetch,
+} from "../lib/helius-client.js";
 import type {
   InternalHandler,
   InternalHandlerInput,
@@ -21,8 +26,7 @@ import type {
 export const heliusWalletHistory: InternalHandler = async (
   input: InternalHandlerInput,
 ): Promise<InternalHandlerResult> => {
-  const apiKey = process.env["HELIUS_API_KEY"];
-  if (!apiKey) {
+  if (!heliusConfigured()) {
     return { status: 503, body: { error: "helius_not_configured" } };
   }
 
@@ -63,22 +67,25 @@ export const heliusWalletHistory: InternalHandler = async (
     return { status: 400, body: { error: "invalid_before_cursor" } };
   }
 
-  const params = new URLSearchParams();
-  params.set("api-key", apiKey);
-  params.set("limit", String(limit));
-  if (typeof before === "string" && before.length > 0) {
-    params.set("before", before);
-  }
-
-  const url = `https://api.helius.xyz/v0/addresses/${encodeURIComponent(
-    address,
-  )}/transactions?${params.toString()}`;
-
   let response: Response;
   try {
-    response = await (input.fetchImpl ?? fetch)(url, { method: "GET" });
-  } catch {
-    return { status: 502, body: { error: "helius_unreachable" } };
+    response = await heliusFetch(
+      (apiKey) => {
+        const params = new URLSearchParams();
+        params.set("api-key", apiKey);
+        params.set("limit", String(limit));
+        if (typeof before === "string" && before.length > 0) {
+          params.set("before", before);
+        }
+        return `https://api.helius.xyz/v0/addresses/${encodeURIComponent(
+          address,
+        )}/transactions?${params.toString()}`;
+      },
+      { method: "GET" },
+      { fetchImpl: input.fetchImpl },
+    );
+  } catch (err) {
+    return heliusErrorToResult(err);
   }
 
   if (!response.ok) {

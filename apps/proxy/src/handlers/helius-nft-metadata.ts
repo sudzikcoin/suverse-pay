@@ -13,6 +13,11 @@
  * have to round-trip through us anyway, so we may as well shape it
  * once.
  */
+import {
+  heliusConfigured,
+  heliusErrorToResult,
+  heliusFetch,
+} from "../lib/helius-client.js";
 import type {
   InternalHandler,
   InternalHandlerInput,
@@ -42,8 +47,7 @@ interface RpcResponse {
 export const heliusNftMetadata: InternalHandler = async (
   input: InternalHandlerInput,
 ): Promise<InternalHandlerResult> => {
-  const apiKey = process.env["HELIUS_API_KEY"];
-  if (!apiKey) {
+  if (!heliusConfigured()) {
     return { status: 503, body: { error: "helius_not_configured" } };
   }
 
@@ -72,21 +76,25 @@ export const heliusNftMetadata: InternalHandler = async (
     return { status: 400, body: { error: "invalid_mint_format" } };
   }
 
-  const url = `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`;
   let response: Response;
   try {
-    response = await (input.fetchImpl ?? fetch)(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "getAsset",
-        params: { id: mint },
-      }),
-    });
-  } catch {
-    return { status: 502, body: { error: "helius_unreachable" } };
+    response = await heliusFetch(
+      (apiKey) =>
+        `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getAsset",
+          params: { id: mint },
+        }),
+      },
+      { fetchImpl: input.fetchImpl },
+    );
+  } catch (err) {
+    return heliusErrorToResult(err);
   }
 
   if (!response.ok) {

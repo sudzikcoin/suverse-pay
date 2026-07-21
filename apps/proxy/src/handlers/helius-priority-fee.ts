@@ -17,6 +17,11 @@
  * is useful — without it Helius returns just one number and the caller
  * has no way to make a cost/speed tradeoff.
  */
+import {
+  heliusConfigured,
+  heliusErrorToResult,
+  heliusFetch,
+} from "../lib/helius-client.js";
 import type {
   InternalHandler,
   InternalHandlerInput,
@@ -43,8 +48,7 @@ interface RpcResponse {
 export const heliusPriorityFee: InternalHandler = async (
   input: InternalHandlerInput,
 ): Promise<InternalHandlerResult> => {
-  const apiKey = process.env["HELIUS_API_KEY"];
-  if (!apiKey) {
+  if (!heliusConfigured()) {
     return { status: 503, body: { error: "helius_not_configured" } };
   }
 
@@ -72,21 +76,25 @@ export const heliusPriorityFee: InternalHandler = async (
     paramObject["accountKeys"] = accountKeys;
   }
 
-  const url = `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`;
   let response: Response;
   try {
-    response = await (input.fetchImpl ?? fetch)(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "getPriorityFeeEstimate",
-        params: [paramObject],
-      }),
-    });
-  } catch {
-    return { status: 502, body: { error: "helius_unreachable" } };
+    response = await heliusFetch(
+      (apiKey) =>
+        `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getPriorityFeeEstimate",
+          params: [paramObject],
+        }),
+      },
+      { fetchImpl: input.fetchImpl },
+    );
+  } catch (err) {
+    return heliusErrorToResult(err);
   }
 
   if (!response.ok) {
