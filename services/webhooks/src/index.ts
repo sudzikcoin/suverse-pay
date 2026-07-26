@@ -55,6 +55,7 @@ export {
   RETRY_DELAYS_MS,
   createWebhookQueue,
   nextRetryDelayMs,
+  redisUrlToConnection,
   type WebhookJob,
   type WebhookQueue,
 } from "./queue.js";

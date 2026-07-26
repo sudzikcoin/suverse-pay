@@ -50,6 +50,39 @@ export function createWebhookQueue(connection: ConnectionOptions): Queue<Webhook
   return new Queue<WebhookJob>(QUEUE_NAME, { connection });
 }
 
+/**
+ * Turn a `redis://` / `rediss://` URL into BullMQ ConnectionOptions.
+ *
+ * Callers used to hand-roll `{ host, port }` out of `new URL(...)`,
+ * which silently dropped the password — so the moment Redis grew a
+ * `requirepass` every BullMQ connection failed with NOAUTH while the
+ * plain ioredis client (constructed from the same URL) kept working.
+ * Parse it in exactly one place instead.
+ */
+export function redisUrlToConnection(url: string): ConnectionOptions {
+  const parsed = new URL(url);
+  const conn: {
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+    db?: number;
+    tls?: Record<string, never>;
+  } = {
+    host: parsed.hostname,
+    port: parsed.port.length > 0 ? Number(parsed.port) : 6379,
+  };
+  // `redis://:pw@host` leaves username empty — that's the common shape
+  // and must not be forwarded as an empty ACL user.
+  if (parsed.username.length > 0) conn.username = decodeURIComponent(parsed.username);
+  if (parsed.password.length > 0) conn.password = decodeURIComponent(parsed.password);
+  // Path is the db index: redis://host:6379/2
+  const dbPath = parsed.pathname.replace(/^\//, "");
+  if (dbPath.length > 0 && Number.isInteger(Number(dbPath))) conn.db = Number(dbPath);
+  if (parsed.protocol === "rediss:") conn.tls = {};
+  return conn;
+}
+
 export function nextRetryDelayMs(attemptsMade: number): number | null {
   // attemptsMade is 1-indexed when BullMQ asks "what delay before the
   // NEXT attempt?". The first failure means attemptsMade=1; we use

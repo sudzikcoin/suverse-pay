@@ -10,7 +10,11 @@ import { PayAiAdapter } from "@suverse-pay/adapter-payai";
 import { T402IoAdapter } from "@suverse-pay/adapter-t402-io";
 import { ThirdwebX402Adapter } from "@suverse-pay/adapter-thirdweb-x402";
 import { FacilitatorRateLimiter } from "@suverse-pay/facilitator";
-import { createWebhookQueue, createWebhookWorker } from "@suverse-pay/webhooks";
+import {
+  createWebhookQueue,
+  createWebhookWorker,
+  redisUrlToConnection,
+} from "@suverse-pay/webhooks";
 import {
   CapabilityDiscoveryCron,
   HealthCheckCron,
@@ -673,11 +677,7 @@ async function main(): Promise<void> {
   // toward a dedicated connection per worker for isolation — we
   // construct a new one from the same URL so a slow worker doesn't
   // back-pressure the rate-limiter/cache path.
-  const redisParsed = new URL(config.redisUrl);
-  const bullConnection = {
-    host: redisParsed.hostname,
-    port: redisParsed.port.length > 0 ? Number(redisParsed.port) : 6379,
-  };
+  const bullConnection = redisUrlToConnection(config.redisUrl);
   const webhookQueue = createWebhookQueue(bullConnection);
   const webhookWorker = createWebhookWorker({
     pool,
