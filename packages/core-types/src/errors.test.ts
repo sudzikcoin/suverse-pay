@@ -9,13 +9,17 @@ import {
 } from "./errors.js";
 
 describe("error codes", () => {
-  it("classifies the five retryable codes per TASK.md", () => {
+  it("classifies the six retryable codes per TASK.md", () => {
     const retryable: ErrorCode[] = [
       "network_error",
       "timeout",
       "provider_internal_error",
       "temporary_unavailable",
       "rate_limited",
+      // Added after the 2026-07-23 CDP billing outage — a provider
+      // refusing to serve us over THEIR billing is a route-around
+      // condition, not a defect in the payment.
+      "provider_billing_error",
     ];
     for (const code of retryable) {
       expect(isRetryableErrorCode(code)).toBe(true);
@@ -46,8 +50,8 @@ describe("error codes", () => {
   });
 
   it("exposes every documented code in ALL_ERROR_CODES", () => {
-    // sanity: tuple length matches the listed codes above (5 retryable + 15 non-retryable)
-    expect(ALL_ERROR_CODES).toHaveLength(20);
+    // sanity: tuple length matches the listed codes above (6 retryable + 15 non-retryable)
+    expect(ALL_ERROR_CODES).toHaveLength(21);
     expect(new Set(ALL_ERROR_CODES).size).toBe(ALL_ERROR_CODES.length);
   });
 

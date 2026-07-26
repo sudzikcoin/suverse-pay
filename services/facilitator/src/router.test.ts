@@ -525,6 +525,96 @@ describe("routeSettleWithFailover", () => {
     );
   });
 
+  // Regression: 2026-07-23 CDP billing outage. Coinbase answered every
+  // /settle with HTTP 402 payment-method-required (unpaid overage on
+  // our account). That mapped to `invalid_request`, which is terminal,
+  // so the router returned the failure instead of trying PayAI —
+  // 4 days and ~109 rejected external payments. The payment itself was
+  // always valid; only OUR account with CDP was delinquent, so the
+  // correct behaviour is to route around the broken provider.
+  it("EVM: falls over from coinbase-cdp to payai when CDP returns 402 payment-method-required", async () => {
+    const cdpBillingError = new ProviderError(
+      "provider_billing_error",
+      'POST https://api.cdp.coinbase.com/platform/v2/x402/settle -> HTTP 402: {"correlationId":"a21626854987dcda-IAD",' +
+        '"errorLink":"https://docs.cdp.coinbase.com/api-reference/v2/errors#payment-method-required",' +
+        '"errorMessage":"A valid payment method is required to complete this request."}',
+      { providerId: "coinbase-cdp" },
+    );
+    const cdpSettle = vi.fn(async (): Promise<SettleResponse> => {
+      throw cdpBillingError;
+    });
+    const payaiSettle = vi.fn(async (): Promise<SettleResponse> => ({
+      settled: true,
+      providerId: "payai",
+      txHash: "0xpayai-rescued-the-settle",
+      network: BASE_MAINNET,
+      amount: "1000",
+      asset: BASE_USDC,
+    } as never));
+    const cdp = fakeRegisteredProvider("coinbase-cdp", cdpSettle);
+    const payai = fakeRegisteredProvider("payai", payaiSettle);
+    const registry = fakeRegistry([cdp, payai]);
+
+    const result = await routeSettleWithFailover(evmSettleReq(), {
+      registry,
+      idempotencyKey: "cdp-billing-failover",
+    });
+
+    // The payment MUST settle — via the backup, not be dropped.
+    expect(result.response.settled).toBe(true);
+    expect(result.adapterUsed).toBe("payai");
+    expect(result.response.txHash).toBe("0xpayai-rescued-the-settle");
+    expect(payaiSettle).toHaveBeenCalledOnce();
+    // And the outage is recorded against CDP for the audit log.
+    expect(result.failoverFrom).toHaveLength(1);
+    expect(result.failoverFrom[0]?.adapterId).toBe("coinbase-cdp");
+    expect(result.failoverFrom[0]?.errorCode).toBe("provider_billing_error");
+    expect(result.failoverFrom[0]?.errorMessage).toContain("payment-method-required");
+    // Same idempotency key on both attempts — no double-broadcast.
+    expect(cdpSettle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ idempotencyKey: "cdp-billing-failover" }),
+    );
+    expect(payaiSettle).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ idempotencyKey: "cdp-billing-failover" }),
+    );
+  });
+
+  // Same failure delivered as a settled=false response body rather than
+  // a thrown error — adapters may normalize either way, both must fail over.
+  it("EVM: falls over when CDP reports the billing failure as settled=false", async () => {
+    const cdpSettle = vi.fn(async (): Promise<SettleResponse> => ({
+      settled: false,
+      providerId: "coinbase-cdp",
+      network: BASE_MAINNET,
+      amount: "1000",
+      asset: BASE_USDC,
+      errorCode: "provider_billing_error",
+      errorMessage: "HTTP 402: A valid payment method is required to complete this request.",
+    } as never));
+    const payaiSettle = vi.fn(async (): Promise<SettleResponse> => ({
+      settled: true,
+      providerId: "payai",
+      txHash: "0xpayai-tx",
+      network: BASE_MAINNET,
+      amount: "1000",
+      asset: BASE_USDC,
+    } as never));
+    const registry = fakeRegistry([
+      fakeRegisteredProvider("coinbase-cdp", cdpSettle),
+      fakeRegisteredProvider("payai", payaiSettle),
+    ]);
+
+    const result = await routeSettleWithFailover(evmSettleReq(), {
+      registry,
+      idempotencyKey: "cdp-billing-failover-2",
+    });
+    expect(result.response.settled).toBe(true);
+    expect(result.adapterUsed).toBe("payai");
+    expect(result.failoverFrom[0]?.errorCode).toBe("provider_billing_error");
+  });
+
   it("throws route_unsupported when the routing config has no entry for this route", async () => {
     const registry = fakeRegistry([]);
     await expect(
