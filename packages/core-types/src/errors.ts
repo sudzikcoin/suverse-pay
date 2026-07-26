@@ -6,6 +6,7 @@ export const ALL_ERROR_CODES = [
   "provider_internal_error",
   "temporary_unavailable",
   "rate_limited",
+  "provider_billing_error",
 
   "route_unsupported",
   "invalid_signature",
@@ -35,6 +36,14 @@ const RETRYABLE: ReadonlySet<ErrorCode> = new Set<ErrorCode>([
   "provider_internal_error",
   "temporary_unavailable",
   "rate_limited",
+  // A provider refusing to work because OUR account with them has a
+  // billing problem (expired card, unpaid overage, exhausted free
+  // tier). Nothing is wrong with the payment itself, so the correct
+  // response is to route it to another facilitator rather than drop
+  // it. See the 2026-07-23 CDP outage: a lapsed Coinbase bill mapped
+  // to `invalid_request`, which is terminal, so every settle died at
+  // the primary instead of failing over to PayAI.
+  "provider_billing_error",
 ]);
 
 export function isRetryableErrorCode(code: ErrorCode): boolean {

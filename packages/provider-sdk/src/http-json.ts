@@ -134,6 +134,12 @@ export function httpStatusToErrorCode(status: number): ErrorCode {
   if (status === 503) return "temporary_unavailable";
   if (status >= 500) return "provider_internal_error";
   if (status === 401 || status === 403) return "unauthorized";
+  // 402 on a facilitator's own control-plane API means the provider
+  // wants US to pay THEM — a billing problem on our account with that
+  // provider, not a defect in the payment we submitted. Retryable, so
+  // the router fails over to another facilitator. Kept provider-
+  // agnostic on purpose: adapters must not special-case a vendor.
+  if (status === 402) return "provider_billing_error";
   if (status === 404) return "not_found";
   return "invalid_request";
 }

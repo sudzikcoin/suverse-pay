@@ -207,6 +207,38 @@ describe("httpJson — error mapping", () => {
     });
   });
 
+  // Regression: 2026-07-23 CDP billing outage. Coinbase returned 402
+  // payment-method-required on every /settle because our account had
+  // an unpaid overage. That mapped to `invalid_request` — terminal —
+  // so the router never failed over to PayAI and we took 4 days of
+  // zero settlements. A provider billing failure MUST be retryable.
+  it("maps 402 payment-method-required to provider_billing_error (retryable)", async () => {
+    const cdpBody = JSON.stringify({
+      correlationId: "a21626854987dcda-IAD",
+      errorLink: "https://docs.cdp.coinbase.com/api-reference/v2/errors#payment-method-required",
+      errorMessage: "A valid payment method is required to complete this request.",
+      errorType: "payment_method_required",
+    });
+    const { fetch } = makeFetch({
+      responses: [textResponse(cdpBody, 402)],
+    });
+    try {
+      await httpJson("https://api.cdp.coinbase.com/platform/v2/x402/settle", {
+        method: "POST",
+        body: {},
+        providerId: "coinbase-cdp",
+        fetchImpl: fetch,
+      });
+      expect.fail("should throw");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ProviderError);
+      expect((err as ProviderError).code).toBe("provider_billing_error");
+      // The link the router depends on: retryable => failover eligible.
+      expect((err as ProviderError).isRetryable()).toBe(true);
+      expect((err as ProviderError).providerId).toBe("coinbase-cdp");
+    }
+  });
+
   it("maps fetch throw to network_error", async () => {
     const { fetch } = makeFetch({
       responses: [new Error("ECONNREFUSED")],
@@ -295,6 +327,7 @@ describe("httpStatusToErrorCode", () => {
     expect(httpStatusToErrorCode(404)).toBe("not_found");
     expect(httpStatusToErrorCode(400)).toBe("invalid_request");
     expect(httpStatusToErrorCode(422)).toBe("invalid_request");
+    expect(httpStatusToErrorCode(402)).toBe("provider_billing_error");
   });
 });
 
