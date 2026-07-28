@@ -1,0 +1,111 @@
+[
+  {
+    "slug": "suverse-overpass-query",
+    "priceUsdc": "0.180000",
+    "category": "geo",
+    "sampleRequest": {
+      "data": "[out:json];node[amenity=cafe](52.51,13.40,52.52,13.41);out 5;"
+    }
+  },
+  {
+    "slug": "suverse-photon-geocode",
+    "priceUsdc": "0.080000",
+    "category": "geo",
+    "sampleRequest": {
+      "q": "brandenburg gate berlin",
+      "limit": 5
+    }
+  },
+  {
+    "slug": "suverse-photon-reverse-geocode",
+    "priceUsdc": "0.080000",
+    "category": "geo",
+    "sampleRequest": {
+      "lat": "52.5200",
+      "lon": "13.4050",
+      "limit": 3
+    }
+  },
+  {
+    "slug": "suverse-tor-relay-details",
+    "priceUsdc": "0.100000",
+    "category": "network-intel",
+    "sampleRequest": {
+      "search": "country:de",
+      "limit": 10
+    }
+  },
+  {
+    "slug": "suverse-tor-relay-summary",
+    "priceUsdc": "0.080000",
+    "category": "network-intel",
+    "sampleRequest": {
+      "search": "country:nl",
+      "limit": 20
+    }
+  },
+  {
+    "slug": "suverse-hibp-breach-detail",
+    "priceUsdc": "0.100000",
+    "category": "security",
+    "sampleRequest": {
+      "name": "Adobe"
+    }
+  },
+  {
+    "slug": "suverse-hibp-latest-breach",
+    "priceUsdc": "0.080000",
+    "category": "security",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-opensky-live-aircraft",
+    "priceUsdc": "0.200000",
+    "category": "transport",
+    "sampleRequest": {
+      "lamin": "52.3",
+      "lomin": "13.2",
+      "lamax": "52.6",
+      "lomax": "13.6"
+    }
+  },
+  {
+    "slug": "suverse-who-indicator-catalogue",
+    "priceUsdc": "0.100000",
+    "category": "health",
+    "sampleRequest": {
+      "filter": "contains(IndicatorName,'life expectancy')",
+      "top": 25
+    }
+  },
+  {
+    "slug": "suverse-dailymed-drug-labels",
+    "priceUsdc": "0.120000",
+    "category": "health",
+    "sampleRequest": {
+      "drug_name": "aspirin",
+      "pagesize": 10
+    }
+  },
+  {
+    "slug": "suverse-itunes-catalog-search",
+    "priceUsdc": "0.080000",
+    "category": "media",
+    "sampleRequest": {
+      "term": "radiohead",
+      "entity": "album",
+      "country": "US",
+      "limit": 10
+    }
+  },
+  {
+    "slug": "suverse-deezer-search",
+    "priceUsdc": "0.080000",
+    "category": "media",
+    "sampleRequest": {
+      "type": "artist",
+      "q": "radiohead",
+      "limit": 10
+    }
+  }
+]

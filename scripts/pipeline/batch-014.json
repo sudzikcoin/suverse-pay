@@ -1,0 +1,253 @@
+[
+  {
+    "slug": "suverse-overpass-query",
+    "category": "geo",
+    "source": "OpenStreetMap Overpass",
+    "title": "OpenStreetMap Overpass Query",
+    "description": "Run an Overpass QL query against the live OpenStreetMap database and get the matching nodes, ways and relations as JSON. This is the general-purpose way to ask spatial questions of OSM: cafes within a bounding box, pharmacies near a point, EV chargers along a road, every hospital in a region. Pass a complete Overpass QL program in the data field.",
+    "descriptionBazaar": "Run an Overpass QL query against live OpenStreetMap and get matching nodes, ways and relations as JSON. Find POIs in a bbox or near a point. Pass Overpass QL in data. Keyless.",
+    "tags": ["geo", "openstreetmap", "overpass", "poi", "spatial", "places", "x402"],
+    "priceUsdcAtomic": 180000,
+    "upstream": { "url": "https://overpass-api.de/api/interpreter", "timeoutMs": 25000 },
+    "params": {
+      "data": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "data",
+        "description": "Complete Overpass QL program. Always start with [out:json]; and end with an out statement that has a limit. Example finds 5 cafes in a Berlin bbox.",
+        "example": "[out:json];node[amenity=cafe](52.51,13.40,52.52,13.41);out 5;"
+      }
+    },
+    "sampleRequest": { "data": "[out:json];node[amenity=cafe](52.51,13.40,52.52,13.41);out 5;" },
+    "sampleResponse": { "version": 0.6, "elements": [{ "type": "node", "id": 1, "lat": 52.515, "lon": 13.405, "tags": { "amenity": "cafe" } }] }
+  },
+  {
+    "slug": "suverse-photon-geocode",
+    "category": "geo",
+    "source": "Photon",
+    "title": "Keyless Geocoding and Autocomplete",
+    "description": "Convert a place name, address or partial search string into coordinates using Photon, the OpenStreetMap-backed geocoder run by Komoot. Returns ranked GeoJSON features with coordinates, the resolved name, country, state, city, postcode and OSM identifiers. Suitable for both full geocoding and type-ahead autocomplete.",
+    "descriptionBazaar": "Geocode a place name or address to coordinates via Photon, the OpenStreetMap-backed geocoder. Returns ranked GeoJSON with name, country, city, postcode and OSM ids. Keyless.",
+    "tags": ["geo", "geocoding", "photon", "openstreetmap", "address", "autocomplete", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://photon.komoot.io/api/", "timeoutMs": 15000 },
+    "params": {
+      "q": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "q",
+        "description": "Place name, address or partial search string.",
+        "example": "brandenburg gate berlin"
+      },
+      "limit": {
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "upstreamName": "limit",
+        "default": 5,
+        "description": "Maximum results to return, 1-50. Default 5.",
+        "example": 5
+      },
+      "lang": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "upstreamName": "lang",
+        "description": "Preferred result language, e.g. en, de, fr.",
+        "example": "en"
+      }
+    },
+    "sampleRequest": { "q": "brandenburg gate berlin", "limit": 5 },
+    "sampleResponse": { "type": "FeatureCollection", "features": [{ "geometry": { "coordinates": [13.377, 52.516] }, "properties": { "name": "Brandenburger Tor", "country": "Germany" } }] }
+  },
+  {
+    "slug": "suverse-photon-reverse-geocode",
+    "category": "geo",
+    "source": "Photon",
+    "title": "Keyless Reverse Geocoding",
+    "description": "Turn a latitude and longitude into the nearest named place and address using Photon, the OpenStreetMap-backed geocoder. Returns GeoJSON features with street, house number, postcode, city, state, country and the underlying OSM identifiers, ordered by distance from the query point.",
+    "descriptionBazaar": "Reverse geocode a lat/lon to the nearest address via Photon (OpenStreetMap): street, house number, postcode, city, state, country and OSM ids. Keyless.",
+    "tags": ["geo", "reverse-geocoding", "photon", "openstreetmap", "address", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://photon.komoot.io/reverse", "timeoutMs": 15000 },
+    "params": {
+      "lat": { "in": "query", "required": true, "type": "string", "upstreamName": "lat", "description": "Latitude in decimal degrees.", "example": "52.5200" },
+      "lon": { "in": "query", "required": true, "type": "string", "upstreamName": "lon", "description": "Longitude in decimal degrees.", "example": "13.4050" },
+      "limit": { "in": "query", "required": false, "type": "integer", "upstreamName": "limit", "default": 3, "description": "Maximum results, 1-20. Default 3.", "example": 3 }
+    },
+    "sampleRequest": { "lat": "52.5200", "lon": "13.4050", "limit": 3 },
+    "sampleResponse": { "type": "FeatureCollection", "features": [{ "properties": { "city": "Berlin", "country": "Germany", "postcode": "10178" } }] }
+  },
+  {
+    "slug": "suverse-tor-relay-details",
+    "category": "network-intel",
+    "source": "Tor Onionoo",
+    "title": "Tor Relay Details",
+    "description": "Detailed records for Tor network relays and bridges from Onionoo, the Tor Project's official metrics service. Returns nickname, fingerprint, exit and guard flags, advertised bandwidth, IP addresses, autonomous system, country and first-seen dates. Search by fingerprint, nickname, IP or country to identify and profile Tor infrastructure.",
+    "descriptionBazaar": "Tor relay and bridge records from the Tor Project's Onionoo service: nickname, fingerprint, flags, bandwidth, IPs, AS, country and first-seen. Search by fingerprint, nickname, IP or country. Keyless.",
+    "tags": ["network", "tor", "onionoo", "security", "privacy", "relay", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://onionoo.torproject.org/details", "timeoutMs": 20000 },
+    "params": {
+      "search": { "in": "query", "required": false, "type": "string", "upstreamName": "search", "description": "Search term: relay nickname, fingerprint, IP address or country code prefixed with country:.", "example": "country:de" },
+      "limit": { "in": "query", "required": false, "type": "integer", "upstreamName": "limit", "default": 10, "description": "Maximum relays to return, 1-100. Default 10.", "example": 10 }
+    },
+    "sampleRequest": { "search": "country:de", "limit": 10 },
+    "sampleResponse": { "relays": [{ "nickname": "ExampleRelay", "country": "de", "flags": ["Fast", "Guard", "Running"] }] }
+  },
+  {
+    "slug": "suverse-tor-relay-summary",
+    "category": "network-intel",
+    "source": "Tor Onionoo",
+    "title": "Tor Relay Summary",
+    "description": "Compact summary listing of Tor relays and bridges from the Tor Project's Onionoo service: nickname, fingerprint, running state and addresses only. Much lighter than the full detail document, which makes it the right call for quickly checking whether a given fingerprint or address is part of the Tor network.",
+    "descriptionBazaar": "Compact Tor relay summary from Onionoo: nickname, fingerprint, running state and addresses. Lighter than full details, for quick Tor membership checks. Keyless.",
+    "tags": ["network", "tor", "onionoo", "security", "summary", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://onionoo.torproject.org/summary", "timeoutMs": 20000 },
+    "params": {
+      "search": { "in": "query", "required": false, "type": "string", "upstreamName": "search", "description": "Search term: nickname, fingerprint, IP address or country: code.", "example": "country:nl" },
+      "limit": { "in": "query", "required": false, "type": "integer", "upstreamName": "limit", "default": 20, "description": "Maximum entries to return, 1-200. Default 20.", "example": 20 }
+    },
+    "sampleRequest": { "search": "country:nl", "limit": 20 },
+    "sampleResponse": { "relays": [{ "n": "ExampleRelay", "f": "ABCD1234", "r": true }] }
+  },
+  {
+    "slug": "suverse-hibp-breach-detail",
+    "category": "security",
+    "source": "Have I Been Pwned",
+    "title": "Data Breach Detail",
+    "description": "Full record for one known data breach from Have I Been Pwned: the breach name and domain, the date it occurred and was added, how many accounts were exposed, exactly which data classes were compromised (passwords, emails, addresses, payment data) and whether the breach is verified, sensitive or fabricated. Pass the breach name.",
+    "descriptionBazaar": "Detail for one known data breach from Have I Been Pwned: date, accounts affected, exact compromised data classes and verified/sensitive flags. Pass a breach name. Keyless route.",
+    "tags": ["security", "breach", "hibp", "data-leak", "privacy", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://haveibeenpwned.com/api/v3/breach/{name}", "timeoutMs": 20000 },
+    "params": {
+      "name": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9._-]{2,60}$",
+        "description": "Breach name as used by HIBP, e.g. Adobe, LinkedIn, Dropbox.",
+        "example": "Adobe"
+      }
+    },
+    "sampleRequest": { "name": "Adobe" },
+    "sampleResponse": { "Name": "Adobe", "BreachDate": "2013-10-04", "PwnCount": 152445165, "DataClasses": ["Email addresses", "Password hints", "Passwords"] }
+  },
+  {
+    "slug": "suverse-hibp-latest-breach",
+    "category": "security",
+    "source": "Have I Been Pwned",
+    "title": "Most Recent Data Breach",
+    "description": "The most recently added breach in the Have I Been Pwned database, with its name, domain, breach and disclosure dates, the number of accounts exposed, the compromised data classes and its verification status. A single cheap call to answer whether a new breach has landed since an agent last checked.",
+    "descriptionBazaar": "The most recently added breach in Have I Been Pwned: name, domain, dates, accounts exposed, compromised data classes and verification status. No parameters. Keyless route.",
+    "tags": ["security", "breach", "hibp", "data-leak", "monitoring", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://haveibeenpwned.com/api/v3/latestbreach", "timeoutMs": 20000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": { "Name": "ExampleCorp", "BreachDate": "2026-06-11", "PwnCount": 2450000, "IsVerified": true }
+  },
+  {
+    "slug": "suverse-opensky-live-aircraft",
+    "category": "transport",
+    "source": "OpenSky Network",
+    "title": "Live Aircraft in a Bounding Box",
+    "description": "Every aircraft currently transmitting ADS-B inside a geographic bounding box, from the OpenSky Network. Each state vector carries the ICAO24 address, callsign, origin country, longitude, latitude, barometric and geometric altitude, ground speed, track, vertical rate and on-ground flag. A bounding box is required to keep the response small and the query fast.",
+    "descriptionBazaar": "Live ADS-B aircraft inside a bounding box from OpenSky Network: ICAO24, callsign, country, position, altitude, speed, track and vertical rate. Bounding box required. Keyless.",
+    "tags": ["transport", "aviation", "adsb", "opensky", "flight-tracking", "realtime", "x402"],
+    "priceUsdcAtomic": 200000,
+    "upstream": { "url": "https://opensky-network.org/api/states/all", "timeoutMs": 25000 },
+    "params": {
+      "lamin": { "in": "query", "required": true, "type": "string", "upstreamName": "lamin", "description": "Southern edge of the bounding box, decimal degrees.", "example": "52.3" },
+      "lomin": { "in": "query", "required": true, "type": "string", "upstreamName": "lomin", "description": "Western edge of the bounding box, decimal degrees.", "example": "13.2" },
+      "lamax": { "in": "query", "required": true, "type": "string", "upstreamName": "lamax", "description": "Northern edge of the bounding box, decimal degrees.", "example": "52.6" },
+      "lomax": { "in": "query", "required": true, "type": "string", "upstreamName": "lomax", "description": "Eastern edge of the bounding box, decimal degrees.", "example": "13.6" }
+    },
+    "sampleRequest": { "lamin": "52.3", "lomin": "13.2", "lamax": "52.6", "lomax": "13.6" },
+    "sampleResponse": { "time": 1785213710, "states": [["3c6444", "DLH123 ", "Germany", 1785213700, 1785213710, 13.41, 52.51, 1200.15]] }
+  },
+  {
+    "slug": "suverse-who-indicator-catalogue",
+    "category": "health",
+    "source": "WHO GHO",
+    "title": "WHO Global Health Indicator Catalogue",
+    "description": "The catalogue of indicators published in the World Health Organization's Global Health Observatory, each with its indicator code, full name and language. This is the lookup an agent needs to discover which WHO indicator codes exist before querying global health statistics - life expectancy, immunisation coverage, mortality, disease burden and health-system capacity.",
+    "descriptionBazaar": "Catalogue of WHO Global Health Observatory indicators with code, name and language. The lookup for discovering WHO indicator codes. OData filter and top supported. Keyless.",
+    "tags": ["health", "who", "gho", "global-health", "indicators", "open-data", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://ghoapi.azureedge.net/api/Indicator", "timeoutMs": 25000 },
+    "params": {
+      "filter": { "in": "query", "required": false, "type": "string", "upstreamName": "$filter", "description": "Optional OData filter, e.g. contains(IndicatorName,'life expectancy').", "example": "contains(IndicatorName,'life expectancy')" },
+      "top": { "in": "query", "required": false, "type": "integer", "upstreamName": "$top", "default": 25, "description": "Maximum indicators to return, 1-200. Default 25.", "example": 25 }
+    },
+    "sampleRequest": { "filter": "contains(IndicatorName,'life expectancy')", "top": 25 },
+    "sampleResponse": { "value": [{ "IndicatorCode": "WHOSIS_000001", "IndicatorName": "Life expectancy at birth (years)" }] }
+  },
+  {
+    "slug": "suverse-dailymed-drug-labels",
+    "category": "health",
+    "source": "DailyMed",
+    "title": "DailyMed Drug Label Search",
+    "description": "Search the US National Library of Medicine's DailyMed repository of official Structured Product Labels. Returns matching labels with the SPL set identifier, title, published date and labeller for a drug name or NDC code. DailyMed is the authoritative source of FDA-approved prescribing information, distinct from adverse-event and recall feeds.",
+    "descriptionBazaar": "Search DailyMed official FDA Structured Product Labels by drug name or NDC. Returns SPL set id, title, published date and labeller. NLM authoritative prescribing information. Keyless.",
+    "tags": ["health", "dailymed", "drug-label", "fda", "nlm", "spl", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": { "url": "https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json", "timeoutMs": 25000 },
+    "params": {
+      "drug_name": { "in": "query", "required": false, "type": "string", "upstreamName": "drug_name", "description": "Drug name to search for, e.g. aspirin, metformin, atorvastatin.", "example": "aspirin" },
+      "pagesize": { "in": "query", "required": false, "type": "integer", "upstreamName": "pagesize", "default": 10, "description": "Results per page, 1-100. Default 10.", "example": 10 }
+    },
+    "sampleRequest": { "drug_name": "aspirin", "pagesize": 10 },
+    "sampleResponse": { "data": [{ "setid": "abc-123", "title": "ASPIRIN 81MG TABLET", "published_date": "2026-02-14" }] }
+  },
+  {
+    "slug": "suverse-itunes-catalog-search",
+    "category": "media",
+    "source": "iTunes Search API",
+    "title": "Apple iTunes Catalog Search",
+    "description": "Search Apple's iTunes and App Store catalogue for music, podcasts, audiobooks, movies, TV shows, ebooks and apps. Returns artist and collection names, track names, release dates, genre, price, preview URLs and artwork. Narrow with the entity and country parameters to search a single media type in a single storefront.",
+    "descriptionBazaar": "Search Apple's iTunes and App Store catalogue for music, podcasts, movies, TV, books and apps. Returns names, release dates, genre, price, previews and artwork. Keyless.",
+    "tags": ["media", "music", "itunes", "apple", "podcast", "search", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://itunes.apple.com/search", "timeoutMs": 20000 },
+    "params": {
+      "term": { "in": "query", "required": true, "type": "string", "upstreamName": "term", "description": "Search term, e.g. an artist, album, podcast or app name.", "example": "radiohead" },
+      "entity": { "in": "query", "required": false, "type": "string", "upstreamName": "entity", "description": "Media type to search, e.g. musicTrack, album, podcast, movie, ebook, software.", "example": "album" },
+      "country": { "in": "query", "required": false, "type": "string", "upstreamName": "country", "pattern": "^[A-Za-z]{2}$", "transform": "upper", "default": "US", "description": "Two-letter storefront country code. Default US.", "example": "US" },
+      "limit": { "in": "query", "required": false, "type": "integer", "upstreamName": "limit", "default": 10, "description": "Maximum results, 1-200. Default 10.", "example": 10 }
+    },
+    "sampleRequest": { "term": "radiohead", "entity": "album", "country": "US", "limit": 10 },
+    "sampleResponse": { "resultCount": 10, "results": [{ "artistName": "Radiohead", "collectionName": "OK Computer", "releaseDate": "1997-05-28T07:00:00Z" }] }
+  },
+  {
+    "slug": "suverse-deezer-search",
+    "category": "media",
+    "source": "Deezer",
+    "title": "Deezer Music Search",
+    "description": "Search Deezer's music catalogue for artists, albums, tracks or playlists. Returns identifiers, names, cover artwork, fan counts for artists, track duration and rank, and a 30-second preview URL where one is available. Pick the search domain with the type parameter to look up a specific kind of entity.",
+    "descriptionBazaar": "Search Deezer for artists, albums, tracks or playlists. Returns ids, names, artwork, fan counts, track duration, rank and 30-second preview URLs. Keyless.",
+    "tags": ["media", "music", "deezer", "artist", "album", "search", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://api.deezer.com/search/{type}", "timeoutMs": 20000 },
+    "params": {
+      "type": {
+        "in": "path",
+        "required": false,
+        "type": "string",
+        "enum": ["artist", "album", "track", "playlist"],
+        "default": "artist",
+        "transform": "lower",
+        "description": "What to search for: artist, album, track or playlist. Default artist.",
+        "example": "artist"
+      },
+      "q": { "in": "query", "required": true, "type": "string", "upstreamName": "q", "description": "Search query.", "example": "radiohead" },
+      "limit": { "in": "query", "required": false, "type": "integer", "upstreamName": "limit", "default": 10, "description": "Maximum results, 1-100. Default 10.", "example": 10 }
+    },
+    "sampleRequest": { "type": "artist", "q": "radiohead", "limit": 10 },
+    "sampleResponse": { "data": [{ "id": 399, "name": "Radiohead", "nb_fan": 5400000, "picture": "https://api.deezer.com/artist/399/image" }] }
+  }
+]
