@@ -1,0 +1,187 @@
+[
+  {
+    "slug": "suverse-swpc-solar-flare-latest",
+    "category": "space-weather",
+    "source": "NOAA SWPC",
+    "title": "Latest Solar Flare",
+    "description": "The most recent solar flare detected by the GOES X-ray sensors, from NOAA's Space Weather Prediction Center. Returns the flare class (A, B, C, M or X) with its peak X-ray flux, and the begin, peak and end times of the event. The fastest single call to answer whether the Sun has just flared and how strongly.",
+    "descriptionBazaar": "Most recent GOES solar flare from NOAA SWPC: flare class (A/B/C/M/X), peak X-ray flux, and begin, peak and end times. No parameters. Keyless.",
+    "tags": ["space-weather", "solar", "flare", "noaa", "swpc", "goes", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json", "timeoutMs": 12000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": [{ "max_class": "C2.1", "begin_time": "2026-07-27T22:14:00Z", "max_time": "2026-07-27T22:31:00Z", "max_xrlong": 2.1e-6 }]
+  },
+  {
+    "slug": "suverse-swpc-solar-flares-7day",
+    "category": "space-weather",
+    "source": "NOAA SWPC",
+    "title": "Solar Flares, Last 7 Days",
+    "description": "Every solar flare recorded by the GOES X-ray sensors over the past seven days from NOAA's Space Weather Prediction Center, each with its class, peak flux and begin/peak/end timestamps. Use it to judge current solar activity levels and flare cadence rather than a single point-in-time reading.",
+    "descriptionBazaar": "All GOES solar flares from the last 7 days via NOAA SWPC, each with class, peak X-ray flux and begin, peak and end times. No parameters. Keyless.",
+    "tags": ["space-weather", "solar", "flare", "history", "noaa", "swpc", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://services.swpc.noaa.gov/json/goes/primary/xray-flares-7-day.json", "timeoutMs": 15000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": [{ "max_class": "M1.4", "begin_time": "2026-07-24T09:02:00Z", "max_time": "2026-07-24T09:18:00Z" }]
+  },
+  {
+    "slug": "suverse-swpc-kp-index",
+    "category": "space-weather",
+    "source": "NOAA SWPC",
+    "title": "Planetary K-Index (Geomagnetic Activity)",
+    "description": "The planetary K-index time series from NOAA SWPC, the standard 0-9 measure of global geomagnetic disturbance sampled every three hours. Kp of 5 or above is a geomagnetic storm. Use it to detect active storm conditions that affect HF radio, GPS accuracy, satellite drag and power-grid induced currents.",
+    "descriptionBazaar": "Planetary K-index series from NOAA SWPC: the 0-9 global geomagnetic activity measure at 3-hour cadence. Kp 5+ means a geomagnetic storm. No parameters. Keyless.",
+    "tags": ["space-weather", "geomagnetic", "kp-index", "storm", "noaa", "swpc", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json", "timeoutMs": 12000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": [["time_tag", "Kp", "a_running", "station_count"], ["2026-07-27 21:00:00", "3.00", "12", "8"]]
+  },
+  {
+    "slug": "suverse-swpc-solar-wind-speed",
+    "category": "space-weather",
+    "source": "NOAA SWPC",
+    "title": "Real-Time Solar Wind Speed",
+    "description": "Current solar wind bulk speed in km/s measured at the L1 Lagrange point by NOAA's real-time solar wind monitors, with the observation timestamp. Elevated speed above roughly 500 km/s signals a high-speed stream or coronal-hole outflow and typically precedes geomagnetic disturbance at Earth by hours.",
+    "descriptionBazaar": "Current solar wind bulk speed in km/s at the L1 point from NOAA SWPC, with observation timestamp. Elevated speed precedes geomagnetic disturbance. No parameters. Keyless.",
+    "tags": ["space-weather", "solar-wind", "l1", "noaa", "swpc", "realtime", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json", "timeoutMs": 12000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": { "TimeStamp": "2026-07-28 04:20:00", "WindSpeed": "412.6" }
+  },
+  {
+    "slug": "suverse-swpc-solar-wind-mag",
+    "category": "space-weather",
+    "source": "NOAA SWPC",
+    "title": "Interplanetary Magnetic Field (Bz/Bt)",
+    "description": "Current interplanetary magnetic field readings at L1 from NOAA SWPC: total field strength Bt and the north-south component Bz in nanotesla, with timestamp. A strongly southward Bz is the single best short-term predictor of geomagnetic storming, because it couples solar wind energy into Earth's magnetosphere.",
+    "descriptionBazaar": "Interplanetary magnetic field at L1 from NOAA SWPC: total field Bt and north-south Bz in nT with timestamp. Southward Bz is the key storm predictor. No parameters. Keyless.",
+    "tags": ["space-weather", "imf", "bz", "magnetosphere", "noaa", "swpc", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json", "timeoutMs": 12000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": { "TimeStamp": "2026-07-28 04:20:00", "Bt": "5.1", "Bz": "-2.4" }
+  },
+  {
+    "slug": "suverse-swpc-f107-flux",
+    "category": "space-weather",
+    "source": "NOAA SWPC",
+    "title": "F10.7 cm Solar Radio Flux",
+    "description": "The current 10.7 cm solar radio flux value from NOAA SWPC, the standard proxy for solar activity and EUV output. F10.7 drives thermospheric density and therefore satellite drag, and is the primary input to ionospheric and orbital-decay models. Returned with its observation timestamp.",
+    "descriptionBazaar": "Current F10.7 cm solar radio flux from NOAA SWPC, the standard solar activity proxy driving satellite drag and ionospheric models, with timestamp. No parameters. Keyless.",
+    "tags": ["space-weather", "f107", "solar-flux", "satellite-drag", "noaa", "swpc", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://services.swpc.noaa.gov/products/summary/10cm-flux.json", "timeoutMs": 12000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": { "TimeStamp": "2026-07-28 04:00:00", "Flux": "168" }
+  },
+  {
+    "slug": "suverse-swpc-space-weather-alerts",
+    "category": "space-weather",
+    "source": "NOAA SWPC",
+    "title": "Space Weather Alerts, Watches and Warnings",
+    "description": "The active NOAA SWPC alert stream: geomagnetic storm watches and warnings, radio blackout alerts and solar radiation storm notices, each with its issue time, serial number, NOAA scale and full advisory text. This is the official operational feed used to decide whether space weather is actionable right now.",
+    "descriptionBazaar": "Official NOAA SWPC alerts, watches and warnings: geomagnetic storms, radio blackouts and radiation storms with issue time, NOAA scale and full advisory text. Keyless.",
+    "tags": ["space-weather", "alerts", "geomagnetic-storm", "radio-blackout", "noaa", "swpc", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://services.swpc.noaa.gov/products/alerts.json", "timeoutMs": 15000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": [{ "product_id": "WATA20", "issue_datetime": "2026-07-27 18:00:00", "message": "Space Weather Message Code: WATA20" }]
+  },
+  {
+    "slug": "suverse-fema-disaster-declarations",
+    "category": "government",
+    "source": "OpenFEMA",
+    "title": "FEMA Disaster Declarations",
+    "description": "Federally declared disasters from FEMA's OpenFEMA dataset: declaration number and type, incident type (hurricane, flood, fire, severe storm), the declaring state and county, incident begin and end dates, and which assistance programs were authorised. Filter with an OData expression to scope by state, incident type or year.",
+    "descriptionBazaar": "US federal disaster declarations from OpenFEMA: declaration and incident type, state, county, incident dates and authorised assistance programs. OData filter supported. Keyless.",
+    "tags": ["government", "fema", "disaster", "emergency", "hazard", "open-data", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": {
+      "url": "https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries",
+      "timeoutMs": 20000,
+      "staticQuery": { "$format": "json" }
+    },
+    "params": {
+      "filter": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "upstreamName": "$filter",
+        "description": "OData filter expression, e.g. state eq 'CA' or incidentType eq 'Fire'. Omit for the most recent declarations nationwide.",
+        "example": "state eq 'CA'"
+      },
+      "top": {
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "upstreamName": "$top",
+        "default": 20,
+        "description": "Maximum records to return, 1-200. Default 20.",
+        "example": 20
+      }
+    },
+    "sampleRequest": { "filter": "state eq 'CA'", "top": 20 },
+    "sampleResponse": { "DisasterDeclarationsSummaries": [{ "disasterNumber": 4769, "state": "CA", "incidentType": "Fire", "declarationDate": "2026-03-11T00:00:00.000Z" }] }
+  },
+  {
+    "slug": "suverse-fema-nfip-claims",
+    "category": "government",
+    "source": "OpenFEMA",
+    "title": "FEMA NFIP Flood Insurance Claims",
+    "description": "Redacted National Flood Insurance Program claim records from FEMA's OpenFEMA dataset: date of loss, state, county and ZIP, flood zone, occupancy type, year of construction and the amounts paid on building and contents claims. The concrete record of where flood losses actually get paid, for underwriting and property risk work.",
+    "descriptionBazaar": "FEMA NFIP flood insurance claims: date of loss, state, county, ZIP, flood zone, occupancy and amounts paid on building and contents. OData filter supported. Keyless.",
+    "tags": ["government", "fema", "flood", "insurance", "nfip", "property-risk", "x402"],
+    "priceUsdcAtomic": 150000,
+    "upstream": {
+      "url": "https://www.fema.gov/api/open/v2/FimaNfipClaims",
+      "timeoutMs": 25000,
+      "staticQuery": { "$format": "json" }
+    },
+    "params": {
+      "filter": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "upstreamName": "$filter",
+        "description": "OData filter expression, e.g. state eq 'TX' or reportedZipCode eq '77001'. Omit for an unfiltered sample.",
+        "example": "state eq 'TX'"
+      },
+      "top": {
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "upstreamName": "$top",
+        "default": 20,
+        "description": "Maximum claim records to return, 1-200. Default 20.",
+        "example": 20
+      }
+    },
+    "sampleRequest": { "filter": "state eq 'TX'", "top": 20 },
+    "sampleResponse": { "FimaNfipClaims": [{ "state": "TX", "dateOfLoss": "2025-07-04", "floodZone": "AE", "amountPaidOnBuildingClaim": 41250.0 }] }
+  },
+  {
+    "slug": "suverse-gdacs-disaster-events",
+    "category": "hazard",
+    "source": "GDACS",
+    "title": "Global Disaster Alerts",
+    "description": "Current worldwide disaster events from GDACS, the joint UN and European Commission Global Disaster Alert and Coordination System. Returns earthquakes, tropical cyclones, floods, volcanic eruptions, droughts and wildfires as GeoJSON features with alert level (green, orange, red), severity, affected population estimate and event geometry.",
+    "descriptionBazaar": "Worldwide disaster events from GDACS (UN/EC): earthquakes, cyclones, floods, volcanoes, droughts and wildfires as GeoJSON with alert level, severity and population affected. Keyless.",
+    "tags": ["hazard", "disaster", "gdacs", "earthquake", "cyclone", "flood", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": { "url": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP", "timeoutMs": 25000 },
+    "pick": ["type", "features", "bbox"],
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": { "type": "FeatureCollection", "features": [{ "type": "Feature", "properties": { "eventtype": "TC", "alertlevel": "Orange" } }] }
+  }
+]

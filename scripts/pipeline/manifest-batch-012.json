@@ -1,0 +1,68 @@
+[
+  {
+    "slug": "suverse-swpc-solar-flare-latest",
+    "priceUsdc": "0.080000",
+    "category": "space-weather",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-swpc-solar-flares-7day",
+    "priceUsdc": "0.100000",
+    "category": "space-weather",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-swpc-kp-index",
+    "priceUsdc": "0.100000",
+    "category": "space-weather",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-swpc-solar-wind-speed",
+    "priceUsdc": "0.080000",
+    "category": "space-weather",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-swpc-solar-wind-mag",
+    "priceUsdc": "0.080000",
+    "category": "space-weather",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-swpc-f107-flux",
+    "priceUsdc": "0.080000",
+    "category": "space-weather",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-swpc-space-weather-alerts",
+    "priceUsdc": "0.100000",
+    "category": "space-weather",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-fema-disaster-declarations",
+    "priceUsdc": "0.120000",
+    "category": "government",
+    "sampleRequest": {
+      "filter": "state eq 'CA'",
+      "top": 20
+    }
+  },
+  {
+    "slug": "suverse-fema-nfip-claims",
+    "priceUsdc": "0.150000",
+    "category": "government",
+    "sampleRequest": {
+      "filter": "state eq 'TX'",
+      "top": 20
+    }
+  },
+  {
+    "slug": "suverse-gdacs-disaster-events",
+    "priceUsdc": "0.120000",
+    "category": "hazard",
+    "sampleRequest": {}
+  }
+]
