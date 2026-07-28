@@ -1,0 +1,8 @@
+[
+  {
+    "slug": "oversize-requirements-check",
+    "priceUsdc": "0.500000",
+    "category": "freight",
+    "sampleRequest": { "width_ft": 12, "width_in": 6, "height_ft": 14.5, "length_ft": 95, "gross_weight_lbs": 145000, "axles": 7, "origin": "Chicago, IL", "destination": "Houston, TX" }
+  }
+]

@@ -1,0 +1,112 @@
+[
+  {
+    "slug": "suverse-npm-package",
+    "priceUsdc": "0.050000",
+    "category": "dev-tools",
+    "sampleRequest": {
+      "pkg": "express"
+    }
+  },
+  {
+    "slug": "suverse-npm-downloads",
+    "priceUsdc": "0.050000",
+    "category": "dev-tools",
+    "sampleRequest": {
+      "period": "last-week",
+      "pkg": "express"
+    }
+  },
+  {
+    "slug": "suverse-pypi-package",
+    "priceUsdc": "0.050000",
+    "category": "dev-tools",
+    "sampleRequest": {
+      "pkg": "requests"
+    }
+  },
+  {
+    "slug": "suverse-crates-crate",
+    "priceUsdc": "0.050000",
+    "category": "dev-tools",
+    "sampleRequest": {
+      "name": "serde"
+    }
+  },
+  {
+    "slug": "suverse-rubygems-gem",
+    "priceUsdc": "0.050000",
+    "category": "dev-tools",
+    "sampleRequest": {
+      "name": "rails"
+    }
+  },
+  {
+    "slug": "suverse-maven-artifact",
+    "priceUsdc": "0.050000",
+    "category": "dev-tools",
+    "sampleRequest": {
+      "q": "g:com.google.guava",
+      "rows": 10
+    }
+  },
+  {
+    "slug": "suverse-osv-vuln-detail",
+    "priceUsdc": "0.150000",
+    "category": "security",
+    "sampleRequest": {
+      "id": "GHSA-jf85-cpcp-j695"
+    }
+  },
+  {
+    "slug": "suverse-depsdev-package",
+    "priceUsdc": "0.150000",
+    "category": "dev-tools",
+    "sampleRequest": {
+      "system": "npm",
+      "pkg": "express"
+    }
+  },
+  {
+    "slug": "suverse-ossf-scorecard",
+    "priceUsdc": "0.150000",
+    "category": "security",
+    "sampleRequest": {
+      "owner": "expressjs",
+      "repo": "express"
+    }
+  },
+  {
+    "slug": "suverse-ripe-prefix-overview",
+    "priceUsdc": "0.100000",
+    "category": "network-intel",
+    "sampleRequest": {
+      "resource": "8.8.8.8"
+    }
+  },
+  {
+    "slug": "suverse-ripe-routing-history",
+    "priceUsdc": "0.150000",
+    "category": "network-intel",
+    "sampleRequest": {
+      "resource": "8.8.8.0/24",
+      "max_rows": 10
+    }
+  },
+  {
+    "slug": "suverse-ripe-abuse-contact",
+    "priceUsdc": "0.080000",
+    "category": "network-intel",
+    "sampleRequest": {
+      "resource": "8.8.8.8"
+    }
+  },
+  {
+    "slug": "suverse-ripe-rpki-validation",
+    "priceUsdc": "0.120000",
+    "category": "network-intel",
+    "sampleRequest": {
+      "resource": "AS15169",
+      "prefix": "8.8.8.0/24"
+    }
+  }
+]

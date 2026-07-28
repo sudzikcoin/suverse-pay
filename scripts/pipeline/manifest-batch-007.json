@@ -1,0 +1,61 @@
+[
+  {
+    "slug": "token-safety-eth",
+    "priceUsdc": "0.050000",
+    "category": "token-risk",
+    "sampleRequest": {
+      "contract_addresses": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    }
+  },
+  {
+    "slug": "token-safety-base",
+    "priceUsdc": "0.050000",
+    "category": "token-risk",
+    "sampleRequest": {
+      "contract_addresses": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+    }
+  },
+  {
+    "slug": "token-authority-solana",
+    "priceUsdc": "0.050000",
+    "category": "token-risk",
+    "sampleRequest": {
+      "contract_addresses": "So11111111111111111111111111111111111111112"
+    }
+  },
+  {
+    "slug": "token-quicklook",
+    "priceUsdc": "0.020000",
+    "category": "token-risk",
+    "sampleRequest": {
+      "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+    }
+  },
+  {
+    "slug": "wallet-scam-check",
+    "priceUsdc": "0.030000",
+    "category": "wallet-analytics",
+    "sampleRequest": {
+      "address": "0x0000000000000000000000000000000000000000",
+      "chain_id": "1"
+    }
+  },
+  {
+    "slug": "dex-trending-pools",
+    "priceUsdc": "0.010000",
+    "category": "dex-analytics",
+    "sampleRequest": {
+      "network": "eth",
+      "page": "1"
+    }
+  },
+  {
+    "slug": "dex-new-pools",
+    "priceUsdc": "0.010000",
+    "category": "dex-analytics",
+    "sampleRequest": {
+      "network": "base",
+      "page": "1"
+    }
+  }
+]

@@ -1,0 +1,674 @@
+[
+  {
+    "slug": "suverse-npm-package",
+    "category": "dev-tools",
+    "source": "npm registry",
+    "title": "npm Package Metadata",
+    "description": "Latest published metadata for any public npm package straight from the npm registry: version, description, license, homepage, repository, runtime dependencies and the dist tarball/integrity hash. Pass the package name. Uses the registry's /latest document so the response stays small instead of returning every version ever published.",
+    "descriptionBazaar": "Latest npm package metadata from the npm registry: version, license, homepage, repository, dependencies and dist integrity hash. Pass a package name. Keyless.",
+    "tags": [
+      "npm",
+      "package",
+      "registry",
+      "dependencies",
+      "javascript",
+      "dev-tools",
+      "x402"
+    ],
+    "priceUsdcAtomic": 50000,
+    "upstream": {
+      "url": "https://registry.npmjs.org/{pkg}/latest",
+      "timeoutMs": 10000
+    },
+    "pick": [
+      "name",
+      "version",
+      "description",
+      "license",
+      "homepage",
+      "repository",
+      "dependencies",
+      "devDependencies",
+      "engines",
+      "dist",
+      "keywords"
+    ],
+    "params": {
+      "pkg": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,120}$",
+        "transform": "lower",
+        "description": "Unscoped npm package name, e.g. express, react, lodash.",
+        "example": "express"
+      }
+    },
+    "sampleRequest": {
+      "pkg": "express"
+    },
+    "sampleResponse": {
+      "name": "express",
+      "version": "4.21.2",
+      "license": "MIT",
+      "description": "Fast, unopinionated, minimalist web framework"
+    }
+  },
+  {
+    "slug": "suverse-npm-downloads",
+    "category": "dev-tools",
+    "source": "npm registry",
+    "title": "npm Package Download Counts",
+    "description": "Download volume for any public npm package over a chosen window (last-day, last-week or last-month) from the npm download-counts API. Returns the total downloads plus the exact start and end dates the count covers, so an agent can compare package traction without scraping npmjs.com.",
+    "descriptionBazaar": "npm package download counts for last-day, last-week or last-month, with the exact date range covered. Pass a package name and optional period. Keyless.",
+    "tags": [
+      "npm",
+      "downloads",
+      "popularity",
+      "package",
+      "javascript",
+      "dev-tools",
+      "x402"
+    ],
+    "priceUsdcAtomic": 50000,
+    "upstream": {
+      "url": "https://api.npmjs.org/downloads/point/{period}/{pkg}",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "period": {
+        "in": "path",
+        "required": false,
+        "type": "string",
+        "enum": [
+          "last-day",
+          "last-week",
+          "last-month"
+        ],
+        "default": "last-week",
+        "description": "Download window. One of last-day, last-week, last-month. Default last-week.",
+        "example": "last-week"
+      },
+      "pkg": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,120}$",
+        "transform": "lower",
+        "description": "Unscoped npm package name, e.g. express.",
+        "example": "express"
+      }
+    },
+    "sampleRequest": {
+      "period": "last-week",
+      "pkg": "express"
+    },
+    "sampleResponse": {
+      "downloads": 32145678,
+      "start": "2026-07-21",
+      "end": "2026-07-27",
+      "package": "express"
+    }
+  },
+  {
+    "slug": "suverse-pypi-package",
+    "category": "dev-tools",
+    "source": "PyPI",
+    "title": "PyPI Package Metadata",
+    "description": "Project metadata for any package on the Python Package Index: current version, summary, author, license, project URLs, requires-python, classifiers and the download files for the latest release. Pass the package name. The bulky per-version release history is omitted so the payload stays agent-sized.",
+    "descriptionBazaar": "PyPI package metadata: version, summary, author, license, requires-python, classifiers, project URLs and latest-release files. Pass a package name. Keyless.",
+    "tags": [
+      "pypi",
+      "python",
+      "package",
+      "registry",
+      "dependencies",
+      "dev-tools",
+      "x402"
+    ],
+    "priceUsdcAtomic": 50000,
+    "upstream": {
+      "url": "https://pypi.org/pypi/{pkg}/json",
+      "timeoutMs": 10000
+    },
+    "pick": [
+      "info",
+      "urls",
+      "vulnerabilities"
+    ],
+    "params": {
+      "pkg": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$",
+        "description": "PyPI project name, e.g. requests, numpy, django.",
+        "example": "requests"
+      }
+    },
+    "sampleRequest": {
+      "pkg": "requests"
+    },
+    "sampleResponse": {
+      "info": {
+        "name": "requests",
+        "version": "2.32.3",
+        "license": "Apache-2.0",
+        "requires_python": ">=3.8"
+      }
+    }
+  },
+  {
+    "slug": "suverse-crates-crate",
+    "category": "dev-tools",
+    "source": "crates.io",
+    "title": "Rust Crate Metadata",
+    "description": "Registry record for any Rust crate on crates.io: description, current and max stable version, total and recent download counts, repository, documentation and homepage links, plus the crate's categories and keywords. Pass the crate name. Full version history is omitted to keep the response compact.",
+    "descriptionBazaar": "Rust crate metadata from crates.io: description, latest version, total and recent downloads, repository and docs links, categories and keywords. Pass a crate name. Keyless.",
+    "tags": [
+      "rust",
+      "crates",
+      "cargo",
+      "package",
+      "registry",
+      "dev-tools",
+      "x402"
+    ],
+    "priceUsdcAtomic": 50000,
+    "upstream": {
+      "url": "https://crates.io/api/v1/crates/{name}",
+      "timeoutMs": 12000,
+      "headers": {
+        "User-Agent": "suverse-x402-proxy/1.0 (https://proxy.suverse.io)"
+      }
+    },
+    "pick": [
+      "crate",
+      "categories",
+      "keywords"
+    ],
+    "params": {
+      "name": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,64}$",
+        "description": "crates.io crate name, e.g. serde, tokio, rand.",
+        "example": "serde"
+      }
+    },
+    "sampleRequest": {
+      "name": "serde"
+    },
+    "sampleResponse": {
+      "crate": {
+        "id": "serde",
+        "max_stable_version": "1.0.210",
+        "downloads": 512345678,
+        "repository": "https://github.com/serde-rs/serde"
+      }
+    }
+  },
+  {
+    "slug": "suverse-rubygems-gem",
+    "category": "dev-tools",
+    "source": "RubyGems",
+    "title": "RubyGems Gem Metadata",
+    "description": "Published metadata for any Ruby gem from RubyGems.org: current version, summary, authors, licenses, total and per-version download counts, plus homepage, source-code, documentation and bug-tracker URIs and the gem's runtime dependencies. Pass the gem name.",
+    "descriptionBazaar": "RubyGems gem metadata: version, summary, authors, licenses, download counts, project URIs and runtime dependencies. Pass a gem name. Keyless.",
+    "tags": [
+      "ruby",
+      "rubygems",
+      "gem",
+      "package",
+      "registry",
+      "dev-tools",
+      "x402"
+    ],
+    "priceUsdcAtomic": 50000,
+    "upstream": {
+      "url": "https://rubygems.org/api/v1/gems/{name}.json",
+      "timeoutMs": 10000
+    },
+    "params": {
+      "name": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,64}$",
+        "description": "RubyGems gem name, e.g. rails, sinatra, puma.",
+        "example": "rails"
+      }
+    },
+    "sampleRequest": {
+      "name": "rails"
+    },
+    "sampleResponse": {
+      "name": "rails",
+      "version": "7.2.1",
+      "downloads": 512345678,
+      "licenses": [
+        "MIT"
+      ],
+      "homepage_uri": "https://rubyonrails.org"
+    }
+  },
+  {
+    "slug": "suverse-maven-artifact",
+    "category": "dev-tools",
+    "source": "Maven Central",
+    "title": "Maven Central Artifact Search",
+    "description": "Search Maven Central for Java/Kotlin/Scala artifacts by free-text query, groupId or artifactId, returning the matching coordinates with their latest version, packaging type and last-updated timestamp. Use q values such as guava, g:com.google.guava, or a:junit-jupiter. Row count is capped for a compact response.",
+    "descriptionBazaar": "Search Maven Central for Java artifacts by query, groupId or artifactId. Returns coordinates, latest version, packaging and last-updated time. Keyless.",
+    "tags": [
+      "maven",
+      "java",
+      "kotlin",
+      "artifact",
+      "package",
+      "dev-tools",
+      "x402"
+    ],
+    "priceUsdcAtomic": 50000,
+    "upstream": {
+      "url": "https://search.maven.org/solrsearch/select",
+      "timeoutMs": 12000,
+      "staticQuery": {
+        "wt": "json"
+      }
+    },
+    "pick": [
+      "response",
+      "responseHeader"
+    ],
+    "params": {
+      "q": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "q",
+        "description": "Search query. Free text (guava) or field-scoped (g:com.google.guava, a:junit-jupiter).",
+        "example": "g:com.google.guava"
+      },
+      "rows": {
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "upstreamName": "rows",
+        "default": 10,
+        "description": "Maximum results to return, 1-50. Default 10.",
+        "example": 10
+      }
+    },
+    "sampleRequest": {
+      "q": "g:com.google.guava",
+      "rows": 10
+    },
+    "sampleResponse": {
+      "response": {
+        "numFound": 42,
+        "docs": [
+          {
+            "g": "com.google.guava",
+            "a": "guava",
+            "latestVersion": "33.3.1-jre"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-osv-vuln-detail",
+    "category": "security",
+    "source": "OSV.dev",
+    "title": "OSV Vulnerability Detail",
+    "description": "Full advisory record for one vulnerability from OSV.dev, Google's open-source vulnerability database. Accepts an OSV, GHSA, PYSEC, RUSTSEC or CVE identifier and returns the summary, severity vectors, affected package ranges and fixed versions, references and aliases. Complements CVE feeds by being package-and-ecosystem scoped.",
+    "descriptionBazaar": "Full OSV.dev advisory for one vulnerability ID (OSV, GHSA, PYSEC, RUSTSEC or CVE): summary, severity, affected package ranges, fixed versions, references, aliases. Keyless.",
+    "tags": [
+      "security",
+      "vulnerability",
+      "osv",
+      "ghsa",
+      "cve",
+      "supply-chain",
+      "x402"
+    ],
+    "priceUsdcAtomic": 150000,
+    "upstream": {
+      "url": "https://api.osv.dev/v1/vulns/{id}",
+      "timeoutMs": 12000
+    },
+    "params": {
+      "id": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,64}$",
+        "description": "Vulnerability identifier, e.g. GHSA-jf85-cpcp-j695, CVE-2021-44228, PYSEC-2021-76.",
+        "example": "GHSA-jf85-cpcp-j695"
+      }
+    },
+    "sampleRequest": {
+      "id": "GHSA-jf85-cpcp-j695"
+    },
+    "sampleResponse": {
+      "id": "GHSA-jf85-cpcp-j695",
+      "summary": "Prototype Pollution in lodash",
+      "affected": [],
+      "references": []
+    }
+  },
+  {
+    "slug": "suverse-depsdev-package",
+    "category": "dev-tools",
+    "source": "deps.dev",
+    "title": "Open Source Package Insights",
+    "description": "Cross-ecosystem package record from deps.dev, Google's Open Source Insights service. Pass an ecosystem (npm, pypi, cargo, go, maven, nuget) and a package name to get the known versions with their publication metadata and default/version flags  -  the entry point for dependency, license and advisory analysis across ecosystems in one shape.",
+    "descriptionBazaar": "Package insights from deps.dev across npm, pypi, cargo, go, maven and nuget: known versions with publication metadata in one cross-ecosystem shape. Keyless.",
+    "tags": [
+      "dependencies",
+      "supply-chain",
+      "deps-dev",
+      "npm",
+      "pypi",
+      "cargo",
+      "x402"
+    ],
+    "priceUsdcAtomic": 150000,
+    "upstream": {
+      "url": "https://api.deps.dev/v3alpha/systems/{system}/packages/{pkg}",
+      "timeoutMs": 12000
+    },
+    "params": {
+      "system": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "enum": [
+          "npm",
+          "pypi",
+          "cargo",
+          "go",
+          "maven",
+          "nuget"
+        ],
+        "transform": "lower",
+        "description": "Package ecosystem: npm, pypi, cargo, go, maven or nuget.",
+        "example": "npm"
+      },
+      "pkg": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$",
+        "description": "Package name within that ecosystem, e.g. express, requests, serde.",
+        "example": "express"
+      }
+    },
+    "sampleRequest": {
+      "system": "npm",
+      "pkg": "express"
+    },
+    "sampleResponse": {
+      "packageKey": {
+        "system": "NPM",
+        "name": "express"
+      },
+      "versions": []
+    }
+  },
+  {
+    "slug": "suverse-ossf-scorecard",
+    "category": "security",
+    "source": "OpenSSF Scorecard",
+    "title": "OpenSSF Scorecard for a Repository",
+    "description": "Automated supply-chain security assessment for a public GitHub repository from the OpenSSF Scorecard project. Returns the aggregate score out of 10 plus per-check results and reasoning for Branch-Protection, Code-Review, Dangerous-Workflow, Maintained, Pinned-Dependencies, Token-Permissions, Vulnerabilities and more. Pass owner and repo.",
+    "descriptionBazaar": "OpenSSF Scorecard for a public GitHub repo: aggregate score out of 10 plus per-check results for branch protection, code review, maintenance, pinned deps and vulnerabilities. Keyless.",
+    "tags": [
+      "security",
+      "supply-chain",
+      "scorecard",
+      "openssf",
+      "github",
+      "repository",
+      "x402"
+    ],
+    "priceUsdcAtomic": 150000,
+    "upstream": {
+      "url": "https://api.securityscorecards.dev/projects/github.com/{owner}/{repo}",
+      "timeoutMs": 15000
+    },
+    "params": {
+      "owner": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,60}$",
+        "description": "GitHub organisation or user that owns the repository.",
+        "example": "expressjs"
+      },
+      "repo": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$",
+        "description": "GitHub repository name.",
+        "example": "express"
+      }
+    },
+    "sampleRequest": {
+      "owner": "expressjs",
+      "repo": "express"
+    },
+    "sampleResponse": {
+      "score": 6.4,
+      "repo": {
+        "name": "github.com/expressjs/express"
+      },
+      "checks": []
+    }
+  },
+  {
+    "slug": "suverse-ripe-prefix-overview",
+    "category": "network-intel",
+    "source": "RIPEstat",
+    "title": "IP Prefix and ASN Overview",
+    "description": "Authoritative routing overview for any IP address or CIDR prefix from RIPE NCC's RIPEstat service. Returns the covering announced prefix, the originating autonomous systems with their holder names, whether the resource is currently announced, and related block metadata. The fastest way for an agent to answer who owns and routes an IP.",
+    "descriptionBazaar": "Routing overview for an IP or CIDR from RIPEstat: announced prefix, originating ASNs with holder names, and announcement status. Pass an IP or prefix. Keyless.",
+    "tags": [
+      "network",
+      "bgp",
+      "asn",
+      "ip",
+      "routing",
+      "ripestat",
+      "x402"
+    ],
+    "priceUsdcAtomic": 100000,
+    "upstream": {
+      "url": "https://stat.ripe.net/data/prefix-overview/data.json",
+      "timeoutMs": 12000
+    },
+    "params": {
+      "resource": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "resource",
+        "description": "IPv4/IPv6 address or CIDR prefix, e.g. 8.8.8.8 or 8.8.8.0/24.",
+        "example": "8.8.8.8"
+      }
+    },
+    "sampleRequest": {
+      "resource": "8.8.8.8"
+    },
+    "sampleResponse": {
+      "status": "ok",
+      "data": {
+        "resource": "8.8.8.0/24",
+        "announced": true,
+        "asns": [
+          {
+            "asn": 15169,
+            "holder": "GOOGLE"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "slug": "suverse-ripe-routing-history",
+    "category": "network-intel",
+    "source": "RIPEstat",
+    "title": "BGP Routing History",
+    "description": "Historic BGP announcement record for an IP prefix or autonomous system from RIPE NCC's RIPEstat. Returns which ASNs announced the resource over time with the first and last seen timestamps for each origin, so an agent can spot hijacks, origin changes and stale announcements. Row count is capped; pass starttime to narrow the window.",
+    "descriptionBazaar": "Historic BGP announcements for a prefix or ASN from RIPEstat: which ASNs originated it over time with first and last seen timestamps. Useful for hijack and origin-change checks. Keyless.",
+    "tags": [
+      "network",
+      "bgp",
+      "routing",
+      "hijack",
+      "asn",
+      "ripestat",
+      "x402"
+    ],
+    "priceUsdcAtomic": 150000,
+    "upstream": {
+      "url": "https://stat.ripe.net/data/routing-history/data.json",
+      "timeoutMs": 20000
+    },
+    "params": {
+      "resource": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "resource",
+        "description": "CIDR prefix or AS number, e.g. 8.8.8.0/24 or AS15169.",
+        "example": "8.8.8.0/24"
+      },
+      "max_rows": {
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "upstreamName": "max_rows",
+        "default": 10,
+        "description": "Maximum history rows to return, 1-50. Default 10 to keep the response compact.",
+        "example": 10
+      },
+      "starttime": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "upstreamName": "starttime",
+        "description": "Optional ISO date to start the history window, e.g. 2026-01-01. Narrows a large result.",
+        "example": "2026-01-01"
+      }
+    },
+    "sampleRequest": {
+      "resource": "8.8.8.0/24",
+      "max_rows": 10
+    },
+    "sampleResponse": {
+      "status": "ok",
+      "data": {
+        "resource": "8.8.8.0/24",
+        "by_origin": []
+      }
+    }
+  },
+  {
+    "slug": "suverse-ripe-abuse-contact",
+    "category": "network-intel",
+    "source": "RIPEstat",
+    "title": "Abuse Contact for an IP",
+    "description": "Resolves the registered abuse-reporting email for any IP address, prefix or autonomous system using RIPE NCC's abuse-contact-finder, which walks the relevant RIR records. Returns the abuse contacts along with the authoritative RIR and the exact resource the contact was found on. The correct address to send a takedown or abuse report to.",
+    "descriptionBazaar": "Registered abuse-reporting contact for an IP, prefix or ASN via RIPEstat, with the authoritative RIR and the resource matched. Pass an IP, prefix or AS number. Keyless.",
+    "tags": [
+      "network",
+      "abuse",
+      "security",
+      "ip",
+      "whois",
+      "ripestat",
+      "x402"
+    ],
+    "priceUsdcAtomic": 80000,
+    "upstream": {
+      "url": "https://stat.ripe.net/data/abuse-contact-finder/data.json",
+      "timeoutMs": 12000
+    },
+    "params": {
+      "resource": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "resource",
+        "description": "IP address, CIDR prefix or AS number, e.g. 8.8.8.8, 8.8.8.0/24 or AS15169.",
+        "example": "8.8.8.8"
+      }
+    },
+    "sampleRequest": {
+      "resource": "8.8.8.8"
+    },
+    "sampleResponse": {
+      "status": "ok",
+      "data": {
+        "abuse_contacts": [
+          "network-abuse@google.com"
+        ],
+        "authoritative_rir": "arin"
+      }
+    }
+  },
+  {
+    "slug": "suverse-ripe-rpki-validation",
+    "category": "network-intel",
+    "source": "RIPEstat",
+    "title": "RPKI Route Origin Validation",
+    "description": "Checks whether a given autonomous system is cryptographically authorised to originate a given IP prefix, using RPKI Route Origin Authorisations via RIPEstat. Returns a valid, invalid or unknown verdict plus the matching and non-matching ROAs with their max-length constraints. The direct test for BGP route-origin legitimacy.",
+    "descriptionBazaar": "RPKI route origin validation via RIPEstat: is this ASN authorised to announce this prefix? Returns valid, invalid or unknown plus matching and non-matching ROAs. Keyless.",
+    "tags": [
+      "network",
+      "rpki",
+      "bgp",
+      "security",
+      "routing",
+      "ripestat",
+      "x402"
+    ],
+    "priceUsdcAtomic": 120000,
+    "upstream": {
+      "url": "https://stat.ripe.net/data/rpki-validation/data.json",
+      "timeoutMs": 12000
+    },
+    "params": {
+      "resource": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "resource",
+        "description": "Autonomous system number claiming the origin, e.g. AS15169 or 15169.",
+        "example": "AS15169"
+      },
+      "prefix": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "prefix",
+        "description": "CIDR prefix being validated, e.g. 8.8.8.0/24.",
+        "example": "8.8.8.0/24"
+      }
+    },
+    "sampleRequest": {
+      "resource": "AS15169",
+      "prefix": "8.8.8.0/24"
+    },
+    "sampleResponse": {
+      "status": "ok",
+      "data": {
+        "status": "valid",
+        "validating_roas": []
+      }
+    }
+  }
+]

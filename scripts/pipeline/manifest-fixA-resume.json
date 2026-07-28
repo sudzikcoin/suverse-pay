@@ -1,0 +1,442 @@
+[
+ {
+  "slug": "geckoterminal-eth-pools",
+  "sampleRequest": {}
+ },
+ {
+  "slug": "coinbase-btc-spot",
+  "sampleRequest": {}
+ },
+ {
+  "slug": "polymarket-whale-entries",
+  "sampleRequest": {
+   "min_size_usd": 1000,
+   "category": "all",
+   "time_window": "24h",
+   "limit": 10
+  }
+ },
+ {
+  "slug": "smart-money-base",
+  "sampleRequest": {
+   "time_window": "24h",
+   "limit": 5
+  }
+ },
+ {
+  "slug": "suverse-sec-filings",
+  "sampleRequest": {
+   "ticker": "AAPL",
+   "limit": 20
+  }
+ },
+ {
+  "slug": "suverse-bio-ncbi-gene-summary",
+  "sampleRequest": {
+   "id": "672"
+  }
+ },
+ {
+  "slug": "suverse-disease-vaccine-coverage",
+  "sampleRequest": {
+   "country": "USA"
+  }
+ },
+ {
+  "slug": "suverse-disease-covid-historical",
+  "sampleRequest": {
+   "country": "USA"
+  }
+ },
+ {
+  "slug": "suverse-rxnorm-spelling",
+  "sampleRequest": {
+   "name": "ibuprofin"
+  }
+ },
+ {
+  "slug": "suverse-nlm-hcpcs",
+  "sampleRequest": {
+   "terms": "wheelchair"
+  }
+ },
+ {
+  "slug": "suverse-nlm-npi-individual",
+  "sampleRequest": {
+   "terms": "john smith"
+  }
+ },
+ {
+  "slug": "suverse-nlm-rxterms",
+  "sampleRequest": {
+   "terms": "metformin"
+  }
+ },
+ {
+  "slug": "suverse-nlm-conditions",
+  "sampleRequest": {
+   "terms": "asthma"
+  }
+ },
+ {
+  "slug": "suverse-wb-youth-unemployment",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-population-growth",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-tax-revenue",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-agriculture-value",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-tertiary-enrollment",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-urban-population",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-mobile-subscriptions",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-internet-users",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-co2-per-capita",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-fdi-inflows",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-exports-share",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-gdp-growth",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-gni-per-capita",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wb-life-expectancy",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-mlb-schedule",
+  "sampleRequest": {
+   "date": "2026-06-19"
+  }
+ },
+ {
+  "slug": "suverse-e2e-worldbank-population",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-wiki-on-this-day",
+  "sampleRequest": {
+   "month": "07",
+   "day": "04"
+  }
+ },
+ {
+  "slug": "suverse-vehicle-recalls",
+  "sampleRequest": {
+   "make": "honda",
+   "model": "accord",
+   "modelYear": "2015"
+  }
+ },
+ {
+  "slug": "suverse-clinicaltrials-study",
+  "sampleRequest": {
+   "nctId": "NCT04280705"
+  }
+ },
+ {
+  "slug": "suverse-time-coordinate",
+  "sampleRequest": {
+   "latitude": 40.71,
+   "longitude": -74.01
+  }
+ },
+ {
+  "slug": "suverse-time-zone",
+  "sampleRequest": {
+   "timeZone": "America/New_York"
+  }
+ },
+ {
+  "slug": "suverse-quakes-by-region",
+  "sampleRequest": {
+   "latitude": 35.7,
+   "longitude": -117.6,
+   "maxradiuskm": 300
+  }
+ },
+ {
+  "slug": "suverse-macro-cpi-inflation",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-zip-lookup",
+  "sampleRequest": {
+   "country": "us",
+   "zip": "90210"
+  }
+ },
+ {
+  "slug": "suverse-wiki-search",
+  "sampleRequest": {
+   "srsearch": "ethereum blockchain"
+  }
+ },
+ {
+  "slug": "suverse-pubchem-compound",
+  "sampleRequest": {
+   "name": "aspirin"
+  }
+ },
+ {
+  "slug": "suverse-clinicaltrials-search",
+  "sampleRequest": {
+   "query.term": "diabetes"
+  }
+ },
+ {
+  "slug": "suverse-rdap-ip",
+  "sampleRequest": {
+   "ip": "8.8.8.8"
+  }
+ },
+ {
+  "slug": "suverse-long-weekends",
+  "sampleRequest": {
+   "year": "2026",
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-next-holidays",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-vehicle-types",
+  "sampleRequest": {
+   "make": "honda"
+  }
+ },
+ {
+  "slug": "suverse-vehicle-models",
+  "sampleRequest": {
+   "make": "honda"
+  }
+ },
+ {
+  "slug": "suverse-openalex-concepts",
+  "sampleRequest": {
+   "search": "machine learning"
+  }
+ },
+ {
+  "slug": "suverse-openalex-authors",
+  "sampleRequest": {
+   "search": "Yoshua Bengio"
+  }
+ },
+ {
+  "slug": "suverse-mlb-standings",
+  "sampleRequest": {
+   "season": "2026"
+  }
+ },
+ {
+  "slug": "suverse-sports-league-table",
+  "sampleRequest": {
+   "league_id": "4328",
+   "season": "2025-2026"
+  }
+ },
+ {
+  "slug": "suverse-sports-team",
+  "sampleRequest": {
+   "team": "Arsenal"
+  }
+ },
+ {
+  "slug": "suverse-cve-search",
+  "sampleRequest": {
+   "keyword": "log4j"
+  }
+ },
+ {
+  "slug": "suverse-cve-lookup",
+  "sampleRequest": {
+   "cve_id": "CVE-2021-44228"
+  }
+ },
+ {
+  "slug": "suverse-weather-alerts",
+  "sampleRequest": {
+   "area": "CA"
+  }
+ },
+ {
+  "slug": "suverse-weather-historical",
+  "sampleRequest": {
+   "latitude": 40.71,
+   "longitude": -74.01,
+   "start_date": "2025-01-01",
+   "end_date": "2025-01-31"
+  }
+ },
+ {
+  "slug": "suverse-weather-forecast",
+  "sampleRequest": {
+   "latitude": 40.71,
+   "longitude": -74.01
+  }
+ },
+ {
+  "slug": "suverse-sec-submissions",
+  "sampleRequest": {
+   "cik": "320193"
+  }
+ },
+ {
+  "slug": "suverse-sec-company-facts",
+  "sampleRequest": {
+   "cik": "320193"
+  }
+ },
+ {
+  "slug": "suverse-macro-unemployment",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-macro-indicator",
+  "sampleRequest": {
+   "country": "US",
+   "indicator": "NY.GDP.MKTP.CD"
+  }
+ },
+ {
+  "slug": "suverse-geocode-place",
+  "sampleRequest": {
+   "name": "Paris"
+  }
+ },
+ {
+  "slug": "suverse-wiki-summary",
+  "sampleRequest": {
+   "title": "Bitcoin"
+  }
+ },
+ {
+  "slug": "suverse-rxnorm-rxcui",
+  "sampleRequest": {
+   "name": "ibuprofen"
+  }
+ },
+ {
+  "slug": "suverse-dns-lookup",
+  "sampleRequest": {
+   "name": "example.com",
+   "type": "MX"
+  }
+ },
+ {
+  "slug": "suverse-openalex-works",
+  "sampleRequest": {
+   "search": "graph neural networks"
+  }
+ },
+ {
+  "slug": "suverse-quakes-search",
+  "sampleRequest": {
+   "minmagnitude": 5,
+   "starttime": "2026-06-01"
+  }
+ },
+ {
+  "slug": "suverse-fx-latest-pair",
+  "sampleRequest": {
+   "from": "USD",
+   "to": "EUR"
+  }
+ },
+ {
+  "slug": "suverse-sec-company-concept",
+  "sampleRequest": {
+   "cik": "320193",
+   "tag": "Revenues"
+  }
+ },
+ {
+  "slug": "suverse-macro-gdp",
+  "sampleRequest": {
+   "country": "US"
+  }
+ },
+ {
+  "slug": "suverse-weather-current",
+  "sampleRequest": {
+   "latitude": 40.71,
+   "longitude": -74.01
+  }
+ },
+ {
+  "slug": "suverse-rxnorm-drugs",
+  "sampleRequest": {
+   "name": "ibuprofen"
+  }
+ }
+]

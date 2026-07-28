@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "carrier-risk-verdict",
+    "priceUsdc": "0.750000",
+    "category": "freight",
+    "sampleRequest": { "dot": "264184" }
+  },
+  {
+    "slug": "broker-authority-check",
+    "priceUsdc": "0.250000",
+    "category": "freight",
+    "sampleRequest": { "mc": "MC-133655" }
+  },
+  {
+    "slug": "road-conditions",
+    "priceUsdc": "0.250000",
+    "category": "freight",
+    "sampleRequest": { "origin": "Chicago, IL", "destination": "Atlanta, GA" }
+  },
+  {
+    "slug": "reefer-rate-report",
+    "priceUsdc": "0.250000",
+    "category": "freight",
+    "sampleRequest": { "origin": "salinas", "destination": "Chicago" }
+  }
+]

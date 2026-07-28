@@ -1,0 +1,46 @@
+[
+  {
+    "slug": "smart-money-token-rankings",
+    "priceUsdc": "0.050000",
+    "category": "smart-money",
+    "sampleRequest": {
+      "chain": "solana",
+      "limit": 20
+    }
+  },
+  {
+    "slug": "smart-money-accumulation",
+    "priceUsdc": "0.050000",
+    "category": "smart-money",
+    "sampleRequest": {
+      "chain": "solana",
+      "limit": 20
+    }
+  },
+  {
+    "slug": "smart-money-distribution",
+    "priceUsdc": "0.050000",
+    "category": "smart-money",
+    "sampleRequest": {
+      "chain": "solana",
+      "limit": 20
+    }
+  },
+  {
+    "slug": "smart-money-top-wallets",
+    "priceUsdc": "0.050000",
+    "category": "smart-money",
+    "sampleRequest": {
+      "chain": "solana",
+      "limit": 20
+    }
+  },
+  {
+    "slug": "wallet-label-lookup",
+    "priceUsdc": "0.050000",
+    "category": "wallet-analytics",
+    "sampleRequest": {
+      "address": "0x4446adc0b8136ffc55ddb7a488ba5509ace2a5ef"
+    }
+  }
+]
