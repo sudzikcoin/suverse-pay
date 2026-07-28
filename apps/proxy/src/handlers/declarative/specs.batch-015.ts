@@ -258,6 +258,10 @@ export const SPECS_BATCH_015: DeclarativeSpec[] = [
     "sourceLabel": "Scryfall",
     "upstreamMethod": "GET",
     "urlTemplate": "https://api.scryfall.com/cards/search",
+    "headers": {
+      "User-Agent": "suverse-x402-proxy/1.0 (https://proxy.suverse.io)",
+      "Accept": "application/json"
+    },
     "timeoutMs": 20000,
     "params": {
       "q": {
