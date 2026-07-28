@@ -1,0 +1,103 @@
+[
+  {
+    "slug": "suverse-espn-scoreboard",
+    "priceUsdc": "0.120000",
+    "category": "sports",
+    "sampleRequest": {
+      "sport": "soccer",
+      "league": "eng.1"
+    }
+  },
+  {
+    "slug": "suverse-espn-teams",
+    "priceUsdc": "0.100000",
+    "category": "sports",
+    "sampleRequest": {
+      "sport": "basketball",
+      "league": "nba"
+    }
+  },
+  {
+    "slug": "suverse-f1-race-results",
+    "priceUsdc": "0.100000",
+    "category": "sports",
+    "sampleRequest": {
+      "season": "2025",
+      "round": "1"
+    }
+  },
+  {
+    "slug": "suverse-f1-driver-standings",
+    "priceUsdc": "0.100000",
+    "category": "sports",
+    "sampleRequest": {
+      "season": "2025"
+    }
+  },
+  {
+    "slug": "suverse-chesscom-player-stats",
+    "priceUsdc": "0.080000",
+    "category": "games",
+    "sampleRequest": {
+      "username": "hikaru"
+    }
+  },
+  {
+    "slug": "suverse-chesscom-player-profile",
+    "priceUsdc": "0.080000",
+    "category": "games",
+    "sampleRequest": {
+      "username": "hikaru"
+    }
+  },
+  {
+    "slug": "suverse-bundesliga-table",
+    "priceUsdc": "0.100000",
+    "category": "sports",
+    "sampleRequest": {
+      "league": "bl1",
+      "season": "2025"
+    }
+  },
+  {
+    "slug": "suverse-steam-app-details",
+    "priceUsdc": "0.100000",
+    "category": "games",
+    "sampleRequest": {
+      "appids": "440",
+      "cc": "us"
+    }
+  },
+  {
+    "slug": "suverse-steam-player-count",
+    "priceUsdc": "0.050000",
+    "category": "games",
+    "sampleRequest": {
+      "appid": "440"
+    }
+  },
+  {
+    "slug": "suverse-steamspy-app-stats",
+    "priceUsdc": "0.100000",
+    "category": "games",
+    "sampleRequest": {
+      "appid": "440"
+    }
+  },
+  {
+    "slug": "suverse-scryfall-card-search",
+    "priceUsdc": "0.100000",
+    "category": "games",
+    "sampleRequest": {
+      "q": "lightning bolt"
+    }
+  },
+  {
+    "slug": "suverse-deck-of-cards-shuffle",
+    "priceUsdc": "0.050000",
+    "category": "games",
+    "sampleRequest": {
+      "deck_count": 1
+    }
+  }
+]

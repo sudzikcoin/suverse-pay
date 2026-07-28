@@ -1,0 +1,204 @@
+[
+  {
+    "slug": "suverse-espn-scoreboard",
+    "category": "sports",
+    "source": "ESPN",
+    "title": "Live Sports Scoreboard",
+    "description": "Current scoreboard for any league ESPN covers: fixtures, live and final scores, period or clock state, venue, broadcast and competitor records. Works across soccer, basketball, football, baseball, hockey and more by passing the sport and league slug, for example soccer/eng.1, basketball/nba or football/nfl.",
+    "descriptionBazaar": "Live scoreboard for any ESPN-covered league: fixtures, scores, clock state, venue and competitor records. Pass sport and league, e.g. soccer/eng.1 or basketball/nba. Keyless.",
+    "tags": ["sports", "scores", "espn", "live", "soccer", "nba", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": { "url": "https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard", "timeoutMs": 20000 },
+    "params": {
+      "sport": { "in": "path", "required": true, "type": "string", "pattern": "^[a-z-]{3,20}$", "transform": "lower", "description": "ESPN sport slug, e.g. soccer, basketball, football, baseball, hockey.", "example": "soccer" },
+      "league": { "in": "path", "required": true, "type": "string", "pattern": "^[a-z0-9._-]{2,24}$", "transform": "lower", "description": "ESPN league slug, e.g. eng.1 for the Premier League, nba, nfl, mlb, nhl.", "example": "eng.1" }
+    },
+    "sampleRequest": { "sport": "soccer", "league": "eng.1" },
+    "sampleResponse": { "leagues": [{ "name": "English Premier League" }], "events": [] }
+  },
+  {
+    "slug": "suverse-espn-teams",
+    "category": "sports",
+    "source": "ESPN",
+    "title": "League Team Directory",
+    "description": "Every team in an ESPN-covered league with its identifier, display name, abbreviation, location, colours, logos and links. This is the lookup table an agent needs before querying team-specific data, and it works uniformly across soccer, basketball, football, baseball and hockey.",
+    "descriptionBazaar": "All teams in an ESPN-covered league with id, name, abbreviation, location, colours and logos. Pass sport and league, e.g. basketball/nba. Keyless.",
+    "tags": ["sports", "teams", "espn", "directory", "league", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/teams", "timeoutMs": 25000 },
+    "params": {
+      "sport": { "in": "path", "required": true, "type": "string", "pattern": "^[a-z-]{3,20}$", "transform": "lower", "description": "ESPN sport slug, e.g. basketball, football, soccer.", "example": "basketball" },
+      "league": { "in": "path", "required": true, "type": "string", "pattern": "^[a-z0-9._-]{2,24}$", "transform": "lower", "description": "ESPN league slug, e.g. nba, nfl, eng.1.", "example": "nba" }
+    },
+    "sampleRequest": { "sport": "basketball", "league": "nba" },
+    "sampleResponse": { "sports": [{ "leagues": [{ "teams": [{ "team": { "displayName": "Boston Celtics", "abbreviation": "BOS" } }] }] }] }
+  },
+  {
+    "slug": "suverse-f1-race-results",
+    "category": "sports",
+    "source": "Jolpica-F1",
+    "title": "Formula 1 Race Results",
+    "description": "Full classification for a Formula 1 grand prix from the Jolpica-F1 API, the community-maintained successor to Ergast. Returns every driver's finishing position, constructor, grid slot, laps completed, status, race time or gap, points scored and fastest lap. Pass the season year and the round number.",
+    "descriptionBazaar": "Formula 1 race classification from Jolpica-F1 (Ergast successor): position, driver, constructor, grid, laps, status, time, points and fastest lap. Pass season and round. Keyless.",
+    "tags": ["sports", "formula1", "f1", "motorsport", "results", "jolpica", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://api.jolpi.ca/ergast/f1/{season}/{round}/results.json", "timeoutMs": 20000 },
+    "params": {
+      "season": { "in": "path", "required": true, "type": "string", "pattern": "^(19[5-9][0-9]|20[0-9]{2})$", "description": "Championship season year, e.g. 2025.", "example": "2025" },
+      "round": { "in": "path", "required": true, "type": "string", "pattern": "^([1-9]|1[0-9]|2[0-4])$", "description": "Round number within the season, 1-24.", "example": "1" }
+    },
+    "sampleRequest": { "season": "2025", "round": "1" },
+    "sampleResponse": { "MRData": { "RaceTable": { "Races": [{ "raceName": "Australian Grand Prix", "Results": [] }] } } }
+  },
+  {
+    "slug": "suverse-f1-driver-standings",
+    "category": "sports",
+    "source": "Jolpica-F1",
+    "title": "Formula 1 Driver Standings",
+    "description": "World Drivers' Championship standings for a Formula 1 season from the Jolpica-F1 API: each driver's championship position, points total, wins, constructor and driver metadata including nationality and permanent number. Pass the season year to get the final or current standings for that championship.",
+    "descriptionBazaar": "Formula 1 World Drivers' Championship standings for a season from Jolpica-F1: position, points, wins, constructor and driver details. Pass a season year. Keyless.",
+    "tags": ["sports", "formula1", "f1", "standings", "championship", "jolpica", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://api.jolpi.ca/ergast/f1/{season}/driverStandings.json", "timeoutMs": 20000 },
+    "params": {
+      "season": { "in": "path", "required": true, "type": "string", "pattern": "^(19[5-9][0-9]|20[0-9]{2})$", "description": "Championship season year, e.g. 2025.", "example": "2025" }
+    },
+    "sampleRequest": { "season": "2025" },
+    "sampleResponse": { "MRData": { "StandingsTable": { "StandingsLists": [{ "DriverStandings": [] }] } } }
+  },
+  {
+    "slug": "suverse-chesscom-player-stats",
+    "category": "games",
+    "source": "Chess.com",
+    "title": "Chess.com Player Ratings and Record",
+    "description": "Rating and record breakdown for any Chess.com account: current, best and lowest ratings across blitz, bullet, rapid and daily, with win/loss/draw counts for each format, plus tactics and puzzle-rush bests and any FIDE rating on file. Pass the username.",
+    "descriptionBazaar": "Chess.com player ratings and record: current, best and lowest across blitz, bullet, rapid and daily with W/L/D counts, plus tactics and puzzle rush bests. Pass a username. Keyless.",
+    "tags": ["games", "chess", "chess-com", "rating", "elo", "player", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://api.chess.com/pub/player/{username}/stats", "timeoutMs": 20000 },
+    "params": {
+      "username": { "in": "path", "required": true, "type": "string", "pattern": "^[A-Za-z0-9_-]{2,30}$", "transform": "lower", "description": "Chess.com username.", "example": "hikaru" }
+    },
+    "sampleRequest": { "username": "hikaru" },
+    "sampleResponse": { "chess_blitz": { "last": { "rating": 3200 }, "record": { "win": 12000, "loss": 3000, "draw": 1500 } } }
+  },
+  {
+    "slug": "suverse-chesscom-player-profile",
+    "category": "games",
+    "source": "Chess.com",
+    "title": "Chess.com Player Profile",
+    "description": "Public profile for a Chess.com account: display name, title, country, followers, league, join and last-online timestamps, streaming status and verification flags. Combine with the stats endpoint to get a full picture of a player before analysing their games.",
+    "descriptionBazaar": "Chess.com public player profile: name, title, country, followers, league, join and last-online times and streamer status. Pass a username. Keyless.",
+    "tags": ["games", "chess", "chess-com", "profile", "player", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://api.chess.com/pub/player/{username}", "timeoutMs": 20000 },
+    "params": {
+      "username": { "in": "path", "required": true, "type": "string", "pattern": "^[A-Za-z0-9_-]{2,30}$", "transform": "lower", "description": "Chess.com username.", "example": "hikaru" }
+    },
+    "sampleRequest": { "username": "hikaru" },
+    "sampleResponse": { "username": "hikaru", "title": "GM", "country": "https://api.chess.com/pub/country/US", "followers": 1200000 }
+  },
+  {
+    "slug": "suverse-bundesliga-table",
+    "category": "sports",
+    "source": "OpenLigaDB",
+    "title": "German Football League Table",
+    "description": "Current league table for a German football division from OpenLigaDB: each team's position implied by points, matches played, wins, draws, losses, goals for and against, goal difference and points. Pass the league shortcut such as bl1 for Bundesliga or bl2 for 2. Bundesliga, plus the season start year.",
+    "descriptionBazaar": "German football league table from OpenLigaDB: matches played, W/D/L, goals for and against, goal difference and points. Pass league shortcut (bl1, bl2) and season year. Keyless.",
+    "tags": ["sports", "football", "bundesliga", "germany", "table", "openligadb", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://api.openligadb.de/getbltable/{league}/{season}", "timeoutMs": 20000 },
+    "params": {
+      "league": { "in": "path", "required": true, "type": "string", "pattern": "^[a-z0-9]{2,10}$", "transform": "lower", "description": "OpenLigaDB league shortcut, e.g. bl1 (Bundesliga), bl2, bl3, dfb.", "example": "bl1" },
+      "season": { "in": "path", "required": true, "type": "string", "pattern": "^20[0-9]{2}$", "description": "Season start year, e.g. 2025 for the 2025/26 season.", "example": "2025" }
+    },
+    "sampleRequest": { "league": "bl1", "season": "2025" },
+    "sampleResponse": [{ "teamName": "FC Bayern Munchen", "points": 62, "matches": 26, "goalDiff": 45 }]
+  },
+  {
+    "slug": "suverse-steam-app-details",
+    "category": "games",
+    "source": "Steam Storefront",
+    "title": "Steam Game Details",
+    "description": "Storefront record for any Steam title: name, type, short and detailed description, developers and publishers, release date, current and discounted price with currency, supported platforms, Metacritic score, genres, categories and system requirements. Pass the Steam application id.",
+    "descriptionBazaar": "Steam storefront details for a game: name, description, developers, publishers, release date, price and discount, platforms, Metacritic, genres and system requirements. Keyless.",
+    "tags": ["games", "steam", "gaming", "pricing", "store", "pc", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://store.steampowered.com/api/appdetails", "timeoutMs": 25000 },
+    "params": {
+      "appids": { "in": "query", "required": true, "type": "string", "upstreamName": "appids", "pattern": "^[0-9]{1,8}$", "description": "Steam application id, e.g. 440 for Team Fortress 2, 730 for Counter-Strike 2.", "example": "440" },
+      "cc": { "in": "query", "required": false, "type": "string", "upstreamName": "cc", "pattern": "^[A-Za-z]{2}$", "transform": "lower", "default": "us", "description": "Two-letter country code controlling the price currency. Default us.", "example": "us" }
+    },
+    "sampleRequest": { "appids": "440", "cc": "us" },
+    "sampleResponse": { "440": { "success": true, "data": { "name": "Team Fortress 2", "type": "game", "is_free": true } } }
+  },
+  {
+    "slug": "suverse-steam-player-count",
+    "category": "games",
+    "source": "Steam Web API",
+    "title": "Steam Concurrent Player Count",
+    "description": "The number of players currently in-game for a Steam title, straight from the Steam Web API. A single cheap call that answers how alive a game is right now, useful for tracking launch performance, seasonal spikes and long-term decline. Pass the Steam application id.",
+    "descriptionBazaar": "Live concurrent player count for a Steam game from the Steam Web API. Pass a Steam app id. The cheapest read on how alive a game is right now. Keyless.",
+    "tags": ["games", "steam", "players", "concurrency", "gaming", "metrics", "x402"],
+    "priceUsdcAtomic": 50000,
+    "upstream": { "url": "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/", "timeoutMs": 20000 },
+    "params": {
+      "appid": { "in": "query", "required": true, "type": "string", "upstreamName": "appid", "pattern": "^[0-9]{1,8}$", "description": "Steam application id, e.g. 440, 730, 570.", "example": "440" }
+    },
+    "sampleRequest": { "appid": "440" },
+    "sampleResponse": { "response": { "player_count": 51234, "result": 1 } }
+  },
+  {
+    "slug": "suverse-steamspy-app-stats",
+    "category": "games",
+    "source": "SteamSpy",
+    "title": "SteamSpy Ownership and Playtime",
+    "description": "SteamSpy's estimated ownership and engagement figures for a Steam title: owners banded range, average and median playtime both lifetime and over the last two weeks, current and peak concurrent users, price and discount, positive and negative review counts, developer, publisher, genre and user tags.",
+    "descriptionBazaar": "SteamSpy estimates for a Steam game: owners range, average and median playtime, concurrent users, price, review counts, developer, publisher, genre and tags. Keyless.",
+    "tags": ["games", "steam", "steamspy", "ownership", "playtime", "analytics", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": {
+      "url": "https://steamspy.com/api.php",
+      "timeoutMs": 25000,
+      "staticQuery": { "request": "appdetails" }
+    },
+    "params": {
+      "appid": { "in": "query", "required": true, "type": "string", "upstreamName": "appid", "pattern": "^[0-9]{1,8}$", "description": "Steam application id, e.g. 440, 730, 570.", "example": "440" }
+    },
+    "sampleRequest": { "appid": "440" },
+    "sampleResponse": { "appid": 440, "name": "Team Fortress 2", "owners": "50,000,000 .. 100,000,000", "average_forever": 6200 }
+  },
+  {
+    "slug": "suverse-scryfall-card-search",
+    "category": "games",
+    "source": "Scryfall",
+    "title": "Magic: The Gathering Card Search",
+    "description": "Search Magic: The Gathering cards through Scryfall using its full query syntax. Returns matching cards with mana cost, type line, oracle text, power and toughness, rarity, set, artist, images, current USD/EUR market prices and format legality across standard, modern, commander and more. Far richer than a name lookup.",
+    "descriptionBazaar": "Search Magic: The Gathering cards via Scryfall query syntax. Returns mana cost, oracle text, rarity, set, images, market prices and format legality across all formats. Keyless.",
+    "tags": ["games", "mtg", "magic", "scryfall", "tcg", "cards", "x402"],
+    "priceUsdcAtomic": 100000,
+    "upstream": { "url": "https://api.scryfall.com/cards/search", "timeoutMs": 20000 },
+    "params": {
+      "q": { "in": "query", "required": true, "type": "string", "upstreamName": "q", "description": "Scryfall search query. Supports full syntax, e.g. lightning bolt, or c:red t:instant cmc=1.", "example": "lightning bolt" },
+      "order": { "in": "query", "required": false, "type": "string", "upstreamName": "order", "enum": ["name", "set", "released", "rarity", "usd", "edhrec"], "description": "Sort order for results.", "example": "name" }
+    },
+    "sampleRequest": { "q": "lightning bolt" },
+    "sampleResponse": { "object": "list", "total_cards": 42, "data": [{ "name": "Lightning Bolt", "mana_cost": "{R}", "type_line": "Instant" }] }
+  },
+  {
+    "slug": "suverse-deck-of-cards-shuffle",
+    "category": "games",
+    "source": "Deck of Cards API",
+    "title": "Shuffled Playing Card Deck",
+    "description": "Create and shuffle a fresh deck of standard playing cards and get back a deck identifier plus the number of cards remaining. The returned deck id can be reused for subsequent draws, making this a verifiable shuffle primitive for card games, randomised sampling and agent-run simulations.",
+    "descriptionBazaar": "Create and shuffle a standard playing card deck, returning a reusable deck id and remaining count. A shuffle primitive for card games and randomised sampling. Keyless.",
+    "tags": ["games", "cards", "deck", "shuffle", "random", "simulation", "x402"],
+    "priceUsdcAtomic": 50000,
+    "upstream": { "url": "https://deckofcardsapi.com/api/deck/new/shuffle/", "timeoutMs": 20000 },
+    "params": {
+      "deck_count": { "in": "query", "required": false, "type": "integer", "upstreamName": "deck_count", "default": 1, "description": "How many standard 52-card decks to combine and shuffle, 1-20. Default 1.", "example": 1 }
+    },
+    "sampleRequest": { "deck_count": 1 },
+    "sampleResponse": { "success": true, "deck_id": "3p40paa87x90", "shuffled": true, "remaining": 52 }
+  }
+]
