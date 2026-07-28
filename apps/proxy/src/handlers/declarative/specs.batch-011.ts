@@ -148,7 +148,7 @@ export const SPECS_BATCH_011: DeclarativeSpec[] = [
     "sourceLabel": "Maven Central",
     "upstreamMethod": "GET",
     "urlTemplate": "https://search.maven.org/solrsearch/select",
-    "timeoutMs": 12000,
+    "timeoutMs": 25000,
     "params": {
       "q": {
         "in": "query",

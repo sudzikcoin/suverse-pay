@@ -1,0 +1,78 @@
+[
+  {
+    "slug": "suverse-usaspending-agencies",
+    "priceUsdc": "0.120000",
+    "category": "government",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-usaspending-agency-budget",
+    "priceUsdc": "0.150000",
+    "category": "government",
+    "sampleRequest": {
+      "code": "012"
+    }
+  },
+  {
+    "slug": "suverse-ukpolice-forces",
+    "priceUsdc": "0.080000",
+    "category": "government",
+    "sampleRequest": {}
+  },
+  {
+    "slug": "suverse-ukpolice-force-detail",
+    "priceUsdc": "0.080000",
+    "category": "government",
+    "sampleRequest": {
+      "force": "metropolitan"
+    }
+  },
+  {
+    "slug": "suverse-ukpolice-crime-categories",
+    "priceUsdc": "0.050000",
+    "category": "government",
+    "sampleRequest": {
+      "date": "2026-05"
+    }
+  },
+  {
+    "slug": "suverse-ukpolice-crimes-at-location",
+    "priceUsdc": "0.120000",
+    "category": "government",
+    "sampleRequest": {
+      "lat": "51.5074",
+      "lng": "-0.1278",
+      "date": "2026-05"
+    }
+  },
+  {
+    "slug": "suverse-ecb-policy-rate",
+    "priceUsdc": "0.120000",
+    "category": "finance",
+    "sampleRequest": {
+      "lastNObservations": 10
+    }
+  },
+  {
+    "slug": "suverse-ecb-yield-curve-10y",
+    "priceUsdc": "0.120000",
+    "category": "finance",
+    "sampleRequest": {
+      "lastNObservations": 10
+    }
+  },
+  {
+    "slug": "suverse-cftc-commitments-of-traders",
+    "priceUsdc": "0.200000",
+    "category": "finance",
+    "sampleRequest": {
+      "limit": 20
+    }
+  },
+  {
+    "slug": "suverse-l2beat-scaling-summary",
+    "priceUsdc": "0.120000",
+    "category": "crypto",
+    "sampleRequest": {}
+  }
+]

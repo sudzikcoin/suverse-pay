@@ -272,7 +272,7 @@
     "priceUsdcAtomic": 50000,
     "upstream": {
       "url": "https://search.maven.org/solrsearch/select",
-      "timeoutMs": 12000,
+      "timeoutMs": 25000,
       "staticQuery": {
         "wt": "json"
       }

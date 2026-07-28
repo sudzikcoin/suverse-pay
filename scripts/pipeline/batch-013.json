@@ -1,0 +1,246 @@
+[
+  {
+    "slug": "suverse-usaspending-agencies",
+    "category": "government",
+    "source": "USAspending",
+    "title": "US Federal Top-Tier Agencies",
+    "description": "The full roster of US federal top-tier agencies from USAspending.gov, the Treasury's official federal spending portal. Each entry carries the agency name, abbreviation, toptier code, CGAC/agency identifiers and the current-year budget authority. This is the lookup table needed to address every other federal spending query by agency code.",
+    "descriptionBazaar": "All US federal top-tier agencies from USAspending.gov with name, abbreviation, toptier code and current-year budget authority. The agency-code lookup for federal spending queries. Keyless.",
+    "tags": ["government", "usaspending", "federal", "budget", "agency", "open-data", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": { "url": "https://api.usaspending.gov/api/v2/references/toptier_agencies/", "timeoutMs": 20000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": { "results": [{ "agency_name": "Department of Defense", "abbreviation": "DOD", "toptier_code": "097" }] }
+  },
+  {
+    "slug": "suverse-usaspending-agency-budget",
+    "category": "government",
+    "source": "USAspending",
+    "title": "Federal Agency Budgetary Resources",
+    "description": "Budgetary resources and obligation totals for one US federal agency by its toptier code, from USAspending.gov. Returns total budgetary resources, obligated amounts and outlays broken out by fiscal year, so an agent can see how much an agency was given and how much it has actually spent. Pass the three-digit toptier agency code.",
+    "descriptionBazaar": "Budgetary resources for a US federal agency by toptier code from USAspending.gov: total resources, obligations and outlays by fiscal year. Keyless.",
+    "tags": ["government", "usaspending", "budget", "obligations", "federal", "fiscal", "x402"],
+    "priceUsdcAtomic": 150000,
+    "upstream": { "url": "https://api.usaspending.gov/api/v2/agency/{code}/budgetary_resources/", "timeoutMs": 20000 },
+    "params": {
+      "code": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[0-9]{3}$",
+        "description": "Three-digit federal toptier agency code, e.g. 012 for Agriculture, 097 for Defense.",
+        "example": "012"
+      }
+    },
+    "sampleRequest": { "code": "012" },
+    "sampleResponse": { "toptier_code": "012", "agency_data_by_year": [{ "fiscal_year": 2026, "total_budgetary_resources": 285000000000 }] }
+  },
+  {
+    "slug": "suverse-ukpolice-forces",
+    "category": "government",
+    "source": "data.police.uk",
+    "title": "UK Police Forces",
+    "description": "The complete list of territorial police forces in England, Wales and Northern Ireland from the Home Office open data service, each with its machine identifier and display name. The identifier returned here is what every other UK policing query is keyed on, including force detail and street-level crime lookups.",
+    "descriptionBazaar": "All UK police forces from the Home Office open data service with machine id and display name. The lookup for every other UK policing query. Keyless.",
+    "tags": ["government", "police", "uk", "crime", "open-data", "law-enforcement", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://data.police.uk/api/forces", "timeoutMs": 15000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": [{ "id": "metropolitan", "name": "Metropolitan Police Service" }]
+  },
+  {
+    "slug": "suverse-ukpolice-force-detail",
+    "category": "government",
+    "source": "data.police.uk",
+    "title": "UK Police Force Detail",
+    "description": "Full profile for one UK police force from the Home Office open data service: display name, description, telephone contact and the force's official website and social-media engagement channels. Pass the force identifier from the forces list, for example metropolitan, west-midlands or police-scotland.",
+    "descriptionBazaar": "Profile for one UK police force: name, description, telephone and official website plus engagement channels. Pass a force id such as metropolitan. Keyless.",
+    "tags": ["government", "police", "uk", "force", "open-data", "law-enforcement", "x402"],
+    "priceUsdcAtomic": 80000,
+    "upstream": { "url": "https://data.police.uk/api/forces/{force}", "timeoutMs": 15000 },
+    "params": {
+      "force": {
+        "in": "path",
+        "required": true,
+        "type": "string",
+        "pattern": "^[a-z-]{3,60}$",
+        "transform": "lower",
+        "description": "UK police force identifier, e.g. metropolitan, west-midlands, greater-manchester.",
+        "example": "metropolitan"
+      }
+    },
+    "sampleRequest": { "force": "metropolitan" },
+    "sampleResponse": { "id": "metropolitan", "name": "Metropolitan Police Service", "telephone": "101" }
+  },
+  {
+    "slug": "suverse-ukpolice-crime-categories",
+    "category": "government",
+    "source": "data.police.uk",
+    "title": "UK Crime Categories",
+    "description": "The valid street-level crime categories for a given month from the UK Home Office open data service, such as burglary, violent-crime, vehicle-crime, anti-social-behaviour and drugs. Categories change over time, so the month matters. These are the exact category identifiers used to filter UK crime queries.",
+    "descriptionBazaar": "Valid UK street-level crime categories for a given month (burglary, violent-crime, drugs and more) from Home Office open data. Pass a YYYY-MM date. Keyless.",
+    "tags": ["government", "police", "uk", "crime", "taxonomy", "open-data", "x402"],
+    "priceUsdcAtomic": 50000,
+    "upstream": { "url": "https://data.police.uk/api/crime-categories", "timeoutMs": 15000 },
+    "params": {
+      "date": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "upstreamName": "date",
+        "pattern": "^[0-9]{4}-[0-9]{2}$",
+        "description": "Month in YYYY-MM form. Omit for the latest available month.",
+        "example": "2026-05"
+      }
+    },
+    "sampleRequest": { "date": "2026-05" },
+    "sampleResponse": [{ "url": "burglary", "name": "Burglary" }, { "url": "drugs", "name": "Drugs" }]
+  },
+  {
+    "slug": "suverse-ukpolice-crimes-at-location",
+    "category": "government",
+    "source": "data.police.uk",
+    "title": "UK Crimes at a Location",
+    "description": "Street-level crimes recorded at the police-defined location nearest a coordinate for a given month, from the UK Home Office open data service. Each record carries the crime category, month, approximate street, and the outcome status where one has been recorded. Scoped to the nearest reporting point so the response stays small.",
+    "descriptionBazaar": "UK street-level crimes at the reporting point nearest a lat/lng for a given month: category, street, month and outcome status. Home Office open data. Keyless.",
+    "tags": ["government", "police", "uk", "crime", "location", "open-data", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": { "url": "https://data.police.uk/api/crimes-at-location", "timeoutMs": 20000 },
+    "params": {
+      "lat": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "lat",
+        "description": "Latitude in decimal degrees.",
+        "example": "51.5074"
+      },
+      "lng": {
+        "in": "query",
+        "required": true,
+        "type": "string",
+        "upstreamName": "lng",
+        "description": "Longitude in decimal degrees.",
+        "example": "-0.1278"
+      },
+      "date": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "upstreamName": "date",
+        "pattern": "^[0-9]{4}-[0-9]{2}$",
+        "description": "Month in YYYY-MM form. Omit for the latest available month.",
+        "example": "2026-05"
+      }
+    },
+    "sampleRequest": { "lat": "51.5074", "lng": "-0.1278", "date": "2026-05" },
+    "sampleResponse": [{ "category": "theft-from-the-person", "month": "2026-05", "location": { "street": { "name": "On or near Nightclub" } } }]
+  },
+  {
+    "slug": "suverse-ecb-policy-rate",
+    "category": "finance",
+    "source": "ECB Data Portal",
+    "title": "ECB Main Refinancing Rate",
+    "description": "The European Central Bank's main refinancing operations rate, the euro area's headline policy interest rate, straight from the ECB Data Portal SDMX service. Returns the observation series with dates and levels so an agent can read the current rate and the recent path of ECB policy. Control history depth with lastNObservations.",
+    "descriptionBazaar": "ECB main refinancing operations rate, the euro area headline policy rate, from the ECB Data Portal with dates and levels. Control depth via lastNObservations. Keyless.",
+    "tags": ["finance", "ecb", "interest-rate", "policy-rate", "eurozone", "macro", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": {
+      "url": "https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.4F.KR.MRR_FR.LEV",
+      "timeoutMs": 20000,
+      "staticQuery": { "format": "jsondata" }
+    },
+    "params": {
+      "lastNObservations": {
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "upstreamName": "lastNObservations",
+        "default": 10,
+        "description": "How many of the most recent observations to return, 1-500. Default 10.",
+        "example": 10
+      }
+    },
+    "sampleRequest": { "lastNObservations": 10 },
+    "sampleResponse": { "dataSets": [{ "series": {} }], "structure": {} }
+  },
+  {
+    "slug": "suverse-ecb-yield-curve-10y",
+    "category": "finance",
+    "source": "ECB Data Portal",
+    "title": "Euro Area 10-Year Government Yield Curve",
+    "description": "The euro area AAA-rated government bond spot yield at the 10-year maturity from the ECB Data Portal's official yield curve series. This is the reference long-term risk-free rate for the euro area, used to price duration, discount cash flows and read the market's long-run growth and inflation expectations. Depth is controlled by lastNObservations.",
+    "descriptionBazaar": "Euro area AAA government bond 10-year spot yield from the ECB Data Portal official yield curve. The euro reference long-term risk-free rate. Keyless.",
+    "tags": ["finance", "ecb", "yield-curve", "bonds", "eurozone", "rates", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": {
+      "url": "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y",
+      "timeoutMs": 20000,
+      "staticQuery": { "format": "jsondata" }
+    },
+    "params": {
+      "lastNObservations": {
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "upstreamName": "lastNObservations",
+        "default": 10,
+        "description": "How many of the most recent observations to return, 1-500. Default 10.",
+        "example": 10
+      }
+    },
+    "sampleRequest": { "lastNObservations": 10 },
+    "sampleResponse": { "dataSets": [{ "series": {} }], "structure": {} }
+  },
+  {
+    "slug": "suverse-cftc-commitments-of-traders",
+    "category": "finance",
+    "source": "CFTC",
+    "title": "CFTC Commitments of Traders",
+    "description": "Positioning data from the US Commodity Futures Trading Commission's Commitments of Traders report, the weekly breakdown of who is long and short in the futures markets by trader class - commercial hedgers, non-commercial speculators and non-reportable positions - with open interest. The standard dataset for reading speculative positioning in commodities, rates and FX futures.",
+    "descriptionBazaar": "CFTC Commitments of Traders: weekly futures positioning by trader class (commercial, non-commercial, non-reportable) with open interest. Filter with a Socrata where clause. Keyless.",
+    "tags": ["finance", "cftc", "futures", "positioning", "commodities", "cot", "x402"],
+    "priceUsdcAtomic": 200000,
+    "upstream": {
+      "url": "https://publicreporting.cftc.gov/resource/6dca-aqww.json",
+      "timeoutMs": 25000
+    },
+    "params": {
+      "where": {
+        "in": "query",
+        "required": false,
+        "type": "string",
+        "upstreamName": "$where",
+        "description": "Optional Socrata filter, e.g. market_and_exchange_names like '%GOLD%'. Omit for the most recent rows.",
+        "example": "market_and_exchange_names like '%GOLD%'"
+      },
+      "limit": {
+        "in": "query",
+        "required": false,
+        "type": "integer",
+        "upstreamName": "$limit",
+        "default": 20,
+        "description": "Maximum rows to return, 1-500. Default 20.",
+        "example": 20
+      }
+    },
+    "sampleRequest": { "limit": 20 },
+    "sampleResponse": [{ "market_and_exchange_names": "GOLD - COMMODITY EXCHANGE INC.", "open_interest_all": "512345" }]
+  },
+  {
+    "slug": "suverse-l2beat-scaling-summary",
+    "category": "crypto",
+    "source": "L2Beat",
+    "title": "Ethereum L2 Scaling Summary",
+    "description": "The full L2Beat scaling summary: every tracked Ethereum layer-2 with its total value secured, market share, 7-day change, stage classification (Stage 0/1/2), technology category such as optimistic or ZK rollup, and the risk profile L2Beat assigns. The reference dataset for comparing L2s on security maturity rather than TVL alone.",
+    "descriptionBazaar": "L2Beat scaling summary: every tracked Ethereum L2 with value secured, market share, 7d change, stage classification, rollup type and risk profile. Keyless.",
+    "tags": ["crypto", "l2", "ethereum", "rollup", "tvl", "l2beat", "x402"],
+    "priceUsdcAtomic": 120000,
+    "upstream": { "url": "https://l2beat.com/api/scaling/summary", "timeoutMs": 25000 },
+    "params": {},
+    "sampleRequest": {},
+    "sampleResponse": { "success": true, "data": { "projects": {} } }
+  }
+]
