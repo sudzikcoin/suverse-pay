@@ -92,12 +92,20 @@ export type RequiredBase58Classification =
   | { kind: "valid"; value: string };
 
 /**
- * Classify a request body against a single required base58 field.
- * Shared by wallet-reputation (`wallet`) and token-check (`token`).
+ * Classify a request body against a single required STRING field whose
+ * validity is decided by `isValid`. This is the generic form of the
+ * decision table documented at the top of this file; every required-
+ * string endpoint should route through it so probes are classified
+ * identically everywhere.
+ *
+ * `isValid` is only ever consulted for a real, non-placeholder string —
+ * so a validator never has to re-implement the empty/missing/placeholder
+ * cases that belong to discovery.
  */
-export function classifyRequiredBase58Field(
+export function classifyRequiredStringField(
   body: Buffer | null,
   field: string,
+  isValid: (value: string) => boolean,
 ): RequiredBase58Classification {
   if (!body || body.length === 0 || body.toString("utf8").trim() === "") {
     return { kind: "discovery" };
@@ -117,8 +125,19 @@ export function classifyRequiredBase58Field(
   // nothing usable was supplied — discovery, not a malformed attempt.
   if (typeof value !== "string") return { kind: "discovery" };
   if (isPlaceholderValue(value)) return { kind: "discovery" };
-  if (!BASE58_RE.test(value)) return { kind: "invalid_value", value };
+  if (!isValid(value)) return { kind: "invalid_value", value };
   return { kind: "valid", value };
+}
+
+/**
+ * Classify a request body against a single required base58 field.
+ * Shared by wallet-reputation (`wallet`) and token-check (`token`).
+ */
+export function classifyRequiredBase58Field(
+  body: Buffer | null,
+  field: string,
+): RequiredBase58Classification {
+  return classifyRequiredStringField(body, field, (v) => BASE58_RE.test(v));
 }
 
 /**

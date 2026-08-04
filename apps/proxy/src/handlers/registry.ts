@@ -37,10 +37,14 @@ import { heliusNftMetadata } from "./helius-nft-metadata.js";
 import { heliusPriorityFee } from "./helius-priority-fee.js";
 import {
   heliusTxDecoder,
+  heliusTxDecoderInputSchema,
+  heliusTxDecoderPreflight,
   heliusTxDecoderValidator,
 } from "./helius-tx-decoder.js";
 import {
   heliusTxSimulator,
+  heliusTxSimulatorInputSchema,
+  heliusTxSimulatorPreflight,
   heliusTxSimulatorValidator,
 } from "./helius-tx-simulator.js";
 import { heliusWalletHistory } from "./helius-wallet-history.js";
@@ -349,6 +353,8 @@ export function getInternalHandlerValidator(
  * `InternalHandlerPreflight` in types.ts for the contract.
  */
 export const INTERNAL_HANDLER_PREFLIGHTS: Record<string, InternalHandlerPreflight> = {
+  helius_tx_decoder: heliusTxDecoderPreflight,
+  helius_tx_simulator: heliusTxSimulatorPreflight,
   crypto_market_pulse: cryptoMarketPulsePreflight,
   wallet_reputation: walletReputationPreflight,
   smart_money_token_rankings: smartMoneyTokenRankingsPreflight,
@@ -387,6 +393,8 @@ export const INTERNAL_HANDLER_INPUT_SCHEMAS: Record<
   string,
   InternalHandlerInputSchema
 > = {
+  helius_tx_decoder: heliusTxDecoderInputSchema,
+  helius_tx_simulator: heliusTxSimulatorInputSchema,
   wallet_reputation: walletReputationInputSchema,
   smart_money_token_rankings: smartMoneyTokenRankingsInputSchema,
   smart_money_accumulation: smartMoneyAccumulationInputSchema,

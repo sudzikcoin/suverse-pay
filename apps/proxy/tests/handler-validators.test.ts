@@ -15,14 +15,29 @@
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { randomBytes } from "node:crypto";
-import { heliusTxSimulatorValidator } from "../src/handlers/helius-tx-simulator.js";
-import { heliusTxDecoderValidator } from "../src/handlers/helius-tx-decoder.js";
+import {
+  heliusTxSimulatorPreflight,
+  heliusTxSimulatorValidator,
+} from "../src/handlers/helius-tx-simulator.js";
+import {
+  heliusTxDecoderPreflight,
+  heliusTxDecoderValidator,
+} from "../src/handlers/helius-tx-decoder.js";
 import { handle, type HandleDeps } from "../src/handler.js";
 import type { ProxyConfigRow } from "../src/store.js";
 
 // ──────────────────────────────────────────────────────────────────
 // Validator unit tests
 // ──────────────────────────────────────────────────────────────────
+
+// Decision table (see handlers/discovery.ts):
+//   empty / missing / placeholder → DISCOVERY: return null so the
+//     caller reaches the 402 challenge and can read `input_schema`.
+//   present + valid                → null (normal paid flow).
+//   unparseable JSON               → 400.
+//   non-object JSON / real-but-wrong value → 422 with `expected`.
+// A PAID request carrying a discovery body is stopped by the
+// preflight (asserted separately below), never by settlement.
 
 describe("heliusTxSimulatorValidator", () => {
   it("accepts a valid base64 transaction (returns null)", () => {
@@ -34,15 +49,24 @@ describe("heliusTxSimulatorValidator", () => {
     expect(res).toBeNull();
   });
 
-  it("rejects empty body", () => {
-    const res = heliusTxSimulatorValidator(null, "POST");
-    expect(res?.status).toBe(400);
-    expect(res?.body).toMatchObject({ error: "transaction_required" });
+  it("passes an empty body through to the 402 challenge", () => {
+    expect(heliusTxSimulatorValidator(null, "POST")).toBeNull();
   });
 
-  it("rejects empty buffer", () => {
-    const res = heliusTxSimulatorValidator(Buffer.from(""), "POST");
-    expect(res?.status).toBe(400);
+  it("passes an empty buffer through to the 402 challenge", () => {
+    expect(heliusTxSimulatorValidator(Buffer.from(""), "POST")).toBeNull();
+  });
+
+  it("passes `{}` through to the 402 challenge (schema-blind probe)", () => {
+    expect(heliusTxSimulatorValidator(Buffer.from("{}"), "POST")).toBeNull();
+  });
+
+  it("passes a placeholder value through to the 402 challenge", () => {
+    const res = heliusTxSimulatorValidator(
+      Buffer.from(JSON.stringify({ transaction: "string" })),
+      "POST",
+    );
+    expect(res).toBeNull();
   });
 
   it("rejects body that is not JSON", () => {
@@ -51,19 +75,20 @@ describe("heliusTxSimulatorValidator", () => {
     expect(res?.body).toMatchObject({ error: "invalid_json_body" });
   });
 
-  it("rejects body with no `transaction` field", () => {
-    const res = heliusTxSimulatorValidator(Buffer.from("{}"), "POST");
-    expect(res?.status).toBe(400);
+  it("rejects a non-object JSON body", () => {
+    const res = heliusTxSimulatorValidator(Buffer.from("[1,2]"), "POST");
+    expect(res?.status).toBe(422);
     expect(res?.body).toMatchObject({ error: "transaction_required" });
   });
 
-  it("rejects too-short transaction", () => {
+  it("rejects too-short transaction with 422 + expected", () => {
     const res = heliusTxSimulatorValidator(
       Buffer.from(JSON.stringify({ transaction: "AAAA" })),
       "POST",
     );
-    expect(res?.status).toBe(400);
-    expect(res?.body).toMatchObject({ error: "transaction_too_short" });
+    expect(res?.status).toBe(422);
+    expect(res?.body).toMatchObject({ error: "invalid_transaction_format" });
+    expect(res?.body).toHaveProperty("expected");
   });
 
   it("rejects non-base64 transaction characters", () => {
@@ -72,8 +97,8 @@ describe("heliusTxSimulatorValidator", () => {
       Buffer.from(JSON.stringify({ transaction: bogus })),
       "POST",
     );
-    expect(res?.status).toBe(400);
-    expect(res?.body).toMatchObject({ error: "transaction_not_base64" });
+    expect(res?.status).toBe(422);
+    expect(res?.body).toMatchObject({ error: "invalid_transaction_format" });
   });
 
   it("skips validation on non-POST methods (returns null)", () => {
@@ -97,10 +122,21 @@ describe("heliusTxDecoderValidator", () => {
     expect(res).toBeNull();
   });
 
-  it("rejects empty body", () => {
-    const res = heliusTxDecoderValidator(null, "POST");
-    expect(res?.status).toBe(400);
-    expect(res?.body).toMatchObject({ error: "signature_required" });
+  it("passes an empty body through to the 402 challenge", () => {
+    expect(heliusTxDecoderValidator(null, "POST")).toBeNull();
+  });
+
+  it("passes `{}` through to the 402 challenge (schema-blind probe)", () => {
+    expect(heliusTxDecoderValidator(Buffer.from("{}"), "POST")).toBeNull();
+  });
+
+  it("passes a placeholder value through to the 402 challenge", () => {
+    // "abc" is conventional schema-blind filler, not a real signature.
+    const res = heliusTxDecoderValidator(
+      Buffer.from(JSON.stringify({ signature: "abc" })),
+      "POST",
+    );
+    expect(res).toBeNull();
   });
 
   it("rejects bad JSON", () => {
@@ -109,27 +145,20 @@ describe("heliusTxDecoderValidator", () => {
     expect(res?.body).toMatchObject({ error: "invalid_json_body" });
   });
 
-  it("rejects body without `signature`", () => {
-    const res = heliusTxDecoderValidator(Buffer.from("{}"), "POST");
-    expect(res?.status).toBe(400);
+  it("rejects a non-object JSON body", () => {
+    const res = heliusTxDecoderValidator(Buffer.from("[1,2]"), "POST");
+    expect(res?.status).toBe(422);
     expect(res?.body).toMatchObject({ error: "signature_required" });
   });
 
-  it("rejects too-short signature", () => {
-    const res = heliusTxDecoderValidator(
-      Buffer.from(JSON.stringify({ signature: "abc" })),
-      "POST",
-    );
-    expect(res?.status).toBe(400);
-    expect(res?.body).toMatchObject({ error: "invalid_signature_format" });
-  });
-
-  it("rejects too-long signature", () => {
+  it("rejects too-long signature with 422 + expected", () => {
     const res = heliusTxDecoderValidator(
       Buffer.from(JSON.stringify({ signature: "A".repeat(200) })),
       "POST",
     );
-    expect(res?.status).toBe(400);
+    expect(res?.status).toBe(422);
+    expect(res?.body).toMatchObject({ error: "invalid_signature_format" });
+    expect(res?.body).toHaveProperty("expected");
   });
 
   it("rejects non-base58 characters (zero, O, I, l)", () => {
@@ -138,8 +167,56 @@ describe("heliusTxDecoderValidator", () => {
       Buffer.from(JSON.stringify({ signature: "l".repeat(80) })),
       "POST",
     );
-    expect(res?.status).toBe(400);
-    expect(res?.body).toMatchObject({ error: "signature_not_base58" });
+    expect(res?.status).toBe(422);
+    expect(res?.body).toMatchObject({ error: "invalid_signature_format" });
+  });
+});
+
+describe("helius preflights — a PAID discovery body never settles", () => {
+  const paidCases: Array<[string, Buffer | null]> = [
+    ["empty body", null],
+    ["empty buffer", Buffer.from("")],
+    ["schema-blind {}", Buffer.from("{}")],
+    ["placeholder value", Buffer.from(JSON.stringify({ signature: "abc" }))],
+  ];
+
+  it.each(paidCases)(
+    "decoder preflight refuses %s with 422 before settlement",
+    async (_label, body) => {
+      const res = await heliusTxDecoderPreflight({ body, method: "POST" });
+      expect(res.proceed).toBe(false);
+      if (res.proceed === false) {
+        expect(res.status).toBe(422);
+        expect(res.body).toHaveProperty("input_schema");
+      }
+    },
+  );
+
+  it("decoder preflight proceeds on a real signature", async () => {
+    const res = await heliusTxDecoderPreflight({
+      body: Buffer.from(JSON.stringify({ signature: "1".repeat(87) })),
+      method: "POST",
+    });
+    expect(res.proceed).toBe(true);
+  });
+
+  it("simulator preflight refuses a paid empty body with 422", async () => {
+    const res = await heliusTxSimulatorPreflight({
+      body: null,
+      method: "POST",
+    });
+    expect(res.proceed).toBe(false);
+    if (res.proceed === false) expect(res.status).toBe(422);
+  });
+
+  it("simulator preflight proceeds on a real transaction", async () => {
+    const res = await heliusTxSimulatorPreflight({
+      body: Buffer.from(
+        JSON.stringify({ transaction: Buffer.alloc(200).toString("base64") }),
+      ),
+      method: "POST",
+    });
+    expect(res.proceed).toBe(true);
   });
 });
 
@@ -208,8 +285,8 @@ describe("handle: pre-payment validator wiring", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects empty body BEFORE 402 challenge for helius_tx_simulator", async () => {
-    const fetchSpy = vi.fn();
+  it("serves the 402 challenge for a `{}` probe on helius_tx_simulator", async () => {
+    const fetchSpy = makeChallengeFetch();
     const deps = makeDeps({ fetchImpl: fetchSpy });
     const result = await handle(
       {
@@ -226,22 +303,22 @@ describe("handle: pre-payment validator wiring", () => {
       deps,
     );
 
-    expect(result.status).toBe(400);
-    expect(result.outcome).toBe("invalid_config");
-    expect(result.body).toMatchObject({ error: "transaction_required" });
-    // Facilitator was NOT consulted — the buyer is free, no 402.
-    expect(fetchSpy).not.toHaveBeenCalled();
-    // The prl row is logged with outcome='invalid_config' + the
-    // distinctive errorCode so the operator can spot bot traffic.
+    // A schema-blind `{}` probe is DISCOVERY: it must reach the 402 so
+    // the crawler can read price + input_schema. Before 2026-08-04 this
+    // returned 400 and the endpoint stayed invisible to discovery.
+    expect(result.status).toBe(402);
+    expect(result.outcome).toBe("challenge");
+    expect(result.body).toHaveProperty("input_schema");
+    // No `client_invalid_body` rejection row is written any more.
     const poolQuery = (deps.pool as unknown as { query: ReturnType<typeof vi.fn> })
       .query;
-    const prlInserts = poolQuery.mock.calls.filter(([sql]) =>
-      String(sql).includes("INSERT INTO proxy_request_logs"),
+    const rejectRows = poolQuery.mock.calls.filter(
+      ([sql, params]) =>
+        String(sql).includes("INSERT INTO proxy_request_logs") &&
+        Array.isArray(params) &&
+        params.includes("client_invalid_body"),
     );
-    expect(prlInserts.length).toBe(1);
-    expect(prlInserts[0]![1]).toEqual(
-      expect.arrayContaining(["invalid_config", "client_invalid_body"]),
-    );
+    expect(rejectRows.length).toBe(0);
   });
 
   it("rejects garbage JSON BEFORE 402 for helius_tx_simulator", async () => {
@@ -267,8 +344,8 @@ describe("handle: pre-payment validator wiring", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("rejects malformed body BEFORE 402 for helius_tx_decoder", async () => {
-    const fetchSpy = vi.fn();
+  it("serves the 402 challenge when `signature` is absent (helius_tx_decoder)", async () => {
+    const fetchSpy = makeChallengeFetch();
     const deps = makeDeps({
       store: makeStore(
         makeConfig({
@@ -293,9 +370,43 @@ describe("handle: pre-payment validator wiring", () => {
       deps,
     );
 
-    expect(result.status).toBe(400);
-    expect(result.body).toMatchObject({ error: "signature_required" });
-    expect(fetchSpy).not.toHaveBeenCalled();
+    // No usable `signature` supplied → DISCOVERY, not a malformed
+    // attempt: serve the 402 so the caller learns the real contract.
+    expect(result.status).toBe(402);
+    expect(result.outcome).toBe("challenge");
+    expect(result.body).toHaveProperty("input_schema");
+  });
+
+  it("still 422s a real-but-wrong signature BEFORE the 402", async () => {
+    const fetchSpy = makeChallengeFetch();
+    const deps = makeDeps({
+      store: makeStore(
+        makeConfig({
+          internalHandler: "helius_tx_decoder",
+          publicSlug: "suverse-solana-tx-decoder",
+        }),
+      ),
+      fetchImpl: fetchSpy,
+    });
+    const result = await handle(
+      {
+        resourceKeyId: "reskey_test",
+        slug: "simulator",
+        method: "POST",
+        resourceUrl: "https://proxy/v1/data/suverse-solana-tx-decoder",
+        paymentHeader: undefined,
+        idempotencyKey: undefined,
+        incomingHeaders: { "content-type": "application/json" },
+        // 'l' is outside the base58 alphabet — a real, wrong value.
+        body: Buffer.from(JSON.stringify({ signature: "l".repeat(80) })),
+        clientIp: "1.2.3.4",
+      },
+      deps,
+    );
+
+    expect(result.status).toBe(422);
+    expect(result.outcome).toBe("invalid_config");
+    expect(result.body).toMatchObject({ error: "invalid_signature_format" });
   });
 
   it("passes a valid body through to runProtocol (no early 400)", async () => {

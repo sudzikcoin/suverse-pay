@@ -20,65 +20,130 @@ import {
   heliusErrorToResult,
   heliusFetch,
 } from "../lib/helius-client.js";
+import { classifyRequiredStringField } from "./discovery.js";
+import type { InternalHandlerInputSchema } from "./discovery.js";
 import type {
   InternalHandler,
   InternalHandlerInput,
+  InternalHandlerPreflight,
   InternalHandlerResult,
   InternalHandlerValidator,
 } from "./types.js";
 
 /**
- * Pre-payment validator for `helius_tx_simulator`. Rejects empty
- * bodies, non-JSON bodies, and bodies missing a plausible base64
- * `transaction` field BEFORE the 402 challenge is issued. Bots
- * probing with `{}` or random bytes get a 400 and stop retrying,
- * which keeps the error rate clean for paid callers.
+ * Is this a plausible base64 Solana transaction wire blob?
  *
- * Threshold reasoning: a Solana transaction wire blob starts with a
- * compact-array of 64-byte signatures plus the message; the minimum
- * legal length (1 sig + a trivial transfer) base64-encodes to >=120
- * chars. We reject anything below 100 chars as bot garbage.
+ * Threshold reasoning: a Solana transaction starts with a compact-array
+ * of 64-byte signatures plus the message; the minimum legal length
+ * (1 sig + a trivial transfer) base64-encodes to >=120 chars. Anything
+ * below 100 chars cannot be a real transaction.
+ */
+function isBase64Transaction(v: string): boolean {
+  if (v.length < 100) return false;
+  return /^[A-Za-z0-9+/]+=*$/.test(v);
+}
+
+/**
+ * Machine-readable input contract published on the 402 challenge, so a
+ * schema-blind crawler learns the required field without paying first.
+ */
+export const heliusTxSimulatorInputSchema: InternalHandlerInputSchema = {
+  method: "POST",
+  content_type: "application/json",
+  body: {
+    type: "object",
+    required: ["transaction"],
+    properties: {
+      transaction: {
+        type: "string",
+        description:
+          "Base64-encoded Solana transaction wire blob to dry-run (min 100 chars). Required.",
+        pattern: "^[A-Za-z0-9+/]+=*$",
+      },
+    },
+  },
+  example: {
+    transaction: `${"A".repeat(160)}==`,
+  },
+};
+
+/**
+ * Pre-payment validator for `helius_tx_simulator`.
+ *
+ * Follows the shared decision table in `discovery.ts`: an empty,
+ * missing or placeholder `transaction` is a DISCOVERY probe and must
+ * fall through to the 402 challenge (which carries price +
+ * `input_schema`), NOT get a 400. Only a real-but-wrong blob is
+ * rejected here.
+ *
+ * Before 2026-08-04 this returned 400 on an empty body, which meant
+ * catalog crawlers and schema fetchers never saw the 402 at all.
+ * `heliusTxSimulatorPreflight` is what keeps a PAID empty body from
+ * settling now that the validator lets probes through.
  */
 export const heliusTxSimulatorValidator: InternalHandlerValidator = (
   body,
   method,
 ) => {
   if (method !== "POST") return null;
-  if (!body || body.length === 0) {
-    return { status: 400, body: { error: "transaction_required" } };
+  const c = classifyRequiredStringField(
+    body,
+    "transaction",
+    isBase64Transaction,
+  );
+  switch (c.kind) {
+    case "discovery":
+    case "valid":
+      return null;
+    case "invalid_json":
+      return { status: 400, body: { error: "invalid_json_body" } };
+    case "malformed":
+      return {
+        status: 422,
+        body: {
+          error: "transaction_required",
+          expected: '{"transaction":"<base64 Solana transaction>"}',
+        },
+      };
+    case "invalid_value":
+      return {
+        status: 422,
+        body: {
+          error: "invalid_transaction_format",
+          detail:
+            "transaction must be a base64-encoded Solana transaction of at least 100 chars",
+          expected: heliusTxSimulatorInputSchema.example,
+        },
+      };
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(body.toString("utf8"));
-  } catch {
-    return { status: 400, body: { error: "invalid_json_body" } };
-  }
-  const tx =
-    parsed !== null && typeof parsed === "object"
-      ? (parsed as Record<string, unknown>)["transaction"]
-      : undefined;
-  if (typeof tx !== "string" || tx.length === 0) {
-    return { status: 400, body: { error: "transaction_required" } };
-  }
-  if (tx.length < 100) {
-    return {
-      status: 400,
-      body: {
-        error: "transaction_too_short",
-        message: "base64 transaction is shorter than a minimal Solana tx",
-      },
-    };
-  }
-  if (!/^[A-Za-z0-9+/]+=*$/.test(tx)) {
-    return {
-      status: 400,
-      body: {
-        error: "transaction_not_base64",
-        message: "transaction field must be base64-encoded",
-      },
-    };
-  }
-  return null;
+};
+
+/**
+ * Pre-SETTLEMENT gate. The validator deliberately lets discovery
+ * probes through to the 402; this runs only once a payment header is
+ * present, so a buyer who pays with an empty/placeholder body is
+ * refused BEFORE settlement instead of being charged for a call the
+ * handler could never answer.
+ */
+export const heliusTxSimulatorPreflight: InternalHandlerPreflight = async (
+  input,
+) => {
+  const c = classifyRequiredStringField(
+    input.body,
+    "transaction",
+    isBase64Transaction,
+  );
+  if (c.kind === "valid") return { proceed: true };
+  return {
+    proceed: false,
+    status: 422,
+    body: {
+      error: "transaction_required",
+      detail:
+        "a base64-encoded Solana transaction (min 100 chars) is required",
+      input_schema: heliusTxSimulatorInputSchema,
+    },
+  };
 };
 
 interface SimulateResult {

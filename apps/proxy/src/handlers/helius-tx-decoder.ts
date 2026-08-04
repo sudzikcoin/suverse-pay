@@ -21,59 +21,127 @@ import {
   heliusErrorToResult,
   heliusFetch,
 } from "../lib/helius-client.js";
+import { classifyRequiredStringField } from "./discovery.js";
+import type { InternalHandlerInputSchema } from "./discovery.js";
 import type {
   InternalHandler,
   InternalHandlerInput,
+  InternalHandlerPreflight,
   InternalHandlerResult,
   InternalHandlerValidator,
 } from "./types.js";
 
 /**
- * Pre-payment validator for `helius_tx_decoder`. Same idea as
- * `heliusTxSimulatorValidator` but checks a base58 signature instead
- * of a base64 transaction blob. Solana tx signatures are 64-byte
- * Ed25519 sigs encoded as base58 — between 86 and 88 chars. We
- * accept a generous 64–128 char window to leave room for unusual
- * encodings; the handler itself re-checks more strictly after payment.
+ * Is this a plausible Solana transaction signature? 64-byte Ed25519
+ * sigs encode to 86–88 base58 chars in practice; we accept a generous
+ * 64–128 window to leave room for unusual encodings. The handler
+ * re-checks more strictly after payment.
+ */
+function isSolanaSignature(v: string): boolean {
+  if (v.length < 64 || v.length > 128) return false;
+  // base58 alphabet (no 0, O, I, l).
+  return /^[1-9A-HJ-NP-Za-km-z]+$/.test(v);
+}
+
+/**
+ * Machine-readable input contract published on the 402 challenge, so a
+ * schema-blind crawler (or `dexter-api/x402-schema-fetcher`) learns the
+ * required field without paying first.
+ */
+export const heliusTxDecoderInputSchema: InternalHandlerInputSchema = {
+  method: "POST",
+  content_type: "application/json",
+  body: {
+    type: "object",
+    required: ["signature"],
+    properties: {
+      signature: {
+        type: "string",
+        description:
+          "Solana transaction signature (base58, 64-128 chars). Required.",
+        pattern: "^[1-9A-HJ-NP-Za-km-z]{64,128}$",
+      },
+    },
+  },
+  example: {
+    signature:
+      "5h1cQx8mNQ2mBfZTMkQpKDkVLbHrQwvxAqPfP5j8XW7tR3vDgJ2sKcYnA9bUeM4fTz6NqLpVhWx1sRdCgB7yKuE3",
+  },
+};
+
+/**
+ * Pre-payment validator for `helius_tx_decoder`.
+ *
+ * Follows the shared decision table in `discovery.ts`: an empty,
+ * missing or placeholder `signature` is a DISCOVERY probe and must fall
+ * through to the 402 challenge (which carries price + `input_schema`),
+ * NOT get a 400. Only a real-but-wrong signature is rejected here.
+ *
+ * Before 2026-08-04 this returned 400 on an empty body, which meant
+ * catalog crawlers and schema fetchers never saw the 402 at all —
+ * 568 rejections in 7 days across this handler and the simulator.
+ * `heliusTxDecoderPreflight` is what keeps a PAID empty body from
+ * settling now that the validator lets probes through.
  */
 export const heliusTxDecoderValidator: InternalHandlerValidator = (
   body,
   method,
 ) => {
   if (method !== "POST") return null;
-  if (!body || body.length === 0) {
-    return { status: 400, body: { error: "signature_required" } };
+  const c = classifyRequiredStringField(body, "signature", isSolanaSignature);
+  switch (c.kind) {
+    case "discovery":
+    case "valid":
+      return null;
+    case "invalid_json":
+      return { status: 400, body: { error: "invalid_json_body" } };
+    case "malformed":
+      return {
+        status: 422,
+        body: {
+          error: "signature_required",
+          expected: '{"signature":"<base58 Solana tx signature>"}',
+        },
+      };
+    case "invalid_value":
+      return {
+        status: 422,
+        body: {
+          error: "invalid_signature_format",
+          detail:
+            "signature must be a base58 Solana transaction signature (64-128 chars)",
+          expected: heliusTxDecoderInputSchema.example,
+        },
+      };
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(body.toString("utf8"));
-  } catch {
-    return { status: 400, body: { error: "invalid_json_body" } };
-  }
-  const sig =
-    parsed !== null && typeof parsed === "object"
-      ? (parsed as Record<string, unknown>)["signature"]
-      : undefined;
-  if (typeof sig !== "string" || sig.length === 0) {
-    return { status: 400, body: { error: "signature_required" } };
-  }
-  if (sig.length < 64 || sig.length > 128) {
-    return {
-      status: 400,
-      body: {
-        error: "invalid_signature_format",
-        message: "Solana signature must be 64-128 base58 chars",
-      },
-    };
-  }
-  // base58 alphabet (no 0, O, I, l). Reject if any other char appears.
-  if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(sig)) {
-    return {
-      status: 400,
-      body: { error: "signature_not_base58" },
-    };
-  }
-  return null;
+};
+
+/**
+ * Pre-SETTLEMENT gate. The validator deliberately lets discovery
+ * probes through to the 402; this runs only once a payment header is
+ * present, so a buyer who pays with an empty/placeholder body is
+ * refused BEFORE settlement instead of being charged for a call the
+ * handler could never answer.
+ */
+export const heliusTxDecoderPreflight: InternalHandlerPreflight = async (
+  input,
+) => {
+  const c = classifyRequiredStringField(
+    input.body,
+    "signature",
+    isSolanaSignature,
+  );
+  if (c.kind === "valid") return { proceed: true };
+  return {
+    proceed: false,
+    status: 422,
+    body: {
+      error: "signature_required",
+      detail:
+        "a base58 Solana transaction signature (64-128 chars) is required",
+      input_schema: heliusTxDecoderInputSchema,
+    },
+  };
 };
 
 interface HeliusTokenTransfer {
