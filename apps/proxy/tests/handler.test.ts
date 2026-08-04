@@ -119,10 +119,31 @@ describe("handle", () => {
     expect(result.outcome).toBe("paused");
   });
 
-  it("returns 405 when method doesn't match the configured method", async () => {
-    const deps = makeDeps();
-    const result = await handle(
-      {
+  // Method-mismatch decision table. An UNPAID GET/HEAD on a POST row is
+  // an x402 discovery probe and must reach the 402 challenge so the
+  // crawler learns price + input_schema. Anything that carries payment,
+  // and every write method, keeps the 405.
+  describe("method mismatch: discovery probes vs everything else", () => {
+    /** Facilitator `supported` + the pre-charge upstream HEAD probe. */
+    function challengeFetchMock() {
+      return vi
+        .fn()
+        .mockImplementation(async (url: string, init?: { method?: string }) => {
+          if (url.endsWith("/facilitator/supported")) {
+            return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
+          }
+          if (
+            url === "https://upstream.example.com/forecast" &&
+            init?.method === "HEAD"
+          ) {
+            return new Response(null, { status: 200 });
+          }
+          throw new Error(`unexpected fetch: ${url}`);
+        });
+    }
+
+    function probe(over: Record<string, unknown>) {
+      return {
         resourceKeyId: "reskey_test",
         slug: "weather",
         method: "GET",
@@ -132,11 +153,55 @@ describe("handle", () => {
         incomingHeaders: {},
         body: null,
         clientIp: "1.2.3.4",
-      },
-      deps,
-    );
-    expect(result.status).toBe(405);
-    expect(result.headers["allow"]).toBe("POST");
+        ...over,
+      } as Parameters<typeof handle>[0];
+    }
+
+    for (const method of ["GET", "HEAD"]) {
+      it(`serves the 402 challenge to an unpaid ${method} probe on a POST row`, async () => {
+        const deps = makeDeps({ fetchImpl: challengeFetchMock() });
+        const result = await handle(probe({ method }), deps);
+        expect(result.status).toBe(402);
+        expect(result.outcome).toBe("challenge");
+        expect((result.body as { accepts: unknown[] }).accepts.length).toBe(1);
+      });
+    }
+
+    it("keeps the 405 when a GET carries an X-PAYMENT header", async () => {
+      const deps = makeDeps({ fetchImpl: challengeFetchMock() });
+      const result = await handle(
+        probe({ paymentHeader: "eyJzY2hlbWUiOiJleGFjdCJ9" }),
+        deps,
+      );
+      expect(result.status).toBe(405);
+      expect(result.headers["allow"]).toBe("POST");
+    });
+
+    it("keeps the 405 when a GET carries an MPP Authorization", async () => {
+      const deps = makeDeps({ fetchImpl: challengeFetchMock() });
+      const result = await handle(
+        probe({ incomingHeaders: { authorization: "Payment credential-xyz" } }),
+        deps,
+      );
+      expect(result.status).toBe(405);
+      expect(result.headers["allow"]).toBe("POST");
+    });
+
+    for (const method of ["PUT", "PATCH", "DELETE"]) {
+      it(`keeps the 405 for ${method} — scanner traffic, not a buyer`, async () => {
+        const deps = makeDeps({ fetchImpl: challengeFetchMock() });
+        const result = await handle(probe({ method }), deps);
+        expect(result.status).toBe(405);
+        expect(result.headers["allow"]).toBe("POST");
+      });
+    }
+
+    it("still serves a matching POST normally (no regression)", async () => {
+      const deps = makeDeps({ fetchImpl: challengeFetchMock() });
+      const result = await handle(probe({ method: "POST" }), deps);
+      expect(result.status).toBe(402);
+      expect(result.outcome).toBe("challenge");
+    });
   });
 
   it("returns 503 invalid_config when no payTo for the accepted networks", async () => {

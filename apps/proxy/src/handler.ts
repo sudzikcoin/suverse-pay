@@ -236,7 +236,35 @@ export async function handle(
     };
   }
 
-  if (config.originalMethod !== args.method.toUpperCase()) {
+  // Method mismatch. A GET/HEAD probe against a POST-configured row is
+  // the x402 DISCOVERY case, not an error: catalog crawlers sweep the
+  // catalog with GET to read price + `input_schema` off the 402
+  // challenge, exactly as they already do on our GET-configured rows.
+  // Answering 405 meant a crawler that had already found us could never
+  // learn what we charge, so it could never come back and pay.
+  //
+  // Payment is still refused on the wrong method: a buyer who sends
+  // X-PAYMENT (or an MPP `Authorization: Payment …`) via GET against a
+  // POST row keeps the 405, because the resource genuinely cannot be
+  // fulfilled that way and we must never settle a request we cannot
+  // serve. Write methods (PUT/PATCH/DELETE) keep the 405
+  // unconditionally — those are scanners, not buyers.
+  //
+  // Falling through is safe: with no payment header, runProtocol()
+  // returns the challenge and the upstream is never called. The
+  // internal-handler validators already return null on non-POST, and
+  // the per-config schema gate reads `config.originalMethod`, so the
+  // challenge still carries `input_schema`.
+  const incomingMethod = args.method.toUpperCase();
+  const isDiscoveryProbeMethod =
+    incomingMethod === "GET" || incomingMethod === "HEAD";
+  const probeCarriesPayment =
+    (args.paymentHeader !== undefined && args.paymentHeader.trim() !== "") ||
+    isMppAuthorization(args.incomingHeaders["authorization"]);
+  if (
+    config.originalMethod !== incomingMethod &&
+    !(isDiscoveryProbeMethod && !probeCarriesPayment)
+  ) {
     return {
       status: 405,
       body: {
