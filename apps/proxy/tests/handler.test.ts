@@ -263,10 +263,27 @@ describe("handle", () => {
     );
     expect(result.status).toBe(402);
     expect(result.outcome).toBe("challenge");
-    const body = result.body as { accepts: unknown[] };
+    const body = result.body as {
+      accepts: unknown[];
+      extensions: Record<string, unknown>;
+    };
     expect(body.accepts.length).toBe(1);
-    // payment-required header carries the challenge JSON base64'd.
+    // Static onboarding pointer for wallet-less agents rides on every
+    // challenge; the block is literal JSON, never fetched.
+    expect(body.extensions.no_wallet).toEqual({
+      install: "npx -y stipend",
+      docs: "https://stipend.sh/skill.md",
+      any_wallet_works:
+        "You don't need this specific one. Any address that can sign an " +
+        "EIP-3009 authorization on Base works here.",
+    });
+    // payment-required header carries the challenge JSON base64'd —
+    // including the no_wallet block (body and header stay in sync).
     expect(result.headers["payment-required"]).toMatch(/^[A-Za-z0-9+/=]+$/);
+    const decoded = JSON.parse(
+      Buffer.from(result.headers["payment-required"], "base64").toString("utf8"),
+    ) as { extensions?: Record<string, unknown> };
+    expect(decoded.extensions?.no_wallet).toBeDefined();
   });
 
   it("emits Cosmos challenges with scheme exact_cosmos_authz, EVM with exact", async () => {
@@ -868,7 +885,7 @@ describe("handle", () => {
     expect(desc?.length).toBe(320);
   });
 
-  it("omits extensions when no catalog row matches (un-approved proxy)", async () => {
+  it("omits bazaar extension when no catalog row matches (un-approved proxy)", async () => {
     const fetchMock = vi.fn().mockImplementation(async (url: string, init?: { method?: string }) => {
       if (url.endsWith("/facilitator/supported")) {
         return new Response(JSON.stringify({ kinds: [] }), { status: 200 });
@@ -901,8 +918,10 @@ describe("handle", () => {
       deps,
     );
     expect(result.status).toBe(402);
-    const body = result.body as { extensions?: unknown };
-    expect(body.extensions).toBeUndefined();
+    // Un-approved proxies never advertise bazaar; the static no_wallet
+    // pointer is the only extension on the challenge.
+    const body = result.body as { extensions?: Record<string, unknown> };
+    expect(Object.keys(body.extensions ?? {})).toEqual(["no_wallet"]);
   });
 
   it("upstream-x402: signs to upstream's 402, retries, logs outbound payment", async () => {

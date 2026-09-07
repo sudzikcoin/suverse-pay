@@ -15,8 +15,17 @@ import type {
   VerifyResponse,
 } from "@suverse-pay/core-types";
 import { ProviderError } from "@suverse-pay/core-types";
-import { BaseAdapter, httpJson, type StaticCapability } from "@suverse-pay/provider-sdk";
-import { mapCdpErrorReason, type CdpLogger } from "./error-map.js";
+import {
+  BaseAdapter,
+  httpJson,
+  httpStatusToErrorCode,
+  type StaticCapability,
+} from "@suverse-pay/provider-sdk";
+import {
+  mapCdpErrorReason,
+  mapCdpVerifyRejection,
+  type CdpLogger,
+} from "./error-map.js";
 import { createCdpJwtSigner, type CdpJwtSigner } from "./jwt-signer.js";
 import { InMemoryUsageTracker, type UsageTracker } from "./usage-tracker.js";
 import {
@@ -200,15 +209,35 @@ export class CoinbaseCdpAdapter extends BaseAdapter {
       headers: { Authorization: `Bearer ${auth}` },
       timeoutMs: this.timeoutMs,
       providerId: this.id,
+      // CDP encodes a *negative verdict* as HTTP 400 with the normal
+      // VerifyResponse body (`isValid:false` + invalidReason). That is
+      // an answer about the buyer's payment, not a failed provider
+      // call, so read 4xx bodies as data and decide below. Anything
+      // that is not a verdict-shaped body is re-thrown exactly as
+      // httpJson would have (same code + message).
+      acceptStatus: (status: number) => status >= 400 && status < 500,
       ...(this.fetchImpl !== undefined ? { fetchImpl: this.fetchImpl } : {}),
     };
-    const { data, headers: respHeaders } = await httpJson<unknown>(`${this.baseUrl}/verify`, httpOpts);
+    const url = `${this.baseUrl}/verify`;
+    const { data, status, headers: respHeaders } = await httpJson<unknown>(url, httpOpts);
     try {
       const hdrs = Object.fromEntries(respHeaders.entries());
       console.log(`[CDP-VERIFY-HEADERS] ${JSON.stringify(hdrs)}`);
-      console.log(`[CDP-VERIFY-BODY] ${JSON.stringify(data)}`);
+      console.log(`[CDP-VERIFY-BODY] HTTP ${status} ${JSON.stringify(data)}`);
     } catch (e) { console.log("[CDP-VERIFY-HEADERS-ERR]", String(e)); }
     const parsed = CdpVerifyResponseSchema.safeParse(data);
+    if (status >= 400) {
+      if (parsed.success && parsed.data.isValid === false) {
+        // Negative verdict delivered on a 4xx — handled as a verdict
+        // below, never as a provider failure.
+      } else {
+        throw new ProviderError(
+          httpStatusToErrorCode(status),
+          `POST ${url} -> HTTP ${status}: ${truncateJson(data, 200)}`,
+          { providerId: this.id },
+        );
+      }
+    }
     if (!parsed.success) {
       throw new ProviderError(
         "provider_internal_error",
@@ -225,10 +254,11 @@ export class CoinbaseCdpAdapter extends BaseAdapter {
         verifiedAt: verifiedAtIso,
       };
     }
-    const errorCode = mapCdpErrorReason(v.invalidReason, {
+    const errorCode = mapCdpVerifyRejection(v.invalidReason, v.invalidMessage, {
       ...(this.logger !== undefined ? { logger: this.logger } : {}),
       context: {
         endpoint: "/verify",
+        httpStatus: status,
         invalidReason: v.invalidReason,
         invalidMessage: v.invalidMessage,
       },
@@ -472,6 +502,16 @@ export class CoinbaseCdpAdapter extends BaseAdapter {
     }
     return out;
   }
+}
+
+function truncateJson(value: unknown, max: number): string {
+  let text: string;
+  try {
+    text = JSON.stringify(value);
+  } catch {
+    text = String(value);
+  }
+  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
 function toCdpRequest(req: VerifyRequest | SettleRequest): unknown {
