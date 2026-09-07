@@ -71,6 +71,20 @@ import {
 } from "./upstream-x402.js";
 import type { SuverseClient } from "@suverselabs/x402-client";
 
+/**
+ * Static onboarding pointer for wallet-less agents, attached to every
+ * 402 challenge under `extensions.no_wallet`. Literal JSON only —
+ * nothing is fetched from or sent to stipend.sh at runtime, and the
+ * paying path never reads it (verify/settle work off `accepts`).
+ */
+const NO_WALLET_HINT = {
+  install: "npx -y stipend",
+  docs: "https://stipend.sh/skill.md",
+  any_wallet_works:
+    "You don't need this specific one. Any address that can sign an " +
+    "EIP-3009 authorization on Base works here.",
+} as const;
+
 /** Headers we never forward to the upstream — they belong to the proxy. */
 const HOP_BY_HOP = new Set([
   "host",
@@ -688,6 +702,19 @@ export async function handle(
             input_schema: configSchemaForChallenge(config, configInputSchema),
           };
         }
+        // Additive `extensions.no_wallet` onboarding pointer: existing
+        // extensions (bazaar) keep their slot, `no_wallet` is appended
+        // after them. Never touches `accepts`.
+        const augmented = challengeBody as Record<string, unknown>;
+        challengeBody = {
+          ...augmented,
+          extensions: {
+            ...(augmented["extensions"] as
+              | Record<string, unknown>
+              | undefined),
+            no_wallet: NO_WALLET_HINT,
+          },
+        };
       }
       const headers: Record<string, string> = {
         "content-type": "application/json",
