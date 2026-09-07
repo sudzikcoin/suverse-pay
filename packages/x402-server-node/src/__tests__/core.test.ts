@@ -623,6 +623,107 @@ describe("runProtocol", () => {
     }
   });
 
+  it("reads the nested {error:{code,message}} shape from a facilitator failure and logs the text", async () => {
+    // SuVerse facilitator global error handler shape. Before 2026-09-07
+    // this reached the buyer and the logs as a bare "HTTP 502".
+    // Fresh Response per attempt — a Response body can be read once.
+    const fetchImpl = vi.fn().mockImplementation(async () =>
+      new Response(
+        JSON.stringify({
+          error: {
+            code: "provider_internal_error",
+            message: "POST https://cdp.test/verify -> HTTP 500: upstream exploded",
+            details: { providerId: "coinbase-cdp" },
+          },
+        }),
+        { status: 502 },
+      ),
+    );
+    const logger = { warn: vi.fn(), error: vi.fn(), info: vi.fn() };
+    const result = await runProtocol({
+      opts: { ...BASE_OPTS, fetchImpl, logger, facilitatorRetry: { attempts: 2, baseDelayMs: 0 } },
+      resourceUrl: "https://api.example/paid",
+      paymentHeader: encodeHeader({
+        x402Version: 2,
+        scheme: "exact",
+        network: "eip155:8453",
+        payload: {},
+      }),
+      idempotencyKey: "idem-nested",
+    });
+    expect(result.kind).toBe("rejected");
+    if (result.kind === "rejected") {
+      expect(result.status).toBe(502);
+      expect(result.reason).toBe("provider_internal_error");
+      expect(result.body.error).toContain("upstream exploded");
+      expect(result.body.error).toContain("provider=coinbase-cdp");
+    }
+    // Still retried (a 5xx infra failure), and every log line carries the text.
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const logged = [...logger.warn.mock.calls, ...logger.error.mock.calls].map((c) => String(c[0]));
+    expect(logged.some((l) => l.includes("upstream exploded"))).toBe(true);
+    expect(logged.some((l) => l.includes("exhausted 2 attempts"))).toBe(true);
+  });
+
+  it("a payment verdict wrapped in a 5xx is NOT retried and becomes a 402 with the reason", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: { code: "insufficient_funds", message: "execution reverted" },
+        }),
+        { status: 502 },
+      ),
+    );
+    const logger = { warn: vi.fn(), error: vi.fn(), info: vi.fn() };
+    const result = await runProtocol({
+      opts: { ...BASE_OPTS, fetchImpl, logger },
+      resourceUrl: "https://api.example/paid",
+      paymentHeader: encodeHeader({
+        x402Version: 2,
+        scheme: "exact",
+        network: "eip155:8453",
+        payload: {},
+      }),
+      idempotencyKey: "idem-verdict",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result.kind).toBe("rejected");
+    if (result.kind === "rejected") {
+      expect(result.status).toBe(402);
+      expect(result.reason).toBe("insufficient_funds");
+      expect(result.body.error).toBe("execution reverted");
+    }
+    expect(logger.warn.mock.calls.some((c) => String(c[0]).includes("rejected"))).toBe(true);
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it("a 200 isValid:false verdict with invalidReason is a 402 with that reason and no retry", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ isValid: false, invalidReason: "insufficient_funds", payer: "0x8a1a" }),
+        { status: 200 },
+      ),
+    );
+    const result = await runProtocol({
+      opts: { ...BASE_OPTS, fetchImpl },
+      resourceUrl: "https://api.example/paid",
+      paymentHeader: encodeHeader({
+        x402Version: 2,
+        scheme: "exact",
+        network: "eip155:8453",
+        payload: {},
+      }),
+      idempotencyKey: "idem-verdict-200",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result.kind).toBe("rejected");
+    if (result.kind === "rejected") {
+      expect(result.status).toBe(402);
+      expect(result.reason).toBe("insufficient_funds");
+      expect(result.body.error).toBe("insufficient_funds");
+    }
+  });
+
   it("normalises a trailing slash on the facilitator URL", async () => {
     const fetchImpl = vi
       .fn()

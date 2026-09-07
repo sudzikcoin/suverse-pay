@@ -324,9 +324,79 @@ const RETRYABLE_FACILITATOR_CODES = new Set<string>([
   "rate_limited",
 ]);
 
+/**
+ * Codes that are a *verdict about the buyer's payment*, never an
+ * infrastructure blip. Whatever HTTP status the facilitator wrapped
+ * them in, retrying cannot change the answer and the buyer must get a
+ * 402 with the reason immediately. (2026-09-07: a facilitator that
+ * relayed CDP's "insufficient funds" verdict as a 502 made the
+ * middleware retry 3× and answer 502 for three weeks.)
+ */
+const PAYMENT_VERDICT_CODES = new Set<string>([
+  "insufficient_funds",
+  "insufficient_grant",
+  "invalid_signature",
+  "invalid_authorization",
+  "invalid_payload",
+  "nonce_already_used",
+  "expired_authorization",
+  "unsupported_scheme",
+  "route_unsupported",
+]);
+
+export function isPaymentVerdictCode(code: string): boolean {
+  return PAYMENT_VERDICT_CODES.has(code);
+}
+
 function isTransientFacilitatorError(err: X402Error): boolean {
+  if (isPaymentVerdictCode(err.code)) return false;
   if (err.statusCode >= 500) return true;
   return RETRYABLE_FACILITATOR_CODES.has(err.code);
+}
+
+/**
+ * Pull `code` + `message` out of a facilitator error body. Two shapes
+ * exist in the wild: the x402 spec's flat `{errorCode, errorMessage}`
+ * and the SuVerse facilitator's `{error:{code,message,details}}`
+ * (its global error handler). Missing the nested shape is why every
+ * provider failure used to reach the logs as a bare
+ * "facilitator verify returned HTTP 502".
+ */
+export function readFacilitatorError(
+  obj: Record<string, unknown>,
+  endpoint: string,
+  status: number,
+): { code: string; message: string } {
+  const nested =
+    obj["error"] !== null && typeof obj["error"] === "object"
+      ? (obj["error"] as Record<string, unknown>)
+      : undefined;
+  const code =
+    typeof obj["errorCode"] === "string"
+      ? (obj["errorCode"] as string)
+      : nested !== undefined && typeof nested["code"] === "string"
+        ? (nested["code"] as string)
+        : "facilitator_error";
+  let message =
+    typeof obj["errorMessage"] === "string"
+      ? (obj["errorMessage"] as string)
+      : nested !== undefined && typeof nested["message"] === "string"
+        ? (nested["message"] as string)
+        : `facilitator ${endpoint} returned HTTP ${status}`;
+  const details =
+    nested !== undefined && nested["details"] !== null && typeof nested["details"] === "object"
+      ? (nested["details"] as Record<string, unknown>)
+      : undefined;
+  if (details !== undefined && typeof details["providerId"] === "string") {
+    message = `${message} (provider=${details["providerId"] as string})`;
+  }
+  return { code, message };
+}
+
+const LOG_MESSAGE_MAX = 400;
+function truncateForLog(message: string): string {
+  const flat = message.replace(/\s+/g, " ");
+  return flat.length > LOG_MESSAGE_MAX ? `${flat.slice(0, LOG_MESSAGE_MAX)}…` : flat;
 }
 
 const sleep = (ms: number): Promise<void> =>
@@ -465,15 +535,8 @@ async function callFacilitator(
     if (!response.ok) {
       // Forward the facilitator's own error code+message so the
       // client (or human reading logs) can act on it.
-      const code =
-        typeof obj["errorCode"] === "string"
-          ? (obj["errorCode"] as string)
-          : "facilitator_error";
-      const msg =
-        typeof obj["errorMessage"] === "string"
-          ? (obj["errorMessage"] as string)
-          : `facilitator ${endpoint} returned HTTP ${response.status}`;
-      throw new X402Error(code, response.status, msg);
+      const { code, message } = readFacilitatorError(obj, endpoint, response.status);
+      throw new X402Error(code, response.status, message);
     }
     return obj;
   };
@@ -497,12 +560,22 @@ async function callFacilitator(
       const retryable =
         err instanceof X402Error && isTransientFacilitatorError(err);
       if (!retryable || attempt >= maxAttempts) {
-        if (retryable && opts.logger) {
-          opts.logger.error(
-            `x402: facilitator ${endpoint} exhausted ${maxAttempts} attempts ` +
-              `idem=${idempotencyKey} code=${(err as X402Error).code} ` +
-              `status=${(err as X402Error).statusCode}`,
-          );
+        if (opts.logger && err instanceof X402Error) {
+          if (retryable) {
+            opts.logger.error(
+              `x402: facilitator ${endpoint} exhausted ${maxAttempts} attempts ` +
+                `idem=${idempotencyKey} code=${err.code} ` +
+                `status=${err.statusCode} message=${truncateForLog(err.message)}`,
+            );
+          } else {
+            // Deterministic answer (payment verdict or terminal 4xx):
+            // no retry, but the provider's own text must reach the log.
+            opts.logger.warn(
+              `x402: facilitator ${endpoint} rejected ` +
+                `idem=${idempotencyKey} code=${err.code} ` +
+                `status=${err.statusCode} message=${truncateForLog(err.message)}`,
+            );
+          }
         }
         throw err;
       }
@@ -511,7 +584,8 @@ async function callFacilitator(
           `x402: facilitator ${endpoint} transient failure ` +
             `attempt=${attempt}/${maxAttempts} idem=${idempotencyKey} ` +
             `code=${(err as X402Error).code} ` +
-            `status=${(err as X402Error).statusCode} — retrying`,
+            `status=${(err as X402Error).statusCode} ` +
+            `message=${truncateForLog((err as X402Error).message)} — retrying`,
         );
       }
       await sleep(backoffDelayMs(baseDelayMs, attempt));
@@ -614,7 +688,7 @@ export async function runProtocol(args: {
     if (err instanceof X402Error) {
       return {
         kind: "rejected",
-        status: err.statusCode >= 500 ? 502 : 402,
+        status: err.statusCode >= 500 && !isPaymentVerdictCode(err.code) ? 502 : 402,
         body: await buildChallenge(opts, resourceUrl, err.message),
         reason: err.code,
       };
@@ -668,7 +742,7 @@ export async function runProtocol(args: {
     if (err instanceof X402Error) {
       return {
         kind: "rejected",
-        status: err.statusCode >= 500 ? 502 : 402,
+        status: err.statusCode >= 500 && !isPaymentVerdictCode(err.code) ? 502 : 402,
         body: await buildChallenge(opts, resourceUrl, err.message),
         reason: err.code,
       };
