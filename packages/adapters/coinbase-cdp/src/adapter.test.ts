@@ -311,6 +311,68 @@ describe("CoinbaseCdpAdapter /verify", () => {
     });
   });
 
+  it("HTTP 400 carrying a negative verdict is a verdict, not a provider failure (insufficient funds)", async () => {
+    // Exact body CDP returned on 2026-09-07 for a payer whose USDC
+    // balance was below the authorized amount.
+    const warn = vi.fn();
+    const { fetch } = makeFetch([
+      jsonResponse(
+        {
+          isValid: false,
+          invalidReason: "invalid_payload",
+          invalidMessage: "contract call failed: unable to call contract: execution reverted",
+          payer: "0x8a1A037b4fb377fceCd0F8A0B91A6A35df78Aa53",
+        },
+        400,
+      ),
+    ]);
+    const a = makeAdapter({ fetch, logger: { warn } });
+    const r = await a.verify(verifyReq);
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("insufficient_funds");
+    expect(r.errorMessage).toBe(
+      "contract call failed: unable to call contract: execution reverted",
+    );
+    expect(r.payer).toBe("0x8a1A037b4fb377fceCd0F8A0B91A6A35df78Aa53");
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("HTTP 400 with a known invalidReason maps like a 200 verdict would", async () => {
+    const { fetch } = makeFetch([
+      jsonResponse({ isValid: false, invalidReason: "invalid_signature" }, 400),
+    ]);
+    const a = makeAdapter({ fetch });
+    const r = await a.verify(verifyReq);
+    expect(r.valid).toBe(false);
+    expect(r.errorCode).toBe("invalid_signature");
+  });
+
+  it("HTTP 400 whose body is NOT a verdict still throws ProviderError(invalid_request) with the body text", async () => {
+    const { fetch } = makeFetch([
+      jsonResponse({ errorType: "invalid_request", errorMessage: "must match one of [...]" }, 400),
+    ]);
+    const a = makeAdapter({ fetch });
+    await expect(a.verify(verifyReq)).rejects.toMatchObject({
+      name: "ProviderError",
+      code: "invalid_request",
+      providerId: "coinbase-cdp",
+      message: expect.stringContaining("must match one of"),
+    });
+  });
+
+  it("HTTP 400 claiming isValid:true is treated as a provider failure, never as a valid payment", async () => {
+    const { fetch } = makeFetch([jsonResponse({ isValid: true, payer: "0xabc" }, 400)]);
+    const a = makeAdapter({ fetch });
+    await expect(a.verify(verifyReq)).rejects.toMatchObject({ code: "invalid_request" });
+  });
+
+  it("a 200 verdict is unchanged: same fields as before", async () => {
+    const { fetch } = makeFetch([jsonResponse({ isValid: true, payer: "0xabc" })]);
+    const a = makeAdapter({ fetch });
+    const r = await a.verify(verifyReq);
+    expect(r).toMatchObject({ valid: true, payer: "0xabc", providerId: "coinbase-cdp" });
+  });
+
   it("translates an HTTP 401 to ProviderError(unauthorized)", async () => {
     const { fetch } = makeFetch([textResponse("nope", 401)]);
     const a = makeAdapter({ fetch });

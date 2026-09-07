@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { CDP_ERROR_REASON_MAP, mapCdpErrorReason, type CdpLogger } from "./error-map.js";
+import {
+  CDP_ERROR_REASON_MAP,
+  mapCdpErrorReason,
+  mapCdpVerifyRejection,
+  type CdpLogger,
+} from "./error-map.js";
 
 describe("mapCdpErrorReason", () => {
   it("maps the x402 spec error codes 1:1", () => {
@@ -61,5 +66,38 @@ describe("mapCdpErrorReason", () => {
 
   it("exports the dictionary with documented size", () => {
     expect(Object.keys(CDP_ERROR_REASON_MAP).length).toBeGreaterThanOrEqual(16);
+  });
+});
+
+describe("mapCdpVerifyRejection", () => {
+  it("invalid_payload + contract revert message → insufficient_funds (the 0x8a1A… case)", () => {
+    expect(
+      mapCdpVerifyRejection(
+        "invalid_payload",
+        "contract call failed: unable to call contract: execution reverted",
+      ),
+    ).toBe("insufficient_funds");
+    expect(
+      mapCdpVerifyRejection("invalid_payload", "ERC20: transfer amount exceeds balance"),
+    ).toBe("insufficient_funds");
+  });
+
+  it("invalid_payload without a revert message stays an authorization problem", () => {
+    expect(mapCdpVerifyRejection("invalid_payload", "bad nonce format")).toBe(
+      "invalid_authorization",
+    );
+    expect(mapCdpVerifyRejection("invalid_payload", undefined)).toBe("invalid_authorization");
+  });
+
+  it("every other reason defers to mapCdpErrorReason unchanged", () => {
+    const warn = vi.fn();
+    expect(mapCdpVerifyRejection("insufficient_funds", "x")).toBe("insufficient_funds");
+    expect(mapCdpVerifyRejection("invalid_signature", "execution reverted")).toBe(
+      "invalid_signature",
+    );
+    expect(mapCdpVerifyRejection("brand_new", "execution reverted", { logger: { warn } })).toBe(
+      "provider_internal_error",
+    );
+    expect(warn).toHaveBeenCalledOnce();
   });
 });

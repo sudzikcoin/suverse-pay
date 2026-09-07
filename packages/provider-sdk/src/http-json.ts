@@ -19,6 +19,15 @@ export interface HttpJsonOptions {
   signal?: AbortSignal;
   providerId?: string;
   fetchImpl?: typeof globalThis.fetch;
+  /**
+   * Opt-in: treat a non-2xx status for which this returns `true` as a
+   * *successful* call whose JSON body the caller wants to inspect,
+   * instead of throwing `ProviderError`. Used by adapters whose
+   * upstream encodes a normal negative verdict as a 4xx (Coinbase CDP
+   * answers an unfundable /verify with HTTP 400 + `isValid:false`).
+   * A matching status with a non-JSON body still throws.
+   */
+  acceptStatus?: (status: number) => boolean;
 }
 
 export interface HttpJsonResponse<T> {
@@ -112,6 +121,31 @@ async function httpJsonOnce<T>(
       );
     }
     return { data, status: response.status, headers: response.headers };
+  }
+
+  if (opts.acceptStatus !== undefined && opts.acceptStatus(response.status)) {
+    // Caller asked to see this status as data. Only a JSON object body
+    // qualifies; anything else is the same upstream failure as before.
+    let bodyText = "";
+    try {
+      bodyText = await response.text();
+    } catch {
+      // fall through to the ProviderError below with an empty body
+    }
+    let data: T | undefined;
+    try {
+      data = JSON.parse(bodyText) as T;
+    } catch {
+      data = undefined;
+    }
+    if (data !== undefined && data !== null && typeof data === "object") {
+      return { data, status: response.status, headers: response.headers };
+    }
+    throw new ProviderError(
+      httpStatusToErrorCode(response.status),
+      `${method} ${url} -> HTTP ${response.status}${bodyText ? `: ${truncate(bodyText, 200)}` : ""}`,
+      providerErrorOpts(opts.providerId),
+    );
   }
 
   const errorCode = httpStatusToErrorCode(response.status);

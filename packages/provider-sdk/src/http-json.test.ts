@@ -198,6 +198,40 @@ describe("httpJson — error mapping", () => {
     });
   });
 
+  it("acceptStatus: returns a JSON 4xx body as data instead of throwing", async () => {
+    const { fetch } = makeFetch({
+      responses: [jsonResponse({ isValid: false, invalidReason: "invalid_payload" }, 400)],
+    });
+    const r = await httpJson<{ isValid: boolean }>("https://p.test/verify", {
+      method: "POST",
+      body: {},
+      fetchImpl: fetch,
+      acceptStatus: (s) => s >= 400 && s < 500,
+    });
+    expect(r.status).toBe(400);
+    expect(r.data.isValid).toBe(false);
+  });
+
+  it("acceptStatus: a matching status with a non-JSON body still throws invalid_request", async () => {
+    const { fetch } = makeFetch({ responses: [textResponse("<html>bad</html>", 400)] });
+    await expect(
+      httpJson("https://p.test/verify", {
+        fetchImpl: fetch,
+        acceptStatus: (s) => s === 400,
+      }),
+    ).rejects.toMatchObject({ code: "invalid_request" });
+  });
+
+  it("acceptStatus: statuses it does not accept behave exactly as before", async () => {
+    const { fetch } = makeFetch({ responses: [jsonResponse({ error: "x" }, 401)] });
+    await expect(
+      httpJson("https://p.test/verify", {
+        fetchImpl: fetch,
+        acceptStatus: (s) => s === 400,
+      }),
+    ).rejects.toMatchObject({ code: "unauthorized" });
+  });
+
   it("maps other 4xx to invalid_request", async () => {
     const { fetch } = makeFetch({
       responses: [textResponse("bad", 400)],
